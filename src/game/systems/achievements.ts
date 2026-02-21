@@ -226,20 +226,26 @@ export const ACHIEVEMENTS: Achievement[] = [
 ];
 
 // Safe storage shim for server (Node) where localStorage is not available
+export let memoryStore: Record<string, string> = {};
 const storageShim: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = typeof localStorage !== 'undefined'
   ? localStorage
   : {
-      getItem: () => null,
-      setItem: () => { /* noop */ },
-      removeItem: () => { /* noop */ }
-    };
+    getItem: (key) => memoryStore[key] || null,
+    setItem: (key, val) => { memoryStore[key] = val; },
+    removeItem: (key) => { delete memoryStore[key]; }
+  };
 
-class AchievementManager {
+export class AchievementManager {
   private progress: AchievementProgress = {};
   private listeners: ((achievement: Achievement) => void)[] = [];
 
   constructor() {
     this.loadProgress();
+  }
+
+  public reset(): void {
+    this.progress = {};
+    this.saveProgress();
   }
 
   private loadProgress(): void {

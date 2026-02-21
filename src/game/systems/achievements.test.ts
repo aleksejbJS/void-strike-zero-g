@@ -1,13 +1,22 @@
-import { describe, it, test, expect, beforeEach } from 'vitest';
-import { achievementManager, trackKill, trackFlagCapture, trackItemPickup } from './achievements';
+import { describe, it, test, expect, beforeEach, vi, Mock } from 'vitest';
+import { achievementManager, AchievementManager, memoryStore, trackKill, trackFlagCapture, trackItemPickup } from './achievements';
 import { WeaponType } from '../../types';
 
 describe('Achievement System', () => {
   beforeEach(() => {
     // Reset achievements before each test
+    for (const key in memoryStore) delete memoryStore[key];
+
+    // Vitest's setup.ts replaces localStorage methods with empty vi.fn().
+    // We need them to actually store values for our persistence tests!
+    (localStorage.getItem as Mock).mockImplementation((key: string) => memoryStore[key] || null);
+    (localStorage.setItem as Mock).mockImplementation((key: string, value: string) => { memoryStore[key] = value; });
+    (localStorage.clear as Mock).mockImplementation(() => {
+      for (const key in memoryStore) delete memoryStore[key];
+    });
+
     localStorage.clear();
-    // Reinitialize the manager
-    achievementManager.getAchievements(); // This will reload from localStorage
+    achievementManager.reset();
   });
 
   describe('Basic Achievement Tracking', () => {
@@ -104,7 +113,7 @@ describe('Achievement System', () => {
       trackKill(WeaponType.MACHINE_GUN);
 
       // Create new manager instance (simulating page reload)
-      const newManager = require('./achievements').achievementManager;
+      const newManager = new AchievementManager();
       const achievements = newManager.getAchievements();
       const firstBlood = achievements.find(a => a.id === 'first_blood');
 

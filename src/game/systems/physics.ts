@@ -1,436 +1,20 @@
 import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, PlayerInput, RagdollPart } from '../../types';
-import { GRAVITY, FRICTION, AIR_RESISTANCE, MOVE_SPEED, CROUCH_SPEED, JUMP_FORCE, JETPACK_FORCE, JETPACK_CONSUMPTION, JETPACK_RECHARGE, MAX_SPEED, DASHE_COOLDOWN, DASH_FORCE, HOOK_PULL_FORCE, HOOK_RANGE, WEAPONS_DATA, ITEMS_DATA, RESPAWN_DELAY, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../../constants';
-import { playSound } from './audio';
+import { GRAVITY, FRICTION, AIR_RESISTANCE, MOVE_SPEED, CROUCH_SPEED, JUMP_FORCE, JETPACK_FORCE, JETPACK_CONSUMPTION, JETPACK_RECHARGE, MAX_SPEED, DASH_COOLDOWN, DASH_FORCE, HOOK_PULL_FORCE, HOOK_RANGE, WEAPONS_DATA, ITEMS_DATA, RESPAWN_DELAY, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../../constants';
+import { gameEvents } from './events';
+import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
 import { distance, normalize, checkPointInRect, checkRectOverlap, segmentIntersectsRect } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackKill, trackFlagCapture, trackFlagHoldTime, trackDoubleJump, trackHookUse, trackDashUse, trackItemPickup } from './achievements';
 
-const resetFlagToBase = (state: GameState, team: Team) => {
-    const flag = state.pickups.find(i => i.type === ItemType.FLAG && i.team === team);
-    if (flag) {
-        flag.active = true;
-        flag.respawnTime = 0;
-        flag.pos = baseFlagPos(team);
-    }
-};
+import { resetFlagToBase, applyGunGameLoadout } from './gamemodes';
+import { applyDamage, fireWeapon, createParticles, resolveCollision, castRay, createExplosion } from './combat';
+import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
 
-const applyGunGameLoadout = (entity: Entity, level: number) => {
-    const clamped = Math.max(0, Math.min(level, GUN_GAME_LADDER.length - 1));
-    const weaponType = GUN_GAME_LADDER[clamped] || WeaponType.MACHINE_GUN;
-    entity.gunLevel = clamped;
-    entity.gunProgress = 0;
-    entity.inventory = [{ ...WEAPONS_DATA[weaponType] }];
-    entity.weapon = entity.inventory[0];
-};
-
-const handleGunGameKill = (state: GameState, killer: Entity) => {
-    killer.gunProgress = (killer.gunProgress || 0) + 1;
-    const isFinal = (killer.gunLevel || 0) >= GUN_GAME_LADDER.length - 1;
-    if (killer.gunProgress >= GUN_GAME_KILLS_PER_LEVEL) {
-        if (isFinal) {
-            killer.gunProgress = GUN_GAME_KILLS_PER_LEVEL;
-            state.gunGameWinnerId = killer.id;
-        } else {
-            const nextLevel = (killer.gunLevel || 0) + 1;
-            applyGunGameLoadout(killer, nextLevel);
-            state.floatingTexts.push({
-                id: Math.random().toString(),
-                pos: { x: killer.pos.x, y: killer.pos.y - 50 },
-                text: 'UPGRADE!',
-                color: '#a855f7',
-                life: 1,
-                velY: 1
-            });
-        }
-    }
-};
-
-const handleGunGameDeath = (target: Entity) => {
-    const level = target.gunLevel || 0;
-    const newLevel = Math.max(0, level - 1);
-    applyGunGameLoadout(target, newLevel);
-};
-
-const createRagdoll = (state: GameState, entity: Entity) => {
-    const baseVel = { ...entity.vel };
-    const randomForce = () => (Math.random() - 0.5) * 8;
-
-    const parts: RagdollPart[] = [
-        {
-            id: `${entity.id}_head_${Date.now()}`,
-            type: 'head',
-            pos: { x: entity.pos.x, y: entity.pos.y - 60 },
-            vel: { x: baseVel.x + randomForce(), y: baseVel.y - 3 + randomForce() },
-            rotation: Math.random() * Math.PI * 2,
-            angularVel: (Math.random() - 0.5) * 0.3,
-            color: entity.color,
-            life: 5,
-            isGrounded: false
-        },
-        {
-            id: `${entity.id}_torso_${Date.now()}`,
-            type: 'torso',
-            pos: { x: entity.pos.x, y: entity.pos.y - 35 },
-            vel: { x: baseVel.x + randomForce(), y: baseVel.y + randomForce() },
-            rotation: Math.random() * Math.PI * 2,
-            angularVel: (Math.random() - 0.5) * 0.25,
-            color: entity.color,
-            life: 5,
-            isGrounded: false
-        },
-        {
-            id: `${entity.id}_arm_l_${Date.now()}`,
-            type: 'arm-left',
-            pos: { x: entity.pos.x - 10, y: entity.pos.y - 40 },
-            vel: { x: baseVel.x - 4 + randomForce(), y: baseVel.y + randomForce() },
-            rotation: Math.random() * Math.PI * 2,
-            angularVel: (Math.random() - 0.5) * 0.4,
-            color: entity.color,
-            life: 5,
-            isGrounded: false
-        },
-        {
-            id: `${entity.id}_arm_r_${Date.now()}`,
-            type: 'arm-right',
-            pos: { x: entity.pos.x + 10, y: entity.pos.y - 40 },
-            vel: { x: baseVel.x + 4 + randomForce(), y: baseVel.y + randomForce() },
-            rotation: Math.random() * Math.PI * 2,
-            angularVel: (Math.random() - 0.5) * 0.4,
-            color: entity.color,
-            life: 5,
-            isGrounded: false
-        },
-        {
-            id: `${entity.id}_leg_l_${Date.now()}`,
-            type: 'leg-left',
-            pos: { x: entity.pos.x - 8, y: entity.pos.y - 15 },
-            vel: { x: baseVel.x - 3 + randomForce(), y: baseVel.y + randomForce() },
-            rotation: Math.random() * Math.PI * 2,
-            angularVel: (Math.random() - 0.5) * 0.35,
-            color: entity.color,
-            life: 5,
-            isGrounded: false
-        },
-        {
-            id: `${entity.id}_leg_r_${Date.now()}`,
-            type: 'leg-right',
-            pos: { x: entity.pos.x + 8, y: entity.pos.y - 15 },
-            vel: { x: baseVel.x + 3 + randomForce(), y: baseVel.y + randomForce() },
-            rotation: Math.random() * Math.PI * 2,
-            angularVel: (Math.random() - 0.5) * 0.35,
-            color: entity.color,
-            life: 5,
-            isGrounded: false
-        }
-    ];
-
-    state.ragdollParts.push(...parts);
-};
-
-// Physics Functions
-export const createParticles = (state: GameState, x: number, y: number, count: number, color: string, type: 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' = 'spark') => {
-    for (let i = 0; i < count; i++) {
-        state.particles.push({
-            id: Math.random().toString(),
-            pos: { x, y },
-            vel: {
-                x: (Math.random() - 0.5) * (type === 'shell' ? 4 : 10),
-                y: (Math.random() - 0.5) * (type === 'shell' ? 4 : 10)
-            },
-            life: 1.0,
-            decay: 0.02 + Math.random() * 0.03,
-            color,
-            size: type === 'smoke' ? 5 + Math.random() * 10 : (type === 'shell' ? 3 : 2 + Math.random() * 2),
-            type,
-            rotation: Math.random() * Math.PI * 2
-        });
-    }
-};
-
-const castRay = (state: GameState, start: Vector2, dir: Vector2, range: number): Vector2 | null => {
-    let c = { x: start.x, y: start.y }, d = 0;
-    while (d < range) { c.x += dir.x * 10; c.y += dir.y * 10; d += 10; for (const p of state.platforms) if (checkPointInRect(c, p)) return { ...c }; }
-    return null;
-};
-
-const resolveCollision = (p: Entity, plat: Platform) => {
-    const pLeft = p.pos.x - p.width / 2;
-    const pRight = p.pos.x + p.width / 2;
-    const pTop = p.pos.y - p.height;
-    const pBottom = p.pos.y;
-
-    if (pRight > plat.x && pLeft < plat.x + plat.w && pBottom > plat.y && pTop < plat.y + plat.h) {
-        const overlapL = pRight - plat.x;
-        const overlapR = (plat.x + plat.w) - pLeft;
-        const overlapT = pBottom - plat.y;
-        const overlapB = (plat.y + plat.h) - pTop;
-
-        const min = Math.min(overlapL, overlapR, overlapT, overlapB);
-
-        if (min === overlapT && p.vel.y >= 0) {
-            p.pos.y = plat.y; p.vel.y = 0; p.isGrounded = true;
-        } else if (min === overlapB && p.vel.y < 0) {
-            p.pos.y = plat.y + plat.h + p.height; p.vel.y = 0;
-        } else if (min === overlapL) {
-            p.pos.x = plat.x - p.width / 2; p.vel.x = 0;
-        } else if (min === overlapR) {
-            p.pos.x = plat.x + plat.w + p.width / 2; p.vel.x = 0;
-        }
-    }
-};
-
-const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, setKillFeed: any, isMuted: boolean) => {
-    if (target.dead) return;
-    const holdingHTF = state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
-    let dmg = holdingHTF ? amount * 1.1 : amount;
-    if (target.armor > 0) {
-        const absorb = Math.min(target.armor, dmg * 0.66);
-        target.armor -= absorb;
-        dmg -= absorb;
-    }
-    target.health -= dmg;
-
-    const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
-    target.vel.x += (knockback.x / len) * (amount / 10);
-    target.vel.y += (knockback.y / len) * (amount / 10);
-
-    state.floatingTexts.push({
-        id: Math.random().toString(), pos: { ...target.pos, y: target.pos.y - 40 },
-        text: Math.round(dmg).toString(), color: '#ef4444', life: 1, velY: 1
-    });
-
-    if (target.health <= 0) {
-        target.dead = true;
-        target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
-        createParticles(state, target.pos.x, target.pos.y, 40, target.color, 'blood');
-        // Decal (Blood)
-        state.decals.push({
-            id: Math.random().toString(), pos: { x: target.pos.x, y: target.pos.y + 20 },
-            rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
-        });
-
-        // Create Ragdoll instead of static corpse
-        createRagdoll(state, target);
-
-        // Hunger Games: shrink zone on each death
-        if (state.mode === GameMode.HUNGER_GAMES && state.hungerZone) {
-            const shrink = 250;
-            const minSize = 1200;
-            if (!state.hungerZone.pendingShrink) {
-                state.hungerZone.pendingShrink = true;
-                state.hungerZone.nextShrinkAt = Date.now() + 5000;
-                state.hungerZone.pendingCount = 1;
-            } else {
-                state.hungerZone.pendingCount = (state.hungerZone.pendingCount || 1) + 1;
-            }
-            const doShrink = state.hungerZone.pendingShrink && state.hungerZone.nextShrinkAt && Date.now() >= state.hungerZone.nextShrinkAt;
-            if (doShrink) {
-                const stack = Math.max(1, state.hungerZone.pendingCount || 1);
-                const totalShrink = shrink * stack;
-                state.hungerZone.x += totalShrink;
-                state.hungerZone.y += totalShrink;
-                state.hungerZone.w = Math.max(minSize, state.hungerZone.w - totalShrink * 2);
-                state.hungerZone.h = Math.max(minSize, state.hungerZone.h - totalShrink * 2);
-                state.hungerZone.lastShrink = Date.now();
-                state.hungerZone.pendingShrink = false;
-                state.hungerZone.nextShrinkAt = undefined;
-                state.hungerZone.pendingCount = 0;
-            }
-        }
-
-        if (state.mode === GameMode.GUN_GAME) {
-            handleGunGameDeath(target);
-        }
-
-        // Если игрок нес флаг — вернуть его на базу команды флага или дропнуть
-        if (target.hasFlag !== Team.NONE) {
-            if (state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team) {
-                const dropId = `htf_drop_${Date.now()}`;
-                state.pickups.push({
-                    id: dropId,
-                    type: ItemType.FLAG,
-                    team: Team.NONE,
-                    pos: { x: target.pos.x + (Math.random() - 0.5) * 20, y: target.pos.y },
-                    active: true,
-                    respawnTime: 0,
-                    value: 0
-                });
-            } else if (state.mode === GameMode.INFILTRATION && target.hasFlag === Team.RED) {
-                state.pickups.push({
-                    id: `intel_drop_${Date.now()}`,
-                    type: ItemType.INTEL,
-                    team: Team.RED,
-                    pos: { x: target.pos.x, y: target.pos.y },
-                    active: true,
-                    respawnTime: -1,
-                    value: 1000
-                });
-            } else {
-                resetFlagToBase(state, target.hasFlag);
-            }
-            target.hasFlag = Team.NONE;
-        }
-
-        if (attackerId) {
-            const killer = state.players.find(p => p.id === attackerId);
-            if (setKillFeed) {
-                setKillFeed((prev: any) => [...prev.slice(-4), {
-                    id: Math.random().toString(),
-                    killer: killer ? killer.name : 'World',
-                    killerColor: killer ? killer.color : '#ffffff',
-                    weapon: killer ? killer.weapon.name : 'Environment',
-                    victim: target.name,
-                    victimColor: target.color
-                }]);
-            }
-            // Award score
-            if (killer) {
-                if (state.mode !== GameMode.CTF) {
-                    // Deathmatch: increment personal score and team score for kills
-                    killer.score++;
-                } else if (killer.team !== target.team) {
-                    // CTF: only increment personal score for kills
-                    // Team score is incremented only on flag captures (line 343)
-                    killer.score += 100;
-                }
-
-                if (state.mode === GameMode.GUN_GAME) {
-                    handleGunGameKill(state, killer);
-                }
-
-                // Track achievement only for player-controlled kills
-                if (killer.type === 'player') {
-                    trackKill(killer.weapon.type);
-                }
-            }
-        }
-    }
-};
-
-const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, setKillFeed: any, isMuted: boolean) => {
-    createParticles(state, pos.x, pos.y, 20, '#f97316', 'fire');
-    createParticles(state, pos.x, pos.y, 10, '#ffffff', 'smoke');
-    playSound('explosion', undefined, isMuted);
-
-    state.players.forEach(p => {
-        const dist = distance(pos, p.pos);
-        if (dist < radius) {
-            const dmg = 100 * (1 - dist / radius);
-            applyDamage(state, p, ownerId, dmg, { x: p.pos.x - pos.x, y: p.pos.y - pos.y }, setKillFeed, isMuted);
-        }
-    });
-};
-
-const fireWeapon = (state: GameState, p: Entity, target: Vector2, isMuted: boolean, setKillFeed: any) => {
-    if (p.weapon.ammo <= 0) return;
-    p.weapon.ammo--;
-    p.lastFired = Date.now();
-
-    const crouchY = p.isCrouching ? 15 : 0;
-    // Fire Origin: Align with visual shoulder (approx -50 from feet)
-    const origin = { x: p.pos.x, y: p.pos.y - 50 + crouchY };
-
-    const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
-    const dir = { x: Math.cos(angle), y: Math.sin(angle) };
-
-    p.vel.x -= dir.x * p.weapon.recoil;
-    p.vel.y -= dir.y * p.weapon.recoil;
-
-    if (p.weapon.type === WeaponType.RAILGUN) {
-        const range = 2200;
-        const end = { x: origin.x + dir.x * range, y: origin.y + dir.y * range };
-        let closest = range;
-        let hitPos = end;
-        let hitPlayer: Entity | null = null;
-
-        // Check players
-        state.players.forEach(target => {
-            if (target.id === p.id || target.dead) return;
-            const rect = { x: target.pos.x - 15, y: target.pos.y - target.height, w: 30, h: target.height };
-            if (segmentIntersectsRect(origin, end, rect)) {
-                const d = distance(origin, target.pos);
-                if (d < closest) { closest = d; hitPlayer = target; hitPos = { x: origin.x + dir.x * d, y: origin.y + dir.y * d }; }
-            }
-        });
-
-        // Check platforms for blocking
-        state.platforms.forEach(plat => {
-            if (segmentIntersectsRect(origin, end, plat)) {
-                const d = distance(origin, { x: plat.x, y: plat.y });
-                if (d < closest) { closest = d; hitPlayer = null; hitPos = { x: origin.x + dir.x * d, y: origin.y + dir.y * d }; }
-            }
-        });
-
-        if (hitPlayer) {
-            applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, setKillFeed, isMuted);
-        }
-
-        createParticles(state, hitPos.x, hitPos.y, 10, '#38bdf8', 'spark');
-
-        // Create Railgun Beam
-        if (!state.beams) state.beams = [];
-        state.beams.push({
-            id: Math.random().toString(),
-            start: { x: origin.x, y: origin.y },
-            end: { x: hitPos.x, y: hitPos.y },
-            color: '#60a5fa',
-            life: 1.0,
-            width: 4
-        });
-        return;
-    }
-
-    if (p.weapon.type === WeaponType.CHAINSAW) {
-        const reach = 70;
-        const attackPos = { x: origin.x + dir.x * reach, y: origin.y + dir.y * reach };
-        state.players.forEach(target => {
-            if (target.id === p.id || target.dead) return;
-            const dist = distance(attackPos, target.pos);
-            if (dist < 60) {
-                applyDamage(state, target, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, setKillFeed, isMuted);
-                createParticles(state, target.pos.x, target.pos.y - 20, 6, '#ef4444', 'blood');
-            }
-        });
-        createParticles(state, attackPos.x, attackPos.y, 8, '#ef4444', 'spark');
-        playSound('shoot', p.weapon.type, isMuted);
-        return;
-    }
-
-    const createProj = (spread = 0) => {
-        const a = angle + spread;
-        state.projectiles.push({
-            id: Math.random().toString(), ownerId: p.id,
-            pos: { x: origin.x + dir.x * 20, y: origin.y + dir.y * 20 },
-            vel: { x: Math.cos(a) * p.weapon.speed, y: Math.sin(a) * p.weapon.speed },
-            type: p.weapon.type, radius: 4, active: true,
-            life: p.weapon.type === WeaponType.GRENADE_LAUNCHER ? 60 : undefined
-        });
-    }
-
-    if (p.weapon.type === WeaponType.PLASMA_GUN) {
-        // Plasma Gun: Fast projectile, no spread, high speed
-        createProj(0);
-        playSound('shoot', p.weapon.type, isMuted);
-        return;
-    }
-
-    if (p.weapon.type === WeaponType.SHOTGUN) {
-        for (let i = 0; i < 6; i++) createProj((Math.random() - 0.5) * 0.3);
-    } else {
-        createProj(0);
-    }
-
-    playSound('shoot', p.weapon.type, isMuted);
-    state.particles.push({
-        id: Math.random().toString(), pos: { x: origin.x, y: origin.y },
-        vel: { x: (Math.random() - 0.5) * 4, y: -2 - Math.random() * 2 },
-        life: 1, decay: 0.05, color: '#fbbf24', size: 3, type: 'shell', rotation: Math.random() * Math.PI
-    });
-};
+// Extracted combat logic is now imported from combat.ts
 
 // --- MAIN PHYSICS UPDATE LOOP ---
-export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPressed: boolean, mousePressed: boolean, screenW: number, screenH: number, setKillFeed: any, isMuted: boolean, getSpawnPoint: any, localPlayerId: string, remoteInputs?: Record<string, PlayerInput>) => {
+export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPressed: boolean, mousePressed: boolean, screenW: number, screenH: number, getSpawnPoint: any, localPlayerId: string, remoteInputs?: Record<string, PlayerInput>) => {
     const now = Date.now();
 
     // Respawn
@@ -478,7 +62,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 if (p.pos.y < hz.y + pad) { p.pos.y = hz.y + pad; p.vel.y = Math.max(p.vel.y, 0); }
                 if (p.pos.y > hz.y + hz.h - pad) { p.pos.y = hz.y + hz.h - pad; p.vel.y = Math.min(p.vel.y, 0); }
                 if (over > outsideGraceMs) {
-                    applyDamage(state, p, '', 6, { x: 0, y: 0 }, setKillFeed, isMuted);
+                    applyDamage(state, p, '', 6, { x: 0, y: 0 });
                 }
             } else {
                 p.hungerOutTimer = undefined;
@@ -495,7 +79,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     }
     if (state.mode === GameMode.HOLD_THE_FLAG && !state.pickups.some(p => p.type === ItemType.FLAG)) {
         state.pickups.push({
-            id: `htf_flag_${Date.now()}`,
+            id: nextId('htf_flag_'),
             type: ItemType.FLAG,
             team: Team.NONE,
             pos: { ...HTF_FLAG_POS },
@@ -606,7 +190,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             }
 
             if (pMousePressed && now - p.lastFired > p.weapon.fireRate) {
-                fireWeapon(state, p, { x: worldMouseX, y: worldMouseY }, isMuted, setKillFeed);
+                fireWeapon(state, p, { x: worldMouseX, y: worldMouseY });
             }
 
             // Grapple Aim
@@ -627,7 +211,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
             if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && wantsJump && p.isCrouching) {
                 state.pickups.push({
-                    id: `htf_throw_${Date.now()}`,
+                    id: nextId('htf_throw_'),
                     type: ItemType.FLAG,
                     team: Team.NONE,
                     pos: { x: p.pos.x + (Math.random() - 0.5) * 20, y: p.pos.y },
@@ -640,7 +224,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
         } else {
             // BOT AI вынесен в отдельный модуль, чтобы гарантировать движение/стрельбу
-            isFlying = updateBotAI(p, state, now, (bot, target) => fireWeapon(state, bot, target, isMuted, setKillFeed), state.mode);
+            isFlying = updateBotAI(p, state, now, (bot, target) => fireWeapon(state, bot, target), state.mode);
         }
 
         // Common Physics
@@ -697,7 +281,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         state.platforms.forEach(plat => resolveCollision(p, plat));
 
         // Map Bounds Death (ALL entities)
-        if (p.pos.y > 2500) applyDamage(state, p, '', 9999, { x: 0, y: 0 }, setKillFeed, isMuted);
+        if (p.pos.y > 2500) applyDamage(state, p, '', 9999, { x: 0, y: 0 });
 
         if (state.mode === GameMode.HUNGER_GAMES && state.hungerZone) {
             // Keep players inside zone, but smooth clamp to avoid jitter
@@ -752,14 +336,14 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         item.active = false;
                         item.respawnTime = -1;
                         state.floatingTexts.push({
-                            id: Math.random().toString(),
+                            id: nextId('ft_'),
                             pos: { ...p.pos, y: p.pos.y - 30 },
                             text: 'GRABBED',
                             color: '#facc15',
                             life: 1,
                             velY: 1
                         });
-                        playSound('pickup', undefined, isMuted);
+                        gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                     }
                 }
                 else if (item.type === ItemType.FLAG) {
@@ -778,13 +362,13 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                             item.active = false;
                             item.respawnTime = 0;
                             p.hasFlag = item.team!;
-                            playSound('pickup', undefined, isMuted);
+                            gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                         } else if (p.hasFlag !== Team.NONE) {
                             // Захват: приносим в свою базу
                             state.scores[p.team]++;
                             resetFlagToBase(state, p.hasFlag);
                             p.hasFlag = Team.NONE;
-                            playSound('pickup', undefined, isMuted);
+                            gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
 
                             // Track achievement for flag capture
                             trackFlagCapture();
@@ -792,7 +376,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                             // Ничего — флаг временно унесен
                         } else if (Math.abs(item.pos.x - (item.team === Team.BLUE ? -350 : 2350)) > 100) {
                             resetFlagToBase(state, item.team!);
-                            playSound('pickup', undefined, isMuted);
+                            gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                         }
                     }
                 }
@@ -801,7 +385,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         item.active = false;
                         item.respawnTime = Date.now() + ITEM_RESPAWN_TIME;
                     }
-                    playSound('pickup', undefined, isMuted);
+                    gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                 }
 
                 // Track achievement for item pickup
@@ -834,7 +418,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
                     const rect = { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height };
                     if (checkPointInRect(proj.pos, rect) || segmentIntersectsRect(prevPos, proj.pos, rect)) {
-                        hit = true; applyDamage(state, p, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, setKillFeed, isMuted);
+                        hit = true; applyDamage(state, p, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel);
                     }
                 }
             });
@@ -844,9 +428,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         if (hit) {
             proj.active = false;
             if (proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER) {
-                createExplosion(state, proj.pos, proj.ownerId, 150, setKillFeed, isMuted);
+                createExplosion(state, proj.pos, proj.ownerId, 150);
             } else {
-                playSound('hit', undefined, isMuted);
+                gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
             createParticles(state, proj.pos.x, proj.pos.y, 8, WEAPONS_DATA[proj.type].color, 'spark');
         }
@@ -867,14 +451,14 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             state.scores[holder.team] += 1;
             state.lastHTFScore = now;
             state.floatingTexts.push({
-                id: Math.random().toString(),
+                id: nextId('ft_'),
                 pos: { ...holder.pos, y: holder.pos.y - 20 },
                 text: '+1',
                 color: '#22c55e',
                 life: 1,
                 velY: 1
             });
-            playSound('score', undefined, isMuted);
+            gameEvents.emit({ type: 'SOUND', sound: 'score' });
             if (state.scores[holder.team] >= HTF_WIN_SCORE) {
                 // TODO: surface victory screen/state; for now just clamp
                 state.scores[holder.team] = HTF_WIN_SCORE;
@@ -897,7 +481,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     intel.active = false;
                 }
                 state.floatingTexts.push({
-                    id: Math.random().toString(),
+                    id: nextId('ft_'),
                     pos: { ...carrier.pos, y: carrier.pos.y - 40 },
                     text: 'EXTRACTED',
                     color: '#facc15',
@@ -907,7 +491,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 state.infiltrationEndTime = now + INFILTRATION_TIMER;
                 state.pickups = state.pickups.filter(p => p.type !== ItemType.INTEL);
                 state.pickups.push({
-                    id: `intel_${Date.now()}`,
+                    id: nextId('intel_'),
                     type: ItemType.INTEL,
                     team: Team.RED,
                     pos: { ...INTEL_POS },
@@ -924,7 +508,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             state.players.forEach(p => { if (p.hasFlag === Team.RED) p.hasFlag = Team.NONE; });
             state.pickups = state.pickups.filter(p => p.type !== ItemType.INTEL);
             state.pickups.push({
-                id: `intel_${Date.now()}`,
+                id: nextId('intel_'),
                 type: ItemType.INTEL,
                 team: Team.RED,
                 pos: { ...INTEL_POS },
@@ -935,82 +519,11 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         }
     }
 
-    // Particles
-    state.particles.forEach(p => {
-        p.pos.x += p.vel.x; p.pos.y += p.vel.y;
-        if (p.type === 'shell') {
-            p.vel.y += GRAVITY; p.rotation = (p.rotation || 0) + p.vel.x * 0.1;
-            state.platforms.forEach(plat => {
-                if (p.pos.y > plat.y && p.pos.y < plat.y + plat.h && p.pos.x > plat.x && p.pos.x < plat.x + plat.w) {
-                    if (Math.abs(p.vel.y) > 1) { p.vel.y *= -0.5; p.pos.y = plat.y; } else { p.vel.y = 0; p.vel.x *= 0.8; }
-                }
-            });
-        } else {
-            if (p.type !== 'fire') p.vel.y += GRAVITY * 0.1; p.vel.x *= 0.9; p.vel.y *= 0.9;
-        }
-        p.life -= p.decay;
-    });
-    state.particles = state.particles.filter(p => p.life > 0);
-
-    // Floating Text
-    state.floatingTexts.forEach(t => { t.pos.y -= t.velY; t.life -= 0.02; });
-    state.floatingTexts = state.floatingTexts.filter(t => t.life > 0);
-
-    // Remove corpses older than 10 seconds
-    const corpseLifetime = 10000; // 10 seconds
-    state.decals = state.decals.filter(d => {
-        if ((d as any).isCorpse && d.createdAt) {
-            return (now - d.createdAt) < corpseLifetime;
-        }
-        return true;
-    });
-    // Limit total decals to prevent memory issues
-    if (state.decals.length > 50) state.decals.shift();
-
-    // Ragdoll Physics
-    state.ragdollParts.forEach(part => {
-        // Apply gravity
-        part.vel.y += GRAVITY;
-
-        // Apply velocity
-        part.pos.x += part.vel.x;
-        part.pos.y += part.vel.y;
-
-        // Apply rotation
-        part.rotation += part.angularVel;
-
-        // Ground collision
-        part.isGrounded = false;
-        state.platforms.forEach(plat => {
-            if (part.pos.y > plat.y && part.pos.y < plat.y + plat.h &&
-                part.pos.x > plat.x && part.pos.x < plat.x + plat.w) {
-                if (part.vel.y > 0) {
-                    part.pos.y = plat.y;
-                    part.vel.y *= -0.3; // Bounce
-                    part.vel.x *= 0.8; // Friction
-                    part.angularVel *= 0.7; // Slow rotation
-                    part.isGrounded = true;
-
-                    // Stop if moving too slow
-                    if (Math.abs(part.vel.y) < 0.5) part.vel.y = 0;
-                    if (Math.abs(part.vel.x) < 0.1) part.vel.x = 0;
-                    if (Math.abs(part.angularVel) < 0.02) part.angularVel = 0;
-                }
-            }
-        });
-
-        // Air resistance
-        if (!part.isGrounded) {
-            part.vel.x *= 0.98;
-            part.angularVel *= 0.98;
-        }
-
-        // Fade out
-        part.life -= 0.02;
-    });
-
-    // Remove dead ragdoll parts
-    state.ragdollParts = state.ragdollParts.filter(p => p.life > 0);
+    // Visual and non-gameplay physics updates
+    updateParticles(state);
+    updateFloatingTexts(state);
+    updateDecals(state, now);
+    updateRagdolls(state);
 
     if (state.mode === GameMode.HUNGER_GAMES) {
         const alive = state.players.filter(p => !p.dead);

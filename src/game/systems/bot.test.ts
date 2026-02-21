@@ -74,7 +74,7 @@ describe('updateBotAI', () => {
   it('moves bot toward an enemy and can fire', () => {
     const state = makeState();
     const bot = makeBot('bot1', Team.NONE, 0, 0);
-    const enemy = makeBot('enemy', Team.NONE, 200, 0);
+    const enemy = makeBot('enemy', Team.NONE, 400, 0);
     state.players = [bot as any, enemy as any];
     const shots: any[] = [];
 

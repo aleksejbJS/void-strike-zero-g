@@ -9,7 +9,7 @@ export const CROUCH_SPEED = 0.13;
 export const JUMP_FORCE = -14;
 export const DOUBLE_JUMP_FORCE = -10;
 export const MAX_SPEED = 3.2;
-export const DASHE_COOLDOWN = 1100;
+export const DASH_COOLDOWN = 1100;
 export const DASH_FORCE = 10;
 
 // Bots tuning

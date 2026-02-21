@@ -17,6 +17,8 @@ const createMockState = (mode: GameMode): GameState => ({
     floatingTexts: [],
     camera: { x: 0, y: 0, zoom: 1 },
     beams: [],
+    ragdollParts: [],
+    currentMap: 'default' as any,
 });
 
 // Helper to create a mock player
@@ -103,7 +105,7 @@ describe('Gun Game Logic', () => {
             });
 
             // Run physics update
-            updatePhysics(state, {}, {}, false, false, 800, 600, setKillFeed, true, () => ({ x: 0, y: 0 }), 'p1');
+            updatePhysics(state, {}, {}, false, false, 800, 600, () => ({ x: 0, y: 0 }), 'p1');
         }
 
         // After GUN_GAME_KILLS_PER_LEVEL kills, level should increase
@@ -140,7 +142,7 @@ describe('Gun Game Logic', () => {
 
         // Run physics to process death
         const getSpawnPoint = () => ({ x: 0, y: 0 });
-        updatePhysics(state, {}, {}, false, false, 800, 600, vi.fn(), true, getSpawnPoint, 'p1');
+        updatePhysics(state, {}, {}, false, false, 800, 600, getSpawnPoint, 'p1');
 
         // Should have downgraded to level 1
         expect(player.gunLevel).toBe(1);

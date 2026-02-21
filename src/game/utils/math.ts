@@ -15,7 +15,7 @@ export const checkRectOverlap = (
   r1: { x: number; y: number; w: number; h: number },
   r2: { x: number; y: number; w: number; h: number }
 ) => {
-  return !(r1.x + r1.w < r2.x || r2.x + r2.w < r1.x || r1.y + r1.h < r2.y || r2.y + r2.h < r1.y);
+  return !(r1.x + r1.w <= r2.x || r2.x + r2.w <= r1.x || r1.y + r1.h <= r2.y || r2.y + r2.h <= r1.y);
 };
 
 // Liang–Barsky style segment-vs-rect test to avoid tunneling for fast projectiles

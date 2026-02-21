@@ -14,6 +14,8 @@ import { SocketManager } from '../game/systems/socket';
 import { achievementManager } from '../game/systems/achievements';
 import { Achievement } from '../game/systems/achievements';
 import { useTranslation } from '../i18n/useTranslation';
+import { gameEvents } from '../game/systems/events';
+import { playSound } from '../game/systems/audio';
 
 export default function GameCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -351,8 +353,6 @@ export default function GameCanvas() {
                                 pi.input.mousePressed,
                                 window.innerWidth,
                                 window.innerHeight,
-                                setKillFeed,
-                                isMutedRef.current,
                                 getSpawnPoint,
                                 localId
                             );
@@ -400,6 +400,22 @@ export default function GameCanvas() {
             worldContainer.addChild(platformLayer);
             worldContainer.addChild(gameLayer);
             app.stage.addChild(uiLayer);
+
+            // Subscribe to game events (kill feed, sounds)
+            const unsubEvents = gameEvents.on((event) => {
+                if (event.type === 'KILL') {
+                    setKillFeed((prev: any) => [...prev.slice(-4), {
+                        id: `kf_${Date.now()}`,
+                        killer: event.killer,
+                        killerColor: event.killerColor,
+                        weapon: event.weapon,
+                        victim: event.victim,
+                        victimColor: event.victimColor
+                    }]);
+                } else if (event.type === 'SOUND') {
+                    playSound(event.sound as any, event.subtype as any, isMutedRef.current);
+                }
+            });
 
             initLevel();
 
@@ -500,8 +516,6 @@ export default function GameCanvas() {
                             mousePressed.current,
                             app.screen.width,
                             app.screen.height,
-                            setKillFeed,
-                            isMutedRef.current,
                             getSpawnPoint,
                             localId
                         );
@@ -519,8 +533,6 @@ export default function GameCanvas() {
                         mousePressed.current,
                         app.screen.width,
                         app.screen.height,
-                        setKillFeed,
-                        isMutedRef.current,
                         getSpawnPoint,
                         'player'
                     );
@@ -793,6 +805,7 @@ export default function GameCanvas() {
 
         return () => {
             isMounted = false;
+            gameEvents.clear();
             if (onKeyDown) window.removeEventListener('keydown', onKeyDown);
             if (onKeyUp) window.removeEventListener('keyup', onKeyUp);
             if (onMouseMove) window.removeEventListener('mousemove', onMouseMove);
@@ -1219,8 +1232,8 @@ export default function GameCanvas() {
                                 <div
                                     key={achievement.id}
                                     className={`p-4 rounded-lg border transition-all ${achievement.unlocked
-                                            ? 'bg-green-900/50 border-green-500'
-                                            : 'bg-gray-800/50 border-gray-600'
+                                        ? 'bg-green-900/50 border-green-500'
+                                        : 'bg-gray-800/50 border-gray-600'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3 mb-2">
