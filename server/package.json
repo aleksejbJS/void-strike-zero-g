@@ -1,0 +1,34 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "TS_NODE_TRANSPILE_ONLY=1 NODE_OPTIONS=--experimental-specifier-resolution=node node --loader ts-node/esm src/index.ts",
+    "start": "npm run dev",
+    "dev:local": "TUNNELING_ENABLED=false npm run dev",
+    "dev:public": "TUNNELING_ENABLED=true TUNNELING_PROVIDER=localtunnel npm run dev",
+    "dev:ngrok": "TUNNELING_ENABLED=true TUNNELING_PROVIDER=ngrok npm run dev",
+    "dev:matchmaking": "MATCHMAKING_ENABLED=true npm run dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "localtunnel": "^2.0.2",
+    "ngrok": "^5.0.0-beta.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/localtunnel": "^2.0.4",
+    "@types/node": "^24.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
