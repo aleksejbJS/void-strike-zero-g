@@ -158,6 +158,7 @@ export interface KillMessage {
 }
 
 export interface Platform {
+  id: string;
   x: number;
   y: number;
   w: number;

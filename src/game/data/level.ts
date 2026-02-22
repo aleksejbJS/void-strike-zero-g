@@ -9,7 +9,7 @@ export const EXTRACTION_ZONE = { x: -1200, y: 0, w: 200, h: 200 };
 export const baseFlagPos = (team: Team) => (team === Team.BLUE ? { ...BLUE_FLAG_POS } : { ...RED_FLAG_POS });
 
 // CTF Map - Original balanced map for Capture The Flag
-const getCTFPlatforms = (): Platform[] => [
+const getCTFPlatforms = (): Omit<Platform, 'id'>[] => [
   { x: -1500, y: 800, w: 5000, h: 200, color: '#334155' },
   { x: -1500, y: -1500, w: 200, h: 2500, color: '#1e293b' },
   { x: 3300, y: -1500, w: 200, h: 2500, color: '#1e293b' },
@@ -25,7 +25,7 @@ const getCTFPlatforms = (): Platform[] => [
 ];
 
 // Deathmatch Map - Larger tactical map with multiple elevation levels
-const getDeathmatchPlatforms = (): Platform[] => [
+const getDeathmatchPlatforms = (): Omit<Platform, 'id'>[] => [
   // Ground floor - Main base
   { x: -2000, y: 900, w: 6000, h: 200, color: '#334155' },
 
@@ -76,7 +76,7 @@ const getDeathmatchPlatforms = (): Platform[] => [
 ];
 
 // Hold The Flag Map - focused on central control
-export const getHTFPlatforms = (): Platform[] => [
+export const getHTFPlatforms = (): Omit<Platform, 'id'>[] => [
   ...getCTFPlatforms(),
   // Central hill and pedestal
   { x: 850, y: 550, w: 500, h: 50, color: '#475569' },
@@ -90,7 +90,7 @@ export const getHTFPlatforms = (): Platform[] => [
 ];
 
 // Infiltration Map - attacker spawn far from defender base
-export const getInfiltrationPlatforms = (): Platform[] => [
+export const getInfiltrationPlatforms = (): Omit<Platform, 'id'>[] => [
   { x: -2000, y: 800, w: 5200, h: 200, color: '#1f2937' },
   // Defender bastion
   { x: 2600, y: 200, w: 500, h: 40, color: '#ef4444' },
@@ -111,7 +111,7 @@ export const getInfiltrationPlatforms = (): Platform[] => [
 ];
 
 // Tunnel Map - Complex geometry with ceilings and tunnels
-const getTunnelMapPlatforms = (): Platform[] => [
+const getTunnelMapPlatforms = (): Omit<Platform, 'id'>[] => [
   // Main ground
   { x: -2000, y: 900, w: 6000, h: 200, color: '#334155' },
   // Ceiling (World Top)
@@ -158,7 +158,7 @@ const getTunnelMapPlatforms = (): Platform[] => [
 ];
 
 // Hunger Games Map - large open with scattered high/low ground
-const getHungerPlatforms = (): Platform[] => [
+const getHungerPlatforms = (): Omit<Platform, 'id'>[] => [
   // Outer bounds floor/ceiling/walls
   { x: -3000, y: 1400, w: 9000, h: 600, color: '#1f2937' }, // thicker floor
   { x: -3000, y: -2000, w: 200, h: 4000, color: '#1f2937' },
@@ -195,15 +195,24 @@ const getHungerPlatforms = (): Platform[] => [
 
 // Mode-aware platform getter
 export const getPlatforms = (mode?: GameMode, mapId?: MapId): Platform[] => {
+  let plats: Omit<Platform, 'id'>[] = [];
+
   // Only Deathmatch can switch maps; other modes stay on legacy layouts.
   if (mode === GameMode.DEATHMATCH) {
-    if (mapId === MapId.TUNNELS) return getTunnelMapPlatforms();
-    return getDeathmatchPlatforms();
+    if (mapId === MapId.TUNNELS) plats = getTunnelMapPlatforms();
+    else plats = getDeathmatchPlatforms();
+  } else if (mode === GameMode.HUNGER_GAMES) {
+    plats = getHungerPlatforms();
+  } else if (mode === GameMode.HOLD_THE_FLAG) {
+    plats = getHTFPlatforms();
+  } else if (mode === GameMode.INFILTRATION) {
+    plats = getInfiltrationPlatforms();
+  } else {
+    plats = getCTFPlatforms();
   }
-  if (mode === GameMode.HUNGER_GAMES) return getHungerPlatforms();
-  if (mode === GameMode.HOLD_THE_FLAG) return getHTFPlatforms();
-  if (mode === GameMode.INFILTRATION) return getInfiltrationPlatforms();
-  return getCTFPlatforms();
+
+  // Inject IDs
+  return plats.map((p, i) => ({ ...p, id: `plat_${mode || 'any'}_${mapId || 'any'}_${i}` }));
 };
 
 export const getWaypoints = (mode?: GameMode): { x: number; y: number }[] => {

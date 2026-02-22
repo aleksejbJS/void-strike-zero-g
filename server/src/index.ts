@@ -8,6 +8,7 @@ import { WEAPONS_DATA, INFILTRATION_TIMER } from './constants.js';
 import { getPlatforms, getInitialPickups, baseFlagPos, HTF_FLAG_POS, INTEL_POS } from '../../src/game/data/level.js';
 import { tunnelingManager, TunnelOptions } from './tunneling.js';
 import { matchmakingServer } from './matchmaking.js';
+import { MatterPhysicsEngine } from '../../src/game/physics/MatterEngine.js';
 
 // Конфигурация сервера
 interface ServerConfig {
@@ -80,6 +81,9 @@ const gameState: GameState = {
   infiltrationEndTime: undefined,
   beams: []
 };
+
+export const physicsEngine = new MatterPhysicsEngine();
+gameState.platforms.forEach(p => physicsEngine.addPlatform(p));
 
 // Map socket ID to player ID
 const socketToPlayer = new Map<string, string>();
@@ -235,6 +239,7 @@ const initBots = () => {
 };
 
 initBots();
+gameState.players.forEach(p => physicsEngine.addPlayer(p));
 
 setInterval(() => {
   // Apply Inputs & Physics
@@ -258,6 +263,39 @@ setInterval(() => {
     inputsRecord[key] = value;
   });
 
+  // Apply inputs to Matter engine (movement logic to be refined)
+  playerInputs.forEach((input, playerId) => {
+    const player = gameState.players.find(p => p.id === playerId);
+    if (!player) return;
+
+    // Very basic physics movement implementation for prototyping
+    const runForce = 0.005;
+    const maxSpeed = 30; // Matter velocity
+
+    // Create force vector
+    const force = { x: 0, y: 0 };
+    if (input.keys['KeyA']) force.x = -runForce;
+    if (input.keys['KeyD']) force.x = runForce;
+    if ((input.keys['KeyW'] || input.keys['Space']) && player.isGrounded) force.y = -0.1; // jump impulse
+
+    // Track which input we've processed for client reconciliation
+    player.lastProcessedInput = input.sequence;
+
+    physicsEngine.applyForce(playerId, force);
+  });
+
+  physicsEngine.step(TICK_MS);
+  // Optional: prevent velocity from growing infinitely
+  gameState.players.forEach(player => {
+    const body = physicsEngine.bodies.get(player.id);
+    if (body) {
+      if (body.velocity.x > 15) physicsEngine.setVelocity(player.id, { x: 15, y: body.velocity.y });
+      if (body.velocity.x < -15) physicsEngine.setVelocity(player.id, { x: -15, y: body.velocity.y });
+    }
+  });
+
+  physicsEngine.syncGameState(gameState);
+
   updatePhysics(
     gameState,
     dummyKeys,
@@ -270,6 +308,9 @@ setInterval(() => {
     '', // localPlayerId (server has no local player)
     inputsRecord
   );
+
+  // Sync velocity/position changes from updatePhysics (jetpack, grapple, bots) back to Matter
+  physicsEngine.syncFromGameState(gameState);
 
   // Broadcast State
   io.emit('stateUpdate', gameState);
@@ -343,10 +384,16 @@ io.on('connection', (socket: Socket) => {
       // Inherit bot's position/team if replacing
       newPlayer.pos = gameState.players[botIndex].pos;
       newPlayer.team = gameState.players[botIndex].team;
+
+      const botId = gameState.players[botIndex].id;
+      physicsEngine.removeBody(botId);
+
       gameState.players[botIndex] = newPlayer;
     } else {
       gameState.players.push(newPlayer);
     }
+
+    physicsEngine.addPlayer(newPlayer);
 
     socket.emit('init', { id: playerId, state: gameState });
     console.log(`Player ${data.name} joined as ${playerId}`);
@@ -381,6 +428,7 @@ io.on('connection', (socket: Socket) => {
     if (playerId) {
       // Remove player or convert to bot?
       // For now, just remove
+      physicsEngine.removeBody(playerId);
       gameState.players = gameState.players.filter(p => p.id !== playerId);
       socketToPlayer.delete(socket.id);
       playerInputs.delete(playerId);

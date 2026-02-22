@@ -16,6 +16,7 @@ import { Achievement } from '../game/systems/achievements';
 import { useTranslation } from '../i18n/useTranslation';
 import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
+import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 
 export default function GameCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +32,7 @@ export default function GameCanvas() {
     const gunGameEndedRef = useRef(false);
     const { state, actions } = useUIStore();
     const { t } = useTranslation();
+    const physicsEngine = useRef(new MatterPhysicsEngine());
 
     // Game State
     const gameState = useRef<GameState>({
@@ -156,6 +158,10 @@ export default function GameCanvas() {
             : MapId.DEFAULT;
         gameState.current.currentMap = effectiveMap;
         gameState.current.platforms = getPlatforms(gameMode, effectiveMap);
+
+        physicsEngine.current.clear();
+        gameState.current.platforms.forEach(p => physicsEngine.current.addPlatform(p));
+
         gameState.current.gunGameWinnerId = null;
         if (gameMode === GameMode.HUNGER_GAMES) {
             gameState.current.hungerZone = { x: -2600, y: -1600, w: 8200, h: 3600, lastShrink: Date.now() };
@@ -227,6 +233,8 @@ export default function GameCanvas() {
                     grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE
                 });
             }
+
+            gameState.current.players.forEach(p => physicsEngine.current.addPlayer(p));
         }
 
         // Pickups
@@ -314,6 +322,16 @@ export default function GameCanvas() {
                         // Apply server state as base
                         gameState.current = serverState;
 
+                        // Sync Local MatterEngine
+                        serverState.players.forEach(p => {
+                            if (!physicsEngine.current.bodies.has(p.id)) {
+                                physicsEngine.current.addPlayer(p);
+                            } else {
+                                physicsEngine.current.setPosition(p.id, p.pos);
+                                physicsEngine.current.setVelocity(p.id, p.vel);
+                            }
+                        });
+
                         // Re-apply pending inputs
                         pendingInputs.current.forEach(pi => {
                             // We need to be careful not to double-play sounds or particles here
@@ -345,6 +363,18 @@ export default function GameCanvas() {
                                 y: pi.input.mouse.y - gameState.current.camera.y + cy
                             };
 
+                            // To actually predict with MatterEngine:
+                            const runForce = 0.005;
+                            const force = { x: 0, y: 0 };
+                            if (pi.input.keys['KeyA']) force.x = -runForce;
+                            if (pi.input.keys['KeyD']) force.x = runForce;
+                            const pBody = physicsEngine.current.bodies.get(localId);
+                            // Very simple jump prediction for now
+                            if (pi.input.keys['KeyW'] && pBody && Math.abs(pBody.velocity.y) < 0.1) force.y = -0.1;
+
+                            physicsEngine.current.applyForce(localId, force);
+                            physicsEngine.current.step(16); // simulate 1 tick (assuming 60fps)
+
                             updatePhysics(
                                 gameState.current,
                                 pi.input.keys,
@@ -357,11 +387,30 @@ export default function GameCanvas() {
                                 localId
                             );
                         });
+
+                        // After prediction re-simulation, update our rendering state
+                        physicsEngine.current.syncGameState(gameState.current);
                     } else {
                         gameState.current = serverState;
+                        serverState.players.forEach(p => {
+                            if (!physicsEngine.current.bodies.has(p.id)) {
+                                physicsEngine.current.addPlayer(p);
+                            } else {
+                                physicsEngine.current.setPosition(p.id, p.pos);
+                                physicsEngine.current.setVelocity(p.id, p.vel);
+                            }
+                        });
                     }
                 } else {
                     gameState.current = serverState;
+                    serverState.players.forEach(p => {
+                        if (!physicsEngine.current.bodies.has(p.id)) {
+                            physicsEngine.current.addPlayer(p);
+                        } else {
+                            physicsEngine.current.setPosition(p.id, p.pos);
+                            physicsEngine.current.setVelocity(p.id, p.vel);
+                        }
+                    });
                 }
             };
 
@@ -505,9 +554,22 @@ export default function GameCanvas() {
                     socket.sendInput(input);
 
                     // Client-Side Prediction
-                    // Apply physics locally immediately
                     const localId = socketManager.current.socket?.id || '';
                     if (localId) {
+                        const runForce = 0.005;
+                        const force = { x: 0, y: 0 };
+                        if (keys.current['KeyA']) force.x = -runForce;
+                        if (keys.current['KeyD']) force.x = runForce;
+
+                        const localPlayer = gameState.current.players.find(p => p.id === localId);
+                        if (localPlayer) {
+                            if (keys.current['KeyW'] && localPlayer.isGrounded) force.y = -0.1;
+                            physicsEngine.current.applyForce(localId, force);
+                        }
+
+                        physicsEngine.current.step(app.ticker.deltaMS);
+                        physicsEngine.current.syncGameState(gameState.current);
+
                         updatePhysics(
                             gameState.current,
                             keys.current,
@@ -519,12 +581,42 @@ export default function GameCanvas() {
                             getSpawnPoint,
                             localId
                         );
+
+                        // Sync velocity/position changes from updatePhysics back to Matter
+                        physicsEngine.current.syncFromGameState(gameState.current);
+
                         // Store input for reconciliation
                         pendingInputs.current.push({ sequence: inputSequence.current, input });
                     }
 
                 } else {
                     // OFFLINE MODE
+
+                    // Apply movement forces for the local player
+                    const runForce = 0.005;
+                    const force = { x: 0, y: 0 };
+                    if (keys.current['KeyA']) force.x = -runForce;
+                    if (keys.current['KeyD']) force.x = runForce;
+
+                    const localPlayer = gameState.current.players.find(p => p.id === 'player');
+                    if (localPlayer) {
+                        if ((keys.current['KeyW'] || keys.current['Space']) && localPlayer.isGrounded) force.y = -0.1;
+                        physicsEngine.current.applyForce('player', force);
+                    }
+
+                    physicsEngine.current.step(app.ticker.deltaMS);
+
+                    // Prevent crazy speeds
+                    gameState.current.players.forEach(player => {
+                        const body = physicsEngine.current.bodies.get(player.id);
+                        if (body) {
+                            if (body.velocity.x > 15) physicsEngine.current.setVelocity(player.id, { x: 15, y: body.velocity.y });
+                            if (body.velocity.x < -15) physicsEngine.current.setVelocity(player.id, { x: -15, y: body.velocity.y });
+                        }
+                    });
+
+                    physicsEngine.current.syncGameState(gameState.current);
+
                     updatePhysics(
                         gameState.current,
                         keys.current,
@@ -536,6 +628,9 @@ export default function GameCanvas() {
                         getSpawnPoint,
                         'player'
                     );
+
+                    // Sync velocity/position changes from updatePhysics (jetpack, grapple, bots) back to Matter
+                    physicsEngine.current.syncFromGameState(gameState.current);
                 }
 
                 if (gameMode === GameMode.HUNGER_GAMES) {

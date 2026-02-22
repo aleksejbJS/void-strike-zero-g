@@ -227,14 +227,15 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             isFlying = updateBotAI(p, state, now, (bot, target) => fireWeapon(state, bot, target), state.mode);
         }
 
-        // Common Physics
-        p.vel.y += GRAVITY;
-        p.vel.y = Math.min(p.vel.y, 7.5); // Terminal velocity (медленнее падение)
-        p.vel.y = Math.max(p.vel.y, -7); // ограничение вверх, чтобы не улетать слишком быстро
+        // Common Physics (Handled by MatterEngine)
+        // p.vel.y += GRAVITY;
+        // p.vel.y = Math.min(p.vel.y, 7.5);
+        // p.vel.y = Math.max(p.vel.y, -7);
 
         if (p.type === 'player') {
-            const speed = p.isCrouching ? CROUCH_SPEED : (p.isGrounded ? MOVE_SPEED : MOVE_SPEED * 0.5);
-            p.vel.x += inputX * speed;
+            // physicsEngine handles inputs now
+            // const speed = p.isCrouching ? CROUCH_SPEED : (p.isGrounded ? MOVE_SPEED : MOVE_SPEED * 0.5);
+            // p.vel.x += inputX * speed;
             p.height = p.isCrouching ? 45 : 72;
         }
 
@@ -262,15 +263,13 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             p.vel.x *= 0.85;
         }
 
-        // Apply friction and movement (ALL entities)
-        p.vel.x *= (p.isGrounded ? FRICTION : AIR_RESISTANCE);
-        // Soft clamp: allow exceeding MAX_SPEED slightly but decay faster
-        if (Math.abs(p.vel.x) > MAX_SPEED) p.vel.x *= 0.95;
-        // Hard clamp only for extreme values
-        p.vel.x = Math.max(-MAX_SPEED * 2, Math.min(MAX_SPEED * 2, p.vel.x));
-        p.pos.x += p.vel.x;
-        p.pos.y += p.vel.y;
-        p.isGrounded = false;
+        // Apply friction and movement (Handled by MatterEngine)
+        // p.vel.x *= (p.isGrounded ? FRICTION : AIR_RESISTANCE);
+        // if (Math.abs(p.vel.x) > MAX_SPEED) p.vel.x *= 0.95;
+        // p.vel.x = Math.max(-MAX_SPEED * 2, Math.min(MAX_SPEED * 2, p.vel.x));
+        // p.pos.x += p.vel.x;
+        // p.pos.y += p.vel.y;
+        // p.isGrounded = false; // synced by physicsEngine
 
         // Верхняя граница карты
         if (p.pos.y < -500) {
@@ -278,7 +277,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             if (p.vel.y < 0) p.vel.y = 0;
         }
 
-        state.platforms.forEach(plat => resolveCollision(p, plat));
+        // state.platforms.forEach(plat => resolveCollision(p, plat));
 
         // Map Bounds Death (ALL entities)
         if (p.pos.y > 2500) applyDamage(state, p, '', 9999, { x: 0, y: 0 });
