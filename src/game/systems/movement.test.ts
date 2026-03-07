@@ -33,10 +33,10 @@ describe('Force Pipeline — movement.ts', () => {
         expect(p.vel.y).toBeGreaterThan(0);
     });
 
-    it('should NOT apply gravity when grounded', () => {
+    it('should apply ground contact velocity when grounded', () => {
         const p = makePlayer({ isGrounded: true, vel: { x: 0, y: 0 } });
         applyMovement(p, noInput);
-        expect(p.vel.y).toBe(0);
+        expect(p.vel.y).toBe(0.1); // maintains platform contact (Matter gravity=0)
     });
 
     it('should accelerate horizontally on ground with input', () => {

@@ -42,6 +42,10 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
     // --- 1. Gravity ---
     if (!p.isGrounded) {
         p.vel.y += GRAVITY;
+    } else if (p.vel.y <= 0) {
+        // Maintain platform contact: tiny downward vel keeps Matter.js collision
+        // active when engine gravity=0 (prevents float-drift from solver precision)
+        p.vel.y = 0.1;
     }
 
     // --- 2. Player/Bot horizontal input ---
