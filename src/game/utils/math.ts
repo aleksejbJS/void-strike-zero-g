@@ -7,6 +7,8 @@ export const normalize = (v: Vector2) => {
   return len === 0 ? { x: 0, y: 0 } : { x: v.x / len, y: v.y / len };
 };
 
+export const dot = (a: Vector2, b: Vector2) => a.x * b.x + a.y * b.y;
+
 export const checkPointInRect = (p: Vector2, r: Platform | { x: number; y: number; w: number; h: number }) => {
   return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 };
