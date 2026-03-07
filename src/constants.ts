@@ -4,8 +4,8 @@ import { Weapon, WeaponType, ItemType } from './types';
 export const GRAVITY = 0.36;
 export const GROUND_FRICTION = 0.85;       // harder stop on ground (was 0.9)
 export const AIR_RESISTANCE = 0.995;       // longer arcs in air (was 0.99)
-export const MOVE_SPEED = 0.22;
-export const CROUCH_SPEED = 0.13;
+export const MOVE_SPEED = 0.35;             // compensates GROUND_FRICTION 0.85 → steady ~2.3
+export const CROUCH_SPEED = 0.20;
 export const JUMP_FORCE = -14;
 export const DOUBLE_JUMP_FORCE = -10;
 export const SOFT_SPEED_CAP = 3.2;         // soft limit — gradual decay above

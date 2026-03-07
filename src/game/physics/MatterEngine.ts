@@ -94,13 +94,14 @@ export class MatterPhysicsEngine {
     }
 
     public addPlayer(player: Entity) {
-        const centerX = player.pos.x + player.width / 2;
-        const centerY = player.pos.y + player.height / 2;
+        // Game coords: pos.x = centerX, pos.y = bottomY (feet)
+        const centerX = player.pos.x;
+        const centerY = player.pos.y - player.height / 2;
 
         const body = Matter.Bodies.rectangle(centerX, centerY, player.width, player.height, {
             isStatic: false,
-            friction: 0.05,
-            frictionAir: 0.02,
+            friction: 0,         // Force Pipeline owns all friction
+            frictionAir: 0,      // Force Pipeline owns all air resistance
             restitution: 0,
             inertia: Infinity,
             label: 'player'
@@ -114,10 +115,9 @@ export class MatterPhysicsEngine {
     public setPosition(id: string, position: Vector2) {
         const body = this.bodies.get(id);
         if (!body) return;
-        // Convert from top-left (game) to center (Matter)
-        const w = body.bounds.max.x - body.bounds.min.x;
+        // Game coords (centerX, bottomY) → Matter center
         const h = body.bounds.max.y - body.bounds.min.y;
-        Matter.Body.setPosition(body, { x: position.x + w / 2, y: position.y + h / 2 });
+        Matter.Body.setPosition(body, { x: position.x, y: position.y - h / 2 });
     }
 
     public applyForce(id: string, force: Vector2) {
@@ -154,9 +154,9 @@ export class MatterPhysicsEngine {
         for (const player of state.players) {
             const body = this.bodies.get(player.id);
             if (body) {
-                // Matter has center. Our game expects top-left.
-                player.pos.x = body.position.x - player.width / 2;
-                player.pos.y = body.position.y - player.height / 2;
+                // Matter center → game coords (centerX, bottomY)
+                player.pos.x = body.position.x;
+                player.pos.y = body.position.y + player.height / 2;
 
                 player.vel.x = body.velocity.x;
                 player.vel.y = body.velocity.y;
@@ -174,8 +174,9 @@ export class MatterPhysicsEngine {
             const body = this.bodies.get(player.id);
             if (body) {
                 Matter.Body.setVelocity(body, { x: player.vel.x, y: player.vel.y });
-                const centerX = player.pos.x + player.width / 2;
-                const centerY = player.pos.y + player.height / 2;
+                // Game coords (centerX, bottomY) → Matter center
+                const centerX = player.pos.x;
+                const centerY = player.pos.y - player.height / 2;
                 Matter.Body.setPosition(body, { x: centerX, y: centerY });
             }
         }

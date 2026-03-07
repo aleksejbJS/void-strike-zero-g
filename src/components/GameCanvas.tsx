@@ -556,10 +556,13 @@ export default function GameCanvas() {
                     // Client-Side Prediction
                     const localId = socketManager.current.socket?.id || '';
                     if (localId) {
-                        // 1. Read isGrounded/pos/vel from PREVIOUS step
+                        // 1. Step Matter (uses velocity from previous frame)
+                        physicsEngine.current.step(app.ticker.deltaMS);
+
+                        // 2. Read latest pos/vel/isGrounded
                         physicsEngine.current.syncGameState(gameState.current);
 
-                        // 2. Force Pipeline
+                        // 3. Force Pipeline
                         updatePhysics(
                             gameState.current,
                             keys.current,
@@ -572,22 +575,8 @@ export default function GameCanvas() {
                             localId
                         );
 
-                        // 3. Push updated velocities to Matter
+                        // 4. Push updated velocities to Matter for next step
                         physicsEngine.current.syncFromGameState(gameState.current);
-
-                        // 4. Matter-level jump impulse
-                        const runForce = 0.005;
-                        const force = { x: 0, y: 0 };
-                        if (keys.current['KeyA']) force.x = -runForce;
-                        if (keys.current['KeyD']) force.x = runForce;
-                        const localPlayer = gameState.current.players.find(p => p.id === localId);
-                        if (localPlayer) {
-                            if (keys.current['KeyW'] && localPlayer.isGrounded) force.y = -0.1;
-                            physicsEngine.current.applyForce(localId, force);
-                        }
-
-                        // 5. Step Matter
-                        physicsEngine.current.step(app.ticker.deltaMS);
 
                         // Store input for reconciliation
                         pendingInputs.current.push({ sequence: inputSequence.current, input });
@@ -596,10 +585,13 @@ export default function GameCanvas() {
                 } else {
                     // OFFLINE MODE
 
-                    // 1. Read isGrounded/pos/vel from PREVIOUS step's collisions
+                    // 1. Step Matter (uses velocity from previous frame)
+                    physicsEngine.current.step(app.ticker.deltaMS);
+
+                    // 2. Read latest pos/vel/isGrounded from this step
                     physicsEngine.current.syncGameState(gameState.current);
 
-                    // 2. Force Pipeline (gravity, inputs, jetpack, grapple, friction, caps)
+                    // 3. Force Pipeline (gravity, inputs, jetpack, grapple, friction, caps)
                     updatePhysics(
                         gameState.current,
                         keys.current,
@@ -612,24 +604,10 @@ export default function GameCanvas() {
                         'player'
                     );
 
-                    // 3. Push updated velocities to Matter
+                    // 4. Push updated velocities to Matter for next step
                     physicsEngine.current.syncFromGameState(gameState.current);
 
-                    // 4. Matter-level jump impulse
-                    const runForce = 0.005;
-                    const force = { x: 0, y: 0 };
-                    if (keys.current['KeyA']) force.x = -runForce;
-                    if (keys.current['KeyD']) force.x = runForce;
-                    const localPlayer = gameState.current.players.find(p => p.id === 'player');
-                    if (localPlayer) {
-                        if ((keys.current['KeyW'] || keys.current['Space']) && localPlayer.isGrounded) force.y = -0.1;
-                        physicsEngine.current.applyForce('player', force);
-                    }
-
-                    // 5. Step Matter (collision detection with correct vel.y)
-                    physicsEngine.current.step(app.ticker.deltaMS);
-
-                    // 6. Speed clamp
+                    // 5. Speed clamp
                     gameState.current.players.forEach(player => {
                         const body = physicsEngine.current.bodies.get(player.id);
                         if (body) {

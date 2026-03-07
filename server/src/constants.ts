@@ -4,8 +4,8 @@ import { Weapon, WeaponType, ItemType } from './types';
 export const GRAVITY = 0.36; // еще мягче падение
 export const FRICTION = 0.9;
 export const AIR_RESISTANCE = 0.99;
-export const MOVE_SPEED = 0.22; // Faster gameplay
-export const CROUCH_SPEED = 0.13;
+export const MOVE_SPEED = 0.35; // Compensates GROUND_FRICTION 0.85
+export const CROUCH_SPEED = 0.20;
 export const JUMP_FORCE = -14;
 export const DOUBLE_JUMP_FORCE = -10;
 export const MAX_SPEED = 3.2;
