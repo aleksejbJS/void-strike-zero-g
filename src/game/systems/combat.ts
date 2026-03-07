@@ -2,7 +2,7 @@
 // Extracted from physics.ts for better modularity
 
 import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, RagdollPart } from '../../types';
-import { GRAVITY, WEAPONS_DATA, RESPAWN_DELAY } from '../../constants';
+import { GRAVITY, WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { distance, normalize, checkPointInRect, segmentIntersectsRect } from '../utils/math';
@@ -121,10 +121,16 @@ export const resolveCollision = (p: Entity, plat: Platform) => {
 
 // --- Damage ---
 
-export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2) => {
+export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, knockbackForce = 0) => {
     if (target.dead) return;
+
+    // Self-damage multiplier (rocket-jump)
+    const isSelf = attackerId === target.id;
+    const dmgMult = isSelf ? SELF_DAMAGE_MULT : 1;
+    const kbMult = isSelf ? SELF_KNOCKBACK_MULT : 1;
+
     const holdingHTF = state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
-    let dmg = holdingHTF ? amount * 1.1 : amount;
+    let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
     if (target.armor > 0) {
         const absorb = Math.min(target.armor, dmg * 0.66);
         target.armor -= absorb;
@@ -132,9 +138,12 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     }
     target.health -= dmg;
 
+    // Directional knockback using weapon's knockbackForce
     const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
-    target.vel.x += (knockback.x / len) * (amount / 10);
-    target.vel.y += (knockback.y / len) * (amount / 10);
+    const airMult = target.isGrounded ? 1 : KNOCKBACK_AIR_MULT;
+    const force = (knockbackForce || amount / 10) * kbMult * airMult;
+    target.vel.x += (knockback.x / len) * force;
+    target.vel.y += (knockback.y / len) * force;
 
     state.floatingTexts.push({
         id: nextId('ft_'), pos: { ...target.pos, y: target.pos.y - 40 },
@@ -246,16 +255,19 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 
 // --- Explosions ---
 
-export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number) => {
+export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType) => {
     createParticles(state, pos.x, pos.y, 20, '#f97316', 'fire');
     createParticles(state, pos.x, pos.y, 10, '#ffffff', 'smoke');
     gameEvents.emit({ type: 'SOUND', sound: 'explosion' });
 
+    const wepData = weaponType ? WEAPONS_DATA[weaponType] : undefined;
+
     state.players.forEach(p => {
         const dist = distance(pos, p.pos);
         if (dist < radius) {
-            const dmg = 100 * (1 - dist / radius);
-            applyDamage(state, p, ownerId, dmg, { x: p.pos.x - pos.x, y: p.pos.y - pos.y });
+            const dmg = (wepData?.damage ?? 100) * (1 - dist / radius);
+            const kbDir = { x: p.pos.x - pos.x, y: p.pos.y - pos.y };
+            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce);
         }
     });
 };
@@ -300,7 +312,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
         });
 
         if (hitPlayer) {
-            applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir);
+            applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, WEAPONS_DATA[WeaponType.RAILGUN].knockbackForce);
         }
 
         createParticles(state, hitPos.x, hitPos.y, 10, '#38bdf8', 'spark');
@@ -324,7 +336,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             if (tgt.id === p.id || tgt.dead) return;
             const dist = distance(attackPos, tgt.pos);
             if (dist < 60) {
-                applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir);
+                applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce);
                 createParticles(state, tgt.pos.x, tgt.pos.y - 20, 6, '#ef4444', 'blood');
             }
         });
