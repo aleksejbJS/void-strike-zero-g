@@ -74,6 +74,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 999,
     maxAmmo: 999,
     recoil: 0.2,
+    knockbackForce: 0.3,
   },
   [WeaponType.SHOTGUN]: {
     type: WeaponType.SHOTGUN,
@@ -85,6 +86,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 20,
     maxAmmo: 50,
     recoil: 4,
+    knockbackForce: 1.5,
   },
   [WeaponType.PLASMA_GUN]: {
     type: WeaponType.PLASMA_GUN,
@@ -96,6 +98,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 50,
     maxAmmo: 150,
     recoil: 0.5,
+    knockbackForce: 0.5,
   },
   [WeaponType.ROCKET_LAUNCHER]: {
     type: WeaponType.ROCKET_LAUNCHER,
@@ -107,6 +110,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 10,
     maxAmmo: 30,
     recoil: 3,
+    knockbackForce: 4.0,
   },
   [WeaponType.GRENADE_LAUNCHER]: {
     type: WeaponType.GRENADE_LAUNCHER,
@@ -118,6 +122,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 15,
     maxAmmo: 40,
     recoil: 3,
+    knockbackForce: 3.5,
   },
   [WeaponType.RAILGUN]: {
     type: WeaponType.RAILGUN,
@@ -129,6 +134,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 5,
     maxAmmo: 15,
     recoil: 7,
+    knockbackForce: 6.0,
   },
   [WeaponType.CHAINSAW]: {
     type: WeaponType.CHAINSAW,
@@ -140,6 +146,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 120,
     maxAmmo: 200,
     recoil: 0.2,
+    knockbackForce: 0.2,
   },
 };
 

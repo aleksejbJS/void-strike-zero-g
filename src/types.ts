@@ -48,6 +48,7 @@ export interface Weapon {
   ammo: number;
   maxAmmo: number;
   recoil: number;
+  knockbackForce: number; // force applied to target on hit
 }
 
 export interface Pickup {
