@@ -1,33 +1,54 @@
 import { Weapon, WeaponType, ItemType } from './types';
 
 // Physics - "Soldat" feel (Heavy but fast)
-export const GRAVITY = 0.36; // еще мягче падение
-export const FRICTION = 0.9;
-export const AIR_RESISTANCE = 0.99;
-export const MOVE_SPEED = 0.22; // Faster gameplay
+export const GRAVITY = 0.36;
+export const GROUND_FRICTION = 0.85;       // harder stop on ground (was 0.9)
+export const AIR_RESISTANCE = 0.995;       // longer arcs in air (was 0.99)
+export const MOVE_SPEED = 0.22;
 export const CROUCH_SPEED = 0.13;
 export const JUMP_FORCE = -14;
 export const DOUBLE_JUMP_FORCE = -10;
-export const MAX_SPEED = 3.2;
+export const SOFT_SPEED_CAP = 3.2;         // soft limit — gradual decay above
+export const HARD_SPEED_CAP = 8.0;         // absolute ceiling for rocket-jump
+export const SPEED_DECAY_ABOVE_CAP = 0.98; // decay per tick above soft cap
+export const AIR_STRAFE_FORCE = 0.08;      // weak air control without jetpack
 export const DASH_COOLDOWN = 1100;
 export const DASH_FORCE = 10;
 
 // Bots tuning
-export const BOT_MOVE_SPEED = 0.28; // Match faster gameplay
+export const BOT_MOVE_SPEED = 0.28;
 export const BOT_AIM_DISTANCE = 900;
 export const BOT_VERTICAL_TOLERANCE = 300;
 export const BOT_FIRE_COOLDOWN_SCALE = 1.1;
 
-// Jetpack / Flying
-export const JETPACK_FORCE = -0.5;
+// Jetpack / Flying — directional thrust
+export const JETPACK_FORCE_UP = -0.6;      // primary vertical thrust
+export const JETPACK_FORCE_SIDE = 0.35;    // horizontal correction
+export const JETPACK_FORCE_DOWN = 0.3;     // fast descent
+export const JETPACK_BOOST_MULT = 1.4;     // W+Space boost multiplier
 export const JETPACK_FUEL_MAX = 100;
 export const JETPACK_CONSUMPTION = 1.1;
 export const JETPACK_RECHARGE = 0.95;
+export const JETPACK_SIDE_FUEL_MULT = 0.6; // side thrust consumes less fuel
 
-// Mechanics
+// Grapple — pendulum swing
 export const HOOK_SPEED = 25;
-export const HOOK_PULL_FORCE = 0.03;
 export const HOOK_RANGE = 600;
+export const HOOK_REEL_SPEED = 2.0;        // reel-in speed (W while hooked)
+export const HOOK_EXTEND_SPEED = 1.5;      // extend speed (S while hooked)
+export const HOOK_RELEASE_BOOST = 1.15;    // velocity bonus on release
+export const HOOK_MIN_LENGTH = 40;         // minimum rope length
+
+// Combat physics
+export const SELF_DAMAGE_MULT = 0.5;       // 50% self-damage from own explosions
+export const SELF_KNOCKBACK_MULT = 2.0;    // 200% self-knockback (rocket-jump)
+export const KNOCKBACK_AIR_MULT = 1.5;     // knockback is stronger in air
+
+// Legacy aliases — keep for backward compatibility with bot.ts etc.
+export const FRICTION = GROUND_FRICTION;
+export const MAX_SPEED = SOFT_SPEED_CAP;
+export const JETPACK_FORCE = JETPACK_FORCE_UP;
+export const HOOK_PULL_FORCE = 0.03;
 
 export const CANVAS_WIDTH = 1280;
 export const CANVAS_HEIGHT = 720;
