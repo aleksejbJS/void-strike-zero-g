@@ -1,5 +1,5 @@
 import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, PlayerInput, RagdollPart } from '../../types';
-import { GRAVITY, FRICTION, AIR_RESISTANCE, MOVE_SPEED, CROUCH_SPEED, JUMP_FORCE, JETPACK_FORCE, JETPACK_CONSUMPTION, JETPACK_RECHARGE, MAX_SPEED, DASH_COOLDOWN, DASH_FORCE, HOOK_PULL_FORCE, HOOK_RANGE, WEAPONS_DATA, ITEMS_DATA, RESPAWN_DELAY, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../../constants';
+import { HOOK_RANGE, WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
@@ -10,6 +10,8 @@ import { trackKill, trackFlagCapture, trackFlagHoldTime, trackDoubleJump, trackH
 import { resetFlagToBase, applyGunGameLoadout } from './gamemodes';
 import { applyDamage, fireWeapon, createParticles, resolveCollision, castRay, createExplosion } from './combat';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
+import { applyMovement, MovementInput } from './movement';
+import { applyGrappleRelease } from './grapple';
 
 // Extracted combat logic is now imported from combat.ts
 
@@ -114,6 +116,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         if (p.dead) return;
         let inputX = 0;
         let isFlying = false;
+        let wantsJump = false;
+        let wantsDown = false;
         let aimTarget = { x: p.pos.x, y: p.pos.y };
 
         // Determine inputs
@@ -136,8 +140,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             // Logic for both Local and Remote players
             // If remote, we use the inputs passed in
 
-            const wantsJump = !!(pKeys['Space'] || pKeys['KeyW']);
-            p.isCrouching = !!pKeys['KeyS'];
+            wantsJump = !!(pKeys['Space'] || pKeys['KeyW']);
+            wantsDown = !!pKeys['KeyS'];
+            p.isCrouching = wantsDown;
             if (pKeys['KeyA']) inputX -= 1;
             if (pKeys['KeyD']) inputX += 1;
             if (wantsJump && p.jetpackFuel > 0) isFlying = true;
@@ -207,7 +212,12 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         trackHookUse();
                     }
                 }
-            } else if (!pHookPressed) p.grapple.active = false;
+            } else if (!pHookPressed && p.grapple.active) {
+                applyGrappleRelease(p);
+                p.grapple.active = false;
+            } else if (!pHookPressed) {
+                p.grapple.active = false;
+            }
 
             if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && wantsJump && p.isCrouching) {
                 state.pickups.push({
@@ -239,24 +249,20 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             p.height = p.isCrouching ? 45 : 72;
         }
 
-        // Jetpack (works for both player and bots)
-        if (isFlying) {
-            p.vel.y += JETPACK_FORCE;
-            p.jetpackFuel = Math.max(0, p.jetpackFuel - JETPACK_CONSUMPTION);
-            if (Math.random() < 0.5) createParticles(state, p.pos.x - 12, p.pos.y + 18, 1, '#fbbf24', 'fire');
-        } else if (p.isGrounded || p.grapple.active) {
-            p.jetpackFuel = Math.min(p.maxFuel, p.jetpackFuel + JETPACK_RECHARGE);
-        }
+        // Force Pipeline — unified movement (gravity, input, jetpack, grapple, friction, speed caps)
+        const movInput: MovementInput = {
+            inputX,
+            isFlying,
+            wantsJump,
+            wantsDown,
+            wantsReel: !!(isFlying && wantsJump && p.grapple.active),
+            wantsExtend: !!(wantsDown && p.grapple.active),
+        };
+        applyMovement(p, movInput, state);
 
-        // Grapple (player only for now)
-        if (p.type === 'player' && p.grapple.active) {
-            const dir = normalize({ x: p.grapple.pos.x - p.pos.x, y: p.grapple.pos.y - p.pos.y });
-            const dist = distance(p.pos, p.grapple.pos);
-            if (dist > 40) {
-                p.vel.x += dir.x * HOOK_PULL_FORCE * 20;
-                p.vel.y += dir.y * HOOK_PULL_FORCE * 20;
-                p.vel.y -= GRAVITY * 0.6;
-            }
+        // Jetpack visual particles (after force pipeline applies thrust)
+        if (isFlying && p.jetpackFuel > 0) {
+            if (Math.random() < 0.5) createParticles(state, p.pos.x - 12, p.pos.y + 18, 1, '#fbbf24', 'fire');
         }
 
         if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team) {
@@ -417,7 +423,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
                     const rect = { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height };
                     if (checkPointInRect(proj.pos, rect) || segmentIntersectsRect(prevPos, proj.pos, rect)) {
-                        hit = true; applyDamage(state, p, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel);
+                        hit = true; applyDamage(state, p, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce);
                     }
                 }
             });
@@ -427,7 +433,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         if (hit) {
             proj.active = false;
             if (proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER) {
-                createExplosion(state, proj.pos, proj.ownerId, 150);
+                createExplosion(state, proj.pos, proj.ownerId, 150, proj.type);
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
