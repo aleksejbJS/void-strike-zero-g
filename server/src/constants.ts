@@ -58,6 +58,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 999,
     maxAmmo: 999,
     recoil: 0.2,
+    knockbackForce: 0.3,
   },
   [WeaponType.SHOTGUN]: {
     type: WeaponType.SHOTGUN,
@@ -69,6 +70,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 20,
     maxAmmo: 50,
     recoil: 4,
+    knockbackForce: 1.5,
   },
   [WeaponType.PLASMA_GUN]: {
     type: WeaponType.PLASMA_GUN,
@@ -76,10 +78,11 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     damage: 14,
     fireRate: 120,
     speed: 14,
-    color: '#3b82f6', // Blue
+    color: '#3b82f6',
     ammo: 50,
     maxAmmo: 150,
     recoil: 0.5,
+    knockbackForce: 0.5,
   },
   [WeaponType.ROCKET_LAUNCHER]: {
     type: WeaponType.ROCKET_LAUNCHER,
@@ -91,6 +94,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     ammo: 10,
     maxAmmo: 30,
     recoil: 3,
+    knockbackForce: 4.0,
   },
   [WeaponType.GRENADE_LAUNCHER]: {
     type: WeaponType.GRENADE_LAUNCHER,
@@ -98,32 +102,35 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     damage: 60,
     fireRate: 800,
     speed: 14,
-    color: '#ef4444', // Red
+    color: '#ef4444',
     ammo: 15,
     maxAmmo: 40,
     recoil: 3,
+    knockbackForce: 3.5,
   },
   [WeaponType.RAILGUN]: {
     type: WeaponType.RAILGUN,
     name: 'Railgun',
-    damage: 200, // one-shot, even through full armor (armor absorbs ~66%)
+    damage: 200,
     fireRate: 1500,
     speed: 100,
     color: '#38bdf8',
     ammo: 5,
     maxAmmo: 15,
     recoil: 7,
+    knockbackForce: 6.0,
   },
   [WeaponType.CHAINSAW]: {
     type: WeaponType.CHAINSAW,
     name: 'Chainsaw',
     damage: 30,
-    fireRate: 140, // fast ticks while holding fire
-    speed: 0, // Melee; no projectile
+    fireRate: 140,
+    speed: 0,
     color: '#ef4444',
     ammo: 120,
     maxAmmo: 200,
     recoil: 0.2,
+    knockbackForce: 0.2,
   },
 };
 

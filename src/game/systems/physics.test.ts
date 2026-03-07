@@ -47,7 +47,8 @@ const createMockPlayer = (id: string, team: Team): Entity => ({
         color: '#fff',
         ammo: 100,
         maxAmmo: 100,
-        recoil: 0
+        recoil: 0,
+        knockbackForce: 0.3
     },
     isGrounded: false,
     isCrouching: false,
