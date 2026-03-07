@@ -16,9 +16,9 @@ export class MatterPhysicsEngine {
         this.engine = Matter.Engine.create();
         this.world = this.engine.world;
 
-        // Set standard gravity (can tweak for Zero-G modes later)
+        // Gravity managed by Force Pipeline (movement.ts) — Matter handles collisions only
         this.world.gravity.x = 0;
-        this.world.gravity.y = 1;
+        this.world.gravity.y = 0;
 
         // Clear grounded state before each physics step
         Matter.Events.on(this.engine, 'beforeUpdate', () => {
