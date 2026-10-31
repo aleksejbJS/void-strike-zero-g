@@ -214,6 +214,8 @@ export interface GameState {
   currentMap: MapId;
   hungerZone?: { x: number; y: number; w: number; h: number; lastShrink?: number; pendingShrink?: boolean; nextShrinkAt?: number; pendingCount?: number };
   hungerWinnerId?: string | null;
+  hungerRoundEndsAt?: number; // When the finished round restarts (ms timestamp)
+  betSpectateId?: string | null; // Client-only: Hunger Games spectator follows this player
   gunGameWinnerId?: string | null;
   beams: Beam[];
 }

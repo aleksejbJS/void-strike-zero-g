@@ -19,11 +19,11 @@ import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
+import { createHungerZone, hungerSpawnPoint, isHungerRoundOver, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 
 type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
 
-const HUNGER_RESTART_DELAY = 10000;
 
 const detectMobile = () =>
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -108,7 +108,6 @@ export default function GameCanvas() {
     const [hungerEnded, setHungerEnded] = React.useState(false);
     const [hungerRestartCountdown, setHungerRestartCountdown] = React.useState<number | null>(null);
     // Loop-owned values live in refs: the Pixi ticker closure never sees fresh React state
-    const hungerRestartAtRef = useRef<number | null>(null);
     const hungerWinnerShownRef = useRef(false);
     const hungerAliveKeyRef = useRef('');
     const gunGameStatusKeyRef = useRef('');
@@ -153,13 +152,23 @@ export default function GameCanvas() {
             gameState.current.camera.x = betPlayer.pos.x;
             gameState.current.camera.y = betPlayer.pos.y;
         }
-        (gameState.current as any).betSpectateId = id;
+        gameState.current.betSpectateId = id;
+    };
+
+    // Clear per-round Hunger Games UI (new round offline or from the server). Credits carry over.
+    const resetHungerUi = () => {
+        setHungerBetTarget(null);
+        setHungerWinner(null);
+        setHungerWinnerId(null);
+        setHungerShrinkCountdown(null);
+        setHungerEnded(false);
+        setHungerRestartCountdown(null);
+        hungerWinnerShownRef.current = false;
+        gameState.current.betSpectateId = null;
     };
 
     const getSpawnPoint = (team: Team) => {
-        if (gameMode === GameMode.HUNGER_GAMES) {
-            return { x: -2400 + Math.random() * 4800, y: Math.random() > 0.5 ? 1200 + Math.random() * 300 : 200 + Math.random() * 800 };
-        }
+        if (gameMode === GameMode.HUNGER_GAMES) return hungerSpawnPoint();
         if (team === Team.BLUE) return { x: -400 + Math.random() * 200, y: 400 };
         if (team === Team.RED) return { x: 2200 + Math.random() * 200, y: 400 };
         return { x: Math.random() * 2000, y: Math.random() > 0.5 ? 700 : 200 };
@@ -198,18 +207,10 @@ export default function GameCanvas() {
 
         gameState.current.gunGameWinnerId = null;
         if (gameMode === GameMode.HUNGER_GAMES) {
-            gameState.current.hungerZone = { x: -2600, y: -1600, w: 8200, h: 3600, lastShrink: Date.now() };
+            gameState.current.hungerZone = createHungerZone(Date.now());
             gameState.current.hungerWinnerId = null;
-            hungerCredits.current = 100;
-            setHungerBetTarget(null);
-            setHungerWinner(null);
-            setHungerWinnerId(null);
-            setHungerShrinkCountdown(null);
-            setHungerEnded(false);
-            (gameState.current as any).betSpectateId = null;
-            hungerRestartAtRef.current = null;
-            hungerWinnerShownRef.current = false;
-            setHungerRestartCountdown(null);
+            gameState.current.hungerRoundEndsAt = undefined;
+            resetHungerUi();
         } else {
             gameState.current.hungerZone = undefined;
             gameState.current.hungerWinnerId = null;
@@ -239,7 +240,7 @@ export default function GameCanvas() {
             });
 
             // Create Bots
-            const botCount = gameMode === GameMode.HUNGER_GAMES ? 7 : (isTeamMode ? 6 : 3);
+            const botCount = gameMode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE - 1 : (isTeamMode ? 6 : 3);
             for (let i = 0; i < botCount; i++) {
                 let team = Team.NONE;
                 if (isTeamMode) {
@@ -419,46 +420,72 @@ export default function GameCanvas() {
             // Online, the map arrives from the server on join (ClientSession.setupWorld)
             if (state.networkMode !== NetworkMode.CLIENT) initLevel();
 
+            const restartHungerRound = () => {
+                visualCache.current.players.clear();
+                visualCache.current.projectiles.clear();
+                visualCache.current.particles.clear();
+                visualCache.current.pickups.clear();
+                visualCache.current.decals.clear();
+                visualCache.current.floatingTexts.clear();
+                decalLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+                gameLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+                platformLayer.clear();
+                zoneLayer.clear();
+
+                const nextState = makeInitialState();
+                nextState.mode = GameMode.HUNGER_GAMES;
+                nextState.currentMap = MapId.HUNGER;
+                gameState.current = nextState;
+                initLevel();
+                drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
+                drawBackground(backgroundLayer, app.screen.width, app.screen.height);
+            };
+
+            // Hunger Games HUD from the shared round state (same for offline and online)
+            const updateHungerHud = (now: number) => {
+                const gs = gameState.current;
+                const alive = gs.players.filter(p => !p.dead).map(p => ({ id: p.id, name: p.name }));
+                const aliveKey = alive.map(p => p.id).join('|');
+                if (aliveKey !== hungerAliveKeyRef.current) {
+                    hungerAliveKeyRef.current = aliveKey;
+                    setHungerAlive(alive);
+                }
+
+                const roundOver = !!gs.hungerRoundEndsAt;
+                if (roundOver && !hungerWinnerShownRef.current) {
+                    hungerWinnerShownRef.current = true;
+                    const found = gs.players.find(pl => pl.id === gs.hungerWinnerId);
+                    setHungerWinner(found ? found.name : 'No survivors');
+                    setHungerWinnerId(gs.hungerWinnerId ?? null);
+                    setHungerEnded(true);
+                } else if (!roundOver && hungerWinnerShownRef.current) {
+                    resetHungerUi(); // the server started a new round
+                }
+                setHungerRestartCountdown(roundOver ? Math.max(0, Math.ceil((gs.hungerRoundEndsAt! - now) / 1000)) : null);
+
+                const local = gs.players.find(p => p.id === localIdRef.current);
+                setIsLocalDead(!!local?.dead);
+                const zone = gs.hungerZone;
+                setHungerShrinkCountdown(zone?.pendingShrink && zone.nextShrinkAt ? Math.max(0, Math.ceil((zone.nextShrinkAt - now) / 1000)) : null);
+            };
+
             // Start Loop
             app.ticker.add(() => {
                 const now = Date.now();
                 const liveMode = gameState.current.mode;
-                const hungerFinished = liveMode === GameMode.HUNGER_GAMES && !!gameState.current.hungerWinnerId;
+                const offline = state.networkMode !== NetworkMode.CLIENT;
+                // Offline a finished Hunger Games round restarts here; online the server does it
+                if (offline && liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) {
+                    restartHungerRound();
+                }
+                const hungerFinished = offline && liveMode === GameMode.HUNGER_GAMES && !!gameState.current.hungerRoundEndsAt;
                 if (hungerFinished) {
                     const champ = gameState.current.players.find(p => p.id === gameState.current.hungerWinnerId);
                     if (champ) {
                         gameState.current.camera.x += (champ.pos.x - gameState.current.camera.x) * 0.1;
                         gameState.current.camera.y += (champ.pos.y - 50 - gameState.current.camera.y) * 0.1;
                     }
-                    if (hungerRestartAtRef.current === null) hungerRestartAtRef.current = now + HUNGER_RESTART_DELAY;
-                    const remaining = Math.max(0, Math.ceil((hungerRestartAtRef.current - now) / 1000));
-                    setHungerRestartCountdown(remaining);
-                    if (remaining <= 0) {
-                        // Restart round
-                        // Clear visual caches
-                        visualCache.current.players.clear();
-                        visualCache.current.projectiles.clear();
-                        visualCache.current.particles.clear();
-                        visualCache.current.pickups.clear();
-                        visualCache.current.decals.clear();
-                        visualCache.current.floatingTexts.clear();
-                        decalLayer.removeChildren().forEach(c => c.destroy({ children: true }));
-                        gameLayer.removeChildren().forEach(c => c.destroy({ children: true }));
-                        platformLayer.clear();
-                        zoneLayer.clear();
-
-                        const nextState = makeInitialState();
-                        nextState.mode = GameMode.HUNGER_GAMES;
-                        nextState.currentMap = MapId.HUNGER;
-                        gameState.current = nextState;
-                        initLevel();
-                        drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
-                        drawBackground(backgroundLayer, app.screen.width, app.screen.height);
-                        setHungerWinner(null);
-                        setHungerWinnerId(null);
-                        setHungerEnded(false);
-                        setHungerRestartCountdown(null);
-                    }
+                    updateHungerHud(now);
                     // Keep rendering positions but skip input/physics
                     syncVisuals(
                         app,
@@ -528,30 +555,7 @@ export default function GameCanvas() {
                 });
                 updateDebugStats(now, ticksRun);
 
-                if (liveMode === GameMode.HUNGER_GAMES) {
-                    const alive = gameState.current.players.filter(p => !p.dead).map(p => ({ id: p.id, name: p.name }));
-                    const aliveKey = alive.map(p => p.id).join('|');
-                    if (aliveKey !== hungerAliveKeyRef.current) {
-                        hungerAliveKeyRef.current = aliveKey;
-                        setHungerAlive(alive);
-                    }
-                    if (gameState.current.hungerWinnerId && !hungerWinnerShownRef.current) {
-                        hungerWinnerShownRef.current = true;
-                        const found = gameState.current.players.find(pl => pl.id === gameState.current.hungerWinnerId);
-                        setHungerWinner(found ? found.name : gameState.current.hungerWinnerId);
-                        setHungerWinnerId(gameState.current.hungerWinnerId);
-                        setHungerEnded(true);
-                        if (hungerRestartAtRef.current === null) hungerRestartAtRef.current = now + HUNGER_RESTART_DELAY;
-                    }
-                    const local = gameState.current.players.find(p => p.id === localIdRef.current);
-                    setIsLocalDead(!!local?.dead);
-                    if (gameState.current.hungerZone?.pendingShrink && gameState.current.hungerZone.nextShrinkAt) {
-                        const eta = Math.max(0, Math.ceil((gameState.current.hungerZone.nextShrinkAt - now) / 1000));
-                        setHungerShrinkCountdown(eta);
-                    } else {
-                        setHungerShrinkCountdown(null);
-                    }
-                }
+                if (liveMode === GameMode.HUNGER_GAMES) updateHungerHud(now);
                 if (liveMode === GameMode.GUN_GAME) {
                     const local = gameState.current.players.find(p => p.id === localIdRef.current);
                     if (local) {

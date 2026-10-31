@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { GameMode, MapId, Team } from '../../types';
 import { GameRoom } from './room';
+import { HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 
 const join = { name: 'Alex', color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic' };
 const rooms: GameRoom[] = [];
@@ -74,5 +75,47 @@ describe('GameRoom', () => {
         room.leave('s1');
         expect(room.state.players.some(p => p.id === 's1')).toBe(false);
         expect(room.pushInput('s1', { keys: {}, mouse: { x: 0, y: 0 }, mousePressed: false, hookPressed: false, sequence: 1, timestamp: 1 })).toBe(false);
+    });
+});
+
+describe('GameRoom — Hunger Games online', () => {
+    const hungerRoom = () => {
+        const room = new GameRoom({ mode: GameMode.HUNGER_GAMES, map: MapId.HUNGER, maxPlayers: 8 });
+        rooms.push(room);
+        return room;
+    };
+
+    it('starts a full round with a zone', () => {
+        const room = hungerRoom();
+        expect(room.state.players.length).toBe(HUNGER_ROUND_SIZE);
+        expect(room.state.hungerZone).toBeDefined();
+    });
+
+    it('a late joiner spectates and no fighter is removed', () => {
+        const room = hungerRoom();
+        room.join('s1', join);
+        const me = room.state.players.find(p => p.id === 's1')!;
+        expect(me.dead).toBe(true);
+        expect(room.state.players.filter(p => !p.dead).length).toBe(HUNGER_ROUND_SIZE);
+    });
+
+    it('restarts after the round: spectator plays, a bot makes room, zone resets', () => {
+        const room = hungerRoom();
+        room.join('s1', join);
+        room.state.players.filter(p => p.type === 'bot').slice(1).forEach(p => { p.dead = true; });
+        room.state.hungerZone!.w = 1200;
+
+        room.tick(); // last bot standing
+        expect(room.state.hungerWinnerId).toBe('bot_0');
+        room.state.hungerRoundEndsAt = Date.now() - 1; // skip the 10s wait
+        room.tick();
+
+        const players = room.state.players;
+        expect(players.length).toBe(HUNGER_ROUND_SIZE);
+        expect(players.every(p => !p.dead)).toBe(true);
+        expect(players.some(p => p.id === 's1')).toBe(true);
+        expect(room.state.hungerWinnerId).toBeNull();
+        expect(room.state.hungerRoundEndsAt).toBeUndefined();
+        expect(room.state.hungerZone!.w).toBe(8200);
     });
 });

@@ -11,7 +11,8 @@ import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
-import { followCamera } from './camera';
+import { followCamera, pickCameraTarget } from './camera';
+import { updateHungerRound } from './hungerRound';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -385,25 +386,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     updateDecals(state, now);
     updateRagdolls(state);
 
-    if (state.mode === GameMode.HUNGER_GAMES) {
-        const alive = state.players.filter(p => !p.dead);
-        if (alive.length === 1) {
-            state.hungerWinnerId = alive[0].id;
-        }
-    }
+    if (state.mode === GameMode.HUNGER_GAMES) updateHungerRound(state, now);
 
-    // Camera: local player (or first player on the server), Hunger Games may spectate
-    let cameraTarget = state.players.find(p => p.id === localPlayerId) ?? state.players[0];
-    if (state.mode === GameMode.HUNGER_GAMES && state.players.length) {
-        // Spectate bet target if exists
-        const betTargetId = (state as any).betSpectateId as string | undefined;
-        if (betTargetId) {
-            const found = state.players.find(p => p.id === betTargetId && !p.dead);
-            if (found) cameraTarget = found;
-        } else if (state.hungerWinnerId) {
-            const winner = state.players.find(p => p.id === state.hungerWinnerId);
-            if (winner) cameraTarget = winner;
-        }
-    }
-    followCamera(state, cameraTarget);
+    followCamera(state, pickCameraTarget(state, localPlayerId));
 };

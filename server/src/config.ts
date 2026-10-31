@@ -20,8 +20,7 @@ export interface ServerConfig {
   };
 }
 
-// Hunger Games round restarts are driven by the offline client UI and don't exist online yet
-const ONLINE_MODES = Object.values(GameMode).filter(m => m !== GameMode.HUNGER_GAMES);
+const ONLINE_MODES = Object.values(GameMode);
 
 const parseEnum = <T extends string>(value: string | undefined, allowed: readonly T[], fallback: T, name: string): T => {
   if (!value) return fallback;
@@ -40,20 +39,30 @@ const parsePositiveInt = (value: string | undefined, fallback: number, name: str
   return fallback;
 };
 
-export const loadConfig = (): ServerConfig => ({
-  port: parsePositiveInt(process.env.PORT, 3001, 'PORT'),
-  name: process.env.SERVER_NAME || 'Void Strike Server',
-  maxPlayers: parsePositiveInt(process.env.MAX_PLAYERS, 8, 'MAX_PLAYERS'),
-  mode: parseEnum(process.env.SERVER_MODE, ONLINE_MODES, GameMode.DEATHMATCH, 'SERVER_MODE'),
-  map: parseEnum(process.env.SERVER_MAP, Object.values(MapId), MapId.DEFAULT, 'SERVER_MAP'),
-  tunneling: {
-    enabled: process.env.TUNNELING_ENABLED === 'true',
-    provider: process.env.TUNNELING_PROVIDER === 'ngrok' ? 'ngrok' : 'localtunnel',
-    authtoken: process.env.NGROK_AUTHTOKEN,
-    subdomain: process.env.TUNNELING_SUBDOMAIN,
-  },
-  matchmaking: {
-    enabled: process.env.MATCHMAKING_ENABLED === 'true',
-    server: process.env.MATCHMAKING_SERVER || '',
-  },
-});
+// Hunger Games zone and spawns are laid out for its own arena
+const mapFor = (mode: GameMode, requested: MapId): MapId => {
+  if (mode !== GameMode.HUNGER_GAMES || requested === MapId.HUNGER) return requested;
+  if (process.env.SERVER_MAP) console.warn(`⚠️ HUNGER_GAMES always uses the "${MapId.HUNGER}" map (SERVER_MAP="${requested}" ignored)`);
+  return MapId.HUNGER;
+};
+
+export const loadConfig = (): ServerConfig => {
+  const mode = parseEnum(process.env.SERVER_MODE, ONLINE_MODES, GameMode.DEATHMATCH, 'SERVER_MODE');
+  return {
+    port: parsePositiveInt(process.env.PORT, 3001, 'PORT'),
+    name: process.env.SERVER_NAME || 'Void Strike Server',
+    maxPlayers: parsePositiveInt(process.env.MAX_PLAYERS, 8, 'MAX_PLAYERS'),
+    mode,
+    map: mapFor(mode, parseEnum(process.env.SERVER_MAP, Object.values(MapId), MapId.DEFAULT, 'SERVER_MAP')),
+    tunneling: {
+      enabled: process.env.TUNNELING_ENABLED === 'true',
+      provider: process.env.TUNNELING_PROVIDER === 'ngrok' ? 'ngrok' : 'localtunnel',
+      authtoken: process.env.NGROK_AUTHTOKEN,
+      subdomain: process.env.TUNNELING_SUBDOMAIN,
+    },
+    matchmaking: {
+      enabled: process.env.MATCHMAKING_ENABLED === 'true',
+      server: process.env.MATCHMAKING_SERVER || '',
+    },
+  };
+};

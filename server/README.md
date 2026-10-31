@@ -42,7 +42,7 @@ npm run dev:ngrok
 | `PORT` | `3001` | Server port |
 | `SERVER_NAME` | `Void Strike Server` | Server display name |
 | `MAX_PLAYERS` | `8` | Maximum human players (bots fill the rest) |
-| `SERVER_MODE` | `DEATHMATCH` | `DEATHMATCH`, `GUN_GAME`, `CTF`, `HOLD_THE_FLAG`, `INFILTRATION` (Hunger Games is offline-only) |
+| `SERVER_MODE` | `DEATHMATCH` | `DEATHMATCH`, `GUN_GAME`, `CTF`, `HOLD_THE_FLAG`, `INFILTRATION`, `HUNGER_GAMES` (always on the `hunger` map) |
 | `SERVER_MAP` | `default` | `default`, `tunnels`, `hunger` |
 | `TUNNELING_ENABLED` | `false` | Enable public tunneling |
 | `TUNNELING_PROVIDER` | `localtunnel` | `localtunnel` or `ngrok` |

@@ -3,10 +3,15 @@
 import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
+import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 import { JoinRequest } from './protocol';
 
 export const isTeamMode = (mode: GameMode) =>
     mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
+
+/** Spawn point for the room's mode (Hunger Games scatters fighters over its arena). */
+export const spawnPointFor = (mode: GameMode) => (team: Team) =>
+    mode === GameMode.HUNGER_GAMES ? hungerSpawnPoint() : getSpawnPoint(team);
 
 export const getSpawnPoint = (team: Team) => {
     if (team === Team.BLUE) return { x: -400 + Math.random() * 200, y: 400 };
@@ -29,6 +34,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     ragdollParts: [],
     lastHTFScore: 0,
     infiltrationEndTime: undefined,
+    hungerZone: mode === GameMode.HUNGER_GAMES ? createHungerZone(Date.now()) : undefined,
     hungerWinnerId: null,
     gunGameWinnerId: null,
     beams: [],
@@ -40,7 +46,7 @@ const startingWeapon = (mode: GameMode) =>
 const baseEntity = (mode: GameMode, team: Team) => {
     const weapon = startingWeapon(mode);
     return {
-        pos: getSpawnPoint(team), vel: { x: 0, y: 0 }, width: 30, height: 72,
+        pos: spawnPointFor(mode)(team), vel: { x: 0, y: 0 }, width: 30, height: 72,
         isGrounded: false, isCrouching: false, health: 100, maxHealth: 100, armor: 0, maxArmor: 100,
         jetpackFuel: DEFAULT_MAX_FUEL, maxFuel: DEFAULT_MAX_FUEL, dead: false, respawnTimer: 0, team,
         facingRight: true, weapon, inventory: [weapon], lastFired: 0, score: 0,
@@ -48,11 +54,12 @@ const baseEntity = (mode: GameMode, team: Team) => {
         gunProgress: mode === GameMode.GUN_GAME ? 0 : undefined,
         grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE,
         lastProcessedInput: 0,
+        jetpackOn: false,
     };
 };
 
 export const createBots = (mode: GameMode): Entity[] => {
-    const count = isTeamMode(mode) ? 6 : 3;
+    const count = mode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE : isTeamMode(mode) ? 6 : 3;
     return Array.from({ length: count }, (_, i) => {
         let team = Team.NONE;
         if (mode === GameMode.INFILTRATION) team = i < 2 ? Team.BLUE : Team.RED;
@@ -81,4 +88,30 @@ export const pickTeam = (state: GameState): Team => {
     const blue = humans.filter(p => p.team === Team.BLUE).length;
     const red = humans.filter(p => p.team === Team.RED).length;
     return blue <= red ? Team.BLUE : Team.RED;
+};
+
+/**
+ * New Hunger Games round in place: everyone (spectators included) respawns fresh,
+ * pickups and zone reset. Surplus bots leave so waiting humans take their places.
+ */
+export const resetHungerRound = (state: GameState, now: number) => {
+    const humans = state.players.filter(p => p.type === 'player').length;
+    const target = Math.max(HUNGER_ROUND_SIZE, humans);
+    while (state.players.length > target) {
+        const botIndex = state.players.findIndex(p => p.type === 'bot');
+        if (botIndex === -1) break;
+        state.players.splice(botIndex, 1);
+    }
+
+    for (const p of state.players) {
+        const { lastProcessedInput, aim } = p;
+        Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
+    }
+
+    state.projectiles = [];
+    state.beams = [];
+    state.pickups = getInitialPickups(state.mode, state.currentMap);
+    state.hungerZone = createHungerZone(now);
+    state.hungerWinnerId = null;
+    state.hungerRoundEndsAt = undefined;
 };

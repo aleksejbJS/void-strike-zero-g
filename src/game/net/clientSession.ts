@@ -8,7 +8,7 @@ import { GameEvent } from '../systems/events';
 import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement } from '../systems/playerControl';
 import { moveProjectile } from '../systems/physics';
-import { followCamera } from '../systems/camera';
+import { followCamera, pickCameraTarget } from '../systems/camera';
 import { jetpackTrail, projectileTrail } from '../systems/effects';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from '../systems/particles';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
@@ -32,6 +32,25 @@ export interface TickControls {
 
 // Fields the client owns for its own player between snapshots (predicted locally)
 const PREDICTED_FIELDS = ['pos', 'vel', 'isGrounded', 'isCrouching', 'height', 'grapple', 'jetpackFuel', 'aim'] as const;
+
+// Timestamps at or above this mean "never" (e.g. no respawn in Hunger Games)
+const NEVER = Number.MAX_SAFE_INTEGER / 2;
+
+/**
+ * Server timestamps → this machine's clock (machines' clocks differ), so countdowns
+ * for respawn, zone shrink, round restart and Infiltration show the right time.
+ */
+export const toLocalClock = (snap: Snapshot, offset: number) => {
+    const shift = (t: number | undefined) => (t === undefined || t >= NEVER || t <= 0 ? t : t + offset);
+    snap.hungerRoundEndsAt = shift(snap.hungerRoundEndsAt);
+    snap.infiltrationEndTime = shift(snap.infiltrationEndTime);
+    snap.lastHTFScore = shift(snap.lastHTFScore);
+    if (snap.hungerZone) {
+        snap.hungerZone.nextShrinkAt = shift(snap.hungerZone.nextShrinkAt);
+        snap.hungerZone.lastShrink = shift(snap.hungerZone.lastShrink);
+    }
+    for (const p of snap.players) p.respawnTimer = shift(p.respawnTimer) ?? 0;
+};
 
 export class ClientSession {
     localId: string | null = null;
@@ -100,7 +119,7 @@ export class ClientSession {
         updateFloatingTexts(state);
         updateDecals(state, Date.now());
         updateRagdolls(state);
-        followCamera(state, local);
+        followCamera(state, pickCameraTarget(state, this.localId));
     }
 
     dispose() {
@@ -134,6 +153,7 @@ export class ClientSession {
     }
 
     private applySnapshot(state: GameState, snap: Snapshot) {
+        toLocalClock(snap, Date.now() - snap.serverTime);
         const { serverTime: _serverTime, players, ...shared } = snap;
         Object.assign(state, shared);
 

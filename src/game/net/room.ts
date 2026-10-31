@@ -9,7 +9,8 @@ import { gameEvents, GameEvent } from '../systems/events';
 import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { InputQueue } from './inputQueue';
 import { JoinRequest, JoinRejected, Snapshot, buildSnapshot } from './protocol';
-import { createRoomState, createBots, createJoinedPlayer, getSpawnPoint, pickTeam } from './roomSetup';
+import { createRoomState, createBots, createJoinedPlayer, spawnPointFor, pickTeam, resetHungerRound } from './roomSetup';
+import { isHungerRoundOver } from '../systems/hungerRound';
 
 const MAX_BODY_SPEED_X = 15;
 
@@ -27,8 +28,10 @@ export class GameRoom {
     private readonly inputs = new Map<string, InputQueue>();
     private events: GameEvent[] = [];
     private readonly unsubscribeEvents: () => void;
+    private readonly spawnPoint: ReturnType<typeof spawnPointFor>;
 
     constructor(private readonly config: RoomConfig) {
+        this.spawnPoint = spawnPointFor(config.mode);
         this.state = createRoomState(config.mode, config.map);
         this.state.players.push(...createBots(config.mode));
         this.state.platforms.forEach(p => this.physics.addPlatform(p));
@@ -44,9 +47,16 @@ export class GameRoom {
 
         const team = pickTeam(this.state);
         const player = createJoinedPlayer(id, req, this.state.mode, team);
+        const hunger = this.state.mode === GameMode.HUNGER_GAMES;
+        if (hunger) {
+            // A round is in progress: watch until the next one (spec phase 2, H1)
+            player.dead = true;
+            player.respawnTimer = Number.MAX_SAFE_INTEGER;
+        }
 
-        // Take a bot's slot (same team in team modes) to keep the match size stable
-        const botIndex = this.state.players.findIndex(p => p.type === 'bot' && p.team === team);
+        // Take a bot's slot (same team in team modes) to keep the match size stable.
+        // Hunger Games keeps its fighters; bots make room at the next round instead.
+        const botIndex = hunger ? -1 : this.state.players.findIndex(p => p.type === 'bot' && p.team === team);
         if (botIndex !== -1) {
             this.physics.removeBody(this.state.players[botIndex].id);
             this.state.players[botIndex] = player;
@@ -87,9 +97,14 @@ export class GameRoom {
         // Same order as the offline client loop
         this.physics.step(FIXED_STEP_MS);
         this.physics.syncGameState(this.state);
-        updatePhysics(this.state, {}, { x: 0, y: 0 }, false, false, 0, 0, getSpawnPoint, '', inputs);
+        updatePhysics(this.state, {}, { x: 0, y: 0 }, false, false, 0, 0, this.spawnPoint, '', inputs);
         this.physics.syncFromGameState(this.state);
         this.clampBodySpeed();
+
+        if (this.state.mode === GameMode.HUNGER_GAMES && isHungerRoundOver(this.state, Date.now())) {
+            resetHungerRound(this.state, Date.now());
+            this.syncBodies();
+        }
     }
 
     snapshot(now: number): Snapshot {
@@ -105,6 +120,15 @@ export class GameRoom {
     dispose() {
         this.unsubscribeEvents();
         this.physics.clear();
+    }
+
+    /** Bodies for exactly the current players (after bots were removed between rounds). */
+    private syncBodies() {
+        const ids = new Set(this.state.players.map(p => p.id));
+        for (const id of [...this.physics.bodies.keys()]) {
+            if (!ids.has(id) && !this.state.platforms.some(pl => pl.id === id)) this.physics.removeBody(id);
+        }
+        this.physics.syncFromGameState(this.state);
     }
 
     private clampBodySpeed() {
