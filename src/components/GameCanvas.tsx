@@ -18,6 +18,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
+import { applyEffectEvent } from '../game/systems/effects';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 
 type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
@@ -409,6 +410,9 @@ export default function GameCanvas() {
                     }]);
                 } else if (event.type === 'SOUND') {
                     playSound(event.sound as any, event.subtype as any, isMutedRef.current);
+                } else {
+                    // Blood, explosions, damage numbers… (offline from the simulation, online from the server)
+                    applyEffectEvent(gameState.current, event);
                 }
             });
 

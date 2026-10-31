@@ -7,7 +7,8 @@ import { checkPointInRect, checkRectOverlap, segmentIntersectsRect } from '../ut
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
-import { applyDamage, fireWeapon, createParticles, createExplosion, isTeammate } from './combat';
+import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
+import { emitEffect, emitText, projectileTrail } from './effects';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { followCamera } from './camera';
@@ -39,7 +40,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     p.weapon = p.inventory[0];
                 }
                 p.hasFlag = Team.NONE;
-                createParticles(state, p.pos.x, p.pos.y, 20, '#ffffff', 'spark');
+                emitEffect('respawn', p.pos.x, p.pos.y);
             }
         }
     });
@@ -215,14 +216,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         collected = true;
                         item.active = false;
                         item.respawnTime = -1;
-                        state.floatingTexts.push({
-                            id: nextId('ft_'),
-                            pos: { ...p.pos, y: p.pos.y - 30 },
-                            text: 'GRABBED',
-                            color: '#facc15',
-                            life: 1,
-                            velY: 1
-                        });
+                        emitText(p.pos.x, p.pos.y - 30, 'GRABBED', '#facc15');
                         gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                     }
                 }
@@ -280,7 +274,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     state.projectiles.forEach(proj => {
         const prevPos = { ...proj.pos };
         moveProjectile(proj);
-        if (proj.type === WeaponType.ROCKET_LAUNCHER && Math.random() < 0.5) createParticles(state, proj.pos.x, proj.pos.y, 1, '#9ca3af', 'smoke');
+        projectileTrail(state, proj);
         proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;
@@ -312,7 +306,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
-            createParticles(state, proj.pos.x, proj.pos.y, 8, WEAPONS_DATA[proj.type].color, 'spark');
+            emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
         }
     });
     state.projectiles = state.projectiles.filter(p => p.active);
@@ -330,14 +324,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         if (holder && now - (state.lastHTFScore || 0) >= HTF_SCORE_INTERVAL) {
             state.scores[holder.team] += 1;
             state.lastHTFScore = now;
-            state.floatingTexts.push({
-                id: nextId('ft_'),
-                pos: { ...holder.pos, y: holder.pos.y - 20 },
-                text: '+1',
-                color: '#22c55e',
-                life: 1,
-                velY: 1
-            });
+            emitText(holder.pos.x, holder.pos.y - 20, '+1', '#22c55e');
             gameEvents.emit({ type: 'SOUND', sound: 'score' });
             if (state.scores[holder.team] >= HTF_WIN_SCORE) {
                 // TODO: surface victory screen/state; for now just clamp
@@ -360,14 +347,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 if (intel) {
                     intel.active = false;
                 }
-                state.floatingTexts.push({
-                    id: nextId('ft_'),
-                    pos: { ...carrier.pos, y: carrier.pos.y - 40 },
-                    text: 'EXTRACTED',
-                    color: '#facc15',
-                    life: 1,
-                    velY: 1
-                });
+                emitText(carrier.pos.x, carrier.pos.y - 40, 'EXTRACTED', '#facc15');
                 state.infiltrationEndTime = now + INFILTRATION_TIMER;
                 state.pickups = state.pickups.filter(p => p.type !== ItemType.INTEL);
                 state.pickups.push({

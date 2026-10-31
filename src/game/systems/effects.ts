@@ -1,0 +1,86 @@
+// Cosmetic effects as events (multiplayer phase 2, decision E1).
+// The simulation only announces effects ("explosion here", "25 damage there").
+// Whoever displays the game turns events into particles with applyEffectEvent,
+// so offline play and every online client look the same.
+
+import { Entity, GameState, Projectile, WeaponType } from '../../types';
+import { gameEvents, GameEvent, EffectKind } from './events';
+import { nextId } from '../utils/id';
+import { createParticles, createRagdoll } from './effectSpawn';
+
+// --- Emitters (called by the simulation) ---
+
+export const emitEffect = (effect: EffectKind, x: number, y: number, color?: string, count?: number) =>
+    gameEvents.emit({ type: 'EFFECT', effect, x, y, color, count });
+
+export const emitDamage = (x: number, y: number, amount: number) =>
+    gameEvents.emit({ type: 'DAMAGE', x, y, amount: Math.round(amount) });
+
+export const emitDeath = (e: Entity) =>
+    gameEvents.emit({ type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height });
+
+export const emitText = (x: number, y: number, text: string, color: string) =>
+    gameEvents.emit({ type: 'FLOAT_TEXT', x, y, text, color });
+
+// --- Display side ---
+
+const floatText = (state: GameState, x: number, y: number, text: string, color: string) =>
+    state.floatingTexts.push({ id: nextId('ft_'), pos: { x, y }, text, color, life: 1, velY: 1 });
+
+/** Turn one event into particles/decals/ragdolls/texts. Non-effect events are ignored. */
+export const applyEffectEvent = (state: GameState, e: GameEvent) => {
+    switch (e.type) {
+        case 'EFFECT':
+            switch (e.effect) {
+                case 'explosion':
+                    createParticles(state, e.x, e.y, 20, '#f97316', 'fire');
+                    createParticles(state, e.x, e.y, 10, '#ffffff', 'smoke');
+                    break;
+                case 'blood':
+                    createParticles(state, e.x, e.y, e.count ?? 6, e.color ?? '#ef4444', 'blood');
+                    break;
+                case 'spark':
+                    createParticles(state, e.x, e.y, e.count ?? 8, e.color ?? '#ffffff', 'spark');
+                    break;
+                case 'respawn':
+                    createParticles(state, e.x, e.y, 20, '#ffffff', 'spark');
+                    break;
+                case 'shell':
+                    state.particles.push({
+                        id: nextId('pt_'), pos: { x: e.x, y: e.y },
+                        vel: { x: (Math.random() - 0.5) * 4, y: -2 - Math.random() * 2 },
+                        life: 1, decay: 0.05, color: '#fbbf24', size: 3, type: 'shell', rotation: Math.random() * Math.PI
+                    });
+                    break;
+            }
+            break;
+        case 'DAMAGE':
+            floatText(state, e.x, e.y, String(e.amount), '#ef4444');
+            break;
+        case 'DEATH':
+            createParticles(state, e.x, e.y, 40, e.color, 'blood');
+            state.decals.push({
+                id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
+                rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
+            });
+            createRagdoll(state, { pos: { x: e.x, y: e.y }, height: e.height, color: e.color });
+            break;
+        case 'FLOAT_TEXT':
+            floatText(state, e.x, e.y, e.text, e.color);
+            break;
+    }
+};
+
+// --- Continuous trails (too frequent for events; derived from state every tick) ---
+
+/** Jetpack flame behind a flying entity. `thrustX` tilts it opposite to sideways thrust. */
+export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense = false) => {
+    if (Math.random() < 0.5) createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, '#fbbf24', 'fire');
+};
+
+/** Smoke behind rockets. */
+export const projectileTrail = (state: GameState, proj: Projectile) => {
+    if (proj.type === WeaponType.ROCKET_LAUNCHER && Math.random() < 0.5) {
+        createParticles(state, proj.pos.x, proj.pos.y, 1, '#9ca3af', 'smoke');
+    }
+};

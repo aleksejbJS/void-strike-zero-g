@@ -2,7 +2,7 @@
 
 import { GameState, Entity, WeaponType, ItemType, Team, GameMode } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL, HUNGER_SHRINK_STEP, HUNGER_SHRINK_DELAY, HUNGER_MIN_ZONE } from '../../constants';
-import { nextId } from '../utils/id';
+import { emitText } from './effects';
 import { baseFlagPos } from '../data/level';
 
 export const resetFlagToBase = (state: GameState, team: Team) => {
@@ -33,14 +33,7 @@ export const handleGunGameKill = (state: GameState, killer: Entity) => {
         } else {
             const nextLevel = (killer.gunLevel || 0) + 1;
             applyGunGameLoadout(killer, nextLevel);
-            state.floatingTexts.push({
-                id: nextId('ft_'),
-                pos: { x: killer.pos.x, y: killer.pos.y - 50 },
-                text: 'UPGRADE!',
-                color: '#a855f7',
-                life: 1,
-                velY: 1
-            });
+            emitText(killer.pos.x, killer.pos.y - 50, 'UPGRADE!', '#a855f7');
         }
     }
 };

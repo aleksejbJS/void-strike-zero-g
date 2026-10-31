@@ -9,6 +9,7 @@ import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement } from '../systems/playerControl';
 import { moveProjectile } from '../systems/physics';
 import { followCamera } from '../systems/camera';
+import { jetpackTrail, projectileTrail } from '../systems/effects';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from '../systems/particles';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { LocalPrediction } from './prediction';
@@ -88,7 +89,13 @@ export class ClientSession {
         if (local && !local.dead) this.predict(state, local, controls);
 
         interpolateRemotePlayers(state.players, this.buffer, this.localId, now);
-        state.projectiles.forEach(moveProjectile);
+        for (const p of state.players) {
+            if (p.id !== this.localId && p.jetpackOn && !p.dead) jetpackTrail(state, p);
+        }
+        for (const proj of state.projectiles) {
+            moveProjectile(proj);
+            projectileTrail(state, proj);
+        }
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, Date.now());

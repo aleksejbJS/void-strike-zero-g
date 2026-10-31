@@ -1,93 +1,20 @@
-// Combat system — damage, weapons, explosions, ragdolls, particles
-// Extracted from physics.ts for better modularity
+// Combat system — damage, weapons, explosions.
+// Visual effects are announced as events (effects.ts), never written into state here.
 
-import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, RagdollPart } from '../../types';
-import { GRAVITY, WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT, PROJECTILE_MAX_LIFE } from '../../constants';
+import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team } from '../../types';
+import { WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT, PROJECTILE_MAX_LIFE } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { distance, normalize, checkPointInRect, segmentRectEntry } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
+import { emitEffect, emitDamage, emitDeath } from './effects';
 
 // --- Teams ---
 
 // True when both entities are on the same real team (free-for-all players are never teammates)
 export const isTeammate = (a: Entity, b: Entity) =>
     a.id !== b.id && a.team !== Team.NONE && a.team === b.team;
-
-// --- Ragdoll ---
-
-export const createRagdoll = (state: GameState, entity: Entity) => {
-    const randomForce = () => (Math.random() - 0.5) * 10;
-    const baseColor = entity.color;
-    const parts: RagdollPart[] = [
-        {
-            id: nextId('rag_'), type: 'head',
-            pos: { x: entity.pos.x, y: entity.pos.y - entity.height + 5 },
-            vel: { x: randomForce(), y: -Math.random() * 8 },
-            rotation: 0, angularVel: (Math.random() - 0.5) * 0.3,
-            life: 5, color: baseColor, isGrounded: false
-        },
-        {
-            id: nextId('rag_'), type: 'torso',
-            pos: { x: entity.pos.x, y: entity.pos.y - entity.height / 2 },
-            vel: { x: randomForce() * 0.5, y: -Math.random() * 5 },
-            rotation: 0, angularVel: (Math.random() - 0.5) * 0.2,
-            life: 5, color: baseColor, isGrounded: false
-        },
-        {
-            id: nextId('rag_'), type: 'arm-left',
-            pos: { x: entity.pos.x - 10, y: entity.pos.y - entity.height / 2 },
-            vel: { x: -Math.random() * 8, y: -Math.random() * 6 },
-            rotation: 0, angularVel: (Math.random() - 0.5) * 0.5,
-            life: 4, color: baseColor, isGrounded: false
-        },
-        {
-            id: nextId('rag_'), type: 'arm-right',
-            pos: { x: entity.pos.x + 10, y: entity.pos.y - entity.height / 2 },
-            vel: { x: Math.random() * 8, y: -Math.random() * 6 },
-            rotation: 0, angularVel: (Math.random() - 0.5) * 0.5,
-            life: 4, color: baseColor, isGrounded: false
-        },
-        {
-            id: nextId('rag_'), type: 'leg-left',
-            pos: { x: entity.pos.x - 5, y: entity.pos.y - 10 },
-            vel: { x: -Math.random() * 5, y: -Math.random() * 4 },
-            rotation: 0, angularVel: (Math.random() - 0.5) * 0.4,
-            life: 4.5, color: baseColor, isGrounded: false
-        },
-        {
-            id: nextId('rag_'), type: 'leg-right',
-            pos: { x: entity.pos.x + 5, y: entity.pos.y - 10 },
-            vel: { x: Math.random() * 5, y: -Math.random() * 4 },
-            rotation: 0, angularVel: (Math.random() - 0.5) * 0.4,
-            life: 4.5, color: baseColor, isGrounded: false
-        }
-    ];
-
-    state.ragdollParts.push(...parts);
-};
-
-// --- Particles ---
-
-export const createParticles = (state: GameState, x: number, y: number, count: number, color: string, type: 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' = 'spark') => {
-    for (let i = 0; i < count; i++) {
-        state.particles.push({
-            id: nextId('pt_'),
-            pos: { x, y },
-            vel: {
-                x: (Math.random() - 0.5) * (type === 'shell' ? 4 : 10),
-                y: (Math.random() - 0.5) * (type === 'shell' ? 4 : 10)
-            },
-            life: 1.0,
-            decay: 0.02 + Math.random() * 0.03,
-            color,
-            size: type === 'smoke' ? 5 + Math.random() * 10 : (type === 'shell' ? 3 : 2 + Math.random() * 2),
-            type,
-            rotation: Math.random() * Math.PI * 2
-        });
-    }
-};
 
 // --- Raycasting ---
 
@@ -151,23 +78,13 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     target.vel.x += (knockback.x / len) * force;
     target.vel.y += (knockback.y / len) * force;
 
-    state.floatingTexts.push({
-        id: nextId('ft_'), pos: { ...target.pos, y: target.pos.y - 40 },
-        text: Math.round(dmg).toString(), color: '#ef4444', life: 1, velY: 1
-    });
+    emitDamage(target.pos.x, target.pos.y - 40, dmg);
 
     if (target.health <= 0) {
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
-        createParticles(state, target.pos.x, target.pos.y, 40, target.color, 'blood');
-        // Decal (Blood)
-        state.decals.push({
-            id: nextId('dc_'), pos: { x: target.pos.x, y: target.pos.y + 20 },
-            rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
-        });
-
-        // Create Ragdoll instead of static corpse
-        createRagdoll(state, target);
+        // Blood, decal and ragdoll
+        emitDeath(target);
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {
@@ -241,8 +158,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 // --- Explosions ---
 
 export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType) => {
-    createParticles(state, pos.x, pos.y, 20, '#f97316', 'fire');
-    createParticles(state, pos.x, pos.y, 10, '#ffffff', 'smoke');
+    emitEffect('explosion', pos.x, pos.y);
     gameEvents.emit({ type: 'SOUND', sound: 'explosion' });
 
     const wepData = weaponType ? WEAPONS_DATA[weaponType] : undefined;
@@ -301,7 +217,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, WEAPONS_DATA[WeaponType.RAILGUN].knockbackForce);
         }
 
-        createParticles(state, hitPos.x, hitPos.y, 10, '#38bdf8', 'spark');
+        emitEffect('spark', hitPos.x, hitPos.y, '#38bdf8', 10);
 
         if (!state.beams) state.beams = [];
         state.beams.push({
@@ -323,10 +239,10 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             const dist = distance(attackPos, tgt.pos);
             if (dist < 60) {
                 applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce);
-                createParticles(state, tgt.pos.x, tgt.pos.y - 20, 6, '#ef4444', 'blood');
+                emitEffect('blood', tgt.pos.x, tgt.pos.y - 20, '#ef4444', 6);
             }
         });
-        createParticles(state, attackPos.x, attackPos.y, 8, '#ef4444', 'spark');
+        emitEffect('spark', attackPos.x, attackPos.y, '#ef4444', 8);
         gameEvents.emit({ type: 'SOUND', sound: 'shoot', subtype: p.weapon.type });
         return;
     }
@@ -355,9 +271,5 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
     }
 
     gameEvents.emit({ type: 'SOUND', sound: 'shoot', subtype: p.weapon.type });
-    state.particles.push({
-        id: nextId('pt_'), pos: { x: origin.x, y: origin.y },
-        vel: { x: (Math.random() - 0.5) * 4, y: -2 - Math.random() * 2 },
-        life: 1, decay: 0.05, color: '#fbbf24', size: 3, type: 'shell', rotation: Math.random() * Math.PI
-    });
+    emitEffect('shell', origin.x, origin.y);
 };

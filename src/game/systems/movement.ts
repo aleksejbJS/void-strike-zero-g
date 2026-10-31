@@ -22,7 +22,7 @@ import {
     JETPACK_SIDE_FUEL_MULT,
 } from '../../constants';
 import { applyGrapplePhysics, GrappleInput } from './grapple';
-import { createParticles } from './combat';
+import { jetpackTrail } from './effects';
 
 export interface MovementInput {
     inputX: number;       // -1, 0, or 1
@@ -58,7 +58,9 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
     }
 
     // --- 3. Jetpack — directional thrust ---
-    if (input.isFlying && p.jetpackFuel > 0) {
+    // Flag travels in snapshots so other clients can draw this player's flame
+    p.jetpackOn = input.isFlying && p.jetpackFuel > 0;
+    if (p.jetpackOn) {
         let thrustX = 0;
         let thrustY = JETPACK_FORCE_UP;
         let fuelMult = 1.0;
@@ -81,12 +83,7 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
         p.jetpackFuel = Math.max(0, p.jetpackFuel - JETPACK_CONSUMPTION * fuelMult);
 
         // Visual: jetpack particles opposite to thrust direction
-        if (state && Math.random() < 0.5) {
-            const particleX = p.pos.x - thrustX * 30;
-            const particleY = p.pos.y + 18;
-            const intensity = fuelMult < 1 ? 1 : 2;
-            createParticles(state, particleX, particleY, intensity, '#fbbf24', 'fire');
-        }
+        if (state) jetpackTrail(state, p, thrustX, fuelMult >= 1);
     }
 
     // Fuel recharge — ONLY on ground (Soldat-style)

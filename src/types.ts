@@ -104,6 +104,7 @@ export interface Entity {
   hasFlag: Team; // Team of the flag carried (NONE if none)
   lastProcessedInput: number; // Sequence number of the last processed input
   aim?: number; // Aim angle in radians (lets other clients render where this player points)
+  jetpackOn?: boolean; // Jetpack thrusting this tick (lets other clients draw the flame)
   hungerOutTimer?: number;
 }
 
