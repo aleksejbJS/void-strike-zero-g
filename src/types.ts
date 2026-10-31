@@ -103,6 +103,7 @@ export interface Entity {
   lastDash: number;
   hasFlag: Team; // Team of the flag carried (NONE if none)
   lastProcessedInput: number; // Sequence number of the last processed input
+  aim?: number; // Aim angle in radians (lets other clients render where this player points)
   hungerOutTimer?: number;
 }
 
@@ -235,6 +236,7 @@ export interface PlayerInput {
   hookPressed: boolean;
   timestamp: number;
   sequence: number; // For client-side prediction reconciliation
+  weaponIndex?: number; // Selected inventory slot (0-based)
 }
 
 export type NetworkPacket =

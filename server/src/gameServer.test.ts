@@ -11,6 +11,15 @@ import { startGameServer } from './gameServer';
 
 const join = { name: 'Alex', color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic' };
 
+// Poll until `check` passes or time runs out (avoids fixed sleeps that flake under load)
+const waitFor = async (check: () => boolean, timeoutMs = 3000) => {
+    const start = Date.now();
+    while (!check()) {
+        if (Date.now() - start > timeoutMs) throw new Error('waitFor timed out');
+        await new Promise(r => setTimeout(r, 20));
+    }
+};
+
 const once = <T>(socket: ClientSocket, event: string, timeoutMs = 2000) =>
     new Promise<T>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error(`timeout waiting for ${event}`)), timeoutMs);
@@ -97,7 +106,7 @@ describe('game server (socket.io integration)', () => {
         for (let seq = 1; seq <= 60; seq++) {
             a.emit(MSG.INPUT, { keys: { KeyD: true }, mouse: { x: 0, y: 0 }, mousePressed: false, hookPressed: false, sequence: seq });
         }
-        await new Promise(r => setTimeout(r, 800));
+        await waitFor(() => room.state.players.find(p => p.id === id)!.lastProcessedInput === 60);
 
         const snap = await once<Snapshot>(a, MSG.SNAPSHOT);
         const me = snap.players.find(p => p.id === id)!;
@@ -110,7 +119,6 @@ describe('game server (socket.io integration)', () => {
         a.emit(MSG.JOIN, join);
         const { id } = await once<JoinAccepted>(a, MSG.JOINED);
         a.disconnect();
-        await new Promise(r => setTimeout(r, 200));
-        expect(room.state.players.some(p => p.id === id)).toBe(false);
+        await waitFor(() => !room.state.players.some(p => p.id === id));
     });
 });

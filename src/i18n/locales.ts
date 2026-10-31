@@ -7,6 +7,14 @@ export interface TranslationKeys {
   'menu.createGame': string;
   'menu.join': string;
   'menu.gameId': string;
+  'menu.serverAddress': string;
+  // Online
+  'net.connecting': string;
+  'net.cannotConnect': string;
+  'net.serverFull': string;
+  'net.joinInvalid': string;
+  'net.alreadyJoined': string;
+  'net.backToMenu': string;
   'menu.controls': string;
   'menu.move': string;
   'menu.jetpack': string;
@@ -79,6 +87,13 @@ export const translations: Record<Language, TranslationKeys> = {
     'menu.createGame': 'CREATE GAME',
     'menu.join': 'JOIN',
     'menu.gameId': 'Game ID',
+    'menu.serverAddress': 'Server address (IP or URL)',
+    'net.connecting': 'Connecting to server…',
+    'net.cannotConnect': 'Cannot connect to',
+    'net.serverFull': 'Server is full',
+    'net.joinInvalid': 'Server rejected your profile (check your name)',
+    'net.alreadyJoined': 'Already joined from this tab',
+    'net.backToMenu': 'Press Esc to return to the menu',
     'menu.controls': 'Controls',
     'menu.move': 'WASD Move',
     'menu.jetpack': 'SPACE Jetpack',
@@ -150,6 +165,13 @@ export const translations: Record<Language, TranslationKeys> = {
     'menu.createGame': 'СОЗДАТЬ ИГРУ',
     'menu.join': 'ПРИСОЕДИНИТЬСЯ',
     'menu.gameId': 'ID Игры',
+    'menu.serverAddress': 'Адрес сервера (IP или URL)',
+    'net.connecting': 'Подключение к серверу…',
+    'net.cannotConnect': 'Не удалось подключиться к',
+    'net.serverFull': 'Сервер заполнен',
+    'net.joinInvalid': 'Сервер отклонил профиль (проверьте имя)',
+    'net.alreadyJoined': 'Вы уже подключены из этой вкладки',
+    'net.backToMenu': 'Нажмите Esc, чтобы вернуться в меню',
     'menu.controls': 'Управление',
     'menu.move': 'WASD Движение',
     'menu.jetpack': 'ПРОБЕЛ Реактивный ранец',

@@ -47,6 +47,7 @@ export const startGameServer = (io: Server, room: GameRoom): (() => void) => {
         id: socket.id,
         mode: room.state.mode,
         map: room.state.currentMap,
+        platforms: room.state.platforms,
         snapshot: room.snapshot(Date.now()),
       };
       socket.emit(MSG.JOINED, accepted);

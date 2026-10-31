@@ -30,8 +30,9 @@ export interface JoinRequest {
 
 // Gameplay-relevant state only. Particles, decals, floating texts and ragdolls are
 // cosmetic: clients create them locally from events instead of receiving them.
+// Platforms never change during a match: they are sent once in JoinAccepted.
 export type Snapshot = Pick<GameState,
-    'mode' | 'currentMap' | 'scores' | 'players' | 'projectiles' | 'pickups' | 'platforms'
+    'mode' | 'currentMap' | 'scores' | 'players' | 'projectiles' | 'pickups'
     | 'beams' | 'hungerZone' | 'hungerWinnerId' | 'gunGameWinnerId' | 'lastHTFScore' | 'infiltrationEndTime'
 > & { serverTime: number };
 
@@ -39,6 +40,7 @@ export interface JoinAccepted {
     id: string;
     mode: GameMode;
     map: MapId;
+    platforms: GameState['platforms'];
     snapshot: Snapshot;
 }
 
@@ -55,7 +57,6 @@ export const buildSnapshot = (state: GameState, now: number): Snapshot => ({
     players: state.players,
     projectiles: state.projectiles,
     pickups: state.pickups,
-    platforms: state.platforms,
     beams: state.beams,
     hungerZone: state.hungerZone,
     hungerWinnerId: state.hungerWinnerId,

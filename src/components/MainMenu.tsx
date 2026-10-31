@@ -7,6 +7,11 @@ import { useTranslation } from '../i18n/useTranslation';
 import { matchmakingClient } from '../game/systems/matchmaking';
 import { ServerInfo } from '../../server/src/matchmaking';
 
+// Matchmaking service is offline — hide the public list (multiplayer spec D4)
+const SHOW_PUBLIC_SERVERS = false;
+// Browser-hosted games are phase 2 (multiplayer spec D3); until then "Create game" starts an empty match
+const SHOW_CREATE_GAME = false;
+
 const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
   const { state, actions } = useUIStore();
   const { t, language, changeLanguage } = useTranslation();
@@ -52,8 +57,9 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
   }, [activeTab, loadPublicServers]);
 
   const handleDeploy = () => {
-    // Save selected mode before navigating
+    // Save selected mode before navigating; DEPLOY is always an offline game
     actions.selectMode(gameMode);
+    actions.setNetworkState(NetworkMode.OFFLINE, null);
     onCustomize();
   };
 
@@ -95,7 +101,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
         <div className="flex flex-col w-full items-stretch max-w-2xl">
 
           {/* Tab Selector */}
-          <div className="flex bg-gray-900/60 rounded-lg p-1 border border-gray-700 mb-6">
+          {SHOW_PUBLIC_SERVERS && <div className="flex bg-gray-900/60 rounded-lg p-1 border border-gray-700 mb-6">
             <button
               onClick={() => setActiveTab('local')}
               className={`flex-1 py-2 text-sm font-bold rounded transition-all ${
@@ -112,7 +118,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
             >
               🌐 Public Servers
             </button>
-          </div>
+          </div>}
 
           {activeTab === 'local' ? (
             <>
@@ -199,7 +205,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
 
           {/* Multiplayer Section */}
           <div className="flex gap-4 mb-6">
-            <button
+            {SHOW_CREATE_GAME && <button
               onClick={() => {
                 actions.selectMode(gameMode);
                 actions.setNetworkState(NetworkMode.HOST, null);
@@ -208,21 +214,22 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
               className="flex-1 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               {t('menu.createGame')}
-            </button>
+            </button>}
 
             <div className="flex-1 flex gap-2">
               <input
                 type="text"
-                placeholder={t('menu.gameId')}
+                placeholder={t('menu.serverAddress')}
                 className="flex-1 bg-gray-900/60 border border-gray-700 rounded-xl px-4 text-sm focus:outline-none focus:border-purple-500"
                 id="join-game-input"
               />
               <button
                 onClick={() => {
                   const input = document.getElementById('join-game-input') as HTMLInputElement;
-                  if (input.value) {
-                    actions.selectMode(gameMode); // Mode doesn't matter for client really, but good to set
-                    actions.setNetworkState(NetworkMode.CLIENT, input.value);
+                  if (input.value.trim()) {
+                    // The server decides mode and map; the selection here is only a placeholder
+                    actions.selectMode(gameMode);
+                    actions.setNetworkState(NetworkMode.CLIENT, input.value.trim());
                     onCustomize();
                   }
                 }}

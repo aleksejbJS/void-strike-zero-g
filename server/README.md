@@ -41,13 +41,15 @@ npm run dev:ngrok
 |----------|---------|-------------|
 | `PORT` | `3001` | Server port |
 | `SERVER_NAME` | `Void Strike Server` | Server display name |
-| `MAX_PLAYERS` | `8` | Maximum players |
+| `MAX_PLAYERS` | `8` | Maximum human players (bots fill the rest) |
+| `SERVER_MODE` | `DEATHMATCH` | `DEATHMATCH`, `GUN_GAME`, `CTF`, `HOLD_THE_FLAG`, `INFILTRATION` (Hunger Games is offline-only) |
+| `SERVER_MAP` | `default` | `default`, `tunnels`, `hunger` |
 | `TUNNELING_ENABLED` | `false` | Enable public tunneling |
 | `TUNNELING_PROVIDER` | `localtunnel` | `localtunnel` or `ngrok` |
 | `NGROK_AUTHTOKEN` | - | ngrok auth token |
 | `TUNNELING_SUBDOMAIN` | - | Custom subdomain |
 | `MATCHMAKING_ENABLED` | `false` | Register on matchmaking server |
-| `MATCHMAKING_SERVER` | matchmaking URL | Matchmaking server URL |
+| `MATCHMAKING_SERVER` | - | Matchmaking server URL (required when matchmaking is enabled) |
 | `SERVER_REGION` | `unknown` | Server region for matchmaking |
 
 ## Hosting Options

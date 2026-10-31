@@ -1,19 +1,24 @@
-import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, PlayerInput, RagdollPart } from '../../types';
-import { HOOK_RANGE, WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
+import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectile } from '../../types';
+import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
-import { distance, normalize, checkPointInRect, checkRectOverlap, segmentIntersectsRect } from '../utils/math';
+import { checkPointInRect, checkRectOverlap, segmentIntersectsRect } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
-import { trackKill, trackFlagCapture, trackFlagHoldTime, trackDoubleJump, trackHookUse, trackDashUse, trackItemPickup } from './achievements';
-
+import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
-import { applyDamage, fireWeapon, createParticles, resolveCollision, castRay, createExplosion, isTeammate } from './combat';
+import { applyDamage, fireWeapon, createParticles, createExplosion, isTeammate } from './combat';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
-import { applyMovement, MovementInput } from './movement';
-import { applyGrappleRelease } from './grapple';
+import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
+import { followCamera } from './camera';
 
-// Extracted combat logic is now imported from combat.ts
+// Projectile flight for one tick (also used by clients to extrapolate between snapshots)
+export const moveProjectile = (proj: Projectile) => {
+    proj.pos.x += proj.vel.x;
+    proj.pos.y += proj.vel.y;
+    if (proj.type === WeaponType.ROCKET_LAUNCHER) proj.vel.y += 0.1;
+    if (proj.type === WeaponType.GRENADE_LAUNCHER) proj.vel.y += 0.25;
+};
 
 // --- MAIN PHYSICS UPDATE LOOP ---
 export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPressed: boolean, mousePressed: boolean, screenW: number, screenH: number, getSpawnPoint: any, localPlayerId: string, remoteInputs?: Record<string, PlayerInput>) => {
@@ -116,112 +121,33 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     // Players Logic
     state.players.forEach(p => {
         if (p.dead) return;
-        let inputX = 0;
-        let isFlying = false;
-        let wantsJump = false;
-        let wantsDown = false;
-        let aimTarget = { x: p.pos.x, y: p.pos.y };
 
-        // Determine inputs
-        let pKeys = keys;
-        let pMouse = mouse;
-        let pMousePressed = mousePressed;
-        let pHookPressed = hookPressed;
-        let isLocal = p.id === localPlayerId;
-        let isRemote = remoteInputs && remoteInputs[p.id];
-
-        if (isRemote) {
-            const input = remoteInputs![p.id];
-            pKeys = input.keys;
-            pMouse = input.mouse;
-            pMousePressed = input.mousePressed;
-            pHookPressed = input.hookPressed;
-        }
-
+        let controls: PlayerControls;
         if (p.type === 'player') {
-            // Logic for both Local and Remote players
-            // If remote, we use the inputs passed in
+            const isLocal = p.id === localPlayerId;
+            const remote = remoteInputs?.[p.id];
+            // A human with no input this tick (e.g. a remote player before their first packet) stands still
+            const pKeys = remote ? remote.keys : isLocal ? keys : NO_KEYS;
+            const pMousePressed = remote ? remote.mousePressed : isLocal && mousePressed;
+            const pHookPressed = remote ? remote.hookPressed : isLocal && hookPressed;
 
-            wantsJump = !!(pKeys['Space'] || pKeys['KeyW']);
-            wantsDown = !!pKeys['KeyS'];
-            p.isCrouching = wantsDown;
-            if (pKeys['KeyA']) inputX -= 1;
-            if (pKeys['KeyD']) inputX += 1;
-            if (wantsJump && p.jetpackFuel > 0) isFlying = true;
+            controls = readControls(p, pKeys);
+            p.isCrouching = controls.wantsDown; // before firing: crouch lowers the muzzle
 
-            // Aim Calibrated to Screen
-            // For remote players, the mouse position sent is likely screen coordinates relative to THEIR camera?
-            // Wait, if I send mouse.x/y from client, it is screen coordinates.
-            // But the host has a different camera position.
-            // We need to convert screen coordinates to WORLD coordinates on the client before sending.
-            // OR, we assume the client sends WORLD coordinates.
+            // Local mouse is in screen coords; remote inputs already carry world coords
+            const aim = remote
+                ? remote.mouse
+                : isLocal
+                    ? { x: mouse.x - screenW / 2 + state.camera.x, y: mouse.y - screenH / 2 + state.camera.y }
+                    : null;
+            if (aim) updateAim(p, aim);
 
-            // Let's assume for now client sends SCREEN coordinates (as it does currently in GameCanvas).
-            // But wait, GameCanvas sends `mouse.current` which is `e.clientX`.
-            // So it is screen coordinates.
-            // But `updatePhysics` expects `mouse` to be screen coordinates and converts to world using `state.camera`.
-            // This is wrong for remote players because `state.camera` is the HOST's camera.
-
-            // FIX: Clients should send WORLD coordinates.
-            // But I can't change the client sending code easily without changing `PlayerInput` semantics.
-            // Actually, let's look at `GameCanvas` again.
-            // In `GameCanvas`, for local player: `mouse.current` is updated via `mousemove`.
-            // In `updatePhysics`: `const worldMouseX = (mouse.x - cx) + state.camera.x;`
-
-            // So for remote players, if they send screen coords, we are using HOST camera to unproject, which is wrong.
-            // We need to change `GameCanvas` to send WORLD coordinates, or `updatePhysics` to handle this.
-            // It's better if `PlayerInput` contains WORLD coordinates for aim.
-            // But `PlayerInput` has `mouse: {x, y}`.
-
-            // Let's assume for this iteration that we will fix `GameCanvas` to send world coords, 
-            // OR we just accept that for now we might have aiming issues and fix it in the next step.
-            // Actually, I can fix `GameCanvas` right after this. 
-            // So let's write `updatePhysics` assuming `pMouse` is in WORLD coordinates for remote players?
-            // No, `updatePhysics` logic for local player (lines 295-298) does the conversion.
-
-            // Let's change `updatePhysics` to expect `mouse` to be:
-            // - Local: Screen coords (needs conversion)
-            // - Remote: World coords (already converted)
-
-            let worldMouseX, worldMouseY;
-
-            if (isLocal) {
-                const cx = screenW / 2;
-                const cy = screenH / 2;
-                worldMouseX = (pMouse.x - cx) + state.camera.x;
-                worldMouseY = (pMouse.y - cy) + state.camera.y;
-            } else {
-                // Assume remote sends world coords (we will ensure this in GameCanvas)
-                worldMouseX = pMouse.x;
-                worldMouseY = pMouse.y;
+            if (aim && pMousePressed && now - p.lastFired > p.weapon.fireRate) {
+                fireWeapon(state, p, aim);
             }
+            updateGrapple(state, p, pHookPressed, aim ?? p.pos);
 
-            if (pMousePressed && now - p.lastFired > p.weapon.fireRate) {
-                fireWeapon(state, p, { x: worldMouseX, y: worldMouseY });
-            }
-
-            // Grapple Aim
-            if (pHookPressed && !p.grapple.active) {
-                const dir = normalize({ x: worldMouseX - p.pos.x, y: worldMouseY - p.pos.y });
-                const hit = castRay(state, { x: p.pos.x, y: p.pos.y }, dir, HOOK_RANGE);
-                if (hit) {
-                    p.grapple.active = true;
-                    p.grapple.pos = hit;
-                    p.grapple.length = distance(p.pos, hit);
-
-                    // Track achievement for hook usage
-                    if (p.type === 'player') {
-                        trackHookUse();
-                    }
-                }
-            } else if (!pHookPressed && p.grapple.active) {
-                applyGrappleRelease(p);
-                p.grapple.active = false;
-            } else if (!pHookPressed) {
-                p.grapple.active = false;
-            }
-
-            if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && wantsJump && p.isCrouching) {
+            if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && controls.wantsJump && p.isCrouching) {
                 state.pickups.push({
                     id: nextId('htf_throw_'),
                     type: ItemType.FLAG,
@@ -233,54 +159,14 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 });
                 p.hasFlag = Team.NONE;
             }
-
         } else {
-            // BOT AI вынесен в отдельный модуль, чтобы гарантировать движение/стрельбу
-            isFlying = updateBotAI(p, state, now, (bot, target) => fireWeapon(state, bot, target), state.mode);
-        }
-
-        // Common Physics (Handled by MatterEngine)
-        // p.vel.y += GRAVITY;
-        // p.vel.y = Math.min(p.vel.y, 7.5);
-        // p.vel.y = Math.max(p.vel.y, -7);
-
-        if (p.type === 'player') {
-            // physicsEngine handles inputs now
-            // const speed = p.isCrouching ? CROUCH_SPEED : (p.isGrounded ? MOVE_SPEED : MOVE_SPEED * 0.5);
-            // p.vel.x += inputX * speed;
-            p.height = p.isCrouching ? 45 : 72;
+            // Bot AI steers via velocity directly; it only tells us whether it is using the jetpack
+            const isFlying = updateBotAI(p, state, now, (bot, target) => fireWeapon(state, bot, target), state.mode);
+            controls = { inputX: 0, wantsJump: false, wantsDown: false, isFlying };
         }
 
         // Force Pipeline — unified movement (gravity, input, jetpack, grapple, friction, speed caps)
-        const movInput: MovementInput = {
-            inputX,
-            isFlying,
-            wantsJump,
-            wantsDown,
-            wantsReel: !!(wantsJump && p.grapple.active),
-            wantsExtend: !!(wantsDown && p.grapple.active),
-        };
-        applyMovement(p, movInput, state);
-
-        if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team) {
-            p.vel.x *= 0.85;
-        }
-
-        // Apply friction and movement (Handled by MatterEngine)
-        // p.vel.x *= (p.isGrounded ? FRICTION : AIR_RESISTANCE);
-        // if (Math.abs(p.vel.x) > MAX_SPEED) p.vel.x *= 0.95;
-        // p.vel.x = Math.max(-MAX_SPEED * 2, Math.min(MAX_SPEED * 2, p.vel.x));
-        // p.pos.x += p.vel.x;
-        // p.pos.y += p.vel.y;
-        // p.isGrounded = false; // synced by physicsEngine
-
-        // Верхняя граница карты
-        if (p.pos.y < -500) {
-            p.pos.y = -500;
-            if (p.vel.y < 0) p.vel.y = 0;
-        }
-
-        // state.platforms.forEach(plat => resolveCollision(p, plat));
+        applyPlayerMovement(state, p, controls, state);
 
         // Map Bounds Death (ALL entities)
         if (p.pos.y > 2500) applyDamage(state, p, '', 9999, { x: 0, y: 0 });
@@ -401,9 +287,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     // Projectiles Update
     state.projectiles.forEach(proj => {
         const prevPos = { ...proj.pos };
-        proj.pos.x += proj.vel.x; proj.pos.y += proj.vel.y;
-        if (proj.type === WeaponType.ROCKET_LAUNCHER) { proj.vel.y += 0.1; if (Math.random() < 0.5) createParticles(state, proj.pos.x, proj.pos.y, 1, '#9ca3af', 'smoke'); }
-        if (proj.type === WeaponType.GRENADE_LAUNCHER) proj.vel.y += 0.25;
+        moveProjectile(proj);
+        if (proj.type === WeaponType.ROCKET_LAUNCHER && Math.random() < 0.5) createParticles(state, proj.pos.x, proj.pos.y, 1, '#9ca3af', 'smoke');
         proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;
@@ -535,8 +420,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         }
     }
 
-    // Camera
-    let cameraTarget = state.players[0];
+    // Camera: local player (or first player on the server), Hunger Games may spectate
+    let cameraTarget = state.players.find(p => p.id === localPlayerId) ?? state.players[0];
     if (state.mode === GameMode.HUNGER_GAMES && state.players.length) {
         // Spectate bet target if exists
         const betTargetId = (state as any).betSpectateId as string | undefined;
@@ -548,11 +433,5 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             if (winner) cameraTarget = winner;
         }
     }
-    if (cameraTarget) {
-        const targetX = cameraTarget.pos.x;
-        const targetY = cameraTarget.pos.y - 50;
-        const smoothing = state.mode === GameMode.HUNGER_GAMES ? 0.2 : 0.12;
-        state.camera.x += (targetX - state.camera.x) * smoothing;
-        state.camera.y += (targetY - state.camera.y) * smoothing;
-    }
+    followCamera(state, cameraTarget);
 };

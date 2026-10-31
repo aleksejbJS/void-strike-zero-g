@@ -436,7 +436,7 @@ const createPlayerVisual = (p: Entity, cache: any) => {
     return c;
 };
 
-const updatePlayerVisual = (c: Container, p: Entity, camera: { x: number, y: number }, mouse: { x: number, y: number }, screenW: number, screenH: number, cache: any) => {
+const updatePlayerVisual = (c: Container, p: Entity, camera: { x: number, y: number }, mouse: { x: number, y: number }, screenW: number, screenH: number, cache: any, isLocal: boolean) => {
     if (!c) return;
 
     // Hide player sprite if dead (we have a corpse decal now)
@@ -483,13 +483,16 @@ const updatePlayerVisual = (c: Container, p: Entity, camera: { x: number, y: num
     }
 
     let aim = 0;
-    if (p.type === 'player') {
+    if (isLocal) {
         const cx = screenW / 2;
         const cy = screenH / 2;
         const shoulderWorldY = p.pos.y - 50 + crouchOffset;
         const shoulderScreenX = (p.pos.x - camera.x) + cx;
         const shoulderScreenY = (shoulderWorldY - camera.y) + cy;
         aim = Math.atan2(mouse.y - shoulderScreenY, mouse.x - shoulderScreenX);
+    } else if (p.aim !== undefined && Number.isFinite(p.aim)) {
+        // Other humans: aim direction comes from the server
+        aim = p.aim;
     } else {
         aim = Math.atan2(p.vel.y, p.facingRight ? 100 : -100);
     }
@@ -915,7 +918,7 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
     }
 };
 
-export const syncVisuals = (app: Application, world: Container, gameLayer: Container, decalLayer: Container, uiLayer: Container, state: GameState, cache: any, shakeRef: any, mouse: { x: number, y: number }, setStats: any, setPlayerInventory: any, setActiveWeaponType: any, setScores: any, setPlayerScores?: any) => {
+export const syncVisuals = (app: Application, world: Container, gameLayer: Container, decalLayer: Container, uiLayer: Container, state: GameState, cache: any, shakeRef: any, mouse: { x: number, y: number }, setStats: any, setPlayerInventory: any, setActiveWeaponType: any, setScores: any, setPlayerScores?: any, localPlayerId = 'player') => {
     let shakeX = (Math.random() - 0.5) * shakeRef.current;
     let shakeY = (Math.random() - 0.5) * shakeRef.current;
     // Apply filters
@@ -962,7 +965,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true }); cache.players.delete(p.id); } return; }
         let visual = cache.players.get(p.id);
         if (!visual) { visual = createPlayerVisual(p, cache); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
-        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache);
+        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache, p.id === localPlayerId);
     });
 
     // Projectiles - Optimized with object pooling
@@ -1108,8 +1111,9 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         }
     });
 
-    if (state.players[0]) {
-        const p = state.players[0];
+    // HUD shows the player this browser controls
+    const p = state.players.find(pl => pl.id === localPlayerId);
+    if (p) {
         if (setStats) setStats({ hp: Math.round(p.health), arm: p.armor, fuel: p.jetpackFuel, ammo: p.weapon.ammo, dead: p.dead, respawn: p.respawnTimer - Date.now() });
         if (setPlayerInventory) setPlayerInventory([...p.inventory]);
         if (setActiveWeaponType) setActiveWeaponType(p.weapon.type);

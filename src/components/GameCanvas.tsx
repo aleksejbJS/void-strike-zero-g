@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Application, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
-import { GameState, PlayerInput, GameMode, Team, WeaponType, ItemType, Pickup, NetworkMode, MapId } from '../types';
+import { GameState, GameMode, Team, WeaponType, ItemType, Pickup, NetworkMode, MapId } from '../types';
 import { WEAPONS_DATA, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../constants';
 import { initAudio } from '../game/systems/audio';
 import { generateAssets } from '../game/systems/assets';
@@ -10,7 +10,8 @@ import { clearBotMemory } from '../game/systems/bot';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
 import { WeaponIcon } from './WeaponIcon';
-import { SocketManager } from '../game/systems/socket';
+import { ClientSession } from '../game/net/clientSession';
+import { resolveServerUrl } from '../game/net/serverAddress';
 import { achievementManager } from '../game/systems/achievements';
 import { Achievement } from '../game/systems/achievements';
 import { useTranslation } from '../i18n/useTranslation';
@@ -29,14 +30,17 @@ const detectMobile = () =>
 export default function GameCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
     const pixiApp = useRef<Application | null>(null);
-    const socketManager = useRef<SocketManager | null>(null);
+    // Online match (CLIENT mode only) and the id of the player this browser controls
+    const sessionRef = useRef<ClientSession | null>(null);
+    const localIdRef = useRef('player');
+    const [netError, setNetError] = React.useState<string | null>(null);
+    const [onlineMode, setOnlineMode] = React.useState<GameMode | null>(null);
     const [inviteLink, setInviteLink] = React.useState<string | null>(null);
     const [infiltrationTimeLeft, setInfiltrationTimeLeft] = React.useState<number | null>(null);
     const [gunGameStatus, setGunGameStatus] = React.useState<{ weapon: string; level: number; progress: number; total: number } | null>(null);
     const [gunGameWinner, setGunGameWinner] = React.useState<string | null>(null);
     const shakeIntensity = useRef(0);
     const lastStateUpdate = useRef(0);
-    const gameReady = useRef(false); // Track if game is ready to start (for multiplayer)
     const gunGameEndedRef = useRef(false);
     const { state, actions } = useUIStore();
     const { t } = useTranslation();
@@ -79,10 +83,9 @@ export default function GameCanvas() {
     const mouse = useRef({ x: 0, y: 0 });
     const mousePressed = useRef(false);
     const hookPressed = useRef(false);
-    const inputSequence = useRef(0);
-    const pendingInputs = useRef<{ sequence: number; input: PlayerInput }[]>([]);
     const isMutedRef = useRef(state.isMuted);
-    const gameMode = state.selectedMode;
+    // Online, the server decides the mode; the HUD follows it once we've joined
+    const gameMode = onlineMode ?? state.selectedMode;
     const hungerCredits = useRef(100);
 
     // Mobile touch controls
@@ -314,15 +317,13 @@ export default function GameCanvas() {
         // Read once here: the isMobile state is not a dependency of this effect
         const mobile = detectMobile();
 
-        // Socket Setup
-        const socket = new SocketManager();
-        socketManager.current = socket;
-
+        // Online match: the server owns the simulation, we predict our own player
+        let redrawMap: (() => void) | null = null;
         if (state.networkMode === NetworkMode.CLIENT) {
-            // Use hostname to allow LAN connections (e.g. if accessing via 192.168.x.x)
-            const serverUrl = `http://${window.location.hostname}:3001`;
+            const serverUrl = resolveServerUrl(state.gameId, window.location.hostname);
             console.log('Connecting to server:', serverUrl);
-            socket.connect(serverUrl, {
+            setNetError(null);
+            const session = new ClientSession(serverUrl, {
                 name: state.playerName,
                 color: state.playerColor,
                 skinId: state.selectedSkin,
@@ -331,122 +332,20 @@ export default function GameCanvas() {
                 armColor: state.armColor,
                 legColor: state.legColor,
                 jetpackColor: state.jetpackColor,
-                mapId: state.selectedMap
+            }, physicsEngine.current, {
+                onJoined: info => {
+                    localIdRef.current = info.id;
+                    session.setupWorld(gameState.current, info);
+                    setOnlineMode(info.mode);
+                    redrawMap?.();
+                },
+                onRejected: reason => setNetError(
+                    reason === 'full' ? t('net.serverFull') : reason === 'invalid' ? t('net.joinInvalid') : t('net.alreadyJoined')
+                ),
+                onConnectionError: message => setNetError(`${t('net.cannotConnect')} ${serverUrl} (${message})`),
+                onEvents: events => events.forEach(e => gameEvents.emit(e)),
             });
-
-            socket.onInit = (data) => {
-                console.log('Init from server:', data);
-                // We could set our ID here if needed
-                gameReady.current = true;
-            };
-
-            socketManager.current.onStateUpdate = (serverState: GameState) => {
-                // Reconciliation
-                const localId = socketManager.current.socket?.id;
-                if (localId) {
-                    const serverPlayer = serverState.players.find(p => p.id === localId);
-                    if (serverPlayer) {
-                        const lastProcessed = serverPlayer.lastProcessedInput;
-                        // Remove processed inputs
-                        pendingInputs.current = pendingInputs.current.filter(i => i.sequence > lastProcessed);
-
-                        // Apply server state as base
-                        gameState.current = serverState;
-
-                        // Sync Local MatterEngine
-                        serverState.players.forEach(p => {
-                            if (!physicsEngine.current.bodies.has(p.id)) {
-                                physicsEngine.current.addPlayer(p);
-                            } else {
-                                physicsEngine.current.setPosition(p.id, p.pos);
-                                physicsEngine.current.setVelocity(p.id, p.vel);
-                            }
-                        });
-
-                        // Re-apply pending inputs
-                        pendingInputs.current.forEach(pi => {
-                            // We need to be careful not to double-play sounds or particles here
-                            // Ideally updatePhysics should have a 'prediction' flag
-                            // For now, we just run it.
-                            // Note: updatePhysics expects screen coords for mouse for local player, 
-                            // but stored input has world coords.
-                            // We need to convert back or update updatePhysics to handle this.
-                            // Actually, updatePhysics logic for local player:
-                            // worldMouseX = (mouse.x - cx) + state.camera.x;
-                            // So if we pass world coords as 'mouse', it will double add camera.
-
-                            // FIX: We should pass a flag or handle this.
-                            // Let's cheat: We know pi.input.mouse is WORLD.
-                            // We can pass a dummy mouse object where x = worldX - cameraX + cx
-                            // But cameraX changes.
-
-                            // Better: Modify updatePhysics to accept 'isPrediction' or 'useWorldMouse'.
-                            // Or just pass the input as 'remoteInputs' even for local player?
-                            // If we pass it as remoteInputs, updatePhysics will treat it as remote and use world coords directly!
-                            // But we need to pass localPlayerId so it knows it's us.
-                            // Wait, if isLocal is true, it ignores remoteInputs.
-
-                            // Let's just reconstruct screen mouse for now.
-                            const cx = window.innerWidth / 2; // Approximate
-                            const cy = window.innerHeight / 2;
-                            const screenMouse = {
-                                x: pi.input.mouse.x - gameState.current.camera.x + cx,
-                                y: pi.input.mouse.y - gameState.current.camera.y + cy
-                            };
-
-                            // To actually predict with MatterEngine:
-                            const runForce = 0.005;
-                            const force = { x: 0, y: 0 };
-                            if (pi.input.keys['KeyA']) force.x = -runForce;
-                            if (pi.input.keys['KeyD']) force.x = runForce;
-                            const pBody = physicsEngine.current.bodies.get(localId);
-                            // Very simple jump prediction for now
-                            if (pi.input.keys['KeyW'] && pBody && Math.abs(pBody.velocity.y) < 0.1) force.y = -0.1;
-
-                            physicsEngine.current.applyForce(localId, force);
-                            physicsEngine.current.step(16); // simulate 1 tick (assuming 60fps)
-
-                            updatePhysics(
-                                gameState.current,
-                                pi.input.keys,
-                                screenMouse,
-                                pi.input.hookPressed,
-                                pi.input.mousePressed,
-                                window.innerWidth,
-                                window.innerHeight,
-                                getSpawnPoint,
-                                localId
-                            );
-                        });
-
-                        // After prediction re-simulation, update our rendering state
-                        physicsEngine.current.syncGameState(gameState.current);
-                    } else {
-                        gameState.current = serverState;
-                        serverState.players.forEach(p => {
-                            if (!physicsEngine.current.bodies.has(p.id)) {
-                                physicsEngine.current.addPlayer(p);
-                            } else {
-                                physicsEngine.current.setPosition(p.id, p.pos);
-                                physicsEngine.current.setVelocity(p.id, p.vel);
-                            }
-                        });
-                    }
-                } else {
-                    gameState.current = serverState;
-                    serverState.players.forEach(p => {
-                        if (!physicsEngine.current.bodies.has(p.id)) {
-                            physicsEngine.current.addPlayer(p);
-                        } else {
-                            physicsEngine.current.setPosition(p.id, p.pos);
-                            physicsEngine.current.setVelocity(p.id, p.vel);
-                        }
-                    });
-                }
-            };
-
-        } else {
-            gameReady.current = true; // Offline mode is always ready
+            sessionRef.current = session;
         }
 
         let isMounted = true;
@@ -513,12 +412,14 @@ export default function GameCanvas() {
                 }
             });
 
-            initLevel();
+            // Online, the map arrives from the server on join (ClientSession.setupWorld)
+            if (state.networkMode !== NetworkMode.CLIENT) initLevel();
 
             // Start Loop
             app.ticker.add(() => {
                 const now = Date.now();
-                const hungerFinished = gameMode === GameMode.HUNGER_GAMES && !!gameState.current.hungerWinnerId;
+                const liveMode = gameState.current.mode;
+                const hungerFinished = liveMode === GameMode.HUNGER_GAMES && !!gameState.current.hungerWinnerId;
                 if (hungerFinished) {
                     const champ = gameState.current.players.find(p => p.id === gameState.current.hungerWinnerId);
                     if (champ) {
@@ -569,7 +470,8 @@ export default function GameCanvas() {
                         null,
                         null,
                         null,
-                        null
+                        null,
+                        localIdRef.current
                     );
                     drawZoneOverlay(zoneLayer, gameState.current.hungerZone);
                     return;
@@ -578,54 +480,13 @@ export default function GameCanvas() {
                 // Simulate at a fixed PHYSICS_TICK_RATE regardless of display refresh rate
                 const ticksRun = stepper.advance(app.ticker.deltaMS, () => {
                     if (state.networkMode === NetworkMode.CLIENT) {
-                        // Send Input
-                        const cx = app.screen.width / 2;
-                        const cy = app.screen.height / 2;
-                        const worldMouse = {
-                            x: (mouse.current.x - cx) + gameState.current.camera.x,
-                            y: (mouse.current.y - cy) + gameState.current.camera.y
-                        };
-
-                        inputSequence.current++;
-                        const input: PlayerInput = {
-                            keys: { ...keys.current }, // Copy keys to avoid reference issues
-                            mouse: worldMouse,
+                        const camera = gameState.current.camera;
+                        sessionRef.current?.tick(gameState.current, {
+                            keys: { ...keys.current },
+                            aim: { x: mouse.current.x - app.screen.width / 2 + camera.x, y: mouse.current.y - app.screen.height / 2 + camera.y },
                             mousePressed: mousePressed.current,
                             hookPressed: hookPressed.current,
-                            timestamp: Date.now(),
-                            sequence: inputSequence.current
-                        };
-                        socket.sendInput(input);
-
-                        // Client-Side Prediction
-                        const localId = socketManager.current.socket?.id || '';
-                        if (localId) {
-                            // 1. Step Matter (uses velocity from previous frame)
-                            physicsEngine.current.step(FIXED_STEP_MS);
-
-                            // 2. Read latest pos/vel/isGrounded
-                            physicsEngine.current.syncGameState(gameState.current);
-
-                            // 3. Force Pipeline
-                            updatePhysics(
-                                gameState.current,
-                                keys.current,
-                                mouse.current,
-                                hookPressed.current,
-                                mousePressed.current,
-                                app.screen.width,
-                                app.screen.height,
-                                getSpawnPoint,
-                                localId
-                            );
-
-                            // 4. Push updated velocities to Matter for next step
-                            physicsEngine.current.syncFromGameState(gameState.current);
-
-                            // Store input for reconciliation
-                            pendingInputs.current.push({ sequence: inputSequence.current, input });
-                        }
-
+                        }, performance.now());
                     } else {
                         // OFFLINE MODE
 
@@ -663,7 +524,7 @@ export default function GameCanvas() {
                 });
                 updateDebugStats(now, ticksRun);
 
-                if (gameMode === GameMode.HUNGER_GAMES) {
+                if (liveMode === GameMode.HUNGER_GAMES) {
                     const alive = gameState.current.players.filter(p => !p.dead).map(p => ({ id: p.id, name: p.name }));
                     const aliveKey = alive.map(p => p.id).join('|');
                     if (aliveKey !== hungerAliveKeyRef.current) {
@@ -678,7 +539,7 @@ export default function GameCanvas() {
                         setHungerEnded(true);
                         if (hungerRestartAtRef.current === null) hungerRestartAtRef.current = now + HUNGER_RESTART_DELAY;
                     }
-                    const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
+                    const local = gameState.current.players.find(p => p.id === localIdRef.current);
                     setIsLocalDead(!!local?.dead);
                     if (gameState.current.hungerZone?.pendingShrink && gameState.current.hungerZone.nextShrinkAt) {
                         const eta = Math.max(0, Math.ceil((gameState.current.hungerZone.nextShrinkAt - now) / 1000));
@@ -687,8 +548,8 @@ export default function GameCanvas() {
                         setHungerShrinkCountdown(null);
                     }
                 }
-                if (gameMode === GameMode.GUN_GAME) {
-                    const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
+                if (liveMode === GameMode.GUN_GAME) {
+                    const local = gameState.current.players.find(p => p.id === localIdRef.current);
                     if (local) {
                         const status = {
                             weapon: local.weapon.name,
@@ -714,7 +575,7 @@ export default function GameCanvas() {
                 }
 
                 // Zone overlay
-                if (gameMode === GameMode.HUNGER_GAMES) {
+                if (liveMode === GameMode.HUNGER_GAMES) {
                     drawZoneOverlay(zoneLayer, gameState.current.hungerZone, now);
                 } else {
                     zoneLayer.clear();
@@ -737,7 +598,8 @@ export default function GameCanvas() {
                         setPlayerInventory,
                         setActiveWeaponType,
                         setScores,
-                        actions.setPlayerScores
+                        actions.setPlayerScores,
+                        localIdRef.current
                     );
                     lastStateUpdate.current = now;
                 } else {
@@ -756,14 +618,15 @@ export default function GameCanvas() {
                         null,
                         null,
                         null,
-                        null
+                        null,
+                        localIdRef.current
                     );
                 }
             });
 
             // Draw static elements
-            // Draw map
-            drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
+            redrawMap = () => drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
+            redrawMap();
             drawBackground(backgroundLayer, app.screen.width, app.screen.height);
 
             // Load assets async
@@ -808,12 +671,12 @@ export default function GameCanvas() {
             // Inputs
             onKeyDown = (e: KeyboardEvent) => {
                 keys.current[e.code] = true;
-                if (!gameState.current.players.length) return;
+                const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const num = parseInt(e.key);
                 if (!isNaN(num) && num >= 1 && num <= 6) {
-                    const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
                     const w = local?.inventory[num - 1];
                     if (w && local) local.weapon = w;
+                    sessionRef.current?.selectWeapon(num - 1);
                 }
                 if (e.code === 'F3') {
                     e.preventDefault();
@@ -821,8 +684,8 @@ export default function GameCanvas() {
                     if (!debugVisibleRef.current) setDebugStats(null);
                 }
                 if (e.code === 'Escape') {
-                    const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
-                    if (local) actions.finishGame(local.score);
+                    // Works before joining too (e.g. server unreachable)
+                    actions.finishGame(local?.score ?? 0);
                 }
                 // Shift key can also activate grappling hook (convenient for trackpad users)
                 if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = true;
@@ -973,9 +836,9 @@ export default function GameCanvas() {
             visualCache.current.particles.clear();
             visualCache.current.pickups.clear();
             visualCache.current.decals.clear();
-            if (socketManager.current) {
-                socketManager.current.disconnect();
-            }
+            sessionRef.current?.dispose();
+            sessionRef.current = null;
+            localIdRef.current = 'player';
             visualCache.current.floatingTexts.clear();
         };
     }, [actions, state.selectedMode, state.selectedSkin, state.playerColor, state.playerName, state.jetpackColor, state.headColor, state.armColor, state.legColor, state.torsoColor]);
@@ -1037,6 +900,15 @@ export default function GameCanvas() {
                     {state.isMuted ? '🔇' : '🔊'}
                 </div>
             </div>
+
+            {state.networkMode === NetworkMode.CLIENT && !onlineMode && (
+                <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none">
+                    <div className="px-6 py-4 rounded-xl bg-black/80 border border-white/10 text-center font-mono">
+                        <div className={netError ? 'text-red-400 font-bold' : 'text-gray-200'}>{netError ?? t('net.connecting')}</div>
+                        {netError && <div className="text-xs text-gray-400 mt-2">{t('net.backToMenu')}</div>}
+                    </div>
+                </div>
+            )}
 
             {debugStats && (
                 <div className="absolute top-14 left-4 z-50 px-2 py-1 rounded bg-black/70 border border-white/10 font-mono text-xs text-green-300 pointer-events-none">

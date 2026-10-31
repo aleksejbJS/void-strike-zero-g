@@ -78,7 +78,10 @@ export class GameRoom {
             if (!input) continue;
             inputs[id] = input;
             const player = this.state.players.find(p => p.id === id);
-            if (player) player.lastProcessedInput = input.sequence;
+            if (!player) continue;
+            player.lastProcessedInput = input.sequence;
+            const selected = input.weaponIndex !== undefined ? player.inventory[input.weaponIndex] : undefined;
+            if (selected) player.weapon = selected;
         }
 
         // Same order as the offline client loop

@@ -28,7 +28,7 @@ describe('validateJoin', () => {
 
 describe('validateInput', () => {
     it('accepts a normal input and stamps server arrival time', () => {
-        expect(validateInput(goodInput, 999)).toEqual({ ...goodInput, timestamp: 999 });
+        expect(validateInput(goodInput, 999)).toEqual({ ...goodInput, timestamp: 999, weaponIndex: undefined });
     });
 
     it.each([

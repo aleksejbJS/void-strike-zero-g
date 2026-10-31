@@ -10,6 +10,7 @@ const FALLBACK_COLOR = '#3b82f6';
 const ALLOWED_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight'];
 const WORLD_MIN = -5000;
 const WORLD_MAX = 10000;
+const MAX_WEAPON_SLOTS = 6;
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -52,8 +53,13 @@ export const validateInput = (raw: unknown, arrivedAt: number): PlayerInput | nu
         if (raw.keys[key] === true) keys[key] = true;
     }
 
+    const weaponIndex = Number.isInteger(raw.weaponIndex) && (raw.weaponIndex as number) >= 0 && (raw.weaponIndex as number) < MAX_WEAPON_SLOTS
+        ? raw.weaponIndex as number
+        : undefined;
+
     return {
         keys,
+        weaponIndex,
         mouse: { x: clamp(mouse.x), y: clamp(mouse.y) },
         mousePressed: raw.mousePressed,
         hookPressed: raw.hookPressed,
