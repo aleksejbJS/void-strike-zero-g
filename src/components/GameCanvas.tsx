@@ -17,6 +17,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
+import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 
 type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
 
@@ -111,6 +112,11 @@ export default function GameCanvas() {
     // Achievement system
     const [recentAchievement, setRecentAchievement] = React.useState<Achievement | null>(null);
     const [showAchievements, setShowAchievements] = React.useState(false);
+
+    // F3 debug overlay: frames/s (display refresh) vs physics ticks/s (should stay at PHYSICS_TICK_RATE)
+    const [debugStats, setDebugStats] = React.useState<{ fps: number; tps: number } | null>(null);
+    const debugVisibleRef = useRef(false);
+    const debugCounters = useRef({ frames: 0, ticks: 0, since: 0 });
 
     // HP Animation State
     const previousHP = useRef(100);
@@ -444,6 +450,21 @@ export default function GameCanvas() {
         }
 
         let isMounted = true;
+        const stepper = new FixedStepper();
+
+        const updateDebugStats = (now: number, ticksRun: number) => {
+            const c = debugCounters.current;
+            c.frames++;
+            c.ticks += ticksRun;
+            const elapsed = now - c.since;
+            if (elapsed < 500) return;
+            if (debugVisibleRef.current) {
+                setDebugStats({ fps: Math.round(c.frames * 1000 / elapsed), tps: Math.round(c.ticks * 1000 / elapsed) });
+            }
+            c.frames = 0;
+            c.ticks = 0;
+            c.since = now;
+        };
 
         const setup = async () => {
             await app.init({ resizeTo: window, backgroundColor: 0x020617, antialias: true, autoDensity: true });
@@ -554,36 +575,67 @@ export default function GameCanvas() {
                     return;
                 }
 
-                if (state.networkMode === NetworkMode.CLIENT) {
-                    // Send Input
-                    const cx = app.screen.width / 2;
-                    const cy = app.screen.height / 2;
-                    const worldMouse = {
-                        x: (mouse.current.x - cx) + gameState.current.camera.x,
-                        y: (mouse.current.y - cy) + gameState.current.camera.y
-                    };
+                // Simulate at a fixed PHYSICS_TICK_RATE regardless of display refresh rate
+                const ticksRun = stepper.advance(app.ticker.deltaMS, () => {
+                    if (state.networkMode === NetworkMode.CLIENT) {
+                        // Send Input
+                        const cx = app.screen.width / 2;
+                        const cy = app.screen.height / 2;
+                        const worldMouse = {
+                            x: (mouse.current.x - cx) + gameState.current.camera.x,
+                            y: (mouse.current.y - cy) + gameState.current.camera.y
+                        };
 
-                    inputSequence.current++;
-                    const input: PlayerInput = {
-                        keys: { ...keys.current }, // Copy keys to avoid reference issues
-                        mouse: worldMouse,
-                        mousePressed: mousePressed.current,
-                        hookPressed: hookPressed.current,
-                        timestamp: Date.now(),
-                        sequence: inputSequence.current
-                    };
-                    socket.sendInput(input);
+                        inputSequence.current++;
+                        const input: PlayerInput = {
+                            keys: { ...keys.current }, // Copy keys to avoid reference issues
+                            mouse: worldMouse,
+                            mousePressed: mousePressed.current,
+                            hookPressed: hookPressed.current,
+                            timestamp: Date.now(),
+                            sequence: inputSequence.current
+                        };
+                        socket.sendInput(input);
 
-                    // Client-Side Prediction
-                    const localId = socketManager.current.socket?.id || '';
-                    if (localId) {
+                        // Client-Side Prediction
+                        const localId = socketManager.current.socket?.id || '';
+                        if (localId) {
+                            // 1. Step Matter (uses velocity from previous frame)
+                            physicsEngine.current.step(FIXED_STEP_MS);
+
+                            // 2. Read latest pos/vel/isGrounded
+                            physicsEngine.current.syncGameState(gameState.current);
+
+                            // 3. Force Pipeline
+                            updatePhysics(
+                                gameState.current,
+                                keys.current,
+                                mouse.current,
+                                hookPressed.current,
+                                mousePressed.current,
+                                app.screen.width,
+                                app.screen.height,
+                                getSpawnPoint,
+                                localId
+                            );
+
+                            // 4. Push updated velocities to Matter for next step
+                            physicsEngine.current.syncFromGameState(gameState.current);
+
+                            // Store input for reconciliation
+                            pendingInputs.current.push({ sequence: inputSequence.current, input });
+                        }
+
+                    } else {
+                        // OFFLINE MODE
+
                         // 1. Step Matter (uses velocity from previous frame)
-                        physicsEngine.current.step(app.ticker.deltaMS);
+                        physicsEngine.current.step(FIXED_STEP_MS);
 
-                        // 2. Read latest pos/vel/isGrounded
+                        // 2. Read latest pos/vel/isGrounded from this step
                         physicsEngine.current.syncGameState(gameState.current);
 
-                        // 3. Force Pipeline
+                        // 3. Force Pipeline (gravity, inputs, jetpack, grapple, friction, caps)
                         updatePhysics(
                             gameState.current,
                             keys.current,
@@ -593,50 +645,23 @@ export default function GameCanvas() {
                             app.screen.width,
                             app.screen.height,
                             getSpawnPoint,
-                            localId
+                            'player'
                         );
 
                         // 4. Push updated velocities to Matter for next step
                         physicsEngine.current.syncFromGameState(gameState.current);
 
-                        // Store input for reconciliation
-                        pendingInputs.current.push({ sequence: inputSequence.current, input });
+                        // 5. Speed clamp
+                        gameState.current.players.forEach(player => {
+                            const body = physicsEngine.current.bodies.get(player.id);
+                            if (body) {
+                                if (body.velocity.x > 15) physicsEngine.current.setVelocity(player.id, { x: 15, y: body.velocity.y });
+                                if (body.velocity.x < -15) physicsEngine.current.setVelocity(player.id, { x: -15, y: body.velocity.y });
+                            }
+                        });
                     }
-
-                } else {
-                    // OFFLINE MODE
-
-                    // 1. Step Matter (uses velocity from previous frame)
-                    physicsEngine.current.step(app.ticker.deltaMS);
-
-                    // 2. Read latest pos/vel/isGrounded from this step
-                    physicsEngine.current.syncGameState(gameState.current);
-
-                    // 3. Force Pipeline (gravity, inputs, jetpack, grapple, friction, caps)
-                    updatePhysics(
-                        gameState.current,
-                        keys.current,
-                        mouse.current,
-                        hookPressed.current,
-                        mousePressed.current,
-                        app.screen.width,
-                        app.screen.height,
-                        getSpawnPoint,
-                        'player'
-                    );
-
-                    // 4. Push updated velocities to Matter for next step
-                    physicsEngine.current.syncFromGameState(gameState.current);
-
-                    // 5. Speed clamp
-                    gameState.current.players.forEach(player => {
-                        const body = physicsEngine.current.bodies.get(player.id);
-                        if (body) {
-                            if (body.velocity.x > 15) physicsEngine.current.setVelocity(player.id, { x: 15, y: body.velocity.y });
-                            if (body.velocity.x < -15) physicsEngine.current.setVelocity(player.id, { x: -15, y: body.velocity.y });
-                        }
-                    });
-                }
+                });
+                updateDebugStats(now, ticksRun);
 
                 if (gameMode === GameMode.HUNGER_GAMES) {
                     const alive = gameState.current.players.filter(p => !p.dead).map(p => ({ id: p.id, name: p.name }));
@@ -789,6 +814,11 @@ export default function GameCanvas() {
                     const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
                     const w = local?.inventory[num - 1];
                     if (w && local) local.weapon = w;
+                }
+                if (e.code === 'F3') {
+                    e.preventDefault();
+                    debugVisibleRef.current = !debugVisibleRef.current;
+                    if (!debugVisibleRef.current) setDebugStats(null);
                 }
                 if (e.code === 'Escape') {
                     const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
@@ -1007,6 +1037,12 @@ export default function GameCanvas() {
                     {state.isMuted ? '🔇' : '🔊'}
                 </div>
             </div>
+
+            {debugStats && (
+                <div className="absolute top-14 left-4 z-50 px-2 py-1 rounded bg-black/70 border border-white/10 font-mono text-xs text-green-300 pointer-events-none">
+                    FPS {debugStats.fps} · physics {debugStats.tps}/s
+                </div>
+            )}
 
             {/* Счет команд для CTF/HTF/INFILTRATION */}
             {(gameMode === GameMode.CTF || gameMode === GameMode.HOLD_THE_FLAG || gameMode === GameMode.INFILTRATION) && (

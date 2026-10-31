@@ -69,7 +69,10 @@ export const RESPAWN_DELAY = 3000;
 export const HTF_SCORE_INTERVAL = 4000; // 4s tick while holding
 export const HTF_WIN_SCORE = 200;
 export const INFILTRATION_TIMER = 180000; // 3 minutes
-export const PROJECTILE_MAX_LIFE = 180;   // ticks (~3s) before a stray projectile is removed
+// Simulation rate. All per-tick values (speeds, forces, lifetimes) were tuned at 120 ticks/s
+// on a 120 Hz display, so the fixed step keeps that feel on every monitor.
+export const PHYSICS_TICK_RATE = 120;
+export const PROJECTILE_MAX_LIFE = 3 * PHYSICS_TICK_RATE; // ticks (3s) before a stray projectile is removed
 export const DEFAULT_MAX_FUEL = 100;      // jetpack tank size without the fuel pickup bonus
 export const HUNGER_SHRINK_STEP = 250;    // zone shrink per edge, per pending death
 export const HUNGER_SHRINK_DELAY = 5000;  // ms between first death and the shrink
