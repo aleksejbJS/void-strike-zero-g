@@ -1,5 +1,5 @@
 import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, PlayerInput, RagdollPart } from '../../types';
-import { HOOK_RANGE, WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER } from '../../constants';
+import { HOOK_RANGE, WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
@@ -7,8 +7,8 @@ import { distance, normalize, checkPointInRect, checkRectOverlap, segmentInterse
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackKill, trackFlagCapture, trackFlagHoldTime, trackDoubleJump, trackHookUse, trackDashUse, trackItemPickup } from './achievements';
 
-import { resetFlagToBase, applyGunGameLoadout } from './gamemodes';
-import { applyDamage, fireWeapon, createParticles, resolveCollision, castRay, createExplosion } from './combat';
+import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
+import { applyDamage, fireWeapon, createParticles, resolveCollision, castRay, createExplosion, isTeammate } from './combat';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
 import { applyMovement, MovementInput } from './movement';
 import { applyGrappleRelease } from './grapple';
@@ -32,7 +32,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         state.scores[disadvantaged] += 1;
                     }
                 }
-                p.dead = false; p.health = 100; p.armor = 0; p.jetpackFuel = 100;
+                p.dead = false; p.health = 100; p.armor = 0;
+                p.maxFuel = DEFAULT_MAX_FUEL; p.jetpackFuel = DEFAULT_MAX_FUEL;
                 p.pos = getSpawnPoint(p.team); p.vel = { x: 0, y: 0 };
                 if (state.mode === GameMode.GUN_GAME) {
                     applyGunGameLoadout(p, p.gunLevel || 0);
@@ -48,6 +49,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
     // Hunger Games shrinking zone damage
     if (state.mode === GameMode.HUNGER_GAMES && state.hungerZone) {
+        tickHungerZoneShrink(state, now);
         const hz = state.hungerZone;
         const graceShrink = hz.lastShrink ? now - hz.lastShrink < 800 : false;
         const outsideGraceMs = 500;
@@ -255,15 +257,10 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             isFlying,
             wantsJump,
             wantsDown,
-            wantsReel: !!(isFlying && wantsJump && p.grapple.active),
+            wantsReel: !!(wantsJump && p.grapple.active),
             wantsExtend: !!(wantsDown && p.grapple.active),
         };
         applyMovement(p, movInput, state);
-
-        // Jetpack visual particles (after force pipeline applies thrust)
-        if (isFlying && p.jetpackFuel > 0) {
-            if (Math.random() < 0.5) createParticles(state, p.pos.x - 12, p.pos.y + 18, 1, '#fbbf24', 'fire');
-        }
 
         if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team) {
             p.vel.x *= 0.85;
@@ -323,7 +320,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     // Gun Game disables weapon pickups to preserve ladder progression
                     if (state.mode !== GameMode.GUN_GAME) {
                         const has = p.inventory.find(w => w.type === item.subtype);
-                        if (has) has.ammo += 10; else if (item.subtype) p.inventory.push({ ...WEAPONS_DATA[item.subtype] });
+                        if (has) has.ammo = Math.min(has.maxAmmo, has.ammo + 10); else if (item.subtype) p.inventory.push({ ...WEAPONS_DATA[item.subtype] });
                         // Don't auto-switch weapon - let player choose
                         collected = true;
                     }
@@ -406,7 +403,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         const prevPos = { ...proj.pos };
         proj.pos.x += proj.vel.x; proj.pos.y += proj.vel.y;
         if (proj.type === WeaponType.ROCKET_LAUNCHER) { proj.vel.y += 0.1; if (Math.random() < 0.5) createParticles(state, proj.pos.x, proj.pos.y, 1, '#9ca3af', 'smoke'); }
-        if (proj.type === WeaponType.GRENADE_LAUNCHER) { proj.vel.y += 0.25; proj.life = (proj.life || 0) - 1; }
+        if (proj.type === WeaponType.GRENADE_LAUNCHER) proj.vel.y += 0.25;
+        proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;
         state.platforms.forEach(plat => {
@@ -417,9 +415,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 if (p.id !== proj.ownerId && !p.dead) {
                     // Friendly Fire Check: Pass through teammates
                     const owner = state.players.find(o => o.id === proj.ownerId);
-                    if (owner && owner.team !== Team.NONE && p.team !== Team.NONE && owner.team === p.team) {
-                        return; // Ignore collision with teammate
-                    }
+                    if (owner && isTeammate(owner, p)) return; // Ignore collision with teammate
 
                     const rect = { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height };
                     if (checkPointInRect(proj.pos, rect) || segmentIntersectsRect(prevPos, proj.pos, rect)) {
@@ -428,7 +424,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 }
             });
         }
-        if (proj.type === WeaponType.GRENADE_LAUNCHER && (proj.life || 0) <= 0) hit = true;
+        if (proj.type === WeaponType.GRENADE_LAUNCHER && proj.life <= 0) hit = true;
+        // Stray projectile ran out of life without hitting anything — remove silently
+        if (!hit && proj.life <= 0) proj.active = false;
 
         if (hit) {
             proj.active = false;

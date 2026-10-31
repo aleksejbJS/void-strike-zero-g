@@ -58,7 +58,7 @@ beforeEach(() => {
 describe('botHasLineOfSight', () => {
   it('returns false when a platform blocks the ray', () => {
     const state = makeState();
-    state.platforms = [{ x: 40, y: 40, w: 20, h: 20, color: '#000' }];
+    state.platforms = [{ id: 'wall', x: 40, y: 40, w: 20, h: 20, color: '#000' }];
     const see = botHasLineOfSight(state, { x: 0, y: 0 }, { x: 100, y: 100 });
     expect(see).toBe(false);
   });

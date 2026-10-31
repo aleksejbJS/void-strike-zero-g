@@ -2,12 +2,18 @@
 // Extracted from physics.ts for better modularity
 
 import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, Team, RagdollPart } from '../../types';
-import { GRAVITY, WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT } from '../../constants';
+import { GRAVITY, WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT, PROJECTILE_MAX_LIFE } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
-import { distance, normalize, checkPointInRect, segmentIntersectsRect } from '../utils/math';
-import { resetFlagToBase, handleGunGameKill, handleGunGameDeath } from './gamemodes';
+import { distance, normalize, checkPointInRect, segmentRectEntry } from '../utils/math';
+import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
+
+// --- Teams ---
+
+// True when both entities are on the same real team (free-for-all players are never teammates)
+export const isTeammate = (a: Entity, b: Entity) =>
+    a.id !== b.id && a.team !== Team.NONE && a.team === b.team;
 
 // --- Ragdoll ---
 
@@ -163,30 +169,9 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         // Create Ragdoll instead of static corpse
         createRagdoll(state, target);
 
-        // Hunger Games: shrink zone on each death
-        if (state.mode === GameMode.HUNGER_GAMES && state.hungerZone) {
-            const shrink = 250;
-            const minSize = 1200;
-            if (!state.hungerZone.pendingShrink) {
-                state.hungerZone.pendingShrink = true;
-                state.hungerZone.nextShrinkAt = Date.now() + 5000;
-                state.hungerZone.pendingCount = 1;
-            } else {
-                state.hungerZone.pendingCount = (state.hungerZone.pendingCount || 1) + 1;
-            }
-            const doShrink = state.hungerZone.pendingShrink && state.hungerZone.nextShrinkAt && Date.now() >= state.hungerZone.nextShrinkAt;
-            if (doShrink) {
-                const stack = Math.max(1, state.hungerZone.pendingCount || 1);
-                const totalShrink = shrink * stack;
-                state.hungerZone.x += totalShrink;
-                state.hungerZone.y += totalShrink;
-                state.hungerZone.w = Math.max(minSize, state.hungerZone.w - totalShrink * 2);
-                state.hungerZone.h = Math.max(minSize, state.hungerZone.h - totalShrink * 2);
-                state.hungerZone.lastShrink = Date.now();
-                state.hungerZone.pendingShrink = false;
-                state.hungerZone.nextShrinkAt = undefined;
-                state.hungerZone.pendingCount = 0;
-            }
+        // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
+        if (state.mode === GameMode.HUNGER_GAMES) {
+            scheduleHungerZoneShrink(state, Date.now());
         }
 
         if (state.mode === GameMode.GUN_GAME) {
@@ -232,8 +217,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                 victim: target.name,
                 victimColor: target.color
             });
-            // Award score
-            if (killer) {
+            // Award score (suicide gives nothing)
+            if (killer && killer.id !== target.id) {
                 if (state.mode !== GameMode.CTF) {
                     killer.score++;
                 } else if (killer.team !== target.team) {
@@ -262,7 +247,10 @@ export const createExplosion = (state: GameState, pos: Vector2, ownerId: string,
 
     const wepData = weaponType ? WEAPONS_DATA[weaponType] : undefined;
 
+    const owner = state.players.find(o => o.id === ownerId);
+
     state.players.forEach(p => {
+        if (owner && isTeammate(owner, p)) return;
         const dist = distance(pos, p.pos);
         if (dist < radius) {
             const dmg = (wepData?.damage ?? 100) * (1 - dist / radius);
@@ -291,25 +279,23 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
     if (p.weapon.type === WeaponType.RAILGUN) {
         const range = 2200;
         const end = { x: origin.x + dir.x * range, y: origin.y + dir.y * range };
-        let closest = range;
-        let hitPos = end;
+        // Closest hit along the beam, as a fraction of its length
+        let closestT = 1;
         let hitPlayer: Entity | null = null;
 
         state.players.forEach(tgt => {
-            if (tgt.id === p.id || tgt.dead) return;
+            if (tgt.id === p.id || tgt.dead || isTeammate(p, tgt)) return;
             const rect = { x: tgt.pos.x - 15, y: tgt.pos.y - tgt.height, w: 30, h: tgt.height };
-            if (segmentIntersectsRect(origin, end, rect)) {
-                const d = distance(origin, tgt.pos);
-                if (d < closest) { closest = d; hitPlayer = tgt; hitPos = { x: origin.x + dir.x * d, y: origin.y + dir.y * d }; }
-            }
+            const t = segmentRectEntry(origin, end, rect);
+            if (t !== null && t < closestT) { closestT = t; hitPlayer = tgt; }
         });
 
         state.platforms.forEach(plat => {
-            if (segmentIntersectsRect(origin, end, plat)) {
-                const d = distance(origin, { x: plat.x, y: plat.y });
-                if (d < closest) { closest = d; hitPlayer = null; hitPos = { x: origin.x + dir.x * d, y: origin.y + dir.y * d }; }
-            }
+            const t = segmentRectEntry(origin, end, plat);
+            if (t !== null && t < closestT) { closestT = t; hitPlayer = null; }
         });
+
+        const hitPos = { x: origin.x + dir.x * range * closestT, y: origin.y + dir.y * range * closestT };
 
         if (hitPlayer) {
             applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, WEAPONS_DATA[WeaponType.RAILGUN].knockbackForce);
@@ -333,7 +319,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
         const reach = 70;
         const attackPos = { x: origin.x + dir.x * reach, y: origin.y + dir.y * reach };
         state.players.forEach(tgt => {
-            if (tgt.id === p.id || tgt.dead) return;
+            if (tgt.id === p.id || tgt.dead || isTeammate(p, tgt)) return;
             const dist = distance(attackPos, tgt.pos);
             if (dist < 60) {
                 applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce);
@@ -352,7 +338,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             pos: { x: origin.x + dir.x * 20, y: origin.y + dir.y * 20 },
             vel: { x: Math.cos(a) * p.weapon.speed, y: Math.sin(a) * p.weapon.speed },
             type: p.weapon.type, radius: 4, active: true,
-            life: p.weapon.type === WeaponType.GRENADE_LAUNCHER ? 60 : undefined
+            life: p.weapon.type === WeaponType.GRENADE_LAUNCHER ? 60 : PROJECTILE_MAX_LIFE
         });
     }
 

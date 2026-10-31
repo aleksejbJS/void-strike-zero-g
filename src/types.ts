@@ -114,7 +114,7 @@ export interface Projectile {
   type: WeaponType;
   radius: number;
   active: boolean;
-  life?: number; // For grenades
+  life?: number; // Ticks left before the projectile expires (grenades explode)
 }
 
 export interface Particle {

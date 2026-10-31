@@ -167,12 +167,23 @@ export class MatterPhysicsEngine {
         }
     }
 
+    // Resize the body when the player's height changes (crouch/stand).
+    // Position is re-anchored to the feet by the caller right after.
+    private matchBodyHeight(body: Matter.Body, height: number) {
+        const current = body.bounds.max.y - body.bounds.min.y;
+        if (Math.abs(current - height) < 0.01) return;
+        Matter.Body.scale(body, 1, height / current);
+        // scale() recomputes inertia; keep the player from rotating
+        Matter.Body.setInertia(body, Infinity);
+    }
+
     // Push game state velocity/position changes back to Matter bodies
     // Call this after updatePhysics modifies velocities (jetpack, grapple, bots, etc.)
     public syncFromGameState(state: { players: Entity[] }) {
         for (const player of state.players) {
             const body = this.bodies.get(player.id);
             if (body) {
+                this.matchBodyHeight(body, player.height);
                 Matter.Body.setVelocity(body, { x: player.vel.x, y: player.vel.y });
                 // Game coords (centerX, bottomY) → Matter center
                 const centerX = player.pos.x;
