@@ -51,6 +51,22 @@ describe('Respawn', () => {
     });
 });
 
+describe('Team balance', () => {
+    it.each([GameMode.CTF, GameMode.HOLD_THE_FLAG])('respawning in unbalanced %s gives no free points', mode => {
+        const state = createMockState(mode);
+        const dead = createMockPlayer('p1', Team.BLUE);
+        dead.dead = true;
+        dead.respawnTimer = 0;
+        state.players.push(dead, createMockPlayer('r1', Team.RED), createMockPlayer('r2', Team.RED), createMockPlayer('r3', Team.RED));
+
+        tick(state);
+
+        expect(dead.dead).toBe(false);
+        expect(state.scores[Team.BLUE]).toBe(0);
+        expect(state.scores[Team.RED]).toBe(0);
+    });
+});
+
 describe('Grapple', () => {
     it('reels in even with an empty jetpack', () => {
         const state = createMockState(GameMode.DEATHMATCH);

@@ -29,14 +29,6 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         if (p.dead) {
             if (state.mode === GameMode.HUNGER_GAMES) return;
             if (now > p.respawnTimer) {
-                if (state.mode === GameMode.CTF || state.mode === GameMode.HOLD_THE_FLAG) {
-                    const blueCount = state.players.filter(pl => pl.team === Team.BLUE).length;
-                    const redCount = state.players.filter(pl => pl.team === Team.RED).length;
-                    if (Math.abs(blueCount - redCount) > 1) {
-                        const disadvantaged = blueCount < redCount ? Team.BLUE : Team.RED;
-                        state.scores[disadvantaged] += 1;
-                    }
-                }
                 p.dead = false; p.health = 100; p.armor = 0;
                 p.maxFuel = DEFAULT_MAX_FUEL; p.jetpackFuel = DEFAULT_MAX_FUEL;
                 p.pos = getSpawnPoint(p.team); p.vel = { x: 0, y: 0 };
