@@ -32,7 +32,8 @@ const PlayerCustomization: React.FC<{ onContinue: () => void; onBack: () => void
         skin: (typeof SKINS)[number] | undefined = currentSkin
     ) => {
         const stage = app.stage;
-        stage.removeChildren();
+        // Destroy old display objects (textures are shared and kept)
+        stage.removeChildren().forEach(c => c.destroy({ children: true }));
         const root = new Container();
         root.position.set(app.view.width / 2, app.view.height / 2 + 12);
         const previewScale = 1.7; // Крупный, но ближе к масштабу в игре
@@ -126,8 +127,8 @@ const PlayerCustomization: React.FC<{ onContinue: () => void; onBack: () => void
         const jetpack = new Graphics(); jetpack.label = 'jetpack'; jetpack.rect(-4, -12, 10, 24).fill(parseInt(jetpackColor.replace('#', ''), 16));
         jetpack.position.set(-14, -6); root.addChild(jetpack);
 
-        const leftArm = createArm(armColor, false); leftArm.position.set(-8, -20); root.addChild(leftArm);
-        const rightArm = createArm(armColor, true); rightArm.position.set(0, -20); root.addChild(rightArm);
+        const leftArm = createArm(armColor, false); leftArm.label = 'leftArm'; leftArm.position.set(-8, -20); root.addChild(leftArm);
+        const rightArm = createArm(armColor, true); rightArm.label = 'rightArm'; rightArm.position.set(0, -20); root.addChild(rightArm);
 
         // Weapon sprite
         const wGfx = rightArm.getChildByLabel('weapon') as Graphics;
@@ -225,7 +226,16 @@ const PlayerCustomization: React.FC<{ onContinue: () => void; onBack: () => void
         if (pixiApp.current && Object.keys(texturesRef.current).length) {
             drawPreview(pixiApp.current, texturesRef.current, currentSkin);
         }
-    }, [torsoColor, headColor, armColor, legColor, jetpackColor, rightArmAngle, currentSkin]);
+    }, [torsoColor, headColor, armColor, legColor, jetpackColor, currentSkin]);
+
+    // Animate arms in place instead of rebuilding the whole preview every frame
+    useEffect(() => {
+        const root = pixiApp.current?.stage.children[0];
+        const leftArm = root?.getChildByLabel('leftArm');
+        const rightArm = root?.getChildByLabel('rightArm');
+        if (leftArm) leftArm.rotation = leftArmAngle;
+        if (rightArm) rightArm.rotation = rightArmAngle;
+    }, [leftArmAngle, rightArmAngle]);
 
     useEffect(() => {
         setSkinId(currentSkin.id);

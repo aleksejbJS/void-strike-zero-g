@@ -7,6 +7,7 @@ let musicGain: GainNode | null = null;
 let sfxGain: GainNode | null = null;
 let currentBackgroundMusic: string | null = null;
 const audioBuffers = new Map<string, AudioBuffer>();
+let proceduralAudioPromise: Promise<void> | null = null;
 
 // Background music tracks
 const MUSIC_TRACKS = {
@@ -37,8 +38,9 @@ export const initAudio = async () => {
     musicGain.gain.value = 0.3;
   }
 
-  // Generate procedural audio buffers for basic sounds
-  await generateProceduralAudio();
+  // Generate procedural audio buffers once — initAudio runs on every click
+  if (!proceduralAudioPromise) proceduralAudioPromise = generateProceduralAudio();
+  await proceduralAudioPromise;
 };
 
 const generateProceduralAudio = async () => {
@@ -69,7 +71,7 @@ const generateProceduralAudio = async () => {
 const createAudioBuffer = async (audioData: Float32Array): Promise<AudioBuffer> => {
   if (!audioCtx) throw new Error('Audio context not initialized');
   const buffer = audioCtx.createBuffer(1, audioData.length, audioCtx.sampleRate);
-  buffer.copyFromChannel(audioData as Float32Array<ArrayBuffer>, 0);
+  buffer.copyToChannel(audioData as Float32Array<ArrayBuffer>, 0);
   return buffer;
 };
 

@@ -225,15 +225,23 @@ export const ACHIEVEMENTS: Achievement[] = [
   }
 ];
 
-// Safe storage shim for server (Node) where localStorage is not available
+// Safe storage shim for server (Node) where localStorage is not available,
+// and for browsers that block storage access (accessing it throws SecurityError)
 export let memoryStore: Record<string, string> = {};
-const storageShim: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = typeof localStorage !== 'undefined'
-  ? localStorage
-  : {
-    getItem: (key) => memoryStore[key] || null,
-    setItem: (key, val) => { memoryStore[key] = val; },
-    removeItem: (key) => { delete memoryStore[key]; }
-  };
+const memoryStorage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = {
+  getItem: (key) => memoryStore[key] || null,
+  setItem: (key, val) => { memoryStore[key] = val; },
+  removeItem: (key) => { delete memoryStore[key]; }
+};
+const resolveStorage = (): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> => {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : memoryStorage;
+  } catch (err) {
+    console.warn('localStorage unavailable, achievements will not persist:', err);
+    return memoryStorage;
+  }
+};
+const storageShim = resolveStorage();
 
 export class AchievementManager {
   private progress: AchievementProgress = {};
@@ -303,8 +311,12 @@ export class AchievementManager {
     return currentProgress.unlocked && !wasUnlocked;
   }
 
-  public onAchievementUnlocked(listener: (achievement: Achievement) => void): void {
+  // Returns an unsubscribe function — call it on unmount to avoid piling up listeners
+  public onAchievementUnlocked(listener: (achievement: Achievement) => void): () => void {
     this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
   }
 
   private notifyListeners(achievement: Achievement): void {

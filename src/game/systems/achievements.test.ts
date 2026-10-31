@@ -19,6 +19,18 @@ describe('Achievement System', () => {
     achievementManager.reset();
   });
 
+  describe('Listeners', () => {
+    test('unsubscribe stops further notifications', () => {
+      const listener = vi.fn();
+      const unsubscribe = achievementManager.onAchievementUnlocked(listener);
+      unsubscribe();
+
+      trackKill(WeaponType.MACHINE_GUN);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Basic Achievement Tracking', () => {
     test('should track first blood achievement', () => {
       trackKill(WeaponType.MACHINE_GUN);

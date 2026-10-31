@@ -18,6 +18,13 @@ import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 
+type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
+
+const HUNGER_RESTART_DELAY = 10000;
+
+const detectMobile = () =>
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
 export default function GameCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
     const pixiApp = useRef<Application | null>(null);
@@ -32,7 +39,8 @@ export default function GameCanvas() {
     const gunGameEndedRef = useRef(false);
     const { state, actions } = useUIStore();
     const { t } = useTranslation();
-    const physicsEngine = useRef(new MatterPhysicsEngine());
+    const physicsEngine = useRef<MatterPhysicsEngine>(null as unknown as MatterPhysicsEngine);
+    if (!physicsEngine.current) physicsEngine.current = new MatterPhysicsEngine();
 
     // Game State
     const gameState = useRef<GameState>({
@@ -77,8 +85,14 @@ export default function GameCanvas() {
     const hungerCredits = useRef(100);
 
     // Mobile touch controls
-    const [isMobile, setIsMobile] = React.useState(false);
-    const [touchJoystick, setTouchJoystick] = React.useState<{ active: boolean; startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+    const [isMobile, setIsMobile] = React.useState(detectMobile);
+    // Joystick: the ref drives game input, the state only drives the on-screen widget
+    const [touchJoystick, setTouchJoystick] = React.useState<JoystickState | null>(null);
+    const joystickRef = useRef<JoystickState | null>(null);
+    const updateJoystick = (next: JoystickState | null) => {
+        joystickRef.current = next;
+        setTouchJoystick(next);
+    };
     const [touchButtons, setTouchButtons] = React.useState<{ jump: boolean; hook: boolean; fire: boolean }>({ jump: false, hook: false, fire: false });
     const [hungerBetTarget, setHungerBetTarget] = React.useState<string | null>(null);
     const [hungerWinner, setHungerWinner] = React.useState<string | null>(null);
@@ -87,8 +101,12 @@ export default function GameCanvas() {
     const [isLocalDead, setIsLocalDead] = React.useState(false);
     const [hungerShrinkCountdown, setHungerShrinkCountdown] = React.useState<number | null>(null);
     const [hungerEnded, setHungerEnded] = React.useState(false);
-    const [hungerRestartAt, setHungerRestartAt] = React.useState<number | null>(null);
     const [hungerRestartCountdown, setHungerRestartCountdown] = React.useState<number | null>(null);
+    // Loop-owned values live in refs: the Pixi ticker closure never sees fresh React state
+    const hungerRestartAtRef = useRef<number | null>(null);
+    const hungerWinnerShownRef = useRef(false);
+    const hungerAliveKeyRef = useRef('');
+    const gunGameStatusKeyRef = useRef('');
 
     // Achievement system
     const [recentAchievement, setRecentAchievement] = React.useState<Achievement | null>(null);
@@ -101,13 +119,19 @@ export default function GameCanvas() {
 
     // Achievement listener
     React.useEffect(() => {
+        let hideTimer: ReturnType<typeof setTimeout> | undefined;
         const handleAchievementUnlock = (achievement: Achievement) => {
             setRecentAchievement(achievement);
             // Hide after 5 seconds
-            setTimeout(() => setRecentAchievement(null), 5000);
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(() => setRecentAchievement(null), 5000);
         };
 
-        achievementManager.onAchievementUnlocked(handleAchievementUnlock);
+        const unsubscribe = achievementManager.onAchievementUnlocked(handleAchievementUnlock);
+        return () => {
+            unsubscribe();
+            clearTimeout(hideTimer);
+        };
     }, []);
     const placeHungerBet = (id: string) => {
         if (hungerBetTarget || hungerCredits.current < 100) return;
@@ -173,7 +197,8 @@ export default function GameCanvas() {
             setHungerShrinkCountdown(null);
             setHungerEnded(false);
             (gameState.current as any).betSpectateId = null;
-            setHungerRestartAt(null);
+            hungerRestartAtRef.current = null;
+            hungerWinnerShownRef.current = false;
             setHungerRestartCountdown(null);
         } else {
             gameState.current.hungerZone = undefined;
@@ -252,11 +277,7 @@ export default function GameCanvas() {
 
     useEffect(() => {
         // Detect mobile device
-        const checkMobile = () => {
-            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-            setIsMobile(isMobileDevice);
-        };
-        checkMobile();
+        const checkMobile = () => setIsMobile(detectMobile());
         window.addEventListener('resize', checkMobile);
 
         return () => window.removeEventListener('resize', checkMobile);
@@ -282,6 +303,10 @@ export default function GameCanvas() {
         let onTouchStart: ((e: TouchEvent) => void) | null = null;
         let onTouchMove: ((e: TouchEvent) => void) | null = null;
         let onTouchEnd: ((e: TouchEvent) => void) | null = null;
+        let onBlur: (() => void) | null = null;
+        let onVisibilityChange: (() => void) | null = null;
+        // Read once here: the isMobile state is not a dependency of this effect
+        const mobile = detectMobile();
 
         // Socket Setup
         const socket = new SocketManager();
@@ -424,7 +449,8 @@ export default function GameCanvas() {
             await app.init({ resizeTo: window, backgroundColor: 0x020617, antialias: true, autoDensity: true });
 
             if (!isMounted) {
-                app.destroy(true, { children: true, texture: true });
+                // Keep textures: they are shared via the generateAssets() cache
+                app.destroy(true, { children: true, texture: false });
                 return;
             }
 
@@ -478,39 +504,34 @@ export default function GameCanvas() {
                         gameState.current.camera.x += (champ.pos.x - gameState.current.camera.x) * 0.1;
                         gameState.current.camera.y += (champ.pos.y - 50 - gameState.current.camera.y) * 0.1;
                     }
-                    if (hungerRestartAt) {
-                        const remaining = Math.max(0, Math.ceil((hungerRestartAt - now) / 1000));
-                        setHungerRestartCountdown(remaining);
-                        if (remaining <= 0) {
-                            // Restart round
-                            // Clear visual caches
-                            visualCache.current.players.clear();
-                            visualCache.current.projectiles.clear();
-                            visualCache.current.particles.clear();
-                            visualCache.current.pickups.clear();
-                            visualCache.current.decals.clear();
-                            visualCache.current.floatingTexts.clear();
-                            decalLayer.removeChildren();
-                            gameLayer.removeChildren();
-                            platformLayer.clear();
-                            zoneLayer.clear();
+                    if (hungerRestartAtRef.current === null) hungerRestartAtRef.current = now + HUNGER_RESTART_DELAY;
+                    const remaining = Math.max(0, Math.ceil((hungerRestartAtRef.current - now) / 1000));
+                    setHungerRestartCountdown(remaining);
+                    if (remaining <= 0) {
+                        // Restart round
+                        // Clear visual caches
+                        visualCache.current.players.clear();
+                        visualCache.current.projectiles.clear();
+                        visualCache.current.particles.clear();
+                        visualCache.current.pickups.clear();
+                        visualCache.current.decals.clear();
+                        visualCache.current.floatingTexts.clear();
+                        decalLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+                        gameLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+                        platformLayer.clear();
+                        zoneLayer.clear();
 
-                            const nextState = makeInitialState();
-                            nextState.mode = GameMode.HUNGER_GAMES;
-                            nextState.currentMap = MapId.HUNGER;
-                            gameState.current = nextState;
-                            initLevel();
-                            drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
-                            drawBackground(backgroundLayer, app.screen.width, app.screen.height);
-                            setHungerWinner(null);
-                            setHungerWinnerId(null);
-                            setHungerEnded(false);
-                            setHungerRestartAt(null);
-                            setHungerRestartCountdown(null);
-                        }
-                    } else {
-                        // ensure countdown starts
-                        setHungerRestartAt(Date.now() + 10000);
+                        const nextState = makeInitialState();
+                        nextState.mode = GameMode.HUNGER_GAMES;
+                        nextState.currentMap = MapId.HUNGER;
+                        gameState.current = nextState;
+                        initLevel();
+                        drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
+                        drawBackground(backgroundLayer, app.screen.width, app.screen.height);
+                        setHungerWinner(null);
+                        setHungerWinnerId(null);
+                        setHungerEnded(false);
+                        setHungerRestartCountdown(null);
                     }
                     // Keep rendering positions but skip input/physics
                     syncVisuals(
@@ -619,13 +640,18 @@ export default function GameCanvas() {
 
                 if (gameMode === GameMode.HUNGER_GAMES) {
                     const alive = gameState.current.players.filter(p => !p.dead).map(p => ({ id: p.id, name: p.name }));
-                    setHungerAlive(alive);
-                    if (gameState.current.hungerWinnerId && !hungerWinner) {
+                    const aliveKey = alive.map(p => p.id).join('|');
+                    if (aliveKey !== hungerAliveKeyRef.current) {
+                        hungerAliveKeyRef.current = aliveKey;
+                        setHungerAlive(alive);
+                    }
+                    if (gameState.current.hungerWinnerId && !hungerWinnerShownRef.current) {
+                        hungerWinnerShownRef.current = true;
                         const found = gameState.current.players.find(pl => pl.id === gameState.current.hungerWinnerId);
                         setHungerWinner(found ? found.name : gameState.current.hungerWinnerId);
                         setHungerWinnerId(gameState.current.hungerWinnerId);
                         setHungerEnded(true);
-                        if (!hungerRestartAt) setHungerRestartAt(Date.now() + 10000);
+                        if (hungerRestartAtRef.current === null) hungerRestartAtRef.current = now + HUNGER_RESTART_DELAY;
                     }
                     const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
                     setIsLocalDead(!!local?.dead);
@@ -639,12 +665,17 @@ export default function GameCanvas() {
                 if (gameMode === GameMode.GUN_GAME) {
                     const local = gameState.current.players.find(p => p.id === 'player') || gameState.current.players[0];
                     if (local) {
-                        setGunGameStatus({
+                        const status = {
                             weapon: local.weapon.name,
                             level: (local.gunLevel || 0) + 1,
                             progress: local.gunProgress || 0,
                             total: GUN_GAME_LADDER.length
-                        });
+                        };
+                        const statusKey = `${status.weapon}|${status.level}|${status.progress}`;
+                        if (statusKey !== gunGameStatusKeyRef.current) {
+                            gunGameStatusKeyRef.current = statusKey;
+                            setGunGameStatus(status);
+                        }
                     }
                     if (gameState.current.gunGameWinnerId && !gunGameEndedRef.current) {
                         gunGameEndedRef.current = true;
@@ -712,6 +743,8 @@ export default function GameCanvas() {
 
             // Load assets async
             const textures = await generateAssets();
+            // Component may have unmounted while assets were loading — don't attach listeners
+            if (!isMounted) return;
             visualCache.current.textures = textures;
             // Redraw the map once textures are ready so tunnel tiles use real sprites
             drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
@@ -771,72 +804,76 @@ export default function GameCanvas() {
             };
             onMouseMove = (e: MouseEvent) => { mouse.current.x = e.clientX; mouse.current.y = e.clientY; };
             onMouseDown = (e: MouseEvent) => {
-                initAudio();
+                initAudio().catch(err => console.error('Audio init failed:', err));
                 if (e.button === 0) mousePressed.current = true;
                 if (e.button === 2) hookPressed.current = true;
             };
             onMouseUp = (e: MouseEvent) => { if (e.button === 0) mousePressed.current = false; if (e.button === 2) hookPressed.current = false; };
             onContextMenu = (e: Event) => e.preventDefault();
 
+            // Release all inputs when the window loses focus, otherwise keys stay "held"
+            onBlur = () => {
+                keys.current = {};
+                mousePressed.current = false;
+                hookPressed.current = false;
+            };
+            onVisibilityChange = () => { if (document.hidden) onBlur?.(); };
+
             // Mobile touch controls
             // Mobile touch controls
 
-            if (isMobile) {
+            if (mobile) {
+                const isLeftHalf = (t: Touch) => t.clientX < app.canvas.getBoundingClientRect().width / 2;
+                const releaseMoveKeys = () => {
+                    keys.current['KeyW'] = false;
+                    keys.current['KeyS'] = false;
+                    keys.current['KeyA'] = false;
+                    keys.current['KeyD'] = false;
+                };
+
                 onTouchStart = (e: TouchEvent) => {
                     e.preventDefault();
-                    const touch = e.touches[0];
                     const rect = app.canvas.getBoundingClientRect();
-
-                    if (touch.clientX < rect.width / 2) {
-                        // Left side - movement joystick
-                        setTouchJoystick({
-                            active: true,
-                            startX: touch.clientX,
-                            startY: touch.clientY,
-                            currentX: touch.clientX,
-                            currentY: touch.clientY
-                        });
-                    } else {
-                        // Right side - aim and fire
-                        mouse.current.x = touch.clientX - rect.left;
-                        mouse.current.y = touch.clientY - rect.top;
-                        mousePressed.current = true;
+                    // changedTouches: only the finger(s) that just went down
+                    for (const touch of Array.from(e.changedTouches)) {
+                        if (isLeftHalf(touch)) {
+                            // Left side - movement joystick
+                            updateJoystick({
+                                active: true,
+                                startX: touch.clientX,
+                                startY: touch.clientY,
+                                currentX: touch.clientX,
+                                currentY: touch.clientY
+                            });
+                        } else {
+                            // Right side - aim and fire
+                            mouse.current.x = touch.clientX - rect.left;
+                            mouse.current.y = touch.clientY - rect.top;
+                            mousePressed.current = true;
+                        }
                     }
                 };
 
                 onTouchMove = (e: TouchEvent) => {
                     e.preventDefault();
-                    if (touchJoystick?.active) {
-                        const touch = Array.from(e.touches).find(t => {
-                            const rect = app.canvas.getBoundingClientRect();
-                            return t.clientX < rect.width / 2;
-                        });
+                    const joystick = joystickRef.current;
+                    const leftTouch = Array.from(e.touches).find(isLeftHalf);
+                    if (joystick?.active && leftTouch) {
+                        const maxDistance = 50;
+                        const clampedX = Math.max(-maxDistance, Math.min(maxDistance, leftTouch.clientX - joystick.startX));
+                        const clampedY = Math.max(-maxDistance, Math.min(maxDistance, leftTouch.clientY - joystick.startY));
 
-                        if (touch && touchJoystick) {
-                            const deltaX = touch.clientX - touchJoystick.startX;
-                            const deltaY = touch.clientY - touchJoystick.startY;
-                            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                            const maxDistance = 50;
+                        updateJoystick({ ...joystick, currentX: leftTouch.clientX, currentY: leftTouch.clientY });
 
-                            const clampedX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
-                            const clampedY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
-
-                            setTouchJoystick(prev => prev ? { ...prev, currentX: touch.clientX, currentY: touch.clientY } : null);
-
-                            // Update movement keys based on joystick
-                            keys.current['KeyW'] = clampedY < -20;
-                            keys.current['KeyS'] = clampedY > 20;
-                            keys.current['KeyA'] = clampedX < -20;
-                            keys.current['KeyD'] = clampedX > 20;
-                        }
+                        // Update movement keys based on joystick
+                        keys.current['KeyW'] = clampedY < -20;
+                        keys.current['KeyS'] = clampedY > 20;
+                        keys.current['KeyA'] = clampedX < -20;
+                        keys.current['KeyD'] = clampedX > 20;
                     }
 
                     // Handle aiming on right side
-                    const rightTouch = Array.from(e.touches).find(t => {
-                        const rect = app.canvas.getBoundingClientRect();
-                        return t.clientX >= rect.width / 2;
-                    });
-
+                    const rightTouch = Array.from(e.touches).find(t => !isLeftHalf(t));
                     if (rightTouch) {
                         const rect = app.canvas.getBoundingClientRect();
                         mouse.current.x = rightTouch.clientX - rect.left;
@@ -846,20 +883,13 @@ export default function GameCanvas() {
 
                 onTouchEnd = (e: TouchEvent) => {
                     e.preventDefault();
-                    if (touchJoystick?.active && e.touches.length === 0) {
-                        setTouchJoystick(null);
-                        keys.current['KeyW'] = false;
-                        keys.current['KeyS'] = false;
-                        keys.current['KeyA'] = false;
-                        keys.current['KeyD'] = false;
+                    const remaining = Array.from(e.touches);
+                    // Release the joystick as soon as no finger is left on the left half
+                    if (joystickRef.current?.active && !remaining.some(isLeftHalf)) {
+                        updateJoystick(null);
+                        releaseMoveKeys();
                     }
-
-                    const hasRightTouch = Array.from(e.touches).some(t => {
-                        const rect = app.canvas.getBoundingClientRect();
-                        return t.clientX >= rect.width / 2;
-                    });
-
-                    if (!hasRightTouch) {
+                    if (!remaining.some(t => !isLeftHalf(t))) {
                         mousePressed.current = false;
                     }
                 };
@@ -871,9 +901,11 @@ export default function GameCanvas() {
             window.addEventListener('mousedown', onMouseDown);
             window.addEventListener('mouseup', onMouseUp);
             window.addEventListener('contextmenu', onContextMenu);
+            window.addEventListener('blur', onBlur);
+            document.addEventListener('visibilitychange', onVisibilityChange);
 
             // Mobile touch listeners
-            if (isMobile && onTouchStart && onTouchMove && onTouchEnd) {
+            if (mobile && onTouchStart && onTouchMove && onTouchEnd) {
                 app.canvas.addEventListener('touchstart', onTouchStart, { passive: false });
                 app.canvas.addEventListener('touchmove', onTouchMove, { passive: false });
                 app.canvas.addEventListener('touchend', onTouchEnd, { passive: false });
@@ -891,16 +923,19 @@ export default function GameCanvas() {
             if (onMouseDown) window.removeEventListener('mousedown', onMouseDown);
             if (onMouseUp) window.removeEventListener('mouseup', onMouseUp);
             if (onContextMenu) window.removeEventListener('contextmenu', onContextMenu);
+            if (onBlur) window.removeEventListener('blur', onBlur);
+            if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange);
 
             // Mobile touch cleanup
-            if (isMobile && pixiApp.current) {
+            if (mobile && pixiApp.current) {
                 const canvas = pixiApp.current.canvas;
                 if (onTouchStart) canvas.removeEventListener('touchstart', onTouchStart);
                 if (onTouchMove) canvas.removeEventListener('touchmove', onTouchMove);
                 if (onTouchEnd) canvas.removeEventListener('touchend', onTouchEnd);
             }
 
-            if (pixiApp.current) pixiApp.current.destroy(true, { children: true, texture: true });
+            // Keep textures: they are shared via the generateAssets() cache and reused next game
+            if (pixiApp.current) pixiApp.current.destroy(true, { children: true, texture: false });
             gameState.current = makeInitialState();
             // Clear visual cache to prevent reusing dead sprites
             visualCache.current.players.clear();
@@ -950,6 +985,7 @@ export default function GameCanvas() {
         if (currentHP > previousHP.current && previousHP.current > 0) {
             // HP increased!
             const gain = currentHP - previousHP.current;
+            previousHP.current = currentHP;
             setHpGainAmount(gain);
             setShowHpGain(true);
 
