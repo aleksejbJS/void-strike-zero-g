@@ -215,6 +215,8 @@ export interface GameState {
   hungerZone?: { x: number; y: number; w: number; h: number; lastShrink?: number; pendingShrink?: boolean; nextShrinkAt?: number; pendingCount?: number };
   hungerWinnerId?: string | null;
   hungerRoundEndsAt?: number; // When the finished round restarts (ms timestamp)
+  hungerRoundStartedAt?: number; // Round clock start (rounds are time-limited)
+  hungerEndReason?: 'last-standing' | 'time';
   betSpectateId?: string | null; // Client-only: Hunger Games spectator follows this player
   gunGameWinnerId?: string | null;
   beams: Beam[];

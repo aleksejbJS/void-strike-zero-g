@@ -89,6 +89,7 @@ describe('GameRoom — Hunger Games online', () => {
         const room = hungerRoom();
         expect(room.state.players.length).toBe(HUNGER_ROUND_SIZE);
         expect(room.state.hungerZone).toBeDefined();
+        expect(room.state.hungerRoundStartedAt).toBeDefined();
     });
 
     it('a late joiner spectates and no fighter is removed', () => {
@@ -117,5 +118,7 @@ describe('GameRoom — Hunger Games online', () => {
         expect(room.state.hungerWinnerId).toBeNull();
         expect(room.state.hungerRoundEndsAt).toBeUndefined();
         expect(room.state.hungerZone!.w).toBe(8200);
+        expect(room.state.hungerRoundStartedAt).toBeGreaterThan(Date.now() - 1000);
+        expect(room.state.hungerEndReason).toBeUndefined();
     });
 });

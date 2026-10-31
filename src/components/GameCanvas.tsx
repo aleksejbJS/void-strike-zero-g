@@ -23,7 +23,7 @@ import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
-import { createHungerZone, hungerSpawnPoint, isHungerRoundOver, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
+import { createHungerZone, hungerSpawnPoint, isHungerRoundOver, hungerTimeLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 
 type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
@@ -32,6 +32,9 @@ type JoystickState = { active: boolean; startX: number; startY: number; currentX
 // Deathmatch-style modes use the chosen map; objective modes are built for the default map
 const effectiveMapFor = (mode: GameMode, selected: MapId) =>
     mode === GameMode.DEATHMATCH || mode === GameMode.HUNGER_GAMES || mode === GameMode.GUN_GAME ? selected : MapId.DEFAULT;
+
+/** 272 → "4:32" */
+const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 const detectMobile = () =>
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -116,6 +119,8 @@ export default function GameCanvas() {
     const [hungerShrinkCountdown, setHungerShrinkCountdown] = React.useState<number | null>(null);
     const [hungerEnded, setHungerEnded] = React.useState(false);
     const [hungerRestartCountdown, setHungerRestartCountdown] = React.useState<number | null>(null);
+    const [hungerTimeLeftSec, setHungerTimeLeftSec] = React.useState<number | null>(null);
+    const [hungerTimeUp, setHungerTimeUp] = React.useState(false);
     // Loop-owned values live in refs: the Pixi ticker closure never sees fresh React state
     const hungerWinnerShownRef = useRef(false);
     const hungerAliveKeyRef = useRef('');
@@ -172,6 +177,7 @@ export default function GameCanvas() {
         setHungerShrinkCountdown(null);
         setHungerEnded(false);
         setHungerRestartCountdown(null);
+        setHungerTimeUp(false);
         hungerWinnerShownRef.current = false;
         gameState.current.betSpectateId = null;
     };
@@ -217,6 +223,8 @@ export default function GameCanvas() {
             gameState.current.hungerZone = createHungerZone(Date.now());
             gameState.current.hungerWinnerId = null;
             gameState.current.hungerRoundEndsAt = undefined;
+            gameState.current.hungerRoundStartedAt = Date.now();
+            gameState.current.hungerEndReason = undefined;
             resetHungerUi();
         } else {
             gameState.current.hungerZone = undefined;
@@ -485,11 +493,14 @@ export default function GameCanvas() {
                     const found = gs.players.find(pl => pl.id === gs.hungerWinnerId);
                     setHungerWinner(found ? found.name : 'No survivors');
                     setHungerWinnerId(gs.hungerWinnerId ?? null);
+                    setHungerTimeUp(gs.hungerEndReason === 'time');
                     setHungerEnded(true);
                 } else if (!roundOver && hungerWinnerShownRef.current) {
                     resetHungerUi(); // the server started a new round
                 }
                 setHungerRestartCountdown(roundOver ? Math.max(0, Math.ceil((gs.hungerRoundEndsAt! - now) / 1000)) : null);
+                const timeLeft = hungerTimeLeft(gs, now);
+                setHungerTimeLeftSec(timeLeft === null ? null : Math.ceil(timeLeft / 1000));
 
                 const local = gs.players.find(p => p.id === localIdRef.current);
                 setIsLocalDead(!!local?.dead);
@@ -990,6 +1001,9 @@ export default function GameCanvas() {
                     {hungerWinner && (
                         <span className="text-yellow-300 text-xs font-bold">Winner: {hungerWinner}</span>
                     )}
+                    {hungerTimeLeftSec !== null && !hungerEnded && (
+                        <span className="text-sky-300 text-xs font-bold">Round ends in {formatClock(hungerTimeLeftSec)}</span>
+                    )}
                     {hungerShrinkCountdown !== null && !hungerEnded && (
                         <span className="text-lime-300 text-xs font-bold">Zone shrinks in {hungerShrinkCountdown}s</span>
                     )}
@@ -1100,6 +1114,7 @@ export default function GameCanvas() {
                 <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
                     <div className="flex flex-col items-center gap-4 bg-black/70 px-10 py-8 rounded-2xl border border-amber-400/60 shadow-2xl">
                         <div className="text-6xl">🏆</div>
+                        {hungerTimeUp && <div className="text-sm font-bold text-sky-300 uppercase tracking-widest">Time's up!</div>}
                         <div className="text-2xl font-black text-amber-300 tracking-wide">Winner: {hungerWinner}</div>
                         {hungerRestartCountdown !== null && (
                             <div className="text-sm text-gray-200">Next round in {hungerRestartCountdown}s</div>

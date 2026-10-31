@@ -8,12 +8,13 @@ describe('toLocalClock', () => {
         const alive = { ...createMockPlayer('a', Team.NONE), respawnTimer: 5000 };
         const hungerSpectator = { ...createMockPlayer('b', Team.NONE), respawnTimer: Number.MAX_SAFE_INTEGER };
         const snap: any = {
-            serverTime: 1000, hungerRoundEndsAt: 11000, infiltrationEndTime: undefined, lastHTFScore: 0,
+            serverTime: 1000, hungerRoundEndsAt: 11000, hungerRoundStartedAt: 500, infiltrationEndTime: undefined, lastHTFScore: 0,
             hungerZone: { x: 0, y: 0, w: 1, h: 1, nextShrinkAt: 6000, lastShrink: 900 },
             players: [alive, hungerSpectator],
         };
         toLocalClock(snap, 300);
         expect(snap.hungerRoundEndsAt).toBe(11300);
+        expect(snap.hungerRoundStartedAt).toBe(800);
         expect(snap.infiltrationEndTime).toBeUndefined();
         expect(snap.lastHTFScore).toBe(0);
         expect(snap.hungerZone.nextShrinkAt).toBe(6300);

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { GameMode, Team } from '../../types';
 import { createMockState, createMockPlayer } from '../../test/mocks';
-import { updateHungerRound, isHungerRoundOver, HUNGER_RESTART_DELAY } from './hungerRound';
+import { updateHungerRound, isHungerRoundOver, HUNGER_RESTART_DELAY, HUNGER_ROUND_TIME } from './hungerRound';
 import { pickCameraTarget } from './camera';
 
 const roundWith = (aliveIds: string[], deadIds: string[] = []) => {
@@ -39,6 +39,48 @@ describe('Hunger Games round', () => {
         updateHungerRound(state, 1000);
         updateHungerRound(state, 5000);
         expect(state.hungerRoundEndsAt).toBe(1000 + HUNGER_RESTART_DELAY);
+    });
+});
+
+describe('Hunger Games round time limit', () => {
+    const timed = () => {
+        const state = roundWith(['a', 'b', 'c']);
+        state.hungerRoundStartedAt = 0;
+        return state;
+    };
+
+    it('keeps going before time runs out', () => {
+        const state = timed();
+        updateHungerRound(state, HUNGER_ROUND_TIME - 1);
+        expect(state.hungerRoundEndsAt).toBeUndefined();
+    });
+
+    it('when time is up, the survivor with most kills wins', () => {
+        const state = timed();
+        state.players[1].score = 3;
+        state.players[2].score = 1;
+        updateHungerRound(state, HUNGER_ROUND_TIME);
+        expect(state.hungerWinnerId).toBe('b');
+        expect(state.hungerEndReason).toBe('time');
+        expect(state.hungerRoundEndsAt).toBe(HUNGER_ROUND_TIME + HUNGER_RESTART_DELAY);
+    });
+
+    it('breaks a kill tie by remaining health, ignoring the dead', () => {
+        const state = timed();
+        state.players.forEach(p => { p.score = 2; });
+        state.players[0].health = 40;
+        state.players[1].health = 90;
+        state.players[2].health = 10;
+        state.players.push({ ...createMockPlayer('dead', Team.NONE), dead: true, score: 9 });
+        updateHungerRound(state, HUNGER_ROUND_TIME);
+        expect(state.hungerWinnerId).toBe('b');
+    });
+
+    it('a last survivor ends the round the usual way', () => {
+        const state = roundWith(['a'], ['b']);
+        state.hungerRoundStartedAt = 0;
+        updateHungerRound(state, 10);
+        expect(state.hungerEndReason).toBe('last-standing');
     });
 });
 

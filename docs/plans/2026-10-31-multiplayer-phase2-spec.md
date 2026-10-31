@@ -48,6 +48,7 @@ Move round logic from `GameCanvas.tsx` into a shared `hungerRound.ts` used by `G
 
 - Spawn points for the Hunger map, no respawn, zone init/shrink (already shared), winner detection
 - `RESTART_DELAY` (10 s) after a winner → reset players, pickups, zone; new round
+- Rounds are capped at 5 minutes (bots don't hunt each other, so a bots-only round could last forever); on time-out the survivor with most kills wins, remaining health breaks ties
 - Snapshot carries `hungerRoundEndsAt` so every client shows the same countdown
 - Late joiners per **H1**
 - Betting/spectating stays client-side: credits per browser, spectate any living player by id

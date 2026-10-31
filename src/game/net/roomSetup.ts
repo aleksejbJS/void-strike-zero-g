@@ -35,6 +35,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     lastHTFScore: 0,
     infiltrationEndTime: undefined,
     hungerZone: mode === GameMode.HUNGER_GAMES ? createHungerZone(Date.now()) : undefined,
+    hungerRoundStartedAt: mode === GameMode.HUNGER_GAMES ? Date.now() : undefined,
     hungerWinnerId: null,
     gunGameWinnerId: null,
     beams: [],
@@ -114,4 +115,6 @@ export const resetHungerRound = (state: GameState, now: number) => {
     state.hungerZone = createHungerZone(now);
     state.hungerWinnerId = null;
     state.hungerRoundEndsAt = undefined;
+    state.hungerRoundStartedAt = now;
+    state.hungerEndReason = undefined;
 };
