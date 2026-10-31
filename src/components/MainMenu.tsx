@@ -9,8 +9,6 @@ import { ServerInfo } from '../../server/src/matchmaking';
 
 // Matchmaking service is offline — hide the public list (multiplayer spec D4)
 const SHOW_PUBLIC_SERVERS = false;
-// Browser-hosted games are phase 2 (multiplayer spec D3); until then "Create game" starts an empty match
-const SHOW_CREATE_GAME = false;
 
 const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
   const { state, actions } = useUIStore();
@@ -205,7 +203,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
 
           {/* Multiplayer Section */}
           <div className="flex gap-4 mb-6">
-            {SHOW_CREATE_GAME && <button
+            <button
               onClick={() => {
                 actions.selectMode(gameMode);
                 actions.setNetworkState(NetworkMode.HOST, null);
@@ -214,12 +212,12 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
               className="flex-1 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               {t('menu.createGame')}
-            </button>}
+            </button>
 
             <div className="flex-1 flex gap-2">
               <input
                 type="text"
-                placeholder={t('menu.serverAddress')}
+                placeholder={t('menu.joinPlaceholder')}
                 className="flex-1 bg-gray-900/60 border border-gray-700 rounded-xl px-4 text-sm focus:outline-none focus:border-purple-500"
                 id="join-game-input"
               />

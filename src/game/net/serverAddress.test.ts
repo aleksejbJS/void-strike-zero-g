@@ -14,3 +14,22 @@ describe('resolveServerUrl', () => {
         expect(resolveServerUrl(input, 'game.local')).toBe(expected);
     });
 });
+
+import { parseJoinTarget, inviteLink, inviteHostId } from './serverAddress';
+
+describe('parseJoinTarget', () => {
+    it('recognises invite links and stored peer ids', () => {
+        expect(parseJoinTarget('https://void.example/?host=abc-123', 'x')).toEqual({ kind: 'peer', peerId: 'abc-123' });
+        expect(parseJoinTarget('peer:abc-123', 'x')).toEqual({ kind: 'peer', peerId: 'abc-123' });
+    });
+
+    it('treats anything else as a server address', () => {
+        expect(parseJoinTarget('192.168.1.5', 'x')).toEqual({ kind: 'server', url: 'http://192.168.1.5:3001' });
+    });
+
+    it('builds invite links that parse back to the same host', () => {
+        const link = inviteLink('id with space', { origin: 'https://void.example', pathname: '/play' });
+        expect(link).toBe('https://void.example/play?host=id%20with%20space');
+        expect(inviteHostId(link)).toBe('id with space');
+    });
+});

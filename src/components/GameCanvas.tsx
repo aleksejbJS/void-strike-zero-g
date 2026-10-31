@@ -11,7 +11,11 @@ import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
 import { WeaponIcon } from './WeaponIcon';
 import { ClientSession } from '../game/net/clientSession';
-import { resolveServerUrl } from '../game/net/serverAddress';
+import { parseJoinTarget, inviteLink as makeInviteLink } from '../game/net/serverAddress';
+import { HostSession, BROWSER_HOST_MAX_PLAYERS } from '../game/net/hostSession';
+import { PeerSocket } from '../game/net/peerSocket';
+import { SessionSocket } from '../game/net/sessionSocket';
+import { io } from 'socket.io-client';
 import { achievementManager } from '../game/systems/achievements';
 import { Achievement } from '../game/systems/achievements';
 import { useTranslation } from '../i18n/useTranslation';
@@ -25,6 +29,10 @@ import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
 
 
+// Deathmatch-style modes use the chosen map; objective modes are built for the default map
+const effectiveMapFor = (mode: GameMode, selected: MapId) =>
+    mode === GameMode.DEATHMATCH || mode === GameMode.HUNGER_GAMES || mode === GameMode.GUN_GAME ? selected : MapId.DEFAULT;
+
 const detectMobile = () =>
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
@@ -33,6 +41,7 @@ export default function GameCanvas() {
     const pixiApp = useRef<Application | null>(null);
     // Online match (CLIENT mode only) and the id of the player this browser controls
     const sessionRef = useRef<ClientSession | null>(null);
+    const hostRef = useRef<HostSession | null>(null); // this browser hosts the game (HOST mode)
     const localIdRef = useRef('player');
     const [netError, setNetError] = React.useState<string | null>(null);
     const [onlineMode, setOnlineMode] = React.useState<GameMode | null>(null);
@@ -196,9 +205,7 @@ export default function GameCanvas() {
     });
 
     const initLevel = () => {
-        const effectiveMap = (gameMode === GameMode.DEATHMATCH || gameMode === GameMode.HUNGER_GAMES || gameMode === GameMode.GUN_GAME)
-            ? state.selectedMap
-            : MapId.DEFAULT;
+        const effectiveMap = effectiveMapFor(gameMode, state.selectedMap);
         gameState.current.currentMap = effectiveMap;
         gameState.current.platforms = getPlatforms(gameMode, effectiveMap);
 
@@ -319,13 +326,33 @@ export default function GameCanvas() {
         // Read once here: the isMobile state is not a dependency of this effect
         const mobile = detectMobile();
 
-        // Online match: the server owns the simulation, we predict our own player
+        // Online match: the server (or the browser host) owns the simulation, we predict our own player
         let redrawMap: (() => void) | null = null;
-        if (state.networkMode === NetworkMode.CLIENT) {
-            const serverUrl = resolveServerUrl(state.gameId, window.location.hostname);
-            console.log('Connecting to server:', serverUrl);
+        const isOnline = state.networkMode !== NetworkMode.OFFLINE;
+        if (isOnline) {
             setNetError(null);
-            const session = new ClientSession(serverUrl, {
+            let socket: SessionSocket;
+            let targetLabel: string;
+            if (state.networkMode === NetworkMode.HOST) {
+                // This browser runs the room; we join it like everyone else, minus the network
+                const host = new HostSession(
+                    { mode: gameMode, map: effectiveMapFor(gameMode, state.selectedMap), maxPlayers: BROWSER_HOST_MAX_PLAYERS },
+                    {
+                        onInviteReady: peerId => setInviteLink(makeInviteLink(peerId, window.location)),
+                        onError: message => setNetError(`${t('net.hostError')} (${message})`),
+                    },
+                );
+                hostRef.current = host;
+                socket = host.localSocket;
+                targetLabel = t('net.yourGame');
+            } else {
+                const target = parseJoinTarget(state.gameId, window.location.hostname);
+                socket = target.kind === 'peer' ? new PeerSocket(target.peerId) : io(target.url, { reconnection: false });
+                targetLabel = target.kind === 'peer' ? t('net.hostedGame') : target.url;
+            }
+            console.log('Connecting to:', targetLabel);
+
+            const session = new ClientSession(socket, {
                 name: state.playerName,
                 color: state.playerColor,
                 skinId: state.selectedSkin,
@@ -344,7 +371,8 @@ export default function GameCanvas() {
                 onRejected: reason => setNetError(
                     reason === 'full' ? t('net.serverFull') : reason === 'invalid' ? t('net.joinInvalid') : t('net.alreadyJoined')
                 ),
-                onConnectionError: message => setNetError(`${t('net.cannotConnect')} ${serverUrl} (${message})`),
+                onConnectionError: message => setNetError(`${t('net.cannotConnect')} ${targetLabel} (${message})`),
+                onDisconnected: () => setNetError(t('net.disconnected')),
                 onEvents: events => events.forEach(e => gameEvents.emit(e)),
             });
             sessionRef.current = session;
@@ -418,7 +446,7 @@ export default function GameCanvas() {
             });
 
             // Online, the map arrives from the server on join (ClientSession.setupWorld)
-            if (state.networkMode !== NetworkMode.CLIENT) initLevel();
+            if (!isOnline) initLevel();
 
             const restartHungerRound = () => {
                 visualCache.current.players.clear();
@@ -473,7 +501,7 @@ export default function GameCanvas() {
             app.ticker.add(() => {
                 const now = Date.now();
                 const liveMode = gameState.current.mode;
-                const offline = state.networkMode !== NetworkMode.CLIENT;
+                const offline = !isOnline;
                 // Offline a finished Hunger Games round restarts here; online the server does it
                 if (offline && liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) {
                     restartHungerRound();
@@ -510,7 +538,7 @@ export default function GameCanvas() {
 
                 // Simulate at a fixed PHYSICS_TICK_RATE regardless of display refresh rate
                 const ticksRun = stepper.advance(app.ticker.deltaMS, () => {
-                    if (state.networkMode === NetworkMode.CLIENT) {
+                    if (isOnline) {
                         const camera = gameState.current.camera;
                         sessionRef.current?.tick(gameState.current, {
                             keys: { ...keys.current },
@@ -846,6 +874,9 @@ export default function GameCanvas() {
             visualCache.current.decals.clear();
             sessionRef.current?.dispose();
             sessionRef.current = null;
+            hostRef.current?.dispose();
+            hostRef.current = null;
+            setInviteLink(null);
             localIdRef.current = 'player';
             visualCache.current.floatingTexts.clear();
         };
@@ -909,7 +940,7 @@ export default function GameCanvas() {
                 </div>
             </div>
 
-            {state.networkMode === NetworkMode.CLIENT && !onlineMode && (
+            {((state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || netError) && (
                 <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none">
                     <div className="px-6 py-4 rounded-xl bg-black/80 border border-white/10 text-center font-mono">
                         <div className={netError ? 'text-red-400 font-bold' : 'text-gray-200'}>{netError ?? t('net.connecting')}</div>
@@ -991,7 +1022,7 @@ export default function GameCanvas() {
                         <span className="text-purple-300 font-bold">INVITE LINK:</span>
                         <code className="bg-black/50 px-2 py-1 rounded select-all">{inviteLink}</code>
                         <button
-                            onClick={() => navigator.clipboard.writeText(inviteLink)}
+                            onClick={() => navigator.clipboard.writeText(inviteLink).catch(err => console.warn('Copy failed:', err))}
                             className="hover:text-white text-purple-300 transition-colors"
                             title="Copy"
                         >

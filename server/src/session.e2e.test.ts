@@ -10,6 +10,7 @@ import { createRoomState } from '../../src/game/net/roomSetup';
 import { MatterPhysicsEngine } from '../../src/game/physics/MatterEngine';
 import { GameMode, GameState, MapId } from '../../src/types';
 import { startGameServer } from './gameServer';
+import { io as connect } from 'socket.io-client';
 
 const join = (name: string) => ({ name, color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic' });
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -22,11 +23,12 @@ const makeClient = (url: string, name: string): TestClient => {
     const physics = new MatterPhysicsEngine();
     let resolveJoined!: () => void;
     const joined = new Promise<void>(r => { resolveJoined = r; });
-    const session: ClientSession = new ClientSession(url, join(name), physics, {
+    const session: ClientSession = new ClientSession(connect(url, { reconnection: false }), join(name), physics, {
         onJoined: info => { session.setupWorld(state, info); resolveJoined(); },
         onRejected: reason => { throw new Error(`rejected: ${reason}`); },
         onConnectionError: message => { throw new Error(`connection error: ${message}`); },
         onEvents: () => {},
+        onDisconnected: () => {},
     });
     return { session, state, joined };
 };

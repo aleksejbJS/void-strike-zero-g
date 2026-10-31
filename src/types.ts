@@ -242,7 +242,3 @@ export interface PlayerInput {
   weaponIndex?: number; // Selected inventory slot (0-based)
 }
 
-export type NetworkPacket =
-  | { type: 'HANDSHAKE'; playerId: string; name: string; color: string; skinId: string }
-  | { type: 'STATE_UPDATE'; state: GameState; timestamp: number }
-  | { type: 'INPUT'; input: PlayerInput; playerId: string };

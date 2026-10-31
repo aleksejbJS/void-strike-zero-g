@@ -1,7 +1,6 @@
 // Client side of an online match: connection, input upload, snapshot merge,
 // local prediction (spec D1-b) and interpolation of everyone else.
 
-import { io, Socket } from 'socket.io-client';
 import { Entity, GameState, Vector2 } from '../../types';
 import { MatterPhysicsEngine } from '../physics/MatterEngine';
 import { GameEvent } from '../systems/events';
@@ -14,11 +13,14 @@ import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } fr
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
+import { SessionSocket } from './sessionSocket';
 
 export interface SessionCallbacks {
     onJoined: (info: JoinAccepted) => void;
     onRejected: (reason: JoinRejected['reason']) => void;
     onConnectionError: (message: string) => void;
+    /** Connection lost after joining (server stopped, host left) */
+    onDisconnected: () => void;
     /** Gameplay events from the server (kill feed, sounds) */
     onEvents: (events: GameEvent[]) => void;
 }
@@ -54,16 +56,16 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
 
 export class ClientSession {
     localId: string | null = null;
-    private readonly socket: Socket;
     private readonly prediction = new LocalPrediction();
     private readonly buffer = new SnapshotBuffer();
     private latest: Snapshot | null = null;
     private sequence = 0;
     private weaponIndex: number | undefined;
 
-    constructor(url: string, join: JoinRequest, private readonly physics: MatterPhysicsEngine, callbacks: SessionCallbacks) {
-        this.socket = io(url, { reconnection: false });
+    /** `socket`: socket.io to a Node server, a WebRTC peer, or the browser host's local link. */
+    constructor(private readonly socket: SessionSocket, join: JoinRequest, private readonly physics: MatterPhysicsEngine, callbacks: SessionCallbacks) {
         this.socket.on('connect', () => this.socket.emit(MSG.JOIN, join));
+        this.socket.on('disconnect', () => { if (this.localId) callbacks.onDisconnected(); });
         this.socket.on('connect_error', (err: Error) => callbacks.onConnectionError(err.message));
         this.socket.on(MSG.JOIN_REJECTED, (data: JoinRejected) => callbacks.onRejected(data.reason));
         this.socket.on(MSG.JOINED, (info: JoinAccepted) => {

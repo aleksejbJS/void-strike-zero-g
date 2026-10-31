@@ -15,6 +15,11 @@ export interface TranslationKeys {
   'net.joinInvalid': string;
   'net.alreadyJoined': string;
   'net.backToMenu': string;
+  'net.disconnected': string;
+  'net.hostError': string;
+  'net.yourGame': string;
+  'net.hostedGame': string;
+  'menu.joinPlaceholder': string;
   'menu.controls': string;
   'menu.move': string;
   'menu.jetpack': string;
@@ -94,6 +99,11 @@ export const translations: Record<Language, TranslationKeys> = {
     'net.joinInvalid': 'Server rejected your profile (check your name)',
     'net.alreadyJoined': 'Already joined from this tab',
     'net.backToMenu': 'Press Esc to return to the menu',
+    'net.disconnected': 'Connection to the game was lost',
+    'net.hostError': 'Could not host the game',
+    'net.yourGame': 'your game',
+    'net.hostedGame': 'the game',
+    'menu.joinPlaceholder': 'Invite link or server address',
     'menu.controls': 'Controls',
     'menu.move': 'WASD Move',
     'menu.jetpack': 'SPACE Jetpack',
@@ -172,6 +182,11 @@ export const translations: Record<Language, TranslationKeys> = {
     'net.joinInvalid': 'Сервер отклонил профиль (проверьте имя)',
     'net.alreadyJoined': 'Вы уже подключены из этой вкладки',
     'net.backToMenu': 'Нажмите Esc, чтобы вернуться в меню',
+    'net.disconnected': 'Соединение с игрой потеряно',
+    'net.hostError': 'Не удалось запустить игру',
+    'net.yourGame': 'вашей игре',
+    'net.hostedGame': 'игре',
+    'menu.joinPlaceholder': 'Ссылка-приглашение или адрес сервера',
     'menu.controls': 'Управление',
     'menu.move': 'WASD Движение',
     'menu.jetpack': 'ПРОБЕЛ Реактивный ранец',
