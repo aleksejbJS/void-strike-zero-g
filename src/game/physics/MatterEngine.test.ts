@@ -25,3 +25,20 @@ describe('MatterPhysicsEngine crouch', () => {
         expect(body.bounds.max.y).toBeCloseTo(100, 1);
     });
 });
+
+describe('MatterPhysicsEngine dead players', () => {
+    it('stop colliding while dead and collide again after respawn', () => {
+        const engine = new MatterPhysicsEngine();
+        const p = createMockPlayer('p1', Team.NONE);
+        engine.addPlayer(p);
+        const body = engine.bodies.get('p1')!;
+
+        p.dead = true;
+        engine.syncFromGameState({ players: [p] });
+        expect(body.isSensor).toBe(true);
+
+        p.dead = false;
+        engine.syncFromGameState({ players: [p] });
+        expect(body.isSensor).toBe(false);
+    });
+});

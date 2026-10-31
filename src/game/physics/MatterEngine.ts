@@ -184,7 +184,10 @@ export class MatterPhysicsEngine {
             const body = this.bodies.get(player.id);
             if (body) {
                 this.matchBodyHeight(body, player.height);
-                Matter.Body.setVelocity(body, { x: player.vel.x, y: player.vel.y });
+                // Dead players must not block others: make the body a non-colliding sensor until respawn
+                if (body.isSensor !== player.dead) body.isSensor = player.dead;
+                const vel = player.dead ? { x: 0, y: 0 } : player.vel;
+                Matter.Body.setVelocity(body, { x: vel.x, y: vel.y });
                 // Game coords (centerX, bottomY) → Matter center
                 const centerX = player.pos.x;
                 const centerY = player.pos.y - player.height / 2;
