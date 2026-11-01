@@ -6,11 +6,23 @@ export interface PatchNote {
     version: string;
     date: string | null; // null = the upcoming release (shown as "This update")
     points: string[];
+    beforeAfter?: BeforeAfter;
 }
+
+/** A pair of screenshots showing what a change looks like. */
+export interface BeforeAfter {
+    caption: string;
+    before: string;
+    after: string;
+}
+
+const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.0', date: null, points: [
+        { version: '0.4.0', date: null, beforeAfter: { caption: 'The new fighter', ...FIGHTER }, points: [
+            'New fighter: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, recoil, a helmet that looks where you aim',
+            'Body parts fly apart in their own colors after a death',
             'New look for the menu, character setup and HUD',
             'Pick a mode and see how it plays, with its key rules',
             'Infiltration preview shows the whole raid: grab the intel, bring it to extraction',
@@ -48,7 +60,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.0', date: null, points: [
+        { version: '0.4.0', date: null, beforeAfter: { caption: 'Новый боец', ...FIGHTER }, points: [
+            'Новый боец: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, отдача, шлем смотрит туда, куда целитесь',
+            'После смерти части тела разлетаются в своих цветах',
             'Новый вид меню, экрана персонажа и интерфейса в бою',
             'Выберите режим и посмотрите, как он играется, с главными правилами',
             'Превью «Проникновения» показывает весь рейд: схватить данные и донести до эвакуации',

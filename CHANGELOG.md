@@ -2,6 +2,14 @@
 
 ## Version 0.4.0 - "Hazard Bay" (Unreleased)
 
+### 🧍 New Fighter
+- Redrawn character: shoulders, hips, knees and elbows; both hands hold the weapon (rear hand on the grip, front hand on the foregrip) at any aim
+- Steps follow the real running speed; leaning into the run, tucked legs in flight, deep crouch, recoil and muzzle flash
+- Helmet with a visor that looks where you aim; outline and shading keep the fighter readable on dark maps
+- Robot, beast and alien skins keep their heads, ears, antennae and tails; every body-part color still applies
+- Bodies break into parts in their own colors (any custom color, not only the four team colors)
+- Before/after pictures in the menu's "What's new" panel
+
 ### 🎨 New Interface
 - **Main menu** redesigned: pick a mode and watch a short animated preview of how it plays, with its three key rules (Infiltration shows the whole raid: grab the intel, bring it to extraction)
 - **What's new** panel with the full release history
@@ -43,7 +51,7 @@
 
 ### 🛠️ Technical
 - Shared authoritative game room used by both the Node server and the browser host
-- Large components split into small modules; 199 automated tests (from 56)
+- Large components split into small modules; 209 automated tests (from 56)
 
 ## Version 0.3.1 (2025-11-28)
 

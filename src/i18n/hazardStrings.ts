@@ -19,6 +19,8 @@ export interface HazardKeys {
     'hb.join': string;
     'hb.whatsNew': string;
     'hb.thisUpdate': string;
+    'hb.before': string;
+    'hb.after': string;
     'hb.close': string;
     'hb.switchLanguage': string;
     'hb.previewLabel': string;
@@ -62,6 +64,8 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.join': 'Join',
         'hb.whatsNew': "What's new",
         'hb.thisUpdate': 'This update',
+        'hb.before': 'Before',
+        'hb.after': 'After',
         'hb.close': 'Close',
         'hb.switchLanguage': 'Switch language to Russian',
         'hb.previewLabel': 'How {0} plays',
@@ -103,6 +107,8 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.join': 'Войти',
         'hb.whatsNew': 'Что нового',
         'hb.thisUpdate': 'Это обновление',
+        'hb.before': 'Было',
+        'hb.after': 'Стало',
         'hb.close': 'Закрыть',
         'hb.switchLanguage': 'Переключить язык на английский',
         'hb.previewLabel': 'Как играется режим {0}',
