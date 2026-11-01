@@ -3,7 +3,7 @@
 import { Entity, GameState, ItemType, Pickup, Weapon, WeaponType } from '../../types';
 import { distance } from '../utils/math';
 import { insideZone } from './hungerRound';
-import { solidAt } from './botNavGraph';
+import { buildNavGraph, HOP_RISE, solidAt, surfaceBelow } from './botNavGraph';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
@@ -31,10 +31,14 @@ export const pickBestWeapon = (bot: Entity, dist: number) => {
     bot.weapon = best;
 };
 
-/** A pickup a bot can go for: inside the Hunger Games zone and not buried in a platform
- *  (some maps place items inside solid blocks, where nobody can collect them). */
-export const pickupReachable = (state: GameState, item: Pickup) =>
-    insideZone(state, item.pos) && !solidAt(state.platforms, item.pos.x, item.pos.y);
+/** A pickup a bot can go for: inside the Hunger Games zone, not inside a platform, and
+ *  standing on the surface below it (or hopping up from it) reaches it. Some items hang
+ *  in mid-air beside a platform, where a bot would hop under them forever. */
+export const pickupReachable = (state: GameState, item: Pickup) => {
+    if (!insideZone(state, item.pos) || solidAt(state.platforms, item.pos.x, item.pos.y)) return false;
+    const below = surfaceBelow(buildNavGraph(state.platforms).nodes, item.pos.x, item.pos.y - 4);
+    return !!below && below.y - item.pos.y <= HOP_RISE;
+};
 
 export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null => {
     let best: Pickup | null = null;

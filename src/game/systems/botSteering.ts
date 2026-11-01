@@ -2,7 +2,7 @@
 // walk, drop off an edge, jetpack up, or grapple up (botHook.ts).
 
 import { Entity, GameState, Vector2 } from '../../types';
-import { JET_RISE, NavEdge, NavGraph, NavNode } from './botNavGraph';
+import { HOP_RISE, JET_RISE, NavEdge, NavGraph, NavNode } from './botNavGraph';
 import { nodeAt } from './botPathfinder';
 import { BotControls, BotNav, IDLE } from './botNavState';
 import { climbOnto, toward } from './botClimb';
@@ -11,7 +11,7 @@ import { hookMove } from './botHook';
 const AT_X = 12;
 const ARRIVE_X = 30;
 const REACH_UP = 50; // a goal higher than this above the surface can't be reached standing
-const HOP_FUEL = 50;
+const HOP_FUEL = 80; // a hop up to HOP_RISE needs most of the tank
 
 /** Fuel needed before taking off for a climb of `dy` px (the tank refills in about a second). */
 const fuelFor = (bot: Entity, dy: number) => Math.min(bot.maxFuel * 0.95, 20 + (dy / JET_RISE) * 85);
@@ -40,7 +40,7 @@ const edgeMove = (state: GameState, bot: Entity, nav: BotNav, graph: NavGraph, e
 const arrive = (bot: Entity, here: NavNode, goal: Vector2): BotControls => {
     const x = Math.min(Math.max(goal.x, here.x0 + 10), here.x1 - 10);
     const inputX = Math.abs(x - bot.pos.x) > ARRIVE_X ? Math.sign(x - bot.pos.x) : 0;
-    const overhead = goal.y < here.y - REACH_UP && Math.abs(goal.x - bot.pos.x) < ARRIVE_X * 2;
+    const overhead = goal.y < here.y - REACH_UP && goal.y >= here.y - HOP_RISE && Math.abs(goal.x - bot.pos.x) < ARRIVE_X * 2;
     // Take off only with a decent tank (else it never refills), keep going once airborne
     const fuelOk = bot.isGrounded ? bot.jetpackFuel >= HOP_FUEL : bot.jetpackFuel > 0;
     return { ...IDLE, inputX, isFlying: overhead && fuelOk && bot.pos.y > goal.y + 20 };

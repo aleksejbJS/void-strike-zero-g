@@ -72,6 +72,7 @@ describe('updateBotAI', () => {
 
   it('keeps shooting while it retreats to a medkit', () => {
     const state = makeState();
+    state.platforms = [{ id: 'floor', x: -5000, y: 0, w: 10000, h: 200, color: '#000' }];
     const bot = { ...makeBot('bot1', Team.NONE, 0, 0), health: 30 };
     state.players = [bot as any, makeBot('enemy', Team.NONE, 400, 0) as any];
     state.pickups = [{ id: 'hp', type: ItemType.HEALTH, pos: { x: -500, y: 0 }, active: true, respawnTime: 0, value: 50 }];

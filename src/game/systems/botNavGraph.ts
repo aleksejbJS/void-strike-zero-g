@@ -25,6 +25,7 @@ const FALL_PX_PER_TICK2 = 0.09;              // y ≈ 0.09·t² px after t ticks
 // Measured on a full tank: 300 px straight up, but 545 px with side thrust (it burns less fuel) —
 // also when zigzagging in place (only ~130 px drift). Bots always climb with side thrust.
 export const JET_RISE = 490; // 90% of the measured climb
+export const HOP_RISE = 240;  // a straight-up hop from a surface (300 px measured on a full tank)
 const JET_SIDE_MAX = 520;
 const HOOK_REACH = HOOK_RANGE - 30;
 
