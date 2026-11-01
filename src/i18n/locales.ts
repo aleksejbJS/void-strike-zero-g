@@ -1,7 +1,8 @@
 import { Language } from '../types';
 import { HazardKeys, hazardStrings } from './hazardStrings';
+import { SetupKeys, setupStrings } from './setupStrings';
 
-export interface TranslationKeys extends HazardKeys {
+export interface TranslationKeys extends HazardKeys, SetupKeys {
   // Menu
   'menu.title': string;
   'menu.deploy': string;
@@ -88,6 +89,7 @@ export interface TranslationKeys extends HazardKeys {
 export const translations: Record<Language, TranslationKeys> = {
   en: {
     ...hazardStrings.en,
+    ...setupStrings.en,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'DEPLOY',
@@ -172,6 +174,7 @@ export const translations: Record<Language, TranslationKeys> = {
 
   ru: {
     ...hazardStrings.ru,
+    ...setupStrings.ru,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'СТАРТ',
