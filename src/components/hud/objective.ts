@@ -5,10 +5,11 @@ import type { TranslationKeys } from '../../i18n/locales';
 
 export interface Objective {
     key: keyof TranslationKeys;
-    team?: Team; // fills "{0}" with a team color word
+    team?: Team;     // fills "{0}" with a team color word
+    timeMs?: number; // fills "{0}" with an m:ss countdown (Infiltration round)
 }
 
-export const objectiveFor = (state: GameState, localId: string): Objective | null => {
+export const objectiveFor = (state: GameState, localId: string, now: number): Objective | null => {
     const me = state.players.find(p => p.id === localId);
     if (!me || me.team === Team.NONE) return null;
     const enemy = me.team === Team.BLUE ? Team.RED : Team.BLUE;
@@ -27,8 +28,9 @@ export const objectiveFor = (state: GameState, localId: string): Objective | nul
         }
         case GameMode.INFILTRATION: {
             const carrier = state.players.find(p => !p.dead && p.hasFlag === Team.RED);
-            if (me.team === Team.BLUE) return carrier?.id === me.id ? { key: 'obj.infCarry' } : { key: 'obj.infAttack' };
-            return carrier ? { key: 'obj.infStop' } : { key: 'obj.infDefend' };
+            const timeMs = Math.max(0, (state.infiltrationEndTime ?? now) - now);
+            if (me.team === Team.BLUE) return carrier?.id === me.id ? { key: 'obj.infCarry' } : { key: 'obj.infAttack', timeMs };
+            return carrier ? { key: 'obj.infStop' } : { key: 'obj.infDefend', timeMs };
         }
         default:
             return null;

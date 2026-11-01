@@ -1,5 +1,5 @@
 import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectile, Entity } from '../../types';
-import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
+import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
@@ -13,6 +13,7 @@ import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } fr
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
+import { updateMatch } from './matchRound';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -25,6 +26,17 @@ export const moveProjectile = (proj: Projectile) => {
 // --- MAIN PHYSICS UPDATE LOOP ---
 export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPressed: boolean, mousePressed: boolean, screenW: number, screenH: number, getSpawnPoint: any, localPlayerId: string, remoteInputs?: Record<string, PlayerInput>) => {
     const now = Date.now();
+
+    // Match over and the results screen is up: freeze everyone, keep only visuals moving
+    if (state.matchEndsAt) {
+        state.players.forEach(p => { p.vel = { x: 0, y: 0 }; });
+        updateParticles(state);
+        updateFloatingTexts(state);
+        updateDecals(state, now);
+        updateRagdolls(state);
+        followCamera(state, pickCameraTarget(state, localPlayerId));
+        return;
+    }
 
     // Respawn
     state.players.forEach(p => {
@@ -330,10 +342,6 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             state.lastHTFScore = now;
             emitText(holder.pos.x, holder.pos.y - 20, '+1', '#22c55e');
             gameEvents.emit({ type: 'SOUND', sound: 'score' });
-            if (state.scores[holder.team] >= HTF_WIN_SCORE) {
-                // TODO: surface victory screen/state; for now just clamp
-                state.scores[holder.team] = HTF_WIN_SCORE;
-            }
         }
     }
 
@@ -390,6 +398,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     updateRagdolls(state);
 
     if (state.mode === GameMode.HUNGER_GAMES) updateHungerRound(state, now);
+    updateMatch(state, now);
 
     followCamera(state, pickCameraTarget(state, localPlayerId));
 };

@@ -21,7 +21,8 @@ const base = (over: Partial<GameHudProps> = {}): GameHudProps => ({
     muted: false,
     onToggleMute: vi.fn(),
     objective: null,
-    infiltrationMs: null,
+    match: null,
+    onLeave: vi.fn(),
     connection: { visible: false, error: null },
     debug: null,
     inviteLink: null,
@@ -51,11 +52,21 @@ describe('GameHud', () => {
         expect(screen.queryByText('Bot 1 (you)')).not.toBeInTheDocument();
     });
 
-    it('team modes show the score, objective and Infiltration timer', () => {
-        render(<GameHud {...base({ mode: GameMode.INFILTRATION, objective: 'Steal the intel from the red side.', infiltrationMs: 161_000 })} />);
-        expect(screen.getByText('Steal the intel from the red side.')).toBeInTheDocument();
+    it('team modes show the score, objective, match clock and goal', () => {
+        render(<GameHud {...base({ mode: GameMode.CTF, objective: 'Grab the red flag from their base.', match: { timeLeftSec: 161, goal: 'First to 3 captures', result: null } })} />);
+        expect(screen.getByText('Grab the red flag from their base.')).toBeInTheDocument();
         expect(screen.getByText('2:41')).toBeInTheDocument();
+        expect(screen.getByText('First to 3 captures')).toBeInTheDocument();
         expect(screen.queryByText('Scoreboard')).not.toBeInTheDocument();
+    });
+
+    it('shows the results screen and lets you leave', () => {
+        const onLeave = vi.fn();
+        render(<GameHud {...base({ onLeave, match: { timeLeftSec: null, goal: 'First to 20 kills', result: { title: 'Alex wins', reason: 'Score limit reached', restartSec: 7, teams: null } } })} />);
+        expect(screen.getByRole('dialog', { name: 'Alex wins' })).toBeInTheDocument();
+        expect(screen.getByText('Next match in 7s')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Back to menu' }));
+        expect(onLeave).toHaveBeenCalled();
     });
 
     it('shows the death screen with a countdown', () => {

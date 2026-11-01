@@ -46,6 +46,8 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
     const shift = (t: number | undefined) => (t === undefined || t >= NEVER || t <= 0 ? t : t + offset);
     snap.hungerRoundEndsAt = shift(snap.hungerRoundEndsAt);
     snap.hungerRoundStartedAt = shift(snap.hungerRoundStartedAt);
+    snap.matchStartedAt = shift(snap.matchStartedAt);
+    snap.matchEndsAt = shift(snap.matchEndsAt);
     snap.infiltrationEndTime = shift(snap.infiltrationEndTime);
     snap.lastHTFScore = shift(snap.lastHTFScore);
     if (snap.hungerZone) {

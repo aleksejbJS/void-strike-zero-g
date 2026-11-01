@@ -29,9 +29,9 @@ export const objectiveStrings: Record<Language, ObjectiveKeys> = {
         'obj.htfYou': 'You hold the flag: +1 every 4 seconds. Stay alive!',
         'obj.htfTeam': 'Your team holds the flag. Cover them.',
         'obj.htfEnemy': 'They hold the flag. Take it back!',
-        'obj.infAttack': 'Steal the intel from the red side.',
+        'obj.infAttack': 'Steal the intel from the red side: {0} left.',
         'obj.infCarry': 'You have the intel. Get to extraction!',
-        'obj.infDefend': 'Guard the intel until the timer runs out.',
+        'obj.infDefend': 'Guard the intel: {0} left.',
         'obj.infStop': 'They have the intel. Stop the carrier!',
     },
     ru: {
@@ -44,9 +44,9 @@ export const objectiveStrings: Record<Language, ObjectiveKeys> = {
         'obj.htfYou': 'Флаг у вас: +1 каждые 4 секунды. Не умирайте!',
         'obj.htfTeam': 'Флаг у вашей команды. Прикройте носителя.',
         'obj.htfEnemy': 'Флаг у противника. Отберите его!',
-        'obj.infAttack': 'Украдите разведданные на стороне красных.',
+        'obj.infAttack': 'Украдите данные у красных: осталось {0}.',
         'obj.infCarry': 'Данные у вас. Бегите к точке эвакуации!',
-        'obj.infDefend': 'Охраняйте данные, пока не выйдет время.',
+        'obj.infDefend': 'Охраняйте данные: осталось {0}.',
         'obj.infStop': 'Данные у противника. Остановите носителя!',
     },
 };

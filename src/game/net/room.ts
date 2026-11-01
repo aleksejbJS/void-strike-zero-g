@@ -9,8 +9,9 @@ import { gameEvents, GameEvent } from '../systems/events';
 import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { InputQueue } from './inputQueue';
 import { JoinRequest, JoinRejected, Snapshot, buildSnapshot } from './protocol';
-import { createRoomState, createBots, createJoinedPlayer, spawnPointFor, pickTeam, resetHungerRound } from './roomSetup';
+import { createRoomState, createBots, createJoinedPlayer, spawnPointFor, pickTeam, resetHungerRound, resetMatch } from './roomSetup';
 import { isHungerRoundOver } from '../systems/hungerRound';
+import { isMatchOver } from '../systems/matchRound';
 
 const MAX_BODY_SPEED_X = 15;
 
@@ -103,6 +104,10 @@ export class GameRoom {
 
         if (this.state.mode === GameMode.HUNGER_GAMES && isHungerRoundOver(this.state, Date.now())) {
             resetHungerRound(this.state, Date.now());
+            this.syncBodies();
+        }
+        if (isMatchOver(this.state, Date.now())) {
+            resetMatch(this.state);
             this.syncBodies();
         }
     }

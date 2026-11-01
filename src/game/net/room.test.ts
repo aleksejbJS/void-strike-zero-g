@@ -124,3 +124,23 @@ describe('GameRoom — Hunger Games online', () => {
         expect(room.state.hungerEndReason).toBeUndefined();
     });
 });
+
+describe('GameRoom — match end', () => {
+    it('starts the next match after the results: scores reset, everyone respawns', () => {
+        const room = new GameRoom({ mode: GameMode.CTF, map: MapId.DEFAULT, maxPlayers: 8 });
+        rooms.push(room);
+        room.state.scores[Team.BLUE] = 3;
+        room.tick();
+        expect(room.state.matchWinner).toEqual({ team: Team.BLUE });
+
+        room.state.matchEndsAt = Date.now() - 1; // skip the results screen
+        room.state.players[0].dead = true;
+        room.tick();
+
+        expect(room.state.scores[Team.BLUE]).toBe(0);
+        expect(room.state.matchWinner).toBeUndefined();
+        expect(room.state.players.every(p => !p.dead)).toBe(true);
+        room.tick();
+        expect(room.state.matchStartedAt).toBeDefined(); // the new match clock starts on the next tick
+    });
+});

@@ -7,9 +7,21 @@ import type { PlayerScore } from '../../store/uiStore';
 import { PANEL } from './hudIcons';
 import type { Translate } from '../menu/types';
 
-export const Scoreboard: React.FC<{ t: Translate; players: PlayerScore[]; gunLadder?: { total: number; perLevel: number } }> = ({ t, players, gunLadder }) => (
+interface ScoreboardProps {
+    t: Translate;
+    players: PlayerScore[];
+    gunLadder?: { total: number; perLevel: number };
+    clock?: string; // match time left
+    goal?: string;  // "First to 20 kills"
+}
+
+export const Scoreboard: React.FC<ScoreboardProps> = ({ t, players, gunLadder, clock, goal }) => (
     <div className={`${PANEL} pointer-events-none absolute left-8 top-7 z-40 flex w-[260px] flex-col gap-1.5 px-3.5 py-3`}>
-        <span className="font-display text-xl font-extrabold">{t('hud.scoreboard')}</span>
+        <div className="flex items-baseline justify-between">
+            <span className="font-display text-xl font-extrabold">{t('hud.scoreboard')}</span>
+            {clock && <span className="font-display text-xl font-black text-bay-hazard">{clock}</span>}
+        </div>
+        {goal && <span className="-mt-1 text-[13px] text-bay-dust">{goal}</span>}
         <ol className="m-0 flex list-none flex-col gap-1 p-0 text-[15px]">
             {players.map((p, i) => (
                 <li key={p.id} className="grid grid-cols-[22px_minmax(0,1fr)_auto] items-baseline gap-x-2.5">
@@ -25,7 +37,7 @@ export const Scoreboard: React.FC<{ t: Translate; players: PlayerScore[]; gunLad
     </div>
 );
 
-export const TeamScore: React.FC<{ t: Translate; blue: number; red: number; objective: string | null; timer?: string }> = ({ t, blue, red, objective, timer }) => (
+export const TeamScore: React.FC<{ t: Translate; blue: number; red: number; objective: string | null; timer?: string; goal?: string }> = ({ t, blue, red, objective, timer, goal }) => (
     <div className="pointer-events-none absolute left-1/2 top-6 z-40 flex -translate-x-1/2 flex-col items-center gap-2">
         <div className="flex overflow-hidden rounded">
             <div className="flex items-baseline gap-2.5 bg-[#1E3A8A] px-5 py-1.5">
@@ -38,6 +50,7 @@ export const TeamScore: React.FC<{ t: Translate; blue: number; red: number; obje
             </div>
             {timer && <div className="flex items-center bg-bay-ink/90 px-3 font-display text-2xl font-black text-bay-hazard">{timer}</div>}
         </div>
+        {goal && <span className="-mt-1 rounded bg-bay-ink/80 px-2 py-0.5 text-[13px] text-bay-dust">{goal}</span>}
         {objective && <span className={`${PANEL} px-3 py-1.5 text-[15px]`}>{objective}</span>}
     </div>
 );

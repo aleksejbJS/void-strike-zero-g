@@ -219,6 +219,11 @@ export interface GameState {
   hungerEndReason?: 'last-standing' | 'time';
   betSpectateId?: string | null; // Client-only: Hunger Games spectator follows this player
   gunGameWinnerId?: string | null;
+  // Score/time-limited modes (see matchRound.ts)
+  matchStartedAt?: number;
+  matchEndsAt?: number; // set when the match is over: when the next one starts
+  matchWinner?: { team?: Team; playerId?: string } | null; // null = draw
+  matchEndReason?: 'score' | 'time';
   beams: Beam[];
 }
 

@@ -104,17 +104,33 @@ export const resetHungerRound = (state: GameState, now: number) => {
         state.players.splice(botIndex, 1);
     }
 
-    for (const p of state.players) {
-        const { lastProcessedInput, aim } = p;
-        Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
-    }
-
-    state.projectiles = [];
-    state.beams = [];
-    state.pickups = getInitialPickups(state.mode, state.currentMap);
+    respawnEveryone(state);
     state.hungerZone = createHungerZone(now);
     state.hungerWinnerId = null;
     state.hungerRoundEndsAt = undefined;
     state.hungerRoundStartedAt = now;
     state.hungerEndReason = undefined;
+};
+
+/** Fresh start for every player (keeping identity, team and input tracking), pickups and shots. */
+const respawnEveryone = (state: GameState) => {
+    for (const p of state.players) {
+        const { lastProcessedInput, aim } = p;
+        Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
+    }
+    state.projectiles = [];
+    state.beams = [];
+    state.pickups = getInitialPickups(state.mode, state.currentMap);
+};
+
+/** Next score/time-limited match on the same mode and map (spec 2026-11-01-match-end). */
+export const resetMatch = (state: GameState) => {
+    respawnEveryone(state);
+    state.scores = { [Team.BLUE]: 0, [Team.RED]: 0, [Team.NONE]: 0 };
+    state.lastHTFScore = 0;
+    state.infiltrationEndTime = undefined;
+    state.matchStartedAt = undefined; // the clock starts on the next tick
+    state.matchEndsAt = undefined;
+    state.matchWinner = undefined;
+    state.matchEndReason = undefined;
 };

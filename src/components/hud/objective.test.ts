@@ -16,39 +16,41 @@ describe('objectiveFor', () => {
     it('has nothing to say in free-for-all modes', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         state.players.push(createMockPlayer('me', Team.NONE));
-        expect(objectiveFor(state, 'me')).toBeNull();
+        expect(objectiveFor(state, 'me', 0)).toBeNull();
     });
 
     it('CTF: grab, carry, defend', () => {
         const { state, me, foe } = setup(GameMode.CTF);
-        expect(objectiveFor(state, 'me')).toEqual({ key: 'obj.ctfGrab', team: Team.RED });
+        expect(objectiveFor(state, 'me', 0)).toEqual({ key: 'obj.ctfGrab', team: Team.RED });
         me.hasFlag = Team.RED;
-        expect(objectiveFor(state, 'me')).toEqual({ key: 'obj.ctfCarry', team: Team.RED });
+        expect(objectiveFor(state, 'me', 0)).toEqual({ key: 'obj.ctfCarry', team: Team.RED });
         me.hasFlag = Team.NONE;
         foe.hasFlag = Team.BLUE;
-        expect(objectiveFor(state, 'me')).toEqual({ key: 'obj.ctfDefend' });
+        expect(objectiveFor(state, 'me', 0)).toEqual({ key: 'obj.ctfDefend' });
     });
 
     it('Hold the Flag: who has the golden flag', () => {
         const { state, me, ally, foe } = setup(GameMode.HOLD_THE_FLAG);
-        expect(objectiveFor(state, 'me')?.key).toBe('obj.htfFree');
+        expect(objectiveFor(state, 'me', 0)?.key).toBe('obj.htfFree');
         me.hasFlag = Team.BLUE;
-        expect(objectiveFor(state, 'me')?.key).toBe('obj.htfYou');
+        expect(objectiveFor(state, 'me', 0)?.key).toBe('obj.htfYou');
         me.hasFlag = Team.NONE; ally.hasFlag = Team.BLUE;
-        expect(objectiveFor(state, 'me')?.key).toBe('obj.htfTeam');
+        expect(objectiveFor(state, 'me', 0)?.key).toBe('obj.htfTeam');
         ally.hasFlag = Team.NONE; foe.hasFlag = Team.RED;
-        expect(objectiveFor(state, 'me')?.key).toBe('obj.htfEnemy');
+        expect(objectiveFor(state, 'me', 0)?.key).toBe('obj.htfEnemy');
     });
 
     it('Infiltration: attackers and defenders see their own goal', () => {
         const blue = setup(GameMode.INFILTRATION, Team.BLUE);
-        expect(objectiveFor(blue.state, 'me')?.key).toBe('obj.infAttack');
+        blue.state.infiltrationEndTime = 60_000;
+        expect(objectiveFor(blue.state, 'me', 0)).toEqual({ key: 'obj.infAttack', timeMs: 60_000 });
         blue.me.hasFlag = Team.RED;
-        expect(objectiveFor(blue.state, 'me')?.key).toBe('obj.infCarry');
+        expect(objectiveFor(blue.state, 'me', 0)?.key).toBe('obj.infCarry');
 
         const red = setup(GameMode.INFILTRATION, Team.RED);
-        expect(objectiveFor(red.state, 'me')).toEqual({ key: 'obj.infDefend' });
+        red.state.infiltrationEndTime = 61_000;
+        expect(objectiveFor(red.state, 'me', 1_000)).toEqual({ key: 'obj.infDefend', timeMs: 60_000 });
         red.foe.hasFlag = Team.RED;
-        expect(objectiveFor(red.state, 'me')?.key).toBe('obj.infStop');
+        expect(objectiveFor(red.state, 'me', 0)?.key).toBe('obj.infStop');
     });
 });

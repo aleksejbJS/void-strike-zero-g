@@ -11,6 +11,9 @@ import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
 import { GameHud } from './hud/GameHud';
 import { objectiveFor, Objective } from './hud/objective';
+import { buildMatchHud, MatchHud } from './hud/matchHud';
+import { formatClock } from './hud/format';
+import { isMatchOver } from '../game/systems/matchRound';
 import { ClientSession } from '../game/net/clientSession';
 import { parseJoinTarget, inviteLink as makeInviteLink } from '../game/net/serverAddress';
 import { HostSession, BROWSER_HOST_MAX_PLAYERS } from '../game/net/hostSession';
@@ -47,7 +50,9 @@ export default function GameCanvas() {
     const [netError, setNetError] = React.useState<string | null>(null);
     const [onlineMode, setOnlineMode] = React.useState<GameMode | null>(null);
     const [inviteLink, setInviteLink] = React.useState<string | null>(null);
-    const [infiltrationTimeLeft, setInfiltrationTimeLeft] = React.useState<number | null>(null);
+    // Match clock, goal and results (score/time-limited modes)
+    const [matchHud, setMatchHud] = React.useState<MatchHud | null>(null);
+    const matchHudKeyRef = useRef('');
     const [gunGameStatus, setGunGameStatus] = React.useState<{ weapon: string; level: number; progress: number; total: number } | null>(null);
     const [gunGameWinner, setGunGameWinner] = React.useState<string | null>(null);
     const shakeIntensity = useRef(0);
@@ -290,9 +295,6 @@ export default function GameCanvas() {
         gameState.current.pickups = getInitialPickups(state.selectedMode);
         if (state.selectedMode === GameMode.INFILTRATION) {
             gameState.current.infiltrationEndTime = Date.now() + INFILTRATION_TIMER;
-            setInfiltrationTimeLeft(INFILTRATION_TIMER);
-        } else {
-            setInfiltrationTimeLeft(null);
         }
     };
     useEffect(() => {
@@ -454,7 +456,8 @@ export default function GameCanvas() {
             // Online, the map arrives from the server on join (ClientSession.setupWorld)
             if (!isOnline) initLevel();
 
-            const restartHungerRound = () => {
+            // Offline only: a finished round/match starts over (online the server resets the room)
+            const restartRound = () => {
                 visualCache.current.players.clear();
                 visualCache.current.projectiles.clear();
                 visualCache.current.particles.clear();
@@ -466,10 +469,7 @@ export default function GameCanvas() {
                 platformLayer.clear();
                 zoneLayer.clear();
 
-                const nextState = makeInitialState();
-                nextState.mode = GameMode.HUNGER_GAMES;
-                nextState.currentMap = MapId.HUNGER;
-                gameState.current = nextState;
+                gameState.current = makeInitialState();
                 initLevel();
                 drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
                 drawBackground(backgroundLayer, app.screen.width, app.screen.height);
@@ -512,8 +512,8 @@ export default function GameCanvas() {
                 const liveMode = gameState.current.mode;
                 const offline = !isOnline;
                 // Offline a finished Hunger Games round restarts here; online the server does it
-                if (offline && liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) {
-                    restartHungerRound();
+                if (offline && ((liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) || isMatchOver(gameState.current, now))) {
+                    restartRound();
                 }
                 const hungerFinished = offline && liveMode === GameMode.HUNGER_GAMES && !!gameState.current.hungerRoundEndsAt;
                 if (hungerFinished) {
@@ -629,11 +629,17 @@ export default function GameCanvas() {
                 // RENDER UPDATE - Optimized frequency
                 const shouldUpdateUI = now - lastStateUpdate.current > 150; // Reduced from 100ms to 150ms
                 if (shouldUpdateUI) {
-                    const nextObjective = objectiveFor(gameState.current, localIdRef.current);
-                    const objectiveKey = nextObjective ? `${nextObjective.key}:${nextObjective.team ?? ''}` : '';
+                    const nextObjective = objectiveFor(gameState.current, localIdRef.current, now);
+                    const objectiveKey = nextObjective ? `${nextObjective.key}:${nextObjective.team ?? ''}:${Math.ceil((nextObjective.timeMs ?? 0) / 1000)}` : '';
                     if (objectiveKey !== objectiveKeyRef.current) {
                         objectiveKeyRef.current = objectiveKey;
                         setObjective(nextObjective);
+                    }
+                    const nextMatch = buildMatchHud(gameState.current, now, t);
+                    const matchKey = JSON.stringify(nextMatch);
+                    if (matchKey !== matchHudKeyRef.current) {
+                        matchHudKeyRef.current = matchKey;
+                        setMatchHud(nextMatch);
                     }
                     syncVisuals(
                         app,
@@ -915,20 +921,11 @@ export default function GameCanvas() {
         }
     }, [hungerWinnerId, hungerBetTarget, gameMode]);
 
-    useEffect(() => {
-        if (gameMode !== GameMode.INFILTRATION) return;
-        const id = setInterval(() => {
-            const end = gameState.current.infiltrationEndTime;
-            if (!end) return;
-            const remaining = Math.max(0, end - Date.now());
-            setInfiltrationTimeLeft(remaining);
-        }, 500);
-        return () => clearInterval(id);
-    }, [gameMode]);
-
     const objectiveText = objective
-        ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue') : undefined)
+        ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue')
+            : objective.timeMs !== undefined ? formatClock(Math.ceil(objective.timeMs / 1000)) : undefined)
         : null;
+    const leaveGame = () => actions.finishGame(gameState.current.players.find(p => p.id === localIdRef.current)?.score ?? 0);
 
     return (
         <div ref={containerRef} className="relative h-full w-full bg-black">
@@ -944,7 +941,8 @@ export default function GameCanvas() {
                 muted={state.isMuted}
                 onToggleMute={actions.toggleMute}
                 objective={objectiveText}
-                infiltrationMs={infiltrationTimeLeft}
+                match={matchHud}
+                onLeave={leaveGame}
                 connection={{ visible: (state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || !!netError, error: netError }}
                 debug={debugStats}
                 inviteLink={inviteLink}

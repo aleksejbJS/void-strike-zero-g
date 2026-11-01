@@ -67,7 +67,6 @@ export const ITEM_RESPAWN_TIME = 10000;
 export const WEAPON_RESPAWN_TIME = 15000;
 export const RESPAWN_DELAY = 3000;
 export const HTF_SCORE_INTERVAL = 4000; // 4s tick while holding
-export const HTF_WIN_SCORE = 200;
 export const INFILTRATION_TIMER = 180000; // 3 minutes
 // Simulation rate. All per-tick values (speeds, forces, lifetimes) were tuned at 120 ticks/s
 // on a 120 Hz display, so the fixed step keeps that feel on every monitor.
