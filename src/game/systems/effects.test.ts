@@ -21,7 +21,9 @@ describe('simulation announces effects instead of drawing them', () => {
         applyDamage(state, p, '', 50, { x: 1, y: 0 });
 
         expect(events).toContainEqual({ type: 'DAMAGE', x: 100, y: 160, amount: 50 });
-        expect(events).toContainEqual({ type: 'DEATH', x: 100, y: 200, color: p.color, height: p.height });
+        expect(events).toContainEqual(expect.objectContaining({ type: 'DEATH', x: 100, y: 200, color: p.color, height: p.height }));
+        const death = events.find(e => e.type === 'DEATH');
+        expect(death && 'parts' in death && death.parts?.torso).toBe(p.torsoColor || p.color);
         expect(state.particles).toHaveLength(0);
         expect(state.floatingTexts).toHaveLength(0);
         expect(state.ragdollParts).toHaveLength(0);

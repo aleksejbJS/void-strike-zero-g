@@ -17,7 +17,15 @@ export const emitDamage = (x: number, y: number, amount: number) =>
     gameEvents.emit({ type: 'DAMAGE', x, y, amount: Math.round(amount) });
 
 export const emitDeath = (e: Entity) =>
-    gameEvents.emit({ type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height });
+    gameEvents.emit({
+        type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
+        parts: {
+            head: e.headColor || e.color,
+            torso: e.torsoColor || e.color,
+            arm: e.armColor || e.color,
+            leg: e.legColor || '#475569',
+        },
+    });
 
 export const emitText = (x: number, y: number, text: string, color: string) =>
     gameEvents.emit({ type: 'FLOAT_TEXT', x, y, text, color });
@@ -63,7 +71,7 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
                 rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
             });
-            createRagdoll(state, { pos: { x: e.x, y: e.y }, height: e.height, color: e.color });
+            createRagdoll(state, { pos: { x: e.x, y: e.y }, height: e.height, color: e.color }, e.parts);
             break;
         case 'FLOAT_TEXT':
             floatText(state, e.x, e.y, e.text, e.color);

@@ -9,7 +9,10 @@ export type GameEvent =
     // Cosmetic effects at a position — see effects.ts
     | { type: 'EFFECT'; effect: EffectKind; x: number; y: number; color?: string; count?: number }
     | { type: 'DAMAGE'; x: number; y: number; amount: number }
-    | { type: 'DEATH'; x: number; y: number; color: string; height: number };
+    | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors };
+
+/** Colors of the body parts that fly apart on death. */
+export interface RagdollColors { head: string; torso: string; arm: string; leg: string }
 
 type Listener = (event: GameEvent) => void;
 
