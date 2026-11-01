@@ -17,7 +17,15 @@ export interface AdPlaceView {
     place: AdPlace;
     root: Container;
     creatives: Sprite[];
+    houseHidden: boolean; // a network banner covers the place: our poster steps aside
 }
+
+/** Dark panel behind the creative: what shows through when a banner fades for the fight. */
+const backing = (p: AdPlace) => {
+    const { canvas, ctx } = makeCanvas(p.w, p.h);
+    ctx.fillStyle = '#0b0e12'; ctx.fillRect(0, 0, p.w, p.h);
+    return sprite(canvas, p.x, p.y);
+};
 
 const sprite = (canvas: HTMLCanvasElement, x: number, y: number, w?: number, h?: number) => {
     const s = new Sprite(bakedTexture(canvas));
@@ -96,7 +104,7 @@ export const buildAdPlace = (p: AdPlace): AdPlaceView => {
     creatives.forEach((s, i) => { s.alpha = i === 0 ? 1 : 0; });
 
     if (p.kind === 'lightbox') {
-        root.addChild(sprite(lightboxFrame(p), p.x - GLOW_PAD, p.y - GLOW_PAD));
+        root.addChild(sprite(lightboxFrame(p), p.x - GLOW_PAD, p.y - GLOW_PAD), backing(p));
         creatives.forEach(s => { s.tint = 0xc4ccd6; root.addChild(s); });
         const g = sprite(grime(p.w, p.h, 7, 0.35), p.x, p.y); g.blendMode = 'multiply'; root.addChild(g);
         const sh = sprite(sheen(p.w, p.h), p.x, p.y); sh.blendMode = 'add'; root.addChild(sh);
@@ -107,12 +115,18 @@ export const buildAdPlace = (p: AdPlace): AdPlaceView => {
         const ribs = sprite(containerRibs(p.w, p.h, 13), p.x, p.y); ribs.blendMode = 'multiply'; root.addChild(ribs);
         root.addChild(sprite(peel(p.w, p.h, 17), p.x, p.y));
     } else {
-        root.addChild(sprite(screenBezel(p), p.x - 4, p.y - 26));
+        root.addChild(sprite(screenBezel(p), p.x - 4, p.y - 26), backing(p));
         creatives.forEach(s => { s.tint = 0xc0d0d8; root.addChild(s); });
         const lines = sprite(scanlines(p.w, p.h), p.x, p.y); lines.blendMode = 'multiply'; root.addChild(lines);
         const sh = sprite(sheen(p.w, p.h), p.x, p.y); sh.blendMode = 'add'; root.addChild(sh);
     }
-    return { place: p, root, creatives };
+    return { place: p, root, creatives, houseHidden: false };
+};
+
+export const setHouseHidden = (view: AdPlaceView, hidden: boolean) => {
+    if (view.houseHidden === hidden) return;
+    view.houseHidden = hidden;
+    view.creatives.forEach(s => { s.visible = !hidden; });
 };
 
 /** Screens slowly cross-fade between their creatives; nothing flashes. */

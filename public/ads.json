@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "refreshSec": 60,
+  "places": {
+    "station.wall-poster-a": { "enabled": false, "size": "300x250", "code": "" },
+    "station.wall-poster-b": { "enabled": false, "size": "300x250", "code": "" },
+    "station.container-decal": { "enabled": false, "size": "300x100", "code": "" },
+    "station.led-panel": { "enabled": false, "size": "728x90", "code": "" }
+  }
+}

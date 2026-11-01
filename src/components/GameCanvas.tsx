@@ -7,6 +7,7 @@ import { generateAssets } from '../game/systems/assets';
 import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
+import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
@@ -340,6 +341,7 @@ export default function GameCanvas() {
         // Online match: the server (or the browser host) owns the simulation, we predict our own player
         let redrawMap: (() => void) | null = null;
         let mapLook: MapLook | null = null;
+        let ads: AdsController | null = null;
         const isOnline = state.networkMode !== NetworkMode.OFFLINE;
         if (isOnline) {
             setNetError(null);
@@ -437,7 +439,10 @@ export default function GameCanvas() {
             worldContainer.addChild(platformLayer);
             worldContainer.addChild(gameLayer);
             app.stage.addChild(uiLayer);
-            const look = createMapLook({ stage: app.stage, world: worldContainer }, worldContainer, { platformLayer, backgroundLayer, cache: visualCache.current });
+            // In-world ad places get real TrafficStars banners from ads.json (house posters otherwise)
+            const adsLayer = containerRef.current ? createAdsController(containerRef.current, new URL('ads.json', document.baseURI).href) : null;
+            ads = adsLayer;
+            const look = createMapLook({ stage: app.stage, world: worldContainer }, worldContainer, { platformLayer, backgroundLayer, cache: visualCache.current }, scene => adsLayer?.attach(scene));
             mapLook = look;
 
             // Subscribe to game events (kill feed, sounds)
@@ -692,7 +697,11 @@ export default function GameCanvas() {
             redrawMap = () => look.redraw(gameState.current, app.screen.width, app.screen.height);
             redrawMap();
             // Map look follows the camera after the frame's simulation and rendering
-            app.ticker.add(() => look.update(gameState.current.camera, Date.now(), app.screen.width, app.screen.height));
+            app.ticker.add(() => {
+                const now = Date.now();
+                look.update(gameState.current.camera, now, app.screen.width, app.screen.height);
+                adsLayer?.update(gameState.current, now, app.screen.width, app.screen.height);
+            });
 
             // Load assets async
             const textures = await generateAssets();
@@ -876,6 +885,7 @@ export default function GameCanvas() {
             isMounted = false;
             gameEvents.clear();
             mapLook?.destroy(); // frees the baked map textures before the app goes away
+            ads?.destroy();
             if (onKeyDown) window.removeEventListener('keydown', onKeyDown);
             if (onKeyUp) window.removeEventListener('keyup', onKeyUp);
             if (onMouseMove) window.removeEventListener('mousemove', onMouseMove);

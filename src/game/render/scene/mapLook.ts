@@ -27,7 +27,10 @@ export interface MapLook {
     destroy(): void;
 }
 
-export const createMapLook = (hosts: Omit<SceneHosts, 'platformHost'>, world: Container, legacy: LegacyLayers): MapLook => {
+export const createMapLook = (
+    hosts: Omit<SceneHosts, 'platformHost'>, world: Container, legacy: LegacyLayers,
+    onRedraw: (scene: MapScene | null) => void = () => {},
+): MapLook => {
     // Station platform art sits right above the old platform layer, behind the fighters
     const platformHost = new Container();
     world.addChildAt(platformHost, world.getChildIndex(legacy.platformLayer) + 1);
@@ -51,6 +54,7 @@ export const createMapLook = (hosts: Omit<SceneHosts, 'platformHost'>, world: Co
             } else {
                 drawLegacy(state, w, h);
             }
+            onRedraw(scene);
         },
         texturesReady(state) {
             if (!scene) drawStaticMap(legacy.platformLayer, state.platforms, state.currentMap, legacy.cache);
