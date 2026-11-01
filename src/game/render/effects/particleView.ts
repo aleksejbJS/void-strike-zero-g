@@ -30,12 +30,13 @@ export class ParticleView {
     private readonly glowLayer = new Container();
     private frame = 0;
 
-    constructor(layer: Container) {
-        layer.addChild(this.graphicsLayer, this.glowLayer);
+    constructor(private readonly layer: Container) {
+        this.raise();
     }
 
     /** Show exactly the given particles; objects of vanished ids go back to their pool. */
     sync(particles: Particle[]): void {
+        this.raise();
         const frame = ++this.frame;
         for (const p of particles) {
             let slot = this.slots.get(p.id);
@@ -64,6 +65,13 @@ export class ParticleView {
         this.graphicsPool.length = 0;
         this.dispose(this.graphicsLayer);
         this.dispose(this.glowLayer);
+    }
+
+    // Things added to the layer later (respawned fighters, projectiles, ragdolls...) would
+    // otherwise sit above every particle; moving both containers back to the top keeps effects in front
+    private raise(): void {
+        const top = this.layer.children[this.layer.children.length - 1];
+        if (top !== this.glowLayer) this.layer.addChild(this.graphicsLayer, this.glowLayer);
     }
 
     private acquire(p: Particle): Slot {
