@@ -121,9 +121,14 @@ export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense =
     if (Math.random() < 0.5) createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, '#fbbf24', 'fire');
 };
 
-/** Smoke behind rockets. */
+// Smoke leaves a rocket from its tail, so the puffs do not cover the drawn hull
+const ROCKET_TAIL = 10;
+
+/** Smoke behind rockets: small puffs born at the tail, 10 px back along the flight direction. */
 export const projectileTrail = (state: GameState, proj: Projectile) => {
-    if (proj.type === WeaponType.ROCKET_LAUNCHER && Math.random() < 0.5) {
-        createParticles(state, proj.pos.x, proj.pos.y, 1, '#9ca3af', 'smoke');
-    }
+    if (proj.type !== WeaponType.ROCKET_LAUNCHER || Math.random() >= 0.5) return;
+    const speed = Math.hypot(proj.vel.x, proj.vel.y) || 1; // a rocket at rest has no heading: spawn on it
+    const x = proj.pos.x - (proj.vel.x / speed) * ROCKET_TAIL;
+    const y = proj.pos.y - (proj.vel.y / speed) * ROCKET_TAIL;
+    createParticles(state, x, y, 1, '#9ca3af', 'smoke', { size: 3 + Math.random() * 2 });
 };

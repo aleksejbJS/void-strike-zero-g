@@ -2,7 +2,7 @@
 // The simulation stores no history, so the last few positions of each projectile are noted
 // here (the plasma ghost orbs draw them) and forgotten the moment the projectile is gone.
 
-import { PROJECTILE_MAX_LIFE } from '../../../constants';
+import { PHYSICS_TICK_RATE, PROJECTILE_MAX_LIFE } from '../../../constants';
 import { Projectile, Vector2, WeaponType } from '../../../types';
 
 const TRAIL_LENGTH = 7;
@@ -10,6 +10,7 @@ const GRENADE_LIFE = 60; // ticks, as spawned in combat.ts
 
 export class ProjectileMemory {
     private readonly trails = new Map<string, Vector2[]>();
+    private readonly firstSeenMs = new Map<string, number>();
 
     /** Note where a projectile is now. Standing still since the last call (no physics tick) adds nothing. */
     remember(id: string, pos: Vector2): void {
@@ -32,10 +33,27 @@ export class ProjectileMemory {
         return this.trails.get(id) ?? [];
     }
 
+    /**
+     * Ticks of wall-clock time since this id was first asked about (0 on the first call).
+     * Animations run on this rather than on the projectile's `life`: online, `life` only
+     * changes when a snapshot arrives, which would make a spin or pulse jump per snapshot.
+     */
+    ageTicks(id: string, nowMs: number): number {
+        let first = this.firstSeenMs.get(id);
+        if (first === undefined) {
+            first = nowMs;
+            this.firstSeenMs.set(id, first);
+        }
+        return ((nowMs - first) * PHYSICS_TICK_RATE) / 1000;
+    }
+
     /** Drop every id that is not in `live`. */
     forgetMissing(live: ReadonlySet<string>): void {
         for (const id of this.trails.keys()) {
             if (!live.has(id)) this.trails.delete(id);
+        }
+        for (const id of this.firstSeenMs.keys()) {
+            if (!live.has(id)) this.firstSeenMs.delete(id);
         }
     }
 
@@ -44,7 +62,7 @@ export class ProjectileMemory {
     }
 }
 
-/** Ticks since the projectile was fired, from the life it has left. */
+/** The simulation's age of a projectile in ticks, from the life it has left. The view animates by ProjectileMemory.ageTicks instead. */
 export const projectileAge = (p: Projectile): number => {
     const total = p.type === WeaponType.GRENADE_LAUNCHER ? GRENADE_LIFE : PROJECTILE_MAX_LIFE;
     return total - (p.life ?? PROJECTILE_MAX_LIFE);

@@ -49,6 +49,25 @@ describe('ProjectileMemory', () => {
     });
 });
 
+describe('ageTicks (time since the view first saw an id)', () => {
+    it('is 60 ticks when an id first seen at 1000 ms is drawn at 1500 ms', () => {
+        const m = new ProjectileMemory();
+        expect(m.ageTicks('a', 1000)).toBe(0);
+        expect(m.ageTicks('a', 1500)).toBe(60);
+    });
+
+    it('runs from the first sighting of each id and restarts once the id was forgotten', () => {
+        const m = new ProjectileMemory();
+        m.remember('a', { x: 0, y: 0 });
+        m.ageTicks('a', 1000);
+        m.remember('b', { x: 0, y: 0 });
+        expect(m.ageTicks('b', 2000)).toBe(0);
+        expect(m.ageTicks('a', 2000)).toBe(120);
+        m.forgetMissing(new Set(['b']));
+        expect(m.ageTicks('a', 3000)).toBe(0);
+    });
+});
+
 describe('projectileAge', () => {
     it('derives a grenade age from its remaining life', () => {
         expect(projectileAge({ type: WeaponType.GRENADE_LAUNCHER, life: 45 } as Projectile)).toBe(15);

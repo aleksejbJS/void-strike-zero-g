@@ -5,7 +5,7 @@
 import { Container } from 'pixi.js';
 import { Projectile } from '../../../types';
 import { keepOnTop } from '../effects/keepOnTop';
-import { ProjectileMemory, projectileAge } from './projectileMemory';
+import { ProjectileMemory } from './projectileMemory';
 import { ProjectileSprite, drawProjectile, newProjectileSprite } from './projectileLooks';
 
 const POOL_MAX = 50;
@@ -38,7 +38,7 @@ export class ProjectileView {
                 newlySeen.push(p);
             }
             this.memory.remember(p.id, p.pos);
-            drawProjectile(sprite, p, this.memory.trail(p.id), projectileAge(p), nowMs);
+            drawProjectile(sprite, p, this.memory.trail(p.id), this.memory.ageTicks(p.id, nowMs), nowMs);
         }
         for (const [id, sprite] of this.slots) {
             if (this.live.has(id)) continue;

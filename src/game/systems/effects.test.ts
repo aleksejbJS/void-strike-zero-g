@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameMode, Team, WeaponType, Particle, ParticleKind } from '../../types';
 import { createMockState, createMockPlayer } from '../../test/mocks';
 import { gameEvents, GameEvent } from './events';
-import { applyEffectEvent } from './effects';
+import { applyEffectEvent, projectileTrail } from './effects';
 import { applyDamage, createExplosion, fireWeapon } from './combat';
 
 let events: GameEvent[] = [];
@@ -177,5 +177,35 @@ describe('compositions', () => {
         state.particles = [];
         applyEffectEvent(state, { type: 'EFFECT', effect: 'shell', x: 0, y: 0 });
         expect(count(state.particles)).toEqual({ shell: 1 });
+    });
+});
+
+describe('projectileTrail', () => {
+    afterEach(() => { vi.restoreAllMocks(); });
+    const rocket = (vel: { x: number; y: number }) => ({
+        id: 'r', ownerId: 'o', pos: { x: 100, y: 50 }, vel, type: WeaponType.ROCKET_LAUNCHER, radius: 4, active: true,
+    });
+
+    it('rocket smoke is born 10 px behind the rocket, small', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.25);
+        const state = createMockState(GameMode.DEATHMATCH);
+        projectileTrail(state, rocket({ x: 0, y: 12 }));
+        expect(state.particles).toHaveLength(1);
+        const puff = state.particles[0];
+        expect(puff.type).toBe('smoke');
+        expect(puff.pos.x).toBeCloseTo(100);
+        expect(puff.pos.y).toBeCloseTo(40);
+        expect(puff.size).toBeGreaterThanOrEqual(3);
+        expect(puff.size).toBeLessThanOrEqual(5);
+    });
+
+    it('a rocket without velocity smokes on the spot, other weapons not at all', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.25);
+        const state = createMockState(GameMode.DEATHMATCH);
+        projectileTrail(state, rocket({ x: 0, y: 0 }));
+        expect(state.particles[0].pos).toEqual({ x: 100, y: 50 });
+        state.particles = [];
+        projectileTrail(state, { ...rocket({ x: 5, y: 0 }), type: WeaponType.PLASMA_GUN });
+        expect(state.particles).toHaveLength(0);
     });
 });

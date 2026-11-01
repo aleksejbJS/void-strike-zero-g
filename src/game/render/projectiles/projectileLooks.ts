@@ -1,15 +1,16 @@
 // How each weapon's projectile looks. Pure drawing: every function repaints one pooled
 // ProjectileSprite from the projectile's current state, so nothing is kept between frames.
 //
-// A ProjectileSprite is a `root` placed at the projectile with three layers inside it:
-//   body  solid art (rocket, grenade, plasma core); Graphics, repainted each frame
-//   strip additive streak anchored at (1, 0.5): a tracer behind the head, or the rocket exhaust
+// A ProjectileSprite is a `root` placed at the projectile with three layers inside it,
+// listed from the bottom up so the solid art and the hot core always sit over the light:
 //   glow  additive soft light
+//   strip additive streak anchored at (1, 0.5): a tracer behind the head, or the rocket exhaust
+//   body  solid art (rocket, grenade, plasma core); Graphics, repainted each frame
 // Nothing is ever a plain dot: even a bullet is a streak with a hot head and a glow.
 
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { Projectile, Vector2, WeaponType } from '../../../types';
-import { WEAPONS_DATA } from '../../../constants';
+import { PHYSICS_TICK_RATE, WEAPONS_DATA } from '../../../constants';
 import { glowTexture, stripTexture } from '../effects/glowTextures';
 
 export type ProjectileSprite = { root: Container; strip: Sprite; glow: Sprite; body: Graphics };
@@ -27,8 +28,7 @@ const GRENADE_SHELL = 0x365314, GRENADE_LINE = 0x1a2a0a, GRENADE_BAND = 0xa3e635
 
 const GHOST_INDEXES = [2, 4, 6];   // which remembered positions get a ghost orb
 const PLASMA_PULSE_HZ = 4.5;
-const TICKS_PER_SECOND = 120;
-const GRENADE_SPIN = 0.25;         // rad per tick
+const GRENADE_SPIN = 0.125;        // rad per tick: the mockup's 0.25 per 60 Hz frame at 120 ticks/s
 
 export const newProjectileSprite = (): ProjectileSprite => {
     const body = new Graphics();
@@ -39,7 +39,7 @@ export const newProjectileSprite = (): ProjectileSprite => {
     glow.anchor.set(0.5);
     glow.blendMode = 'add';
     const root = new Container();
-    root.addChild(body, strip, glow);
+    root.addChild(glow, strip, body);
     return { root, strip, glow, body };
 };
 
@@ -75,7 +75,7 @@ const tracer = (v: ProjectileSprite, p: Projectile, length: number, thickness: n
 
 // Pulsing blue glow, white core, and three fading ghost orbs where the orb was a few frames ago
 const plasma = (v: ProjectileSprite, p: Projectile, trail: readonly Vector2[], age: number) => {
-    const pulse = 1 + 0.15 * Math.sin((age * 2 * Math.PI * PLASMA_PULSE_HZ) / TICKS_PER_SECOND);
+    const pulse = 1 + 0.15 * Math.sin((age * 2 * Math.PI * PLASMA_PULSE_HZ) / PHYSICS_TICK_RATE);
     placeGlow(v, 0, 0, 14 * pulse, PLASMA_GLOW, 0.9);
     v.body.blendMode = 'add';
     for (const i of GHOST_INDEXES) {
@@ -114,7 +114,7 @@ const grenade = (v: ProjectileSprite, age: number) => {
     b.circle(-1.5, -1.8, 1.4).fill({ color: WHITE, alpha: 0.35 });
 };
 
-/** Repaint one pooled projectile sprite. `trail` is the remembered positions, newest first; `age` is in ticks. */
+/** Repaint one pooled projectile sprite. `trail` is the remembered positions, newest first; `age` is ticks since the view first saw it. */
 export const drawProjectile = (v: ProjectileSprite, p: Projectile, trail: readonly Vector2[], age: number, nowMs: number): void => {
     v.root.position.set(p.pos.x, p.pos.y);
     v.body.clear();
