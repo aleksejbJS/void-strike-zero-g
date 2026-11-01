@@ -35,20 +35,53 @@ export const emitText = (x: number, y: number, text: string, color: string) =>
 const floatText = (state: GameState, x: number, y: number, text: string, color: string) =>
     state.floatingTexts.push({ id: nextId('ft_'), pos: { x, y }, text, color, life: 1, velY: 1 });
 
+// --- Compositions: what each announced effect is made of ---
+
+const between = (min: number, max: number) => min + Math.random() * (max - min);
+
+/** Run `spawn` once per particle, so each one rolls its own velocity and size. */
+const each = (n: number, spawn: () => void) => { for (let i = 0; i < n; i++) spawn(); };
+
+const STILL = { x: 0, y: 0 };
+
+// Flash, fireball and ring are stationary; the view grows them over their life
+const explosionAt = (state: GameState, x: number, y: number) => {
+    createParticles(state, x, y, 1, '#ffffff', 'flash', { size: 40, vel: STILL });
+    createParticles(state, x, y, 1, '#f97316', 'fireball', { size: 12, vel: STILL });
+    createParticles(state, x, y, 1, '#fdba74', 'ring', { size: 10, vel: STILL });
+    each(14, () => createParticles(state, x, y, 1, '#fbbf24', 'ember', {
+        vel: { x: between(-5, 5), y: between(-6, 1) },
+    }));
+    each(6, () => createParticles(state, x, y, 1, '#9ca3af', 'smoke', {
+        size: between(6, 12), vel: { x: between(-0.6, 0.6), y: between(-0.9, -0.3) },
+    }));
+};
+
+const sparkAt = (state: GameState, x: number, y: number, color: string, count: number) => {
+    createParticles(state, x, y, 1, color, 'flash', { size: 16, decay: 0.07, vel: STILL });
+    each(count, () => {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = between(1, 6);
+        createParticles(state, x, y, 1, color, 'spark', { vel: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed } });
+    });
+};
+
+const bloodAt = (state: GameState, x: number, y: number, count: number, color: string) =>
+    each(count, () => createParticles(state, x, y, 1, color, 'blood', { vel: { x: between(-3, 3), y: between(-4, 0) } }));
+
 /** Turn one event into particles/decals/ragdolls/texts. Non-effect events are ignored. */
 export const applyEffectEvent = (state: GameState, e: GameEvent) => {
     switch (e.type) {
         case 'EFFECT':
             switch (e.effect) {
                 case 'explosion':
-                    createParticles(state, e.x, e.y, 20, '#f97316', 'fire');
-                    createParticles(state, e.x, e.y, 10, '#ffffff', 'smoke');
+                    explosionAt(state, e.x, e.y);
                     break;
                 case 'blood':
-                    createParticles(state, e.x, e.y, e.count ?? 6, e.color ?? '#ef4444', 'blood');
+                    bloodAt(state, e.x, e.y, e.count ?? 6, e.color ?? '#ef4444');
                     break;
                 case 'spark':
-                    createParticles(state, e.x, e.y, e.count ?? 8, e.color ?? '#ffffff', 'spark');
+                    sparkAt(state, e.x, e.y, e.color ?? '#ffffff', e.count ?? 8);
                     break;
                 case 'respawn':
                     createParticles(state, e.x, e.y, 20, '#ffffff', 'spark');
@@ -66,7 +99,7 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
             floatText(state, e.x, e.y, String(e.amount), '#ef4444');
             break;
         case 'DEATH':
-            createParticles(state, e.x, e.y, 40, e.color, 'blood');
+            bloodAt(state, e.x, e.y, 40, e.color);
             state.decals.push({
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
                 rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
