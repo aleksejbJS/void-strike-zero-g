@@ -62,13 +62,13 @@ export const GameHud: React.FC<GameHudProps> = p => {
 
             <div className="absolute right-8 top-7 z-50 flex flex-col items-end gap-2.5">
                 <HudButtons t={t} muted={p.muted} onToggleMute={p.onToggleMute} onOpenAchievements={p.onAchievementsOpen} />
-                <KillFeed kills={p.killFeed} />
+                <KillFeed t={t} kills={p.killFeed} />
                 {p.recentAchievement && <AchievementToast t={t} achievement={p.recentAchievement} />}
             </div>
 
             <Vitals t={t} hp={stats.hp} armor={stats.arm} fuel={stats.fuel} maxFuel={stats.maxFuel ?? 100} />
             <WeaponBar inventory={p.inventory} active={p.activeWeapon} />
-            <AmmoPanel weapon={activeWeapon} ammo={stats.ammo} />
+            <AmmoPanel t={t} weapon={activeWeapon} ammo={stats.ammo} />
 
             {p.inviteLink && <InviteBanner t={t} link={p.inviteLink} />}
             {p.debug && <DebugStats fps={p.debug.fps} tps={p.debug.tps} />}

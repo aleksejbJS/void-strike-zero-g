@@ -6,6 +6,7 @@ import { KillMessage } from '../../types';
 import type { PlayerScore } from '../../store/uiStore';
 import { PANEL } from './hudIcons';
 import type { Translate } from '../menu/types';
+import { weaponLabel } from './weaponLabel';
 
 interface ScoreboardProps {
     t: Translate;
@@ -55,12 +56,12 @@ export const TeamScore: React.FC<{ t: Translate; blue: number; red: number; obje
     </div>
 );
 
-export const KillFeed: React.FC<{ kills: KillMessage[] }> = ({ kills }) => (
+export const KillFeed: React.FC<{ t: Translate; kills: KillMessage[] }> = ({ t, kills }) => (
     <div className="pointer-events-none flex flex-col items-end gap-1 text-sm">
         {kills.map(k => (
             <span key={k.id} className={`${PANEL} px-2.5 py-1`}>
                 <b style={{ color: k.killerColor }}>{k.killer}</b>{' '}
-                <span className="text-bay-dust">{k.weapon.toLowerCase()}</span>{' '}
+                <span className="text-bay-dust">{weaponLabel(t, k.weapon).toLowerCase()}</span>{' '}
                 <b style={{ color: k.victimColor }}>{k.victim}</b>
             </span>
         ))}

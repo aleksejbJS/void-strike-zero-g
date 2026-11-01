@@ -3,6 +3,8 @@
 import React from 'react';
 import { Weapon, WeaponType } from '../../types';
 import { PANEL, WEAPON_ICON } from './hudIcons';
+import type { Translate } from '../menu/types';
+import { weaponLabel } from './weaponLabel';
 
 const SLOTS = 6;
 // Ammo pools this large are effectively unlimited
@@ -30,7 +32,7 @@ export const WeaponBar: React.FC<{ inventory: Weapon[]; active: WeaponType | nul
     </div>
 );
 
-export const AmmoPanel: React.FC<{ weapon: Weapon | undefined; ammo: number }> = ({ weapon, ammo }) => {
+export const AmmoPanel: React.FC<{ t: Translate; weapon: Weapon | undefined; ammo: number }> = ({ t, weapon, ammo }) => {
     if (!weapon) return null;
     const unlimited = weapon.maxAmmo > UNLIMITED_AMMO;
     return (
@@ -40,7 +42,7 @@ export const AmmoPanel: React.FC<{ weapon: Weapon | undefined; ammo: number }> =
                 <span className="font-display text-[64px] font-black leading-[0.85] text-bay-hazard">{unlimited ? '∞' : ammo}</span>
                 {!unlimited && <span className="text-lg font-semibold text-bay-dust">/ {weapon.maxAmmo}</span>}
             </div>
-            <span className="text-[15px] font-semibold">{weapon.name}</span>
+            <span className="text-[15px] font-semibold">{weaponLabel(t, weapon.name)}</span>
         </div>
     );
 };
