@@ -21,6 +21,7 @@ const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/pa
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.4.0', date: null, beforeAfter: { caption: 'The new fighter', ...FIGHTER }, points: [
+            'The standard map is now a space station: windows onto a planet, lamps and beacons, cargo, posters and screens, worn metal decks',
             'New fighter: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, recoil, a helmet that looks where you aim',
             'Body parts fly apart in their own colors after a death',
             'New look for the menu, character setup and HUD',
@@ -64,6 +65,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ],
     ru: [
         { version: '0.4.0', date: null, beforeAfter: { caption: 'Новый боец', ...FIGHTER }, points: [
+            'Стандартная карта стала космической станцией: окна с видом на планету, лампы и маячки, контейнеры, плакаты и экраны, потёртые металлические настилы',
             'Новый боец: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, отдача, шлем смотрит туда, куда целитесь',
             'После смерти части тела разлетаются в своих цветах',
             'Новый вид меню, экрана персонажа и интерфейса в бою',

@@ -60,9 +60,10 @@ drawn by the game. The station never has empty frames.
   "version": 1,
   "refreshSec": 60,
   "places": {
-    "station.wall-poster":     { "enabled": true,  "size": "300x250", "code": "<script …></script>" },
-    "station.container-decal": { "enabled": true,  "size": "728x90",  "code": "…" },
-    "station.girder-screen":   { "enabled": false, "size": "300x100", "code": "" },
+    "station.wall-poster-a":   { "enabled": true,  "size": "300x250", "code": "<script …></script>" },
+    "station.wall-poster-b":   { "enabled": true,  "size": "300x250", "code": "…" },
+    "station.container-decal": { "enabled": true,  "size": "300x100", "code": "…" },
+    "station.led-panel":       { "enabled": false, "size": "728x90",  "code": "" },
     "menu.side":               { "enabled": true,  "size": "300x250", "code": "…" },
     "results.bottom":          { "enabled": true,  "size": "728x90",  "code": "…" }
   }
@@ -117,7 +118,7 @@ read the game state or the player's data.
 
 ## Open questions
 
-1. Which banner sizes do our spots support? The plan assumes 300×250, 728×90, 300×100.
+1. Which banner sizes do our spots support? Places use 300×250 (wall lightboxes), 300×100 (container sticker) and 728×90 (LED panel).
 2. Is a non-clickable in-game placement fine under TrafficStars rules, and what
    refresh interval is allowed?
 3. Consent: TrafficStars scripts may set cookies; do we need a consent banner for EU
