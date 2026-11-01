@@ -3,7 +3,7 @@
 ## Version 0.4.0 - "Hazard Bay" (Unreleased)
 
 ### 🎨 New Interface
-- **Main menu** redesigned: pick a mode and watch a short animated preview of how it plays, with its three key rules
+- **Main menu** redesigned: pick a mode and watch a short animated preview of how it plays, with its three key rules (Infiltration shows the whole raid: grab the intel, bring it to extraction)
 - **What's new** panel with the full release history
 - **Character setup** redesigned: live preview on a platform, a custom color for every body part
 - **HUD** redesigned: health, armor and fuel with item icons, weapon pictures in the slots, match clock and goal

@@ -13,6 +13,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         { version: '0.4.0', date: null, points: [
             'New look for the menu, character setup and HUD',
             'Pick a mode and see how it plays, with its key rules',
+            'Infiltration preview shows the whole raid: grab the intel, bring it to extraction',
             'Matches end on score or after 10 minutes, then a results screen and the next match',
             'Create a game in your browser and invite friends with a link',
             "Join a friend's server by its address; smoother movement online",
@@ -50,6 +51,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         { version: '0.4.0', date: null, points: [
             'Новый вид меню, экрана персонажа и интерфейса в бою',
             'Выберите режим и посмотрите, как он играется, с главными правилами',
+            'Превью «Проникновения» показывает весь рейд: схватить данные и донести до эвакуации',
             'Матч заканчивается по очкам или через 10 минут, потом итоги и следующий матч',
             'Создайте игру прямо в браузере и пригласите друзей ссылкой',
             'Вход на сервер друга по адресу; движение в онлайне стало плавнее',
