@@ -7,10 +7,13 @@ import { GRAVITY } from '../../constants';
 // Kinds that never move: the renderer animates them by life alone
 const FADE_ONLY: ReadonlySet<ParticleKind | undefined> = new Set(['flash', 'fireball', 'ring', 'puff']);
 
-// Stops a falling droplet that crossed the top of a platform during this tick
+// Bodies standing on a platform overlap its top by a sub-pixel slop; droplets born at their feet count as above it
+const LANDING_SLOP = 2;
+
+// Stops a falling droplet that crossed the top of a platform (give or take the slop) during this tick
 const landOnPlatform = (state: GameState, p: Particle, prevY: number) => {
     for (const plat of state.platforms) {
-        if (p.pos.x > plat.x && p.pos.x < plat.x + plat.w && prevY <= plat.y && p.pos.y >= plat.y) {
+        if (p.pos.x > plat.x && p.pos.x < plat.x + plat.w && prevY <= plat.y + LANDING_SLOP && p.pos.y >= plat.y) {
             p.vel.x = 0;
             p.vel.y = 0;
             p.pos.y = plat.y;

@@ -20,13 +20,13 @@ const makeParticle = (over: Partial<Particle>): Particle => ({
 
 const platform = (x: number, y: number, w: number, h: number): Platform => ({ id: 'plat', x, y, w, h, color: '#444' });
 
-const tick = (n: number) => { for (let i = 0; i < n; i++) updateParticles(state); };
+// Runs one particle through n physics ticks
+const run = (p: Particle, n: number) => { state.particles = [p]; for (let i = 0; i < n; i++) updateParticles(state); };
 
 describe('particle motion', () => {
     it.each(['spark', 'ember'] as const)('%s falls and loses speed', type => {
         const p = makeParticle({ type, vel: { x: 4, y: 0 } });
-        state.particles = [p];
-        tick(10);
+        run(p, 10);
         expect(p.vel.y).toBeGreaterThan(1);
         expect(p.vel.x).toBeLessThan(4);
         expect(p.pos.y).toBeGreaterThan(0);
@@ -34,24 +34,21 @@ describe('particle motion', () => {
 
     it('smoke rises slowly and never falls', () => {
         const p = makeParticle({ type: 'smoke' });
-        state.particles = [p];
-        tick(30);
+        run(p, 30);
         expect(p.pos.y).toBeLessThan(0);
         expect(p.vel.y).toBeLessThanOrEqual(0);
     });
 
     it('smoke launched downwards stops sinking after one tick', () => {
         const p = makeParticle({ type: 'smoke', vel: { x: 0, y: 2 } });
-        state.particles = [p];
-        tick(1);
+        run(p, 1);
         expect(p.vel.y).toBeLessThanOrEqual(0);
     });
 
     it('blood droplets fall and stop on a platform', () => {
         state.platforms = [platform(0, 100, 200, 50)];
         const p = makeParticle({ type: 'blood', pos: { x: 50, y: 0 }, vel: { x: 1, y: 0 } });
-        state.particles = [p];
-        tick(60);
+        run(p, 60);
         expect(p.pos.y).toBe(100);
         expect(p.vel.y).toBe(0);
         expect(p.vel.x).toBe(0);
@@ -60,44 +57,55 @@ describe('particle motion', () => {
     it('blood droplets keep falling past the edge of a platform', () => {
         state.platforms = [platform(0, 100, 200, 50)];
         const p = makeParticle({ type: 'blood', pos: { x: 300, y: 0 } });
-        state.particles = [p];
-        tick(60);
+        run(p, 60);
         expect(p.pos.y).toBeGreaterThan(150);
+    });
+
+    it('blood spawned a hair inside the platform top still lands on it', () => {
+        // A fighter standing on a platform overlaps it by a sub-pixel slop
+        state.platforms = [platform(0, 100, 200, 50)];
+        const p = makeParticle({ type: 'blood', pos: { x: 50, y: 100.1 }, vel: { x: 1, y: 1 } });
+        run(p, 60);
+        expect(p.pos.y).toBe(100);
+        expect(p.vel.y).toBe(0);
+    });
+
+    it('blood spawned well inside a platform is not snapped to its top', () => {
+        state.platforms = [platform(0, 100, 200, 50)];
+        const p = makeParticle({ type: 'blood', pos: { x: 50, y: 120 }, vel: { x: 0, y: 1 } });
+        run(p, 5);
+        expect(p.pos.y).toBeGreaterThan(120);
     });
 
     it('a fast blood droplet does not tunnel through a thin platform', () => {
         state.platforms = [platform(0, 100, 200, 4)];
         const p = makeParticle({ type: 'blood', pos: { x: 50, y: 90 }, vel: { x: 0, y: 20 } });
-        state.particles = [p];
-        tick(1);
+        run(p, 1);
         expect(p.pos.y).toBe(100);
         expect(p.vel.y).toBe(0);
     });
 
     it.each(['flash', 'fireball', 'ring', 'puff'] as const)('%s only fades, in place', type => {
         const p = makeParticle({ type, pos: { x: 7, y: 9 }, vel: { x: 3, y: -2 }, decay: 0.05 });
-        state.particles = [p];
-        tick(5);
+        run(p, 5);
         expect(p.pos).toEqual({ x: 7, y: 9 });
         expect(p.life).toBeCloseTo(1 - 5 * 0.05, 10);
     });
 
     it('dust drifts with its velocity and fades', () => {
         const p = makeParticle({ type: 'dust', vel: { x: 4, y: -2 }, decay: 0.014 });
-        state.particles = [p];
-        tick(1);
+        run(p, 1);
         expect(p.pos).toEqual({ x: 4, y: -2 });
         expect(p.vel.x).toBeCloseTo(4 * 0.94, 10);
         expect(p.vel.y).toBeCloseTo(-2 * 0.94, 10);
-        tick(19);
+        run(p, 19);
         expect(p.pos.x).toBeGreaterThan(4);
         expect(p.pos.y).toBeLessThan(-2);
         expect(p.life).toBeCloseTo(1 - 20 * 0.014, 10);
     });
 
     it('removes particles whose life ran out', () => {
-        state.particles = [makeParticle({ type: 'flash', decay: 0.5 })];
-        tick(2);
+        run(makeParticle({ type: 'flash', decay: 0.5 }), 2);
         expect(state.particles).toHaveLength(0);
     });
 });
