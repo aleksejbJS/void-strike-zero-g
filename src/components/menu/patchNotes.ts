@@ -38,6 +38,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Smarter bots: they fight in Gun Game, go after enemies they can see and shoot back while retreating',
             'Same game speed on 60, 120 and 144 Hz screens',
             'Railgun and explosions no longer go through walls; bullets no longer pierce players',
+            'Fighters no longer slide along the floor with frozen legs: the game now always knows when they stand on the ground',
             'No more free point for the smaller team in CTF, keys no longer get stuck, and many more fixes',
         ] },
         { version: '0.3.1', date: 'Nov 28, 2025', points: [
@@ -79,6 +80,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Боты умнее: дерутся в Гонке вооружений, идут на видимых врагов и отстреливаются при отступлении',
             'Одинаковая скорость игры на мониторах 60, 120 и 144 Гц',
             'Рельсотрон и взрывы больше не проходят сквозь стены, пули не прошивают игроков',
+            'Бойцы больше не скользят по полу с застывшими ногами: игра всегда знает, что они стоят на земле',
             'В CTF меньшая команда больше не получает бесплатных очков, клавиши не залипают, и много других исправлений',
         ] },
         { version: '0.3.1', date: '28.11.2025', points: [

@@ -48,6 +48,7 @@
 - Stray bullets disappear instead of flying forever
 - Killing yourself no longer gives a point; friendly fire works the same for every weapon
 - Crouching no longer pushes you into the floor
+- Standing on the ground is detected reliably: running fighters used to count as airborne about a third of the time (or more), sliding with frozen legs and without ground friction
 - The smaller team no longer gets a free point on every respawn (CTF, Hold the Flag)
 - Keys no longer stay pressed after switching windows; touch controls work on phones
 - Weapon names in the HUD and kill feed are translated; two kills in the same millisecond no longer break the kill feed
@@ -55,7 +56,7 @@
 
 ### 🛠️ Technical
 - Shared authoritative game room used by both the Node server and the browser host
-- Large components split into small modules; 217 automated tests (from 56)
+- Large components split into small modules; 218 automated tests (from 56)
 
 ## Version 0.3.1 (2025-11-28)
 
