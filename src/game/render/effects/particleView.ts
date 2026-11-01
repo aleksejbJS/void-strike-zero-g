@@ -7,6 +7,7 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { Particle } from '../../../types';
 import { glowTexture } from './glowTextures';
+import { keepOnTop } from './keepOnTop';
 import { drawGraphic, drawSprite, isSpriteKind } from './particleDraw';
 
 const POOL_MAX = 100;
@@ -67,11 +68,10 @@ export class ParticleView {
         this.dispose(this.glowLayer);
     }
 
-    // Things added to the layer later (respawned fighters, projectiles, ragdolls...) would
-    // otherwise sit above every particle; moving both containers back to the top keeps effects in front
+    // Things added to the layer later (respawned fighters, ragdolls...) would otherwise sit
+    // above every particle; moving both containers back to the top keeps effects in front
     private raise(): void {
-        const top = this.layer.children[this.layer.children.length - 1];
-        if (top !== this.glowLayer) this.layer.addChild(this.graphicsLayer, this.glowLayer);
+        keepOnTop(this.layer, [this.graphicsLayer, this.glowLayer]);
     }
 
     private acquire(p: Particle): Slot {

@@ -6,23 +6,10 @@ import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../r
 import { drawRagdollShape, placeRagdollPart } from '../render/ragdollView';
 import { nextHungerZone } from './gamemodes';
 import { ParticleView } from '../render/effects/particleView';
-
-// Performance optimizations
-const PROJECTILE_POOL_SIZE = 50;
-const projectilePool: Graphics[] = [];
-
-const getPooledProjectile = (): Graphics => {
-    return projectilePool.pop() || new Graphics();
-};
-
-const returnPooledProjectile = (projectile: Graphics): void => {
-    if (projectilePool.length < PROJECTILE_POOL_SIZE) {
-        projectile.clear();
-        projectilePool.push(projectile);
-    } else {
-        projectile.destroy();
-    }
-};
+import { ProjectileView } from '../render/projectiles/projectileView';
+import { BeamView } from '../render/projectiles/beamView';
+import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
+import { createParticles } from './effectSpawn';
 
 // Desired visual sizes (largest dimension) for pickup sprites
 const PICKUP_DISPLAY_SIZE: Partial<Record<ItemType, number>> = {
@@ -494,39 +481,10 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache.textures, p.id === localPlayerId);
     });
 
-    // Projectiles - Optimized with object pooling
-    for (const [id, gfx] of cache.projectiles.entries()) {
-        if (!state.projectiles.find(p => p.id === id)) {
-            gameLayer.removeChild(gfx);
-            returnPooledProjectile(gfx);
-            cache.projectiles.delete(id);
-        }
-    }
-    state.projectiles.forEach(p => {
-        let gfx = cache.projectiles.get(p.id);
-        if (!gfx) {
-            gfx = getPooledProjectile();
-            gameLayer.addChild(gfx);
-            cache.projectiles.set(p.id, gfx);
-        }
-        gfx.clear(); gfx.position.set(p.pos.x, p.pos.y); gfx.rotation = Math.atan2(p.vel.y, p.vel.x);
-
-        if (p.type === WeaponType.RAILGUN) {
-            // Blue rail beam instead of a bullet
-            const beamLength = 30;
-            const beamWidth = 4;
-            const color = 0x60a5fa;
-            gfx.rect(-beamLength / 2, -beamWidth / 2, beamLength, beamWidth).fill(color);
-            gfx.rect(-beamLength / 2, -beamWidth, beamLength, beamWidth).fill({ color, alpha: 0.4 });
-        } else if (p.type === WeaponType.PLASMA_GUN) {
-            // Plasma: Bright core + glow
-            gfx.circle(0, 0, p.radius + 4).fill({ color: 0x60a5fa, alpha: 0.3 }); // Outer glow (blue-400)
-            gfx.circle(0, 0, p.radius + 2).fill({ color: 0x3b82f6, alpha: 0.5 }); // Inner glow (blue-500)
-            gfx.circle(0, 0, p.radius).fill(0xffffff); // Bright white core
-        } else {
-            gfx.circle(0, 0, p.radius).fill(WEAPONS_DATA[p.type].color);
-        }
-    });
+    // Projectiles: pooled sprites per live id; each shotgun shot leaves one muzzle puff where it was first seen
+    cache.projectileView ??= new ProjectileView(gameLayer);
+    const newlySeen = cache.projectileView.sync(state.projectiles, Date.now());
+    for (const p of firstPelletPerOwner(newlySeen)) createParticles(state, p.pos.x, p.pos.y, 1, '#c8c8c8', 'puff', { size: 5 });
 
     // Particles: pooled sprites and graphics, one per live particle
     cache.particleView ??= new ParticleView(gameLayer);
@@ -541,24 +499,8 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
     });
 
     // Beams (Railgun)
-    if (state.beams) {
-        for (const [id, gfx] of cache.beams.entries()) { if (!state.beams.find(b => b.id === id)) { gameLayer.removeChild(gfx); gfx.destroy(); cache.beams.delete(id); } }
-        state.beams.forEach(b => {
-            let gfx = cache.beams.get(b.id);
-            if (!gfx) { gfx = new Graphics(); gameLayer.addChild(gfx); cache.beams.set(b.id, gfx); }
-            gfx.clear();
-
-            // Draw Beam
-            gfx.moveTo(b.start.x, b.start.y);
-            gfx.lineTo(b.end.x, b.end.y);
-            gfx.stroke({ width: b.width, color: b.color, alpha: b.life });
-
-            // Glow
-            gfx.moveTo(b.start.x, b.start.y);
-            gfx.lineTo(b.end.x, b.end.y);
-            gfx.stroke({ width: b.width * 3, color: b.color, alpha: b.life * 0.4 });
-        });
-    }
+    cache.beamView ??= new BeamView(gameLayer);
+    cache.beamView.sync(state.beams ?? []);
 
     // Cursor
     let cursor = uiLayer.getChildByLabel('cursor') as Graphics;

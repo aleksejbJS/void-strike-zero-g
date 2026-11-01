@@ -8,6 +8,8 @@ import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
 import { drawBotPaths } from '../game/render/botPathOverlay';
 import { ParticleView } from '../game/render/effects/particleView';
+import { ProjectileView } from '../game/render/projectiles/projectileView';
+import { BeamView } from '../game/render/projectiles/beamView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
@@ -91,12 +93,12 @@ export default function GameCanvas() {
 
     const visualCache = useRef({
         players: new Map(),
-        projectiles: new Map(),
+        projectileView: null as ProjectileView | null,
         particleView: null as ParticleView | null,
         pickups: new Map(),
         decals: new Map(),
         floatingTexts: new Map(),
-        beams: new Map(),
+        beamView: null as BeamView | null,
         textures: {} as Record<string, Texture>,
     });
 
@@ -471,10 +473,13 @@ export default function GameCanvas() {
             // Offline only: a finished round/match starts over (online the server resets the room)
             const restartRound = () => {
                 visualCache.current.players.clear();
-                visualCache.current.projectiles.clear();
-                // The layer is emptied below; the renderer builds a fresh particle view next frame
+                // The layer is emptied below; the renderer builds fresh effect views next frame
+                visualCache.current.projectileView?.clear();
+                visualCache.current.projectileView = null;
                 visualCache.current.particleView?.clear();
                 visualCache.current.particleView = null;
+                visualCache.current.beamView?.clear();
+                visualCache.current.beamView = null;
                 visualCache.current.pickups.clear();
                 visualCache.current.decals.clear();
                 visualCache.current.floatingTexts.clear();
@@ -913,9 +918,12 @@ export default function GameCanvas() {
             gameState.current = makeInitialState();
             // Clear visual cache to prevent reusing dead sprites
             visualCache.current.players.clear();
-            visualCache.current.projectiles.clear();
+            visualCache.current.projectileView?.clear();
+            visualCache.current.projectileView = null;
             visualCache.current.particleView?.clear();
             visualCache.current.particleView = null;
+            visualCache.current.beamView?.clear();
+            visualCache.current.beamView = null;
             visualCache.current.pickups.clear();
             visualCache.current.decals.clear();
             sessionRef.current?.dispose();
