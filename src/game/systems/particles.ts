@@ -1,32 +1,78 @@
 // Handling update logic for particles, decals, floating texts, and ragdoll parts
 // Extracted from physics.ts main loop
 
-import { GameState } from '../../types';
+import { GameState, Particle, ParticleKind } from '../../types';
 import { GRAVITY } from '../../constants';
 
-export const updateParticles = (state: GameState) => {
-    state.particles.forEach(p => {
-        p.pos.x += p.vel.x;
-        p.pos.y += p.vel.y;
-        if (p.type === 'shell') {
+// Kinds that never move: the renderer animates them by life alone
+const FADE_ONLY: ReadonlySet<ParticleKind | undefined> = new Set(['flash', 'fireball', 'ring', 'puff']);
+
+// Stops a falling droplet that crossed the top of a platform during this tick
+const landOnPlatform = (state: GameState, p: Particle, prevY: number) => {
+    for (const plat of state.platforms) {
+        if (p.pos.x > plat.x && p.pos.x < plat.x + plat.w && prevY <= plat.y && p.pos.y >= plat.y) {
+            p.vel.x = 0;
+            p.vel.y = 0;
+            p.pos.y = plat.y;
+            return;
+        }
+    }
+};
+
+const bounceShell = (state: GameState, p: Particle) => {
+    p.vel.y += GRAVITY;
+    p.rotation = (p.rotation || 0) + p.vel.x * 0.1;
+    state.platforms.forEach(plat => {
+        if (p.pos.y > plat.y && p.pos.y < plat.y + plat.h && p.pos.x > plat.x && p.pos.x < plat.x + plat.w) {
+            if (Math.abs(p.vel.y) > 1) {
+                p.vel.y *= -0.5;
+                p.pos.y = plat.y;
+            } else {
+                p.vel.y = 0;
+                p.vel.x *= 0.8;
+            }
+        }
+    });
+};
+
+// Moves one particle by its velocity, then applies the forces of its kind
+const stepParticle = (state: GameState, p: Particle) => {
+    const prevY = p.pos.y;
+    p.pos.x += p.vel.x;
+    p.pos.y += p.vel.y;
+    switch (p.type) {
+        case 'shell':
+            bounceShell(state, p);
+            break;
+        case 'spark':
+        case 'ember':
+            p.vel.y += GRAVITY * 0.6;
+            p.vel.x *= 0.96;
+            p.vel.y *= 0.96;
+            break;
+        case 'blood':
             p.vel.y += GRAVITY;
-            p.rotation = (p.rotation || 0) + p.vel.x * 0.1;
-            state.platforms.forEach(plat => {
-                if (p.pos.y > plat.y && p.pos.y < plat.y + plat.h && p.pos.x > plat.x && p.pos.x < plat.x + plat.w) {
-                    if (Math.abs(p.vel.y) > 1) {
-                        p.vel.y *= -0.5;
-                        p.pos.y = plat.y;
-                    } else {
-                        p.vel.y = 0;
-                        p.vel.x *= 0.8;
-                    }
-                }
-            });
-        } else {
+            landOnPlatform(state, p, prevY);
+            break;
+        case 'smoke':
+            p.vel.y -= 0.02;
+            p.vel.x *= 0.98;
+            p.vel.y = Math.min(0, p.vel.y * 0.98);
+            break;
+        case 'dust':
+            p.vel.x *= 0.94;
+            p.vel.y *= 0.94;
+            break;
+        default: // fire and untyped
             if (p.type !== 'fire') p.vel.y += GRAVITY * 0.1;
             p.vel.x *= 0.9;
             p.vel.y *= 0.9;
-        }
+    }
+};
+
+export const updateParticles = (state: GameState) => {
+    state.particles.forEach(p => {
+        if (!FADE_ONLY.has(p.type)) stepParticle(state, p);
         p.life -= p.decay;
     });
     state.particles = state.particles.filter(p => p.life > 0);

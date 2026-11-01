@@ -119,15 +119,17 @@ export interface Projectile {
   life?: number; // Ticks left before the projectile expires (grenades explode)
 }
 
+export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff';
+
 export interface Particle {
   id: string;
   pos: Vector2;
   vel: Vector2;
   life: number; // 0 to 1
-  decay: number;
+  decay: number; // Life lost per physics tick
   color: string;
   size: number;
-  type?: 'blood' | 'spark' | 'smoke' | 'fire' | 'shell';
+  type?: ParticleKind;
   rotation?: number;
 }
 
