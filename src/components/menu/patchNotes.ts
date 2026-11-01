@@ -6,7 +6,7 @@ export interface PatchNote {
     version: string;
     date: string | null; // null = the upcoming release (shown as "This update")
     points: string[];
-    beforeAfter?: BeforeAfter;
+    comparisons?: BeforeAfter[];
 }
 
 /** A pair of screenshots showing what a change looks like. */
@@ -17,10 +17,17 @@ export interface BeforeAfter {
 }
 
 const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
+const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
+const STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.0', date: null, beforeAfter: { caption: 'The new fighter', ...FIGHTER }, points: [
+        { version: '0.4.0', date: null, comparisons: [
+            { caption: 'The new fighter', ...FIGHTER },
+            { caption: 'Standard map: a space station', ...STATION },
+            { caption: 'Tunnels: an asteroid mine', ...MINE },
+            { caption: 'Hunger Games: a show arena', ...ARENA },
+        ], points: [
             'The standard map is now a space station: windows onto a planet, lamps and beacons, cargo, posters and screens, worn metal decks',
             'Tunnels became an asteroid mine (timber supports, strings of bulbs, ore carts, glowing veins) and Hunger Games got a show arena with stands, spotlights and big screens',
             'New fighter: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, recoil, a helmet that looks where you aim',
@@ -41,6 +48,8 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Fairer bots: they need a moment to react to a new enemy, and miss more at long range and at moving targets',
             'Bots know the map: they reach every floor, no longer get stuck under platforms, and use the grapple hook to climb ledges the jetpack cannot',
             'Bots move in a fight: strafe, hop when hit, escape when nearly dead; in CTF they carry the flag straight home and escort the carrier',
+            'CTF: teams respawn on the floor behind their base, not on their own flag, so a flag carrier has a real chance to get home',
+            'Tunnels: the rocket launcher, chainsaw and armor no longer sit inside the solid central block, where nobody could pick them up',
             'Same game speed on 60, 120 and 144 Hz screens',
             'Railgun and explosions no longer go through walls; bullets no longer pierce players',
             'Fighters no longer slide along the floor with frozen legs: the game now always knows when they stand on the ground',
@@ -67,7 +76,12 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.0', date: null, beforeAfter: { caption: 'Новый боец', ...FIGHTER }, points: [
+        { version: '0.4.0', date: null, comparisons: [
+            { caption: 'Новый боец', ...FIGHTER },
+            { caption: 'Стандартная карта: космическая станция', ...STATION },
+            { caption: 'Тоннели: шахта на астероиде', ...MINE },
+            { caption: 'Голодные игры: шоу-арена', ...ARENA },
+        ], points: [
             'Стандартная карта стала космической станцией: окна с видом на планету, лампы и маячки, контейнеры, плакаты и экраны, потёртые металлические настилы',
             'Тоннели стали шахтой на астероиде (деревянная крепь, гирлянды лампочек, вагонетки, светящаяся руда), а Голодные игры — шоу-ареной с трибунами, прожекторами и большими экранами',
             'Новый боец: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, отдача, шлем смотрит туда, куда целитесь',
@@ -88,6 +102,8 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Боты честнее: им нужно время, чтобы среагировать на нового врага, и они чаще промахиваются издалека и по движущимся целям',
             'Боты знают карту: добираются до любого этажа, больше не застревают под платформами и забираются крюком туда, куда не долетает джетпак',
             'Боты двигаются в бою: уходят вбок, подпрыгивают после попадания, спасаются почти без здоровья; в CTF несут флаг прямо домой и прикрывают несущего',
+            'CTF: команды возрождаются на полу за своей базой, а не прямо на своём флаге, — у несущего флаг появился шанс добежать',
+            'Тоннели: ракетница, бензопила и броня больше не лежат внутри сплошного центрального блока, где их никто не мог взять',
             'Одинаковая скорость игры на мониторах 60, 120 и 144 Гц',
             'Рельсотрон и взрывы больше не проходят сквозь стены, пули не прошивают игроков',
             'Бойцы больше не скользят по полу с застывшими ногами: игра всегда знает, что они стоят на земле',

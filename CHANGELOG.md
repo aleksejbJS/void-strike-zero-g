@@ -57,8 +57,12 @@
 - Bots in a fight: strafe bursts instead of standing still, a short jetpack hop after taking a hit, and when nearly dead an escape by hook or jetpack to another platform away from the enemy
 - CTF bots: the flag carrier heads straight home (no medkit detours, no hops), teammates escort it; the bases come from the level data
 - Bots skip pickups placed inside solid blocks (Tunnels has three in its central block) and jetpack up to pickups hanging in the air
-- Measured in bots-only matches (kept as a test): Deathmatch, 3 bots, one minute — 6–12 kills in every run (was 3–9) and no bot standing still for more than 1.5 s (was up to 45 s); Tunnels — 6 kills (was 0); Hunger Games — 7 kills (was 4); CTF — bots take the enemy flag 1–3 times per 3 minutes, captures stay rare because defenders respawn on their own flag
+- Measured in bots-only matches (kept as a test): Deathmatch, 3 bots, one minute — 6–12 kills in every run (was 3–9) and no bot standing still for more than 1.5 s (was up to 45 s); Tunnels — 6 kills (was 0); Hunger Games — 7 kills (was 4); CTF — see the respawn change below
 - F3 debug view draws each bot's route (offline play)
+- Bots only go for pickups they can reach: standing on the surface below, or hopping up from it (CTF's shotgun hangs in mid-air beside a platform; bots used to hop under it for good)
+- CTF: teams respawn on the floor behind their base (~700 px from their flag) instead of on the flag itself, where defenders reappeared on top of a carrier 3 s after dying. Bots-only, 7 matches of 3 min: 3–10 flag pickups and 3 captures in total (was 0–3 pickups, 0 captures)
+- Tunnels: the rocket launcher, chainsaw and armor were inside the solid central block (unreachable for everyone); moved to the tunnel mouths and under the block. A test now checks every map for buried pickups
+- "What's new" shows before/after pictures of the three map looks
 
 ### 🎯 Gameplay Fixes
 - Same game speed on 60, 120 and 144 Hz screens (fixed 120 ticks per second)

@@ -12,6 +12,7 @@ interface Props {
 
 const Comparison: React.FC<{ t: Translate; shots: BeforeAfter }> = ({ t, shots }) => (
     <figure className="m-0 flex flex-col gap-2">
+        <figcaption className="text-sm font-semibold text-bay-chalk">{shots.caption}</figcaption>
         <div className="grid grid-cols-2 gap-2">
             {([['hb.before', shots.before], ['hb.after', shots.after]] as const).map(([label, src]) => (
                 <div key={label} className="flex flex-col gap-1">
@@ -20,7 +21,6 @@ const Comparison: React.FC<{ t: Translate; shots: BeforeAfter }> = ({ t, shots }
                 </div>
             ))}
         </div>
-        <figcaption className="sr-only">{shots.caption}</figcaption>
     </figure>
 );
 
@@ -54,7 +54,7 @@ export const WhatsNew: React.FC<Props> = ({ t, notes, onClose }) => {
                                 <h3 className={`m-0 font-display text-[28px] font-black ${i === 0 ? 'text-bay-hazard' : ''}`}>{note.version}</h3>
                                 <span className="text-sm text-bay-dust">{note.date ?? t('hb.thisUpdate')}</span>
                             </div>
-                            {note.beforeAfter && <Comparison t={t} shots={note.beforeAfter} />}
+                            {note.comparisons?.map(shots => <Comparison key={shots.caption} t={t} shots={shots} />)}
                             <ul className={`m-0 flex list-disc flex-col gap-1.5 pl-[18px] marker:text-bay-hazard text-[15px] leading-snug ${i === 0 ? '' : 'text-[#D6D2CA]'}`}>
                                 {note.points.map(point => <li key={point}>{point}</li>)}
                             </ul>

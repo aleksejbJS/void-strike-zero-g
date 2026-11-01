@@ -127,17 +127,18 @@ Each file stays under 200 lines.
 | Tunnels, 60 s — kills / longest still | 0 / 58 s | 6 / 1.4 s |
 | Hunger Games, 60 s — kills / longest still | 4 / 57 s | 7 / 6.3 s |
 | CTF, 6 bots, 3 min — captures | 0 | 1 in 6 runs; 1–3 flag pickups per run |
+| Same, after the spawn change and reachable-pickup rule (7 runs) | — | 3 captures in total; 3–10 flag pickups per run |
 
-The CTF capture target is not met: carriers reach the enemy flag and run for home, but
-defenders respawn on their own flag 3 s after dying (`getSpawnPoint`), so a carrier
-seldom survives the 2,700 px trip. The test checks what the bots control (they reach and
-take the flag, nobody stands still); the spawn rule is a game design question.
+Carriers used to die almost at once: defenders respawned on their own flag 3 s after dying.
+Decided 2026-11-01: CTF teams respawn on the floor behind their base (`ctfSpawnPoint`).
+Captures now happen in about 2 of 7 three-minute matches, still short of "one every match";
+the test checks what the bots control (they reach and take the flag, nobody stands still).
 
-Also found: Tunnels places two weapons and the armor inside the solid central block
-(`level.ts` pickups at y 350/550), where nobody can collect them. Bots now skip them.
+Also found: Tunnels placed two weapons and the armor inside the solid central block, where
+nobody could collect them. Decided 2026-11-01: moved out of the block (`levelPickups.test.ts`
+checks every map).
 
 ## Open questions
 
 1. Should phase C (difficulty levels) follow right after, or wait for feedback on B?
-2. CTF spawns: move each team's respawn away from its own flag (e.g. to the base floor behind it), so carriers have a chance?
-3. Tunnels: make the "tunnel through the centre" hollow, or move the three items out of the block?
+
