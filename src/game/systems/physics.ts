@@ -292,6 +292,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;
+        let hitFighter = false;
         let impact = proj.pos;
         const wall = state.platforms.find(plat => checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat));
         if (wall) {
@@ -309,6 +310,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             }
             if (target) {
                 hit = true;
+                hitFighter = true;
                 applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce);
             }
         }
@@ -318,12 +320,15 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
         if (hit) {
             proj.active = false;
-            if (proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER) {
+            const explosive = proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER;
+            if (explosive) {
                 createExplosion(state, impact, proj.ownerId, 150, proj.type);
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
-            emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
+            // A bullet into a fighter draws blood; into a wall (and any explosive) it throws sparks
+            if (hitFighter && !explosive) emitEffect('blood', proj.pos.x, proj.pos.y, '#ef4444', 6);
+            else emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
         }
     });
     state.projectiles = state.projectiles.filter(p => p.active);

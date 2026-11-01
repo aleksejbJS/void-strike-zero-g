@@ -224,7 +224,9 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, WEAPONS_DATA[WeaponType.RAILGUN].knockbackForce);
         }
 
-        emitEffect('spark', hitPos.x, hitPos.y, '#38bdf8', 10);
+        // Blood where the beam enters a fighter, blue sparks where it stops at a wall
+        if (hitPlayer) emitEffect('blood', hitPos.x, hitPos.y, '#ef4444', 6);
+        else emitEffect('spark', hitPos.x, hitPos.y, '#38bdf8', 10);
 
         if (!state.beams) state.beams = [];
         state.beams.push({
