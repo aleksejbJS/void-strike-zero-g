@@ -1,6 +1,20 @@
 import Matter from 'matter-js';
 import { Platform, Entity, Vector2 } from '../../types';
 
+// Feet within this band around a platform top count as standing on it
+const GROUND_ABOVE = 3; // the solver often leaves a resting body ~2 px above the surface
+const GROUND_BELOW = 4;
+const RISING = -0.5; // moving up faster than this (jetpack, rocket jump) is not standing
+
+const standsOnPlatform = (player: Entity, platforms: Platform[]) => {
+    if (player.dead || player.vel.y < RISING) return false;
+    const left = player.pos.x - player.width / 2;
+    const right = player.pos.x + player.width / 2;
+    return platforms.some(pl =>
+        player.pos.y >= pl.y - GROUND_ABOVE && player.pos.y <= pl.y + GROUND_BELOW &&
+        Math.min(right, pl.x + pl.w) - Math.max(left, pl.x) > 3);
+};
+
 export class MatterPhysicsEngine {
     public engine: Matter.Engine;
     public world: Matter.World;
@@ -161,8 +175,10 @@ export class MatterPhysicsEngine {
                 player.vel.x = body.velocity.x;
                 player.vel.y = body.velocity.y;
 
-                // Set grounded state from collision detection
-                player.isGrounded = this.groundedSet.has(player.id);
+                // Grounded from collisions, or standing on a platform top: with gravity applied by
+                // the Force Pipeline a resting body touches the floor only every other step, so
+                // collisions alone flicker (the fighter slid with frozen legs and ground friction)
+                player.isGrounded = this.groundedSet.has(player.id) || standsOnPlatform(player, state.platforms);
             }
         }
     }
