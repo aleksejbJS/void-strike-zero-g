@@ -1,5 +1,58 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.0 - "Hazard Bay" (Unreleased)
+
+### 🎨 New Interface
+- **Main menu** redesigned: pick a mode and watch a short animated preview of how it plays, with its three key rules
+- **What's new** panel with the full release history
+- **Character setup** redesigned: live preview on a platform, a custom color for every body part
+- **HUD** redesigned: health, armor and fuel with item icons, weapon pictures in the slots, match clock and goal
+- **Objective hints** in team modes ("You have the red flag. Bring it to your base.")
+- All interface text in English and Russian
+
+### 🏁 Matches That End
+- Deathmatch (20 kills), Capture the Flag (3 captures), Hold the Flag (60 points) and Infiltration (3 points) end at the score limit or after 10 minutes
+- Results screen with winner, final score and ranking; the next match starts after 10 seconds
+- Hunger Games rounds are limited to 5 minutes; the zone shrinks on a timer; betting credits carry over between rounds
+
+### 🌐 Multiplayer
+- **Create game**: host a match in your browser and invite friends with a link (WebRTC)
+- Join a dedicated server by its address; the server chooses mode and map (`SERVER_MODE`, `SERVER_MAP`)
+- Smoother online play: your own movement is predicted, other players are interpolated
+- Blood, explosions and damage numbers are visible online
+- Hunger Games online; players joining mid-round watch until the next one
+- The server validates everything clients send and no longer crashes on malformed messages
+
+### 🎯 Gameplay Fixes
+- Same game speed on 60, 120 and 144 Hz screens (fixed 120 ticks per second)
+- Railgun and explosions no longer go through walls; bullets hit only the first player in their path
+- Stray bullets disappear instead of flying forever
+- Killing yourself no longer gives a point; friendly fire works the same for every weapon
+- Crouching no longer pushes you into the floor
+- The smaller team no longer gets a free point on every respawn (CTF, Hold the Flag)
+- Keys no longer stay pressed after switching windows; touch controls work on phones
+- Textures no longer disappear after returning to the menu
+
+### 🛠️ Technical
+- Shared authoritative game room used by both the Node server and the browser host
+- Large components split into small modules; 193 automated tests (from 56)
+
+## Version 0.3.1 (2025-11-28)
+
+### 🎮 Gameplay
+- **Gun Game**: weapon ladder, no pickups, win after the final weapon
+
+### 🎨 Interface
+- Skin selection arrows; robots and beasts with their own accents
+- Weapon selection fixes
+
+### 🌐 Server
+- ESM compatibility; localtunnel and ngrok tunnels
+
+### 🐛 Fixes
+- Achievements count only for the player
+- Winning Gun Game no longer exits the game abruptly
+
 ## Version 0.3.0 - "Ragdoll & Modular Update" (2025-11-25)
 
 ### 🎮 New Game Modes

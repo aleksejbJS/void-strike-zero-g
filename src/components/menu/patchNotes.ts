@@ -11,12 +11,18 @@ export interface PatchNote {
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.4.0', date: null, points: [
-            'Create a game in your browser and invite friends with a link',
-            'Hunger Games online, with 5-minute rounds',
-            'Same game speed on 60, 120 and 144 Hz screens',
-            'Blood, explosions and damage numbers show up online',
-            'Railgun no longer shoots through walls, keys no longer get stuck, and many more fixes',
             'New look for the menu, character setup and HUD',
+            'Pick a mode and see how it plays, with its key rules',
+            'Matches end on score or after 10 minutes, then a results screen and the next match',
+            'Create a game in your browser and invite friends with a link',
+            "Join a friend's server by its address; smoother movement online",
+            'Blood, explosions and damage numbers show up online',
+            'Hunger Games online, with 5-minute rounds',
+            'Team modes tell you what to do: "Bring the flag to your base"',
+            'Custom color for every body part',
+            'Same game speed on 60, 120 and 144 Hz screens',
+            'Railgun and explosions no longer go through walls; bullets no longer pierce players',
+            'No more free point for the smaller team in CTF, keys no longer get stuck, and many more fixes',
         ] },
         { version: '0.3.1', date: 'Nov 28, 2025', points: [
             'Gun Game: weapon ladder, no pickups, win with the last weapon',
@@ -25,7 +31,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Server: localtunnel and ngrok tunnels',
             'Achievements count only for players; Gun Game ends without a sudden exit',
         ] },
-        { version: '0.3.0', date: 'Nov 25, 2024', points: [
+        { version: '0.3.0', date: 'Nov 25, 2025', points: [
             'Ragdolls: bodies break into six parts',
             'Modular characters: head, torso, arms and legs',
             'New mode: Hold the Flag',
@@ -40,12 +46,18 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ],
     ru: [
         { version: '0.4.0', date: null, points: [
-            'Создайте игру прямо в браузере и пригласите друзей ссылкой',
-            'Голодные игры онлайн, раунды по 5 минут',
-            'Одинаковая скорость игры на мониторах 60, 120 и 144 Гц',
-            'Кровь, взрывы и цифры урона видны и в онлайне',
-            'Рельсотрон больше не стреляет сквозь стены, клавиши не залипают, и много других исправлений',
             'Новый вид меню, экрана персонажа и интерфейса в бою',
+            'Выберите режим и посмотрите, как он играется, с главными правилами',
+            'Матч заканчивается по очкам или через 10 минут, потом итоги и следующий матч',
+            'Создайте игру прямо в браузере и пригласите друзей ссылкой',
+            'Вход на сервер друга по адресу; движение в онлайне стало плавнее',
+            'Кровь, взрывы и цифры урона видны и в онлайне',
+            'Голодные игры онлайн, раунды по 5 минут',
+            'В командных режимах подсказка, что делать: «Несите флаг на свою базу»',
+            'Свой цвет для каждой части тела',
+            'Одинаковая скорость игры на мониторах 60, 120 и 144 Гц',
+            'Рельсотрон и взрывы больше не проходят сквозь стены, пули не прошивают игроков',
+            'В CTF меньшая команда больше не получает бесплатных очков, клавиши не залипают, и много других исправлений',
         ] },
         { version: '0.3.1', date: '28.11.2025', points: [
             'Гонка вооружений: прогрессия оружия, без пикапов, победа после финального оружия',
@@ -54,7 +66,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Сервер: туннели localtunnel и ngrok',
             'Ачивки только за игрока, победа в Гонке вооружений без резкого выхода',
         ] },
-        { version: '0.3.0', date: '25.11.2024', points: [
+        { version: '0.3.0', date: '25.11.2025', points: [
             'Ragdoll-физика: тела разлетаются на 6 частей',
             'Модульные персонажи: голова, торс, руки, ноги',
             'Новый режим «Удержание флага»',
