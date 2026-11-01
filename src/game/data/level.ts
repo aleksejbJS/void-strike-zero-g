@@ -333,15 +333,15 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
     // Tunnels map pickups - focused on close quarters and verticality
     return [
       // Weapons
-      { id: 'tun_rl_center', type: ItemType.WEAPON, subtype: WeaponType.ROCKET_LAUNCHER, pos: { x: 900, y: 350 }, active: true, respawnTime: 0, value: 0 },
+      { id: 'tun_rl_center', type: ItemType.WEAPON, subtype: WeaponType.ROCKET_LAUNCHER, pos: { x: 550, y: 310 }, active: true, respawnTime: 0, value: 0 }, // tunnel mouth (the block itself is solid)
       { id: 'tun_sg_left', type: ItemType.WEAPON, subtype: WeaponType.SHOTGUN, pos: { x: -600, y: 550 }, active: true, respawnTime: 0, value: 0 },
       { id: 'tun_sg_right', type: ItemType.WEAPON, subtype: WeaponType.SHOTGUN, pos: { x: 2500, y: 550 }, active: true, respawnTime: 0, value: 0 },
       { id: 'tun_gl_top', type: ItemType.WEAPON, subtype: WeaponType.GRENADE_LAUNCHER, pos: { x: 1000, y: -450 }, active: true, respawnTime: 0, value: 0 },
-      { id: 'tun_cs_mid', type: ItemType.WEAPON, subtype: WeaponType.CHAINSAW, pos: { x: 1000, y: 350 }, active: true, respawnTime: 0, value: 0 },
+      { id: 'tun_cs_mid', type: ItemType.WEAPON, subtype: WeaponType.CHAINSAW, pos: { x: 1450, y: 310 }, active: true, respawnTime: 0, value: 0 },
 
       // Health/Armor
       { id: 'tun_hp_mid', type: ItemType.HEALTH, pos: { x: 1000, y: 150 }, active: true, respawnTime: 0, value: 25 },
-      { id: 'tun_arm_mid', type: ItemType.ARMOR, pos: { x: 1000, y: 550 }, active: true, respawnTime: 0, value: 50 },
+      { id: 'tun_arm_mid', type: ItemType.ARMOR, pos: { x: 1000, y: 860 }, active: true, respawnTime: 0, value: 50 },
       { id: 'tun_hp_left', type: ItemType.HEALTH, pos: { x: -1100, y: 400 }, active: true, respawnTime: 0, value: 25 },
       { id: 'tun_hp_right', type: ItemType.HEALTH, pos: { x: 2300, y: 400 }, active: true, respawnTime: 0, value: 25 },
 

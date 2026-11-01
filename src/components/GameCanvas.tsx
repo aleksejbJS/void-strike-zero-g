@@ -30,7 +30,8 @@ import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
-import { createHungerZone, hungerSpawnPoint, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
+import { spawnPointFor } from '../game/net/roomSetup';
+import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
 
@@ -190,12 +191,8 @@ export default function GameCanvas() {
         gameState.current.betSpectateId = null;
     };
 
-    const getSpawnPoint = (team: Team) => {
-        if (gameMode === GameMode.HUNGER_GAMES) return hungerSpawnPoint();
-        if (team === Team.BLUE) return { x: -400 + Math.random() * 200, y: 400 };
-        if (team === Team.RED) return { x: 2200 + Math.random() * 200, y: 400 };
-        return { x: Math.random() * 2000, y: Math.random() > 0.5 ? 700 : 200 };
-    };
+    // Same spawn rules as the server room
+    const getSpawnPoint = (team: Team) => spawnPointFor(gameMode)(team);
 
     const makeInitialState = (): GameState => ({
         mode: state.selectedMode,

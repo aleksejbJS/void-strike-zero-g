@@ -11,7 +11,16 @@ export const isTeamMode = (mode: GameMode) =>
 
 /** Spawn point for the room's mode (Hunger Games scatters fighters over its arena). */
 export const spawnPointFor = (mode: GameMode) => (team: Team) =>
-    mode === GameMode.HUNGER_GAMES ? hungerSpawnPoint() : getSpawnPoint(team);
+    mode === GameMode.HUNGER_GAMES ? hungerSpawnPoint()
+        : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
+            : getSpawnPoint(team);
+
+// CTF: each team respawns on the floor behind its base, ~700 px from its flag. Respawning on
+// the flag itself put defenders on top of a carrier 3 s after they died, so captures almost
+// never happened.
+const CTF_SPAWN_X = { [Team.BLUE]: -1150, [Team.RED]: 2950 };
+const CTF_FLOOR_Y = 760;
+export const ctfSpawnPoint = (team: Team.BLUE | Team.RED) => ({ x: CTF_SPAWN_X[team] + Math.random() * 200, y: CTF_FLOOR_Y });
 
 export const getSpawnPoint = (team: Team) => {
     if (team === Team.BLUE) return { x: -400 + Math.random() * 200, y: 400 };
