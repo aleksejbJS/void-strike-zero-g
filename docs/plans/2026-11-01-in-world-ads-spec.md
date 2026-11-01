@@ -1,6 +1,6 @@
 # In-World Ads (TrafficStars) — Spec
 
-Status: steps 1–3 implemented (station art + places, banner overlay, admin page) · step 4 pending · 2026-11-01
+Status: implemented (station, mine and arena places, banner overlay, admin page) · 2026-11-01
 
 ## Goal
 

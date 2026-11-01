@@ -1,9 +1,9 @@
-// Station lighting: hanging lamps over the widest decks (warm cones that flicker a little),
-// rotating red beacons on the girders, and the screen-space vignette and film grain.
+// Map lighting: hanging lamps over the widest decks (cones that flicker a little), rotating
+// warning beacons, sweeping show spotlights, and the screen-space vignette and film grain.
 
 import { Container, Sprite, TilingSprite } from 'pixi.js';
 import { Platform } from '../../../types';
-import { glow, makeCanvas, noise } from './canvasKit';
+import { glow, makeCanvas, noise, rgba } from './canvasKit';
 import { bakedTexture } from './bakedTextures';
 
 const MAX_LAMPS = 6;
@@ -21,20 +21,20 @@ const lampHousing = () => {
     return canvas;
 };
 
-const lampCone = () => {
+const lampCone = (color: string) => {
     const { canvas, ctx } = makeCanvas(280, CONE_H + 60);
     const g = ctx.createLinearGradient(0, 0, 0, CONE_H);
-    g.addColorStop(0, 'rgba(255,196,120,0.16)'); g.addColorStop(1, 'rgba(255,196,120,0)');
+    g.addColorStop(0, rgba(color, 0.16)); g.addColorStop(1, rgba(color, 0));
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.moveTo(130, 0); ctx.lineTo(150, 0); ctx.lineTo(260, CONE_H); ctx.lineTo(20, CONE_H); ctx.fill();
-    glow(ctx, 140, 4, 46, '#ffc070', 0.55);
+    glow(ctx, 140, 4, 46, color, 0.55);
     return canvas;
 };
 
 /** Lamps hang over the widest decks, so the light lands where fighters stand. */
-export const buildLamps = (platforms: Platform[], layer: Container): Lamp[] => {
+export const buildLamps = (platforms: Platform[], layer: Container, color: string): Lamp[] => {
     const housing = bakedTexture(lampHousing());
-    const cone = bakedTexture(lampCone());
+    const cone = bakedTexture(lampCone(color));
     const decks = platforms
         .filter(p => p.h < 100 && p.w >= 200 && p.w <= 1200)
         .sort((a, b) => b.w - a.w)
@@ -64,6 +64,7 @@ const beaconBeam = () => {
 };
 
 export const buildBeacons = (layer: Container, spots: [number, number][]): Beacon[] => {
+    if (!spots.length) return [];
     const tex = bakedTexture(beaconBeam());
     return spots.map(([x, y]) => {
         const beam = new Sprite(tex);
@@ -77,6 +78,35 @@ export const buildBeacons = (layer: Container, spots: [number, number][]): Beaco
 
 export const updateBeacons = (beacons: Beacon[], t: number) => {
     beacons.forEach((b, i) => { b.beam.rotation = (t * 3 + i * 2) % (Math.PI * 2); });
+};
+
+export interface Spotlight { beam: Sprite; phase: number }
+
+const spotBeam = () => {
+    const { canvas, ctx } = makeCanvas(360, 900);
+    const g = ctx.createLinearGradient(0, 0, 0, 900);
+    g.addColorStop(0, 'rgba(230,240,255,0.18)'); g.addColorStop(1, 'rgba(230,240,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(170, 0); ctx.lineTo(190, 0); ctx.lineTo(360, 900); ctx.lineTo(0, 900); ctx.fill();
+    glow(ctx, 180, 6, 30, '#ffffff', 0.6);
+    return canvas;
+};
+
+/** Show spotlights hung high up: wide soft beams swinging slowly left and right. */
+export const buildSpotlights = (layer: Container, spots: [number, number][]): Spotlight[] => {
+    if (!spots.length) return [];
+    const tex = bakedTexture(spotBeam());
+    return spots.map(([x, y], i) => {
+        const beam = new Sprite(tex);
+        beam.anchor.set(0.5, 0);
+        beam.position.set(x, y);
+        beam.blendMode = 'add';
+        layer.addChild(beam);
+        return { beam, phase: i * 2.1 };
+    });
+};
+
+export const updateSpotlights = (lights: Spotlight[], t: number) => {
+    lights.forEach(l => { l.beam.rotation = Math.sin(t * 0.45 + l.phase) * 0.42; });
 };
 
 /** Vignette and a faint grain over the whole view (screen space). */

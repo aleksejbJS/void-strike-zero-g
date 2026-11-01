@@ -1,15 +1,21 @@
-// Picks how a map is drawn: the station scene, or the old flat look for maps that do not
-// have their own theme yet (Tunnels, Hunger Games arena).
+// Picks how a map is drawn: the station (default map), the asteroid mine (Tunnels) or the
+// show arena (Hunger Games).
 
 import { Container, Graphics } from 'pixi.js';
 import { GameMode, GameState, MapId, Vector2 } from '../../../types';
 import { drawBackground, drawStaticMap } from '../../systems/renderer';
-import { createStationScene, MapScene, SceneHosts } from './stationScene';
+import { createThemedScene, MapScene, SceneHosts } from './themedScene';
+import { SceneTheme } from './sceneTheme';
+import { stationTheme } from './themes/stationTheme';
+import { mineTheme } from './themes/mineTheme';
+import { arenaTheme } from './themes/arenaTheme';
 
-export type MapTheme = 'station' | 'legacy';
+export type MapTheme = 'station' | 'mine' | 'arena';
 
 export const themeFor = (mode: GameMode, map: MapId): MapTheme =>
-    mode === GameMode.HUNGER_GAMES || map === MapId.TUNNELS ? 'legacy' : 'station';
+    mode === GameMode.HUNGER_GAMES ? 'arena' : map === MapId.TUNNELS ? 'mine' : 'station';
+
+const THEMES: Record<MapTheme, () => SceneTheme> = { station: stationTheme, mine: mineTheme, arena: arenaTheme };
 
 interface LegacyLayers {
     platformLayer: Graphics;
@@ -48,10 +54,14 @@ export const createMapLook = (
             scene = null;
             legacy.platformLayer.clear();
             legacy.backgroundLayer.clear();
-            if (themeFor(state.mode, state.currentMap) === 'station') {
-                scene = createStationScene({ ...hosts, platformHost }, state.platforms);
+            try {
+                scene = createThemedScene({ ...hosts, platformHost }, state.platforms, THEMES[themeFor(state.mode, state.currentMap)]());
                 scene.update(state.camera, Date.now(), w, h);
-            } else {
+            } catch (err) {
+                // Never leave the player without a map: fall back to the plain look
+                console.error('Map art failed to build, using the plain look:', err);
+                scene?.destroy();
+                scene = null;
                 drawLegacy(state, w, h);
             }
             onRedraw(scene);

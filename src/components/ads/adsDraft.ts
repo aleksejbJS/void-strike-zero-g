@@ -3,6 +3,8 @@
 
 import { AdConfig, AdPlaceConfig, DEFAULT_REFRESH_SEC, emptyAdConfig, validateAdConfig } from '../../game/ads/adConfig';
 import { STATION_AD_PLACES } from '../../game/render/scene/adPlaces';
+import { MINE_AD_PLACES } from '../../game/render/scene/themes/mineTheme';
+import { ARENA_AD_PLACES } from '../../game/render/scene/themes/arenaTheme';
 
 const DRAFT_KEY = 'void-strike.ads-draft';
 
@@ -19,9 +21,16 @@ const DESCRIPTIONS: Record<string, { name: string; where: string }> = {
     'station.wall-poster-b': { name: 'Световой короб на стене', where: 'Станция: стена, правая часть карты' },
     'station.container-decal': { name: 'Наклейка на контейнере', where: 'Станция: центр, контейнер C-12 у пола' },
     'station.led-panel': { name: 'Светодиодная панель', where: 'Станция: левая часть, под трубами' },
+    'mine.board-a': { name: 'Щит с подсветкой на скале', where: 'Тоннели: стена шахты, левее центра' },
+    'mine.board-b': { name: 'Щит с подсветкой на скале', where: 'Тоннели: стена шахты, правая часть' },
+    'mine.crate-decal': { name: 'Наклейка на ящике', where: 'Тоннели: центр, ящик ORE-3 у пола' },
+    'mine.led-panel': { name: 'Светодиодная панель', where: 'Тоннели: левая часть, под вентиляцией' },
+    'arena.screen-a': { name: 'Большой экран над трибунами', where: 'Голодные игры: трибуны, центр арены' },
+    'arena.screen-b': { name: 'Большой экран над трибунами', where: 'Голодные игры: трибуны, правее центра' },
+    'arena.ribbon': { name: 'Светодиодная лента', where: 'Голодные игры: фермы, левая часть арены' },
 };
 
-export const AD_PLACES: PlaceInfo[] = STATION_AD_PLACES.map(p => ({
+export const AD_PLACES: PlaceInfo[] = [...STATION_AD_PLACES, ...MINE_AD_PLACES, ...ARENA_AD_PLACES].map(p => ({
     id: p.id,
     size: p.size,
     kind: p.kind,

@@ -38,23 +38,39 @@ interface Slot {
 }
 
 export interface AdOverlay {
-    /** Returns the ids of places that currently show a network banner. */
-    update(camera: Vector2, fight: ScreenRect[], solids: ScreenRect[], now: number, screenW: number, screenH: number): Set<string>;
+    /** Returns the ids of places that currently show a network banner. `solidsFor` lists what
+     *  stands in front of a place on screen (platforms, girders) to cut out of its banner. */
+    update(camera: Vector2, fight: ScreenRect[], solidsFor: (place: AdPlace, rect: ScreenRect) => ScreenRect[], now: number, screenW: number, screenH: number): Set<string>;
     destroy(): void;
 }
 
 /**
- * clip-path that cuts the platforms standing in front of the banner out of it (the canvas
- * below draws them), in the banner's own unscaled coordinates.
+ * clip-path that cuts what stands in front of the banner (platforms, girders — the canvas below
+ * draws them) out of it, in the banner's own unscaled coordinates. The visible part is built
+ * from non-overlapping cells, so overlapping cut-outs (a girder crossing a pipe) stay cut.
  */
 export const occlusionClip = (rect: ScreenRect, bw: number, bh: number, solids: ScreenRect[]) => {
     const sx = bw / rect.w, sy = bh / rect.h;
-    const holes = solids.filter(s => intersects(rect, s)).map(s => {
-        const x0 = Math.max(0, (s.x - rect.x) * sx), y0 = Math.max(0, (s.y - rect.y) * sy);
-        const x1 = Math.min(bw, (s.x + s.w - rect.x) * sx), y1 = Math.min(bh, (s.y + s.h - rect.y) * sy);
-        return `M${x0.toFixed(1)} ${y0.toFixed(1)}H${x1.toFixed(1)}V${y1.toFixed(1)}H${x0.toFixed(1)}Z`;
-    });
-    return holes.length ? `path(evenodd, 'M0 0H${bw}V${bh}H0Z${holes.join('')}')` : 'none';
+    const holes = solids.filter(s => intersects(rect, s)).map(s => ({
+        x0: Math.max(0, (s.x - rect.x) * sx), y0: Math.max(0, (s.y - rect.y) * sy),
+        x1: Math.min(bw, (s.x + s.w - rect.x) * sx), y1: Math.min(bh, (s.y + s.h - rect.y) * sy),
+    }));
+    if (!holes.length) return 'none';
+    const edges = (a: number[], max: number) => [...new Set([0, max, ...a])].sort((p, q) => p - q);
+    const xs = edges(holes.flatMap(h => [h.x0, h.x1]), bw), ys = edges(holes.flatMap(h => [h.y0, h.y1]), bh);
+    const cut = (x: number, y: number) => holes.some(h => x > h.x0 && x < h.x1 && y > h.y0 && y < h.y1);
+    let path = '';
+    for (let j = 0; j < ys.length - 1; j++) {
+        const cy = (ys[j] + ys[j + 1]) / 2;
+        for (let i = 0; i < xs.length - 1; i++) {
+            if (cut((xs[i] + xs[i + 1]) / 2, cy)) continue;
+            let k = i; // merge visible cells along the row
+            while (k + 1 < xs.length - 1 && !cut((xs[k + 1] + xs[k + 2]) / 2, cy)) k++;
+            path += `M${xs[i].toFixed(1)} ${ys[j].toFixed(1)}H${xs[k + 1].toFixed(1)}V${ys[j + 1].toFixed(1)}H${xs[i].toFixed(1)}Z`;
+            i = k;
+        }
+    }
+    return `path('${path || 'M0 0Z'}')`;
 };
 
 let tokenSeq = 0;
@@ -107,7 +123,7 @@ export const createAdOverlay = (host: HTMLElement, places: AdPlace[], config: Ad
     window.addEventListener('message', onMessage);
 
     return {
-        update(camera, fight, solids, now, w, h) {
+        update(camera, fight, solidsFor, now, w, h) {
             const showing = new Set<string>();
             let loaded = slots.filter(s => s.frame).length;
             for (const s of slots) {
@@ -119,7 +135,7 @@ export const createAdOverlay = (host: HTMLElement, places: AdPlace[], config: Ad
                 if (s.frame !== null && s.filled !== false) showing.add(s.place.id);
                 const show = share > 0 && showing.has(s.place.id);
                 const style = show
-                    ? `translate(${rect.x.toFixed(1)}px,${rect.y.toFixed(1)}px) scale(${(rect.w / s.bw).toFixed(4)},${(rect.h / s.bh).toFixed(4)})|${isOccluded(rect, fight) ? OCCLUDED_OPACITY : 1}|${occlusionClip(rect, s.bw, s.bh, solids)}`
+                    ? `translate(${rect.x.toFixed(1)}px,${rect.y.toFixed(1)}px) scale(${(rect.w / s.bw).toFixed(4)},${(rect.h / s.bh).toFixed(4)})|${isOccluded(rect, fight) ? OCCLUDED_OPACITY : 1}|${occlusionClip(rect, s.bw, s.bh, solidsFor(s.place, rect))}`
                     : 'hidden';
                 if (style === s.lastStyle) continue;
                 s.lastStyle = style;

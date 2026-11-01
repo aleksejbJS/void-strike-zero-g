@@ -5,8 +5,9 @@ import { GameState } from '../../types';
 import { AdConfig, loadAdConfig } from './adConfig';
 import { AdOverlay, createAdOverlay } from './adOverlay';
 import { ScreenRect } from './adVisibility';
-import { MapScene } from '../render/scene/stationScene';
+import { MapScene } from '../render/scene/themedScene';
 import { setHouseHidden } from '../render/scene/adFrames';
+import { AdPlace } from '../render/scene/adPlaces';
 
 const FIGHTER_BOX = { w: 44, h: 80 };
 const SHOT_BOX = 24;
@@ -54,7 +55,11 @@ export const createAdsController = (host: HTMLElement, configUrl: string): AdsCo
         attach(next) { scene = next; rebuild(); },
         update(state, now, w, h) {
             if (!overlay || !scene) return;
-            const showing = overlay.update(state.camera, fightBlockers(state, w, h), solidRects(state, w, h), now, w, h);
+            const platforms = solidRects(state, w, h);
+            const current = scene;
+            const solidsFor = (place: AdPlace, rect: ScreenRect) =>
+                place.layer === 'wall' ? [...platforms, ...current.midSolidsIn(rect, state.camera, w, h)] : platforms;
+            const showing = overlay.update(state.camera, fightBlockers(state, w, h), solidsFor, now, w, h);
             scene.adPlaces.forEach(v => setHouseHidden(v, showing.has(v.place.id)));
         },
         destroy() {

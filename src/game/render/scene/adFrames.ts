@@ -88,10 +88,10 @@ const containerRibs = (w: number, h: number, seed: number) => {
 };
 
 /** A peeled corner and scuffs: small patches in the container colour over the sticker. */
-const peel = (w: number, h: number, seed: number) => {
+const peel = (w: number, h: number, seed: number, color: string) => {
     const { canvas, ctx } = makeCanvas(w, h);
     const r = rnd(seed);
-    ctx.fillStyle = DECAL_CONTAINER.color;
+    ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(w, 0); ctx.lineTo(w - 9, 0); ctx.lineTo(w, 7); ctx.fill();
     for (let i = 0; i < 24; i++) ctx.fillRect(r() < 0.5 ? r() * 5 : w - r() * 5, r() * h, 1 + r() * 3, 1 + r() * 3);
     return canvas;
@@ -109,11 +109,11 @@ export const buildAdPlace = (p: AdPlace): AdPlaceView => {
         const g = sprite(grime(p.w, p.h, 7, 0.35), p.x, p.y); g.blendMode = 'multiply'; root.addChild(g);
         const sh = sprite(sheen(p.w, p.h), p.x, p.y); sh.blendMode = 'add'; root.addChild(sh);
     } else if (p.kind === 'decal') {
-        const c = DECAL_CONTAINER;
-        root.addChild(sprite(bakeContainer(p.w + c.padX * 2, p.h + c.padTop + c.padBottom, c.color, c.label, true), p.x - c.padX, p.y - c.padTop));
+        const c = DECAL_CONTAINER, carrier = p.carrier ?? c;
+        root.addChild(sprite(bakeContainer(p.w + c.padX * 2, p.h + c.padTop + c.padBottom, carrier.color, carrier.label, true), p.x - c.padX, p.y - c.padTop));
         creatives.forEach(s => { s.tint = 0xcbbfa6; s.alpha = 0.88; root.addChild(s); });
         const ribs = sprite(containerRibs(p.w, p.h, 13), p.x, p.y); ribs.blendMode = 'multiply'; root.addChild(ribs);
-        root.addChild(sprite(peel(p.w, p.h, 17), p.x, p.y));
+        root.addChild(sprite(peel(p.w, p.h, 17, (p.carrier ?? DECAL_CONTAINER).color), p.x, p.y));
     } else {
         root.addChild(sprite(screenBezel(p), p.x - 4, p.y - 26), backing(p));
         creatives.forEach(s => { s.tint = 0xc0d0d8; root.addChild(s); });

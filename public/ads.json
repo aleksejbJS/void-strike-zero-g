@@ -2,9 +2,16 @@
   "version": 1,
   "refreshSec": 60,
   "places": {
-    "station.wall-poster-a": { "enabled": false, "size": "300x250", "code": "" },
-    "station.wall-poster-b": { "enabled": false, "size": "300x250", "code": "" },
-    "station.container-decal": { "enabled": false, "size": "300x100", "code": "" },
-    "station.led-panel": { "enabled": false, "size": "728x90", "code": "" }
+    "station.wall-poster-a": {"enabled": false, "size": "300x250", "code": ""},
+    "station.wall-poster-b": {"enabled": false, "size": "300x250", "code": ""},
+    "station.container-decal": {"enabled": false, "size": "300x100", "code": ""},
+    "station.led-panel": {"enabled": false, "size": "728x90", "code": ""},
+    "mine.board-a": {"enabled": false, "size": "300x250", "code": ""},
+    "mine.board-b": {"enabled": false, "size": "300x250", "code": ""},
+    "mine.crate-decal": {"enabled": false, "size": "300x100", "code": ""},
+    "mine.led-panel": {"enabled": false, "size": "728x90", "code": ""},
+    "arena.screen-a": {"enabled": false, "size": "300x250", "code": ""},
+    "arena.screen-b": {"enabled": false, "size": "300x250", "code": ""},
+    "arena.ribbon": {"enabled": false, "size": "728x90", "code": ""}
   }
 }

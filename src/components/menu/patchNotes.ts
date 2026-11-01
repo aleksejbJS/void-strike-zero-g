@@ -22,6 +22,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.4.0', date: null, beforeAfter: { caption: 'The new fighter', ...FIGHTER }, points: [
             'The standard map is now a space station: windows onto a planet, lamps and beacons, cargo, posters and screens, worn metal decks',
+            'Tunnels became an asteroid mine (timber supports, strings of bulbs, ore carts, glowing veins) and Hunger Games got a show arena with stands, spotlights and big screens',
             'New fighter: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, recoil, a helmet that looks where you aim',
             'Body parts fly apart in their own colors after a death',
             'New look for the menu, character setup and HUD',
@@ -66,6 +67,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ru: [
         { version: '0.4.0', date: null, beforeAfter: { caption: 'Новый боец', ...FIGHTER }, points: [
             'Стандартная карта стала космической станцией: окна с видом на планету, лампы и маячки, контейнеры, плакаты и экраны, потёртые металлические настилы',
+            'Тоннели стали шахтой на астероиде (деревянная крепь, гирлянды лампочек, вагонетки, светящаяся руда), а Голодные игры — шоу-ареной с трибунами, прожекторами и большими экранами',
             'Новый боец: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, отдача, шлем смотрит туда, куда целитесь',
             'После смерти части тела разлетаются в своих цветах',
             'Новый вид меню, экрана персонажа и интерфейса в бою',

@@ -1,19 +1,17 @@
-// The station map look: parallax backdrop (stars, planet, hull wall with windows, girders),
-// baked platform art, lamps and beacons, in-world ad places and a vignette with grain.
-// Built once per map; update() runs every frame and only moves and animates things.
+// A themed map look: parallax backdrop (far tile, hero object, back wall, mid layer with decor),
+// baked platform art, lights, in-world ad places, vignette and grain. The theme (station, mine,
+// arena) supplies the art; this builds it once per map and update() only moves and animates.
 
 import { Container, Sprite, TilingSprite } from 'pixi.js';
 import { Platform, Vector2 } from '../../../types';
-import { bakeContainer, bakeMidTile, bakePlanet, bakeStarTile, bakeWallTile } from './stationBackdrop';
-import { bakePlatform } from './stationPlatforms';
-import { buildBeacons, buildLamps, buildPostFx, updateBeacons, updateLamps } from './stationLights';
-import { AdLayer, BACKDROP_CONTAINERS, LAYER_DEPTH, STATION_AD_PLACES } from './adPlaces';
+import { buildBeacons, buildLamps, buildPostFx, buildSpotlights, updateBeacons, updateLamps, updateSpotlights } from './stationLights';
+import { AdLayer, LAYER_DEPTH, Rect, tiledRectsIn } from './adPlaces';
 import { AdPlaceView, buildAdPlace, updateAdPlace } from './adFrames';
 import { bakedTexture, releaseBakedTextures } from './bakedTextures';
+import { SceneTheme } from './sceneTheme';
 
-const STAR_DEPTH = 0.08;
-const PLANET_DEPTH = 0.05;
-const PLANET_AT = { x: 520, y: -380 };
+const FAR_DEPTH = 0.08;
+const HERO_DEPTH = 0.05;
 
 export interface SceneHosts {
     stage: Container;        // screen-space root (app.stage)
@@ -27,40 +25,42 @@ export interface MapScene {
     adPlaces: AdPlaceView[];
     /** Screen position of a parallax layer's origin for the current camera (used by the ad overlay). */
     layerOrigin(layer: AdLayer, camera: Vector2, screenW: number, screenH: number): Vector2;
+    /** Mid-layer girders and pipes in front of a wall place, in screen space. */
+    midSolidsIn(target: Rect, camera: Vector2, screenW: number, screenH: number): Rect[];
 }
 
 const tiling = (canvas: HTMLCanvasElement) => new TilingSprite({ texture: bakedTexture(canvas), width: 1, height: 1 });
 
 const deckRes = (p: Platform) => (p.h < 100 && p.w <= 1200 ? Math.min(window.devicePixelRatio || 1, 2) : 1);
 
-export const createStationScene = (hosts: SceneHosts, platforms: Platform[]): MapScene => {
+export const createThemedScene = (hosts: SceneHosts, platforms: Platform[], theme: SceneTheme): MapScene => {
     // Backdrop, behind the camera-space world
     const backdrop = new Container();
-    const stars = tiling(bakeStarTile());
-    const planet = new Sprite(bakedTexture(bakePlanet()));
-    const wall = tiling(bakeWallTile());
+    const far = tiling(theme.far());
+    const hero = theme.hero ? new Sprite(bakedTexture(theme.hero.bake())) : null;
+    const wall = tiling(theme.wall());
     const wallDecor = new Container();
-    const mid = tiling(bakeMidTile());
+    const mid = tiling(theme.mid());
     const midDecor = new Container();
-    backdrop.addChild(stars, planet, wall, wallDecor, mid, midDecor);
+    backdrop.addChild(far, ...(hero ? [hero] : []), wall, wallDecor, mid, midDecor);
     hosts.stage.addChildAt(backdrop, 0);
 
-    // Background cargo next to the ad sticker, and a second stack further along
-    BACKDROP_CONTAINERS.forEach(([x, y, w, h, color, label]) => {
-        const s = new Sprite(bakedTexture(bakeContainer(w, h, color, label)));
-        s.position.set(x, y);
-        midDecor.addChild(s);
+    theme.decor.forEach(d => {
+        const s = new Sprite(bakedTexture(d.bake()));
+        s.position.set(d.x, d.y);
+        (d.layer === 'wall' ? wallDecor : midDecor).addChild(s);
     });
-    const beacons = buildBeacons(midDecor, [[717, 150], [1837, 150]]);
+    const beacons = buildBeacons(midDecor, theme.beacons ?? []);
+    const spotlights = buildSpotlights(midDecor, theme.spotlights ?? []);
 
-    const adPlaces = STATION_AD_PLACES.map(buildAdPlace);
+    const adPlaces = theme.adPlaces.map(buildAdPlace);
     adPlaces.forEach(v => (v.place.layer === 'wall' ? wallDecor : midDecor).addChild(v.root));
 
     // Platform art and lamps, in world space
     const art = new Container();
     platforms.forEach((p, i) => {
         const res = deckRes(p);
-        bakePlatform(p, 40 + i * 9, res).forEach(piece => {
+        theme.platform(p, 40 + i * 9, res).forEach(piece => {
             const s = new Sprite(bakedTexture(piece.canvas));
             s.position.set(piece.x, piece.y);
             s.scale.set(1 / res);
@@ -68,7 +68,7 @@ export const createStationScene = (hosts: SceneHosts, platforms: Platform[]): Ma
         });
     });
     const lampLayer = new Container();
-    const lamps = buildLamps(platforms, lampLayer);
+    const lamps = theme.lamps ? buildLamps(platforms, lampLayer, theme.lamps.color) : [];
     hosts.platformHost.addChild(art, lampLayer);
 
     const post = buildPostFx();
@@ -83,20 +83,22 @@ export const createStationScene = (hosts: SceneHosts, platforms: Platform[]): Ma
     return {
         adPlaces,
         layerOrigin,
+        midSolidsIn: (target, camera, w, h) => (theme.midOccluders ? tiledRectsIn(theme.midOccluders, layerOrigin('mid', camera, w, h), target) : []),
         update(camera, now, w, h) {
             if (w !== lastW || h !== lastH) {
-                [stars, wall, mid].forEach(t => { t.width = w; t.height = h; });
+                [far, wall, mid].forEach(t => { t.width = w; t.height = h; });
                 post.resize(w, h);
                 lastW = w; lastH = h;
             }
             const t = now / 1000;
-            stars.tilePosition.set(w / 2 - camera.x * STAR_DEPTH, h / 2 - camera.y * STAR_DEPTH);
-            planet.position.set(w / 2 - camera.x * PLANET_DEPTH + PLANET_AT.x, h / 2 - camera.y * PLANET_DEPTH + PLANET_AT.y);
+            far.tilePosition.set(w / 2 - camera.x * FAR_DEPTH, h / 2 - camera.y * FAR_DEPTH);
+            if (hero && theme.hero) hero.position.set(w / 2 - camera.x * HERO_DEPTH + theme.hero.at.x, h / 2 - camera.y * HERO_DEPTH + theme.hero.at.y);
             const wo = layerOrigin('wall', camera, w, h), mo = layerOrigin('mid', camera, w, h);
             wall.tilePosition.set(wo.x, wo.y); wallDecor.position.set(wo.x, wo.y);
             mid.tilePosition.set(mo.x, mo.y); midDecor.position.set(mo.x, mo.y);
             updateLamps(lamps, t);
             updateBeacons(beacons, t);
+            updateSpotlights(spotlights, t);
             adPlaces.forEach(v => updateAdPlace(v, now));
             post.update(t);
         },

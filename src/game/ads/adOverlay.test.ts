@@ -10,8 +10,18 @@ describe('occlusionClip', () => {
 
     it('cuts a platform out in the banner\'s own coordinates', () => {
         const clip = occlusionClip(rect, 300, 100, [{ x: 50, y: 140, w: 500, h: 30 }]);
-        // platform covers the bottom 10 screen px = bottom 20 banner px, full width
-        expect(clip).toBe("path(evenodd, 'M0 0H300V100H0ZM0.0 80.0H300.0V100.0H0.0Z')");
+        // platform covers the bottom 10 screen px = bottom 20 banner px, full width: only the top shows
+        expect(clip).toBe("path('M0.0 0.0H300.0V80.0H0.0Z')");
+    });
+
+    it('keeps a crossing of two cut-outs cut (a girder over a pipe)', () => {
+        const girder = { x: 150, y: 100, w: 20, h: 50 };   // vertical strip
+        const pipe = { x: 100, y: 120, w: 150, h: 10 };     // horizontal band crossing it
+        const clip = occlusionClip(rect, 300, 100, [girder, pipe]);
+        // The crossing cell (banner x 100..140, y 40..60) must not be part of any visible cell
+        const cells = [...clip.matchAll(/M([\d.]+) ([\d.]+)H([\d.]+)V([\d.]+)/g)].map(m => m.slice(1).map(Number));
+        const inside = cells.some(([x0, y0, x1, y1]) => 120 > x0 && 120 < x1 && 50 > y0 && 50 < y1);
+        expect(inside).toBe(false);
     });
 });
 

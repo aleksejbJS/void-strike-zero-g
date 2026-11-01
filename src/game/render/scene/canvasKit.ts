@@ -83,15 +83,21 @@ const DISPLAY_FONT = '"Big Shoulders Display", "Fira Sans Extra Condensed", "Ari
 
 /** Stencilled lettering: thin bridges cut through the letters, like spray-painted signage. */
 export const stencil = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, alpha: number) => {
+    // Letters go on their own canvas so the bridges cut only the paint, not the wall under it
+    const font = `900 ${size}px ${DISPLAY_FONT}`;
     ctx.save();
-    ctx.translate(x, y);
+    ctx.font = font;
+    const width = Math.ceil(ctx.measureText(text).width) + 4;
+    ctx.restore();
+    const paint = makeCanvas(width, Math.ceil(size * 1.2), 2);
+    paint.ctx.font = font;
+    paint.ctx.fillStyle = color;
+    paint.ctx.fillText(text, 0, size);
+    paint.ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < text.length * 2; i++) paint.ctx.fillRect(i * size * 0.32 + size * 0.12, 0, size * 0.05, size * 1.2);
+    ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = `900 ${size}px ${DISPLAY_FONT}`;
-    ctx.fillStyle = color;
-    ctx.fillText(text, 0, 0);
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.globalAlpha = 1;
-    for (let i = 0; i < text.length * 2; i++) ctx.fillRect(i * size * 0.32 + size * 0.12, -size * 0.85, size * 0.05, size);
+    ctx.drawImage(paint.canvas, x, y - size, width, size * 1.2);
     ctx.restore();
 };
 
