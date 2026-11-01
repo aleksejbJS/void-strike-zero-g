@@ -21,7 +21,10 @@
 ### 🏁 Matches That End
 - Deathmatch (20 kills), Capture the Flag (3 captures), Hold the Flag (60 points) and Infiltration (3 points) end at the score limit or after 10 minutes
 - Results screen with winner, final score and ranking; the next match starts after 10 seconds
-- Hunger Games rounds are limited to 5 minutes; the zone shrinks on a timer; betting credits carry over between rounds
+- Hunger Games rounds are limited to 5 minutes; betting credits carry over between rounds
+- Hunger Games round start: fighters spawn on platform tops across the whole arena, at least 700 px apart, and nobody can be hurt for the first 3 seconds ("Fight in 3…2…1"); rounds used to be over in 6–16 seconds
+- Hunger Games zone: closes in from the sides and the top while its bottom stays on the arena floor (fighters used to hang in the air at the zone edge and take damage), stays centered at its smallest size instead of drifting, also shrinks every 30 seconds without deaths, and freezes once the round is decided (the winner could die on the results screen)
+- Hunger Games results list the winner first; bots skip pickups outside the zone and step off platforms to reach enemies below
 
 ### 🌐 Multiplayer
 - **Create game**: host a match in your browser and invite friends with a link (WebRTC)
@@ -47,11 +50,12 @@
 - Crouching no longer pushes you into the floor
 - The smaller team no longer gets a free point on every respawn (CTF, Hold the Flag)
 - Keys no longer stay pressed after switching windows; touch controls work on phones
+- Weapon names in the HUD and kill feed are translated; two kills in the same millisecond no longer break the kill feed
 - Textures no longer disappear after returning to the menu
 
 ### 🛠️ Technical
 - Shared authoritative game room used by both the Node server and the browser host
-- Large components split into small modules; 209 automated tests (from 56)
+- Large components split into small modules; 217 automated tests (from 56)
 
 ## Version 0.3.1 (2025-11-28)
 
