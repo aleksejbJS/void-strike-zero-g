@@ -20,6 +20,7 @@ export interface HazardKeys {
     'hb.whatsNew': string;
     'hb.thisUpdate': string;
     'hb.before': string;
+    'hb.adSettings': string;
     'hb.after': string;
     'hb.close': string;
     'hb.switchLanguage': string;
@@ -65,6 +66,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.whatsNew': "What's new",
         'hb.thisUpdate': 'This update',
         'hb.before': 'Before',
+        'hb.adSettings': 'Ad settings',
         'hb.after': 'After',
         'hb.close': 'Close',
         'hb.switchLanguage': 'Switch language to Russian',
@@ -108,6 +110,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.whatsNew': 'Что нового',
         'hb.thisUpdate': 'Это обновление',
         'hb.before': 'Было',
+        'hb.adSettings': 'Настройки рекламы',
         'hb.after': 'Стало',
         'hb.close': 'Закрыть',
         'hb.switchLanguage': 'Переключить язык на английский',

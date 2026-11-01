@@ -11,6 +11,7 @@ import { ModePreview } from './ModePreview';
 import { PlayPanel, MapOption } from './PlayPanel';
 import { ControlsLegend } from './ControlsLegend';
 import { WhatsNew } from './WhatsNew';
+import { ADS_ADMIN_HASH, canSeeAdSettings } from '../ads/adminAccess';
 import type { Translate } from './types';
 
 /** Maps a mode can be played on, first one is the default. */
@@ -27,6 +28,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
     const [mode, setMode] = useState<GameMode>(state.selectedMode);
     const [newsOpen, setNewsOpen] = useState(false);
     const closeNews = useCallback(() => setNewsOpen(false), []);
+    const [showAdSettings] = useState(canSeeAdSettings);
 
     // Returning from a game: show the mode that was played
     useEffect(() => setMode(state.selectedMode), [state.selectedMode]);
@@ -83,7 +85,18 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
                     />
                 </main>
 
-                <ControlsLegend t={t} />
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <ControlsLegend t={t} />
+                    {showAdSettings && (
+                        <a href={ADS_ADMIN_HASH}
+                            className="flex items-center gap-1.5 rounded px-2 py-1 text-sm text-bay-dust hover:text-bay-chalk focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" />
+                            </svg>
+                            {t('hb.adSettings')}
+                        </a>
+                    )}
+                </div>
             </div>
             {newsOpen && <WhatsNew t={t} notes={PATCH_NOTES[language]} onClose={closeNews} />}
         </div>

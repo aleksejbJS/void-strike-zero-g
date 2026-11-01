@@ -5,6 +5,7 @@ import MainMenu from './components/menu/MainMenu';
 import PlayerCustomization from './components/setup/CharacterSetup';
 import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
+import { ADS_ADMIN_HASH, rememberAdminFlag } from './components/ads/adminAccess';
 
 // Hidden ads admin page, loaded only when someone opens #ads-admin
 const AdsAdmin = lazy(() => import('./components/ads/AdsAdmin').then(m => ({ default: m.AdsAdmin })));
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const hash = useHash();
 
   React.useEffect(() => {
+    rememberAdminFlag(window.location.search);
     const params = new URLSearchParams(window.location.search);
     // ?host=<id>: invite to a browser-hosted game; ?game=<address>: a dedicated server
     const hostId = params.get('host');
@@ -38,7 +40,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  if (hash === '#ads-admin') {
+  if (hash === ADS_ADMIN_HASH) {
     return <Suspense fallback={null}><AdsAdmin /></Suspense>;
   }
 
