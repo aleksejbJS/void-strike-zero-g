@@ -52,6 +52,13 @@
 - Bots shoot back while retreating to a medkit, aim at the body and lead moving targets correctly
 - Bots no longer hop in place every quarter second, and can drop down to lower floors instead of hovering
 - Bots react like people: 0.4–0.9 s after spotting an enemy (and after the Hunger Games start shield) before the first shot; their aim error grows with distance and target speed. A running player used to be cut down within a second of the shield dropping
+- Bots know the map: a navigation graph built from each map's platforms (surfaces, plus how to get between them by walking, dropping, jetpack or grapple hook) and a route search. They reach every floor of every map instead of getting stuck under platforms or running into walls; Tunnels and arena bots now roam the whole map (the old hand-placed waypoints belonged to the default map only)
+- Bots use the grapple hook like players: fire at the underside of a ledge too high for the jetpack, reel in, let go and finish over the edge with the jetpack
+- Bots in a fight: strafe bursts instead of standing still, a short jetpack hop after taking a hit, and when nearly dead an escape by hook or jetpack to another platform away from the enemy
+- CTF bots: the flag carrier heads straight home (no medkit detours, no hops), teammates escort it; the bases come from the level data
+- Bots skip pickups placed inside solid blocks (Tunnels has three in its central block) and jetpack up to pickups hanging in the air
+- Measured in bots-only matches (kept as a test): Deathmatch, 3 bots, one minute — 6–12 kills in every run (was 3–9) and no bot standing still for more than 1.5 s (was up to 45 s); Tunnels — 6 kills (was 0); Hunger Games — 7 kills (was 4); CTF — bots take the enemy flag 1–3 times per 3 minutes, captures stay rare because defenders respawn on their own flag
+- F3 debug view draws each bot's route (offline play)
 
 ### 🎯 Gameplay Fixes
 - Same game speed on 60, 120 and 144 Hz screens (fixed 120 ticks per second)

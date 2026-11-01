@@ -1,6 +1,6 @@
 # Bot Navigation — Spec (phase B)
 
-Status: draft for approval · 2026-11-01
+Status: implemented · 2026-11-01
 
 ## Problem
 
@@ -88,11 +88,17 @@ on an edge marks it as blocked for a few seconds and plans around it.
 | File | Responsibility |
 |---|---|
 | `src/game/systems/botNavGraph.ts` | build and cache the graph for a map |
-| `src/game/systems/botPathfinder.ts` | A* search, nearest reachable surface |
+| `src/game/systems/botPathfinder.ts` | route search (Dijkstra, counts running along surfaces), nearest reachable surface |
+| `src/game/systems/botRoute.ts` | keep the route current: re-plan, advance, block failing edges |
 | `src/game/systems/botSteering.ts` | turn the next edge into controls |
-| `src/game/systems/botHook.ts` | find anchor points, fire/reel/release the hook |
+| `src/game/systems/botClimb.ts` | jetpack climb onto a surface (jet edges, hook finish) |
+| `src/game/systems/botHook.ts` | fire/reel/release the hook (anchors are found in the graph) |
 | `src/game/systems/botCombatMoves.ts` | strafe, dodge and hook escape |
+| `src/game/systems/botRoam.ts` | roam between random reachable surfaces |
+| `src/game/systems/botNavState.ts` | route and fight-move memory, bot controls |
 | `src/game/systems/bot.ts` | uses the above instead of direct steering |
+| `src/game/render/botPathOverlay.ts` | F3: draw each bot's route |
+| `src/test/botBench.ts` | bots-only match on a simulated clock |
 
 Each file stays under 200 lines.
 
@@ -112,6 +118,26 @@ Each file stays under 200 lines.
 
 1. Grapple hook: yes, bots use it (2026-11-01).
 
+## Results (bots-only matches, `botBenchmark.test.ts`)
+
+| Run | Before | After |
+|---|---|---|
+| Deathmatch, 3 bots, 60 s, 5 seeds — kills | 3, 6, 8, 8, 9 | 6, 6, 9, 10, 12 |
+| Same — longest a living bot stood still | 11–45 s | ≤ 1.4 s |
+| Tunnels, 60 s — kills / longest still | 0 / 58 s | 6 / 1.4 s |
+| Hunger Games, 60 s — kills / longest still | 4 / 57 s | 7 / 6.3 s |
+| CTF, 6 bots, 3 min — captures | 0 | 1 in 6 runs; 1–3 flag pickups per run |
+
+The CTF capture target is not met: carriers reach the enemy flag and run for home, but
+defenders respawn on their own flag 3 s after dying (`getSpawnPoint`), so a carrier
+seldom survives the 2,700 px trip. The test checks what the bots control (they reach and
+take the flag, nobody stands still); the spawn rule is a game design question.
+
+Also found: Tunnels places two weapons and the armor inside the solid central block
+(`level.ts` pickups at y 350/550), where nobody can collect them. Bots now skip them.
+
 ## Open questions
 
 1. Should phase C (difficulty levels) follow right after, or wait for feedback on B?
+2. CTF spawns: move each team's respawn away from its own flag (e.g. to the base floor behind it), so carriers have a chance?
+3. Tunnels: make the "tunnel through the centre" hollow, or move the three items out of the block?
