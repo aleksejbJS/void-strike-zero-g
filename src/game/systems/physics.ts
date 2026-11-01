@@ -1,9 +1,9 @@
-import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectile } from '../../types';
+import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectile, Entity } from '../../types';
 import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, HTF_WIN_SCORE, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
-import { checkPointInRect, checkRectOverlap, segmentIntersectsRect } from '../utils/math';
+import { checkPointInRect, checkRectOverlap, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
@@ -279,22 +279,25 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;
-        state.platforms.forEach(plat => {
-            if (checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat)) hit = true;
-        });
-        if (!hit) {
-            state.players.forEach(p => {
-                if (p.id !== proj.ownerId && !p.dead) {
-                    // Friendly Fire Check: Pass through teammates
-                    const owner = state.players.find(o => o.id === proj.ownerId);
-                    if (owner && isTeammate(owner, p)) return; // Ignore collision with teammate
-
-                    const rect = { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height };
-                    if (checkPointInRect(proj.pos, rect) || segmentIntersectsRect(prevPos, proj.pos, rect)) {
-                        hit = true; applyDamage(state, p, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce);
-                    }
-                }
-            });
+        let impact = proj.pos;
+        const wall = state.platforms.find(plat => checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat));
+        if (wall) {
+            hit = true;
+            impact = prevPos; // explode on the near side of the wall, not inside it
+        } else {
+            // Only the first player along this tick's path is hit (no piercing)
+            const owner = state.players.find(o => o.id === proj.ownerId);
+            let target: Entity | null = null;
+            let nearest = Infinity;
+            for (const p of state.players) {
+                if (p.id === proj.ownerId || p.dead || (owner && isTeammate(owner, p))) continue;
+                const entry = segmentRectEntry(prevPos, proj.pos, { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height });
+                if (entry !== null && entry < nearest) { nearest = entry; target = p; }
+            }
+            if (target) {
+                hit = true;
+                applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce);
+            }
         }
         if (proj.type === WeaponType.GRENADE_LAUNCHER && proj.life <= 0) hit = true;
         // Stray projectile ran out of life without hitting anything — remove silently
@@ -303,7 +306,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         if (hit) {
             proj.active = false;
             if (proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER) {
-                createExplosion(state, proj.pos, proj.ownerId, 150, proj.type);
+                createExplosion(state, impact, proj.ownerId, 150, proj.type);
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }

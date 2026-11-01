@@ -59,6 +59,8 @@ describe('GameRoom', () => {
         const room = makeRoom();
         room.join('s1', join);
         const p = room.state.players.find(pl => pl.id === 's1')!;
+        // Bots spawn at random spots and could shoot p this tick: take them out of the test
+        room.state.players.filter(pl => pl.type === 'bot').forEach(b => { b.dead = true; b.respawnTimer = Number.MAX_SAFE_INTEGER; });
         p.health = 1;
         p.pos = { x: 0, y: 3000 }; // below the kill plane
         room.tick();

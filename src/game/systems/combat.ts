@@ -5,7 +5,7 @@ import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, T
 import { WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT, PROJECTILE_MAX_LIFE } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
-import { distance, normalize, checkPointInRect, segmentRectEntry } from '../utils/math';
+import { distance, normalize, checkPointInRect, segmentRectEntry, segmentIntersectsRect } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
@@ -164,9 +164,13 @@ export const createExplosion = (state: GameState, pos: Vector2, ownerId: string,
     const wepData = weaponType ? WEAPONS_DATA[weaponType] : undefined;
 
     const owner = state.players.find(o => o.id === ownerId);
+    // Walls shield from the blast: hit only if the chest or the feet can "see" the explosion
+    const blocked = (to: Vector2) => state.platforms.some(plat => segmentIntersectsRect(pos, to, plat));
+    const exposed = (p: Entity) => !blocked({ x: p.pos.x, y: p.pos.y - p.height / 2 }) || !blocked({ x: p.pos.x, y: p.pos.y - 2 });
 
     state.players.forEach(p => {
         if (owner && isTeammate(owner, p)) return;
+        if (!exposed(p)) return;
         const dist = distance(pos, p.pos);
         if (dist < radius) {
             const dmg = (wepData?.damage ?? 100) * (1 - dist / radius);

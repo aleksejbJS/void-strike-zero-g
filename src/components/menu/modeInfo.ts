@@ -32,7 +32,7 @@ export const MODE_INFO: Record<Language, Record<GameMode, ModeInfo>> = {
         [GameMode.INFILTRATION]: { name: 'Infiltration', meta: 'Attack vs defense', desc: 'Blue steals the intel, red guards it.',
             rules: ['Blue scores by carrying the intel to extraction', 'Red scores by holding out for 3 minutes', 'Dropped intel stays where its carrier fell'] },
         [GameMode.HUNGER_GAMES]: { name: 'Hunger Games', meta: 'Last one standing', desc: 'One life each. The safe zone keeps shrinking.',
-            rules: ['No respawns until the next round', 'Outside the zone you lose health every second', 'Last survivor wins, or the best one after 5 minutes'] },
+            rules: ['No respawns until the next round', 'The zone shrinks after deaths and pushes everyone together', 'Last survivor wins, or the best one after 5 minutes'] },
     },
     ru: {
         [GameMode.DEATHMATCH]: { name: 'Бой насмерть', meta: 'Каждый за себя', desc: 'Каждый сам за себя. Больше всех убийств — первое место.',
@@ -46,6 +46,6 @@ export const MODE_INFO: Record<Language, Record<GameMode, ModeInfo>> = {
         [GameMode.INFILTRATION]: { name: 'Проникновение', meta: 'Атака и защита', desc: 'Синие крадут разведданные, красные их охраняют.',
             rules: ['Синие получают очко, донеся данные до эвакуации', 'Красные получают очко, продержавшись 3 минуты', 'Выпавшие данные остаются там, где упал носитель'] },
         [GameMode.HUNGER_GAMES]: { name: 'Голодные игры', meta: 'Последний выживший', desc: 'Одна жизнь на раунд. Безопасная зона всё время сужается.',
-            rules: ['Без возрождений до следующего раунда', 'Вне зоны здоровье тает каждую секунду', 'Побеждает последний — или лучший выживший через 5 минут'] },
+            rules: ['Без возрождений до следующего раунда', 'Зона сужается после смертей и сталкивает всех вместе', 'Побеждает последний — или лучший выживший через 5 минут'] },
     },
 };
