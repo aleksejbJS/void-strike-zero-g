@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { Application, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
-import { GameState, GameMode, Team, WeaponType, ItemType, Pickup, NetworkMode, MapId } from '../types';
+import { Application, Container, Graphics, Texture, Sprite } from 'pixi.js';
+import { GameState, GameMode, Team, WeaponType, ItemType, NetworkMode, MapId } from '../types';
 import { WEAPONS_DATA, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../constants';
 import { initAudio } from '../game/systems/audio';
 import { generateAssets } from '../game/systems/assets';
@@ -9,7 +9,8 @@ import { drawStaticMap, drawBackground, syncVisuals, getPickupSpriteScale, drawZ
 import { clearBotMemory } from '../game/systems/bot';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
-import { WeaponIcon } from './WeaponIcon';
+import { GameHud } from './hud/GameHud';
+import { objectiveFor, Objective } from './hud/objective';
 import { ClientSession } from '../game/net/clientSession';
 import { parseJoinTarget, inviteLink as makeInviteLink } from '../game/net/serverAddress';
 import { HostSession, BROWSER_HOST_MAX_PLAYERS } from '../game/net/hostSession';
@@ -32,9 +33,6 @@ type JoystickState = { active: boolean; startX: number; startY: number; currentX
 // Deathmatch-style modes use the chosen map; objective modes are built for the default map
 const effectiveMapFor = (mode: GameMode, selected: MapId) =>
     mode === GameMode.DEATHMATCH || mode === GameMode.HUNGER_GAMES || mode === GameMode.GUN_GAME ? selected : MapId.DEFAULT;
-
-/** 272 → "4:32" */
-const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 const detectMobile = () =>
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -135,10 +133,10 @@ export default function GameCanvas() {
     const debugVisibleRef = useRef(false);
     const debugCounters = useRef({ frames: 0, ticks: 0, since: 0 });
 
-    // HP Animation State
-    const previousHP = useRef(100);
-    const [hpGainAmount, setHpGainAmount] = React.useState<number | null>(null);
-    const [showHpGain, setShowHpGain] = React.useState(false);
+    // Team-mode hint under the score ("Bring the flag to your base")
+    const [objective, setObjective] = React.useState<Objective | null>(null);
+    const objectiveKeyRef = useRef('');
+    const closeAchievements = React.useCallback(() => setShowAchievements(false), []);
 
     // Achievement listener
     React.useEffect(() => {
@@ -631,6 +629,12 @@ export default function GameCanvas() {
                 // RENDER UPDATE - Optimized frequency
                 const shouldUpdateUI = now - lastStateUpdate.current > 150; // Reduced from 100ms to 150ms
                 if (shouldUpdateUI) {
+                    const nextObjective = objectiveFor(gameState.current, localIdRef.current);
+                    const objectiveKey = nextObjective ? `${nextObjective.key}:${nextObjective.team ?? ''}` : '';
+                    if (objectiveKey !== objectiveKeyRef.current) {
+                        objectiveKeyRef.current = objectiveKey;
+                        setObjective(nextObjective);
+                    }
                     syncVisuals(
                         app,
                         worldContainer,
@@ -922,534 +926,57 @@ export default function GameCanvas() {
         return () => clearInterval(id);
     }, [gameMode]);
 
-    // HP Gain Animation Effect
-    useEffect(() => {
-        const currentHP = stats.hp;
-        if (currentHP > previousHP.current && previousHP.current > 0) {
-            // HP increased!
-            const gain = currentHP - previousHP.current;
-            previousHP.current = currentHP;
-            setHpGainAmount(gain);
-            setShowHpGain(true);
-
-            // Hide after 1.5 seconds
-            const timer = setTimeout(() => {
-                setShowHpGain(false);
-            }, 1500);
-
-            return () => clearTimeout(timer);
-        }
-        previousHP.current = currentHP;
-    }, [stats.hp]);
+    const objectiveText = objective
+        ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue') : undefined)
+        : null;
 
     return (
-        <div ref={containerRef} className="w-full h-full bg-black relative">
-            {/* HUD UI RENDERED HERE (Same as before) */}
-            <div className="absolute top-4 left-4 z-50 cursor-pointer" onClick={actions.toggleMute}>
-                <div className={`w-8 h-8 flex items-center justify-center rounded bg-gray-800 border border-gray-600 text-white select-none`}>
-                    {state.isMuted ? '🔇' : '🔊'}
-                </div>
-            </div>
-
-            {((state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || netError) && (
-                <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none">
-                    <div className="px-6 py-4 rounded-xl bg-black/80 border border-white/10 text-center font-mono">
-                        <div className={netError ? 'text-red-400 font-bold' : 'text-gray-200'}>{netError ?? t('net.connecting')}</div>
-                        {netError && <div className="text-xs text-gray-400 mt-2">{t('net.backToMenu')}</div>}
-                    </div>
-                </div>
-            )}
-
-            {debugStats && (
-                <div className="absolute top-14 left-4 z-50 px-2 py-1 rounded bg-black/70 border border-white/10 font-mono text-xs text-green-300 pointer-events-none">
-                    FPS {debugStats.fps} · physics {debugStats.tps}/s
-                </div>
-            )}
-
-            {/* Счет команд для CTF/HTF/INFILTRATION */}
-            {(gameMode === GameMode.CTF || gameMode === GameMode.HOLD_THE_FLAG || gameMode === GameMode.INFILTRATION) && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-4 py-2 bg-black/50 backdrop-blur-sm border border-white/10 rounded-lg font-mono text-sm">
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />
-                        <span className="text-blue-300 font-bold text-lg">{scores.blue}</span>
-                    </div>
-                    <div className="text-gray-400 text-xs">
-                        {gameMode === GameMode.CTF ? 'CTF' : gameMode === GameMode.HOLD_THE_FLAG ? 'HOLD' : 'INF'}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-red-300 font-bold text-lg">{scores.red}</span>
-                        <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
-                    </div>
-                </div>
-            )}
-
-            {/* Hunger Games zone visualization */}
-            {gameMode === GameMode.INFILTRATION && infiltrationTimeLeft !== null && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 px-3 py-1 bg-black/60 border border-amber-400/40 rounded text-amber-200 font-mono text-sm">
-                    T-{Math.ceil(infiltrationTimeLeft / 1000)}s
-                </div>
-            )}
-
-            {gameMode === GameMode.HUNGER_GAMES && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 px-4 py-2 bg-black/70 border border-lime-400/50 rounded text-lime-200 font-mono text-sm flex items-center gap-4">
-                    <span className="font-bold">Credits: {hungerCredits.current}</span>
-                    {hungerBetTarget ? (
-                        <span className="text-gray-300 text-xs">Bet placed on {hungerBetTarget}</span>
-                    ) : (
-                        <span className="text-gray-400 text-xs">Bet 100 on a survivor after you die</span>
-                    )}
-                    {hungerWinner && (
-                        <span className="text-yellow-300 text-xs font-bold">Winner: {hungerWinner}</span>
-                    )}
-                    {hungerTimeLeftSec !== null && !hungerEnded && (
-                        <span className="text-sky-300 text-xs font-bold">Round ends in {formatClock(hungerTimeLeftSec)}</span>
-                    )}
-                    {hungerShrinkCountdown !== null && !hungerEnded && (
-                        <span className="text-lime-300 text-xs font-bold">Zone shrinks in {hungerShrinkCountdown}s</span>
-                    )}
-                    {hungerRestartCountdown !== null && hungerEnded && (
-                        <span className="text-amber-300 text-xs font-bold">Next round in {hungerRestartCountdown}s</span>
-                    )}
-                </div>
-            )}
-            {gameMode === GameMode.GUN_GAME && gunGameStatus && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 px-4 py-3 bg-black/70 border border-fuchsia-400/50 rounded text-fuchsia-100 font-mono text-sm flex flex-col gap-1 w-[280px]">
-                    <div className="flex items-center justify-between">
-                        <span className="font-bold uppercase text-xs">{t('ui.gunProgress')}</span>
-                        <span className="text-[11px] text-gray-300">Lv {gunGameStatus.level}/{gunGameStatus.total}</span>
-                    </div>
-                    <div className="text-white font-bold text-base truncate">{gunGameStatus.weapon}</div>
-                    <div className="w-full h-2 bg-gray-800 rounded overflow-hidden border border-gray-700/80">
-                        <div
-                            className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-500"
-                            style={{ width: `${Math.min(100, (gunGameStatus.progress / GUN_GAME_KILLS_PER_LEVEL) * 100)}%` }}
-                        />
-                    </div>
-                    <div className="text-[11px] text-gray-400">{gunGameStatus.progress}/{GUN_GAME_KILLS_PER_LEVEL} kills this level</div>
-                </div>
-            )}
-
-            {/* Invite Link Overlay */}
-            {inviteLink && (
-                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
-                    <div className="bg-purple-900/80 backdrop-blur px-4 py-2 rounded-lg border border-purple-500 text-white font-mono text-sm flex items-center gap-3 shadow-lg">
-                        <span className="text-purple-300 font-bold">INVITE LINK:</span>
-                        <code className="bg-black/50 px-2 py-1 rounded select-all">{inviteLink}</code>
-                        <button
-                            onClick={() => navigator.clipboard.writeText(inviteLink).catch(err => console.warn('Copy failed:', err))}
-                            className="hover:text-white text-purple-300 transition-colors"
-                            title="Copy"
-                        >
-                            📋
-                        </button>
-                    </div>
-                    <div className="text-xs text-purple-300/80 animate-pulse">Waiting for players...</div>
-                </div>
-            )}
-
-            {/* Scoreboard - Top Left */}
-            {(gameMode === GameMode.DEATHMATCH || gameMode === GameMode.HUNGER_GAMES || gameMode === GameMode.GUN_GAME) && playerScores.length > 0 && (
-                <div className="absolute top-4 left-4 z-40 bg-black/70 backdrop-blur-sm border border-white/10 rounded-lg font-mono text-sm overflow-hidden min-w-[200px]">
-                    <div className="px-3 py-2 bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-b border-white/10">
-                        <div className="text-white font-bold text-xs uppercase tracking-wider">Scoreboard</div>
-                    </div>
-                    <div className="px-2 py-1">
-                        {playerScores.map((player, index) => (
-                            <div
-                                key={player.id}
-                                className={`flex items-center justify-between gap-4 px-2 py-1.5 rounded transition-all ${player.isPlayer
-                                    ? 'bg-blue-500/20 border-l-2 border-blue-400'
-                                    : 'hover:bg-white/5'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className={`text-xs ${index === 0 ? 'text-yellow-400' :
-                                        index === 1 ? 'text-gray-300' :
-                                            index === 2 ? 'text-orange-400' :
-                                                'text-gray-500'
-                                        }`}>
-                                        #{index + 1}
-                                    </span>
-                                    <span className={`truncate ${player.isPlayer ? 'text-blue-300 font-bold' : 'text-gray-300'
-                                        }`}>
-                                        {player.name}
-                                    </span>
-                                </div>
-                                <div className="text-right">
-                                    <div className={`font-bold tabular-nums ${player.isPlayer ? 'text-blue-400' : 'text-white'
-                                        }`}>
-                                        {player.score}
-                                    </div>
-                                    {gameMode === GameMode.GUN_GAME && (
-                                        <div className="text-[10px] text-gray-400">
-                                            Lv {((player.gunLevel || 0) + 1)}/{player.gunTotalLevels || GUN_GAME_LADDER.length} · {player.gunProgress || 0}/{GUN_GAME_KILLS_PER_LEVEL}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {gameMode === GameMode.HUNGER_GAMES && isLocalDead && !hungerBetTarget && !hungerWinner && (
-                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 bg-black/90 border border-lime-400/70 rounded-lg p-4 w-[360px] text-sm font-mono text-white shadow-xl">
-                    <div className="text-lime-200 font-bold mb-2 uppercase tracking-widest text-xs">Place Your Bet (100)</div>
-                    <div className="grid grid-cols-2 gap-2">
-                        {hungerAlive.map(p => (
-                            <button
-                                key={p.id}
-                                onClick={() => placeHungerBet(p.id)}
-                                className="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded border border-white/10 text-left"
-                            >
-                                {p.name} <span className="text-gray-400 text-xs">({p.id})</span>
-                            </button>
-                        ))}
-                        {hungerAlive.length === 0 && <div className="text-gray-400 col-span-2">Нет выживших для ставки</div>}
-                    </div>
-                </div>
-            )}
-
-            {gameMode === GameMode.HUNGER_GAMES && hungerEnded && hungerWinner && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-                    <div className="flex flex-col items-center gap-4 bg-black/70 px-10 py-8 rounded-2xl border border-amber-400/60 shadow-2xl">
-                        <div className="text-6xl">🏆</div>
-                        {hungerTimeUp && <div className="text-sm font-bold text-sky-300 uppercase tracking-widest">Time's up!</div>}
-                        <div className="text-2xl font-black text-amber-300 tracking-wide">Winner: {hungerWinner}</div>
-                        {hungerRestartCountdown !== null && (
-                            <div className="text-sm text-gray-200">Next round in {hungerRestartCountdown}s</div>
-                        )}
-                        <div className="w-full max-w-md bg-gray-900/60 border border-white/10 rounded-lg p-4 text-sm font-mono text-white">
-                            <div className="text-gray-400 text-xs uppercase tracking-widest mb-2">Final Ranking</div>
-                            {playerScores.map((player, idx) => (
-                                <div key={player.id} className="flex items-center justify-between py-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`w-6 text-center ${idx === 0 ? 'text-yellow-300' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-orange-300' : 'text-gray-500'}`}>#{idx + 1}</span>
-                                        <span className={`${idx === 0 ? 'font-bold text-white' : 'text-gray-200'}`}>{player.name}</span>
-                                    </div>
-                                    <div className="text-gray-300">{player.score}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-            {gameMode === GameMode.GUN_GAME && gunGameWinner && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-                    <div className="flex flex-col items-center gap-3 bg-black/80 px-8 py-6 rounded-2xl border border-fuchsia-400/60 shadow-2xl text-fuchsia-100">
-                        <div className="text-5xl">🏆</div>
-                        <div className="text-xl font-black uppercase tracking-wide">Winner: {gunGameWinner}</div>
-                        <div className="text-xs text-gray-300">Gun Game complete</div>
-                    </div>
-                </div>
-            )}
-
-            {/* Player Stats - Bottom Left */}
-            <div className="absolute bottom-8 left-8 flex flex-col gap-3 pointer-events-none font-mono text-white text-shadow-md z-40">
-                {/* HP Bar with Dynamic Colors */}
-                <div className="relative">
-                    {/* HP Gain Notification */}
-                    {showHpGain && hpGainAmount && (
-                        <div className="absolute -top-12 left-0 animate-[float_1.5s_ease-out_forwards] pointer-events-none">
-                            <div className="text-2xl font-black text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.8)]">
-                                +{hpGainAmount} HP
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex items-center gap-4">
-                        {/* HP Number Display with Dynamic Color */}
-                        <div className={`text-5xl font-black italic drop-shadow-lg transition-colors duration-300 ${stats.hp > 66 ? 'text-green-400' :
-                            stats.hp > 33 ? 'text-yellow-400' :
-                                'text-red-500'
-                            } ${showHpGain ? 'animate-pulse' : ''}`}>
-                            {stats.hp}
-                            <span className="text-sm text-gray-400 not-italic ml-1">HP</span>
-                        </div>
-
-                        {/* Armor Display */}
-                        {stats.arm > 0 && (
-                            <div className="text-3xl font-bold text-cyan-300">
-                                {Math.round(stats.arm)}
-                                <span className="text-sm text-gray-400 ml-1">ARM</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* HP Bar with Dynamic Color Gradient */}
-                    <div className="relative w-64 h-4 bg-gray-900/80 rounded-full overflow-hidden border-2 border-gray-700 mt-2">
-                        {/* Background glow effect */}
-                        <div
-                            className={`absolute inset-0 blur-md transition-all duration-300 ${stats.hp > 66 ? 'bg-green-500/30' :
-                                stats.hp > 33 ? 'bg-yellow-500/30' :
-                                    'bg-red-500/30'
-                                } ${showHpGain ? 'animate-pulse' : ''}`}
-                            style={{ width: `${stats.hp}%` }}
-                        />
-
-                        {/* Actual HP bar */}
-                        <div
-                            className={`relative h-full transition-all duration-500 ease-out ${stats.hp > 66 ? 'bg-gradient-to-r from-green-500 to-green-400' :
-                                stats.hp > 33 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
-                                    'bg-gradient-to-r from-red-600 to-red-500'
-                                } ${showHpGain ? 'brightness-150' : ''}`}
-                            style={{ width: `${stats.hp}%` }}
-                        >
-                            {/* Inner shine effect */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent" />
-
-                            {/* Pulse animation on low HP */}
-                            {stats.hp < 25 && (
-                                <div className="absolute inset-0 animate-pulse bg-red-300/20" />
-                            )}
-                        </div>
-
-                        {/* Percentage text overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xs font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-                                {stats.hp}%
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Armor Bar (if armor exists) */}
-                    {stats.arm > 0 && (
-                        <div className="relative w-64 h-3 bg-gray-900/80 rounded-full overflow-hidden border border-cyan-700/50 mt-1">
-                            <div
-                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-500"
-                                style={{ width: `${stats.arm}%` }}
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent" />
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Jetpack Fuel Bar */}
-                <div className="flex flex-col gap-1">
-                    <div className="w-64 h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
-                        <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-300 transition-all duration-300" style={{ width: `${stats.fuel}%` }}>
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent" />
-                        </div>
-                    </div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-widest">Jetpack Fuel</div>
-                </div>
-            </div>
-
-            {/* Respawn Timer (hide in Hunger Games to allow betting UI) */}
-            {stats.dead && gameMode !== GameMode.HUNGER_GAMES && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50">
-                    <div className="text-center">
-                        <div className="text-red-500 text-6xl font-black mb-4 animate-pulse">YOU DIED</div>
-                        <div className="text-white text-2xl font-mono">Respawn in {(stats.respawn / 1000).toFixed(1)}s</div>
-                    </div>
-                </div>
-            )}
-
-            {/* Kill Feed - Top Right */}
-            <div className="absolute top-4 right-4 flex flex-col gap-1 items-end pointer-events-none font-mono text-xs z-40">
-                {killFeed.map(k => (
-                    <div key={k.id} className="bg-black/60 backdrop-blur px-2 py-1 rounded border border-white/10 flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <span style={{ color: k.killerColor }} className="font-bold">{k.killer}</span>
-                        <span className="text-gray-400">[{k.weapon}]</span>
-                        <span style={{ color: k.victimColor }} className="font-bold">{k.victim}</span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Achievement Button */}
-            <div className="absolute top-16 right-4 z-50">
-                <button
-                    onClick={() => setShowAchievements(!showAchievements)}
-                    className="w-10 h-10 bg-purple-600 hover:bg-purple-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg transition-all hover:scale-110"
-                    title="Achievements"
-                >
-                    🏆
-                </button>
-            </div>
-
-            {/* Achievement Notification */}
-            {recentAchievement && (
-                <div className="absolute top-28 right-4 z-50 animate-in slide-in-from-right-4 duration-500">
-                    <div className="bg-gradient-to-r from-yellow-600 to-orange-600 border-2 border-yellow-400 rounded-lg p-4 shadow-2xl max-w-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="text-3xl">{recentAchievement.icon}</div>
-                            <div>
-                                <div className="text-white font-bold text-lg">Achievement Unlocked!</div>
-                                <div className="text-yellow-200 font-semibold">{recentAchievement.name}</div>
-                                <div className="text-yellow-100 text-sm">{recentAchievement.description}</div>
-                                {recentAchievement.reward && (
-                                    <div className="text-green-300 text-sm font-bold mt-1">
-                                        +{recentAchievement.reward.xp} XP
-                                        {recentAchievement.reward.title && ` • ${recentAchievement.reward.title}`}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Achievement Panel */}
-            {showAchievements && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80">
-                    <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-2xl font-bold text-white">Achievements</h2>
-                            <button
-                                onClick={() => setShowAchievements(false)}
-                                className="text-gray-400 hover:text-white text-2xl"
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {achievementManager.getAchievements().map(achievement => (
-                                <div
-                                    key={achievement.id}
-                                    className={`p-4 rounded-lg border transition-all ${achievement.unlocked
-                                        ? 'bg-green-900/50 border-green-500'
-                                        : 'bg-gray-800/50 border-gray-600'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className={`text-2xl ${achievement.unlocked ? '' : 'grayscale opacity-50'}`}>
-                                            {achievement.icon}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className={`font-bold ${achievement.unlocked ? 'text-white' : 'text-gray-400'}`}>
-                                                {achievement.name}
-                                            </div>
-                                            <div className={`text-sm ${achievement.unlocked ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                {achievement.description}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {achievement.unlocked ? (
-                                        <div className="text-green-400 text-sm font-bold">
-                                            ✓ Unlocked {achievement.reward?.xp ? `(+${achievement.reward.xp} XP)` : ''}
-                                        </div>
-                                    ) : (
-                                        <div className="text-gray-400 text-sm">
-                                            Progress: {achievement.progress}/{achievement.maxProgress}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-gray-700">
-                            <div className="text-center">
-                                <div className="text-gray-400 text-sm">Total XP</div>
-                                <div className="text-2xl font-bold text-yellow-400">
-                                    {achievementManager.getTotalXP()} XP
-                                </div>
-                                <div className="text-gray-500 text-xs">
-                                    {achievementManager.getCompletionPercentage()}% Complete
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-
-
-            {/* Ammo Display */}
-            {
-                (() => {
-                    const activeWeapon = playerInventory.find(w => w.type === activeWeaponType);
-                    if (!activeWeapon) return null;
-                    const isInfinite = activeWeapon.maxAmmo > 1000; // Assuming >1000 is infinite/generator
-
-                    return (
-                        <div className="absolute bottom-8 right-8 flex flex-col items-end pointer-events-none font-mono text-white text-shadow-md">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-6xl font-black italic tracking-tighter text-yellow-400 drop-shadow-lg">
-                                    {isInfinite ? '∞' : stats.ammo}
-                                </span>
-                                {!isInfinite && (
-                                    <span className="text-2xl text-gray-500 font-bold">
-                                        / {activeWeapon.maxAmmo}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="text-sm font-bold tracking-widest text-gray-400 uppercase">
-                                {activeWeapon.name}
-                            </div>
-                        </div>
-                    );
-                })()
-            }
-
-            {/* Weapon Bar */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
-                {playerInventory.map((w, i) => (
-                    <div key={i} className={`w-14 h-14 bg-black/70 backdrop-blur-sm border-2 flex items-center justify-center rounded-lg transition-all shadow-lg ${w.type === activeWeaponType ? 'border-yellow-400 scale-110 shadow-yellow-400/50' : 'border-gray-600/50 opacity-60'}`}>
-                        <WeaponIcon weaponType={w.type} size={36} />
-                        <span className="absolute bottom-0.5 right-1 text-[10px] text-white font-mono bg-black/50 px-1 rounded">{i + 1}</span>
-                        {w.type === activeWeaponType && (
-                            <div className="absolute inset-0 rounded-lg bg-yellow-400/10 animate-pulse" />
-                        )}
-                    </div>
-                ))}
-            </div>
-
-            {/* Mobile Touch Controls */}
-            {isMobile && (
-                <>
-                    {/* Virtual Joystick Indicator */}
-                    {touchJoystick?.active && (
-                        <div
-                            className="absolute w-24 h-24 border-2 border-blue-400/50 rounded-full pointer-events-none"
-                            style={{
-                                left: touchJoystick.startX - 48,
-                                top: touchJoystick.startY - 48,
-                                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)'
-                            }}
-                        >
-                            <div
-                                className="absolute w-8 h-8 bg-blue-400/70 rounded-full border border-blue-300"
-                                style={{
-                                    left: (touchJoystick.currentX - touchJoystick.startX) + 40,
-                                    top: (touchJoystick.currentY - touchJoystick.startY) + 40,
-                                    transform: 'translate(-50%, -50%)'
-                                }}
-                            />
-                        </div>
-                    )}
-
-                    {/* Mobile Action Buttons */}
-                    <div className="absolute bottom-24 right-4 flex flex-col gap-3">
-                        <button
-                            onTouchStart={() => { keys.current['Space'] = true; setTouchButtons(prev => ({ ...prev, jump: true })); }}
-                            onTouchEnd={() => { keys.current['Space'] = false; setTouchButtons(prev => ({ ...prev, jump: false })); }}
-                            className={`w-16 h-16 rounded-full font-bold text-white transition-all ${touchButtons.jump ? 'bg-blue-600 scale-95' : 'bg-blue-500/80'
-                                } border-2 border-blue-400/50 backdrop-blur-sm shadow-lg active:scale-90`}
-                        >
-                            ↑
-                        </button>
-                        <button
-                            onTouchStart={() => { hookPressed.current = true; setTouchButtons(prev => ({ ...prev, hook: true })); }}
-                            onTouchEnd={() => { hookPressed.current = false; setTouchButtons(prev => ({ ...prev, hook: false })); }}
-                            className={`w-16 h-16 rounded-full font-bold text-white transition-all ${touchButtons.hook ? 'bg-purple-600 scale-95' : 'bg-purple-500/80'
-                                } border-2 border-purple-400/50 backdrop-blur-sm shadow-lg active:scale-90`}
-                        >
-                            🪝
-                        </button>
-                    </div>
-
-                    {/* Mobile Instructions */}
-                    <div className="absolute top-20 left-4 bg-black/70 backdrop-blur-sm border border-white/10 rounded-lg p-3 text-xs text-gray-300 font-mono max-w-[200px]">
-                        <div className="font-bold text-white mb-1">Mobile Controls:</div>
-                        <div>• Left side: Move</div>
-                        <div>• Right side: Aim & Fire</div>
-                        <div>• Buttons: Jump & Hook</div>
-                    </div>
-                </>
-            )}
-        </div >
+        <div ref={containerRef} className="relative h-full w-full bg-black">
+            <GameHud
+                t={t}
+                mode={gameMode}
+                stats={stats}
+                scores={scores}
+                inventory={playerInventory}
+                activeWeapon={activeWeaponType}
+                killFeed={killFeed}
+                playerScores={playerScores}
+                muted={state.isMuted}
+                onToggleMute={actions.toggleMute}
+                objective={objectiveText}
+                infiltrationMs={infiltrationTimeLeft}
+                connection={{ visible: (state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || !!netError, error: netError }}
+                debug={debugStats}
+                inviteLink={inviteLink}
+                recentAchievement={recentAchievement}
+                achievementsOpen={showAchievements}
+                onAchievementsOpen={() => setShowAchievements(true)}
+                onAchievementsClose={closeAchievements}
+                hunger={gameMode === GameMode.HUNGER_GAMES ? {
+                    credits: hungerCredits.current,
+                    betTarget: hungerAlive.find(p => p.id === hungerBetTarget)?.name ?? hungerBetTarget,
+                    winner: hungerWinner,
+                    ended: hungerEnded,
+                    timeUp: hungerTimeUp,
+                    timeLeftSec: hungerTimeLeftSec,
+                    shrinkSec: hungerShrinkCountdown,
+                    restartSec: hungerRestartCountdown,
+                    localDead: isLocalDead,
+                    alive: hungerAlive,
+                    onBet: placeHungerBet,
+                } : null}
+                gunGame={gameMode === GameMode.GUN_GAME ? {
+                    status: gunGameStatus && { ...gunGameStatus, perLevel: GUN_GAME_KILLS_PER_LEVEL },
+                    winner: gunGameWinner,
+                } : null}
+                mobile={isMobile ? {
+                    joystick: touchJoystick,
+                    jumpDown: touchButtons.jump,
+                    hookDown: touchButtons.hook,
+                    onJump: down => { keys.current['Space'] = down; setTouchButtons(prev => ({ ...prev, jump: down })); },
+                    onHook: down => { hookPressed.current = down; setTouchButtons(prev => ({ ...prev, hook: down })); },
+                } : null}
+            />
+        </div>
     );
 }

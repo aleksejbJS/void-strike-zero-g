@@ -2,9 +2,9 @@ import React, { createContext, useContext, useMemo, useReducer } from 'react';
 import { GameMode, KillMessage, Weapon, WeaponType, NetworkMode, MapId } from '../types';
 import { WEAPONS_DATA } from '../constants';
 
-type StatsState = { hp: number; arm: number; fuel: number; ammo: number; dead: boolean; respawn: number };
+export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number };
 type ScoresState = { red: number; blue: number };
-type PlayerScore = { id: string; name: string; score: number; isPlayer: boolean; gunLevel?: number; gunProgress?: number; gunTotalLevels?: number };
+export type PlayerScore = { id: string; name: string; score: number; isPlayer: boolean; isLocal?: boolean; gunLevel?: number; gunProgress?: number; gunTotalLevels?: number };
 
 interface UIState {
   isPlaying: boolean;

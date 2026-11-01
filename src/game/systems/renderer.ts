@@ -1114,7 +1114,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
     // HUD shows the player this browser controls
     const p = state.players.find(pl => pl.id === localPlayerId);
     if (p) {
-        if (setStats) setStats({ hp: Math.round(p.health), arm: p.armor, fuel: p.jetpackFuel, ammo: p.weapon.ammo, dead: p.dead, respawn: p.respawnTimer - Date.now() });
+        if (setStats) setStats({ hp: Math.round(p.health), arm: p.armor, fuel: p.jetpackFuel, maxFuel: p.maxFuel, ammo: p.weapon.ammo, dead: p.dead, respawn: p.respawnTimer - Date.now() });
         if (setPlayerInventory) setPlayerInventory([...p.inventory]);
         if (setActiveWeaponType) setActiveWeaponType(p.weapon.type);
         if (setScores) setScores({ red: state.scores[Team.RED], blue: state.scores[Team.BLUE] });
@@ -1126,6 +1126,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
                 name: pl.name,
                 score: pl.score,
                 isPlayer: pl.type === 'player',
+                isLocal: pl.id === localPlayerId,
                 gunLevel: pl.gunLevel,
                 gunProgress: pl.gunProgress,
                 gunTotalLevels: GUN_GAME_LADDER.length

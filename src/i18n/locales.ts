@@ -1,8 +1,10 @@
 import { Language } from '../types';
 import { HazardKeys, hazardStrings } from './hazardStrings';
 import { SetupKeys, setupStrings } from './setupStrings';
+import { HudKeys, hudStrings } from './hudStrings';
+import { ObjectiveKeys, objectiveStrings } from './objectiveStrings';
 
-export interface TranslationKeys extends HazardKeys, SetupKeys {
+export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys {
   // Menu
   'menu.title': string;
   'menu.deploy': string;
@@ -90,6 +92,8 @@ export const translations: Record<Language, TranslationKeys> = {
   en: {
     ...hazardStrings.en,
     ...setupStrings.en,
+    ...hudStrings.en,
+    ...objectiveStrings.en,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'DEPLOY',
@@ -175,6 +179,8 @@ export const translations: Record<Language, TranslationKeys> = {
   ru: {
     ...hazardStrings.ru,
     ...setupStrings.ru,
+    ...hudStrings.ru,
+    ...objectiveStrings.ru,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'СТАРТ',
