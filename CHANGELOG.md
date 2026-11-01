@@ -41,6 +41,7 @@
 - Bots fight in Gun Game (they used to ignore everyone)
 - Bots shoot back while retreating to a medkit, aim at the body and lead moving targets correctly
 - Bots no longer hop in place every quarter second, and can drop down to lower floors instead of hovering
+- Bots react like people: 0.4–0.9 s after spotting an enemy (and after the Hunger Games start shield) before the first shot; their aim error grows with distance and target speed. A running player used to be cut down within a second of the shield dropping
 
 ### 🎯 Gameplay Fixes
 - Same game speed on 60, 120 and 144 Hz screens (fixed 120 ticks per second)
@@ -56,7 +57,7 @@
 
 ### 🛠️ Technical
 - Shared authoritative game room used by both the Node server and the browser host
-- Large components split into small modules; 218 automated tests (from 56)
+- Large components split into small modules; 221 automated tests (from 56)
 
 ## Version 0.3.1 (2025-11-28)
 
