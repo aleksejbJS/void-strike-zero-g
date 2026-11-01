@@ -1,0 +1,46 @@
+// Bot weapon choice: which gun suits the distance and which weapon pickup is worth a detour.
+
+import { Entity, GameState, ItemType, Pickup, Weapon, WeaponType } from '../../types';
+import { distance } from '../utils/math';
+
+const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
+    // Higher score = better choice. Rough heuristics by role.
+    switch (weapon.type) {
+        case WeaponType.CHAINSAW: return dist < 90 ? 120 - dist : -100;
+        case WeaponType.SHOTGUN: return 100 - Math.max(0, dist - 60) * 0.6;
+        case WeaponType.ROCKET_LAUNCHER: return 90 - Math.max(0, dist - 120) * 0.35;
+        case WeaponType.GRENADE_LAUNCHER: return 85 - Math.max(0, dist - 140) * 0.3;
+        case WeaponType.PLASMA_GUN: return 70 - Math.max(0, dist - 260) * 0.25;
+        case WeaponType.RAILGUN: return dist > 280 ? 110 - Math.max(0, (dist - 280) * 0.1) : 40 + dist * 0.05;
+        default: return 60 - Math.max(0, dist - 240) * 0.2; // Machine gun fallback
+    }
+};
+
+export const pickBestWeapon = (bot: Entity, dist: number) => {
+    let best = bot.weapon;
+    let bestScore = scoreWeaponForDistance(best, dist) + (best.ammo / Math.max(1, best.maxAmmo)) * 30;
+    bot.inventory.forEach(w => {
+        if (w.ammo <= 0) return;
+        const s = scoreWeaponForDistance(w, dist) + (w.ammo / Math.max(1, w.maxAmmo)) * 30;
+        if (s > bestScore + 5) { // small hysteresis
+            best = w; bestScore = s;
+        }
+    });
+    bot.weapon = best;
+};
+
+export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null => {
+    let best: Pickup | null = null;
+    let bestDist = Infinity;
+    state.pickups.forEach(item => {
+        if (!item.active || item.type !== ItemType.WEAPON || !item.subtype) return;
+        const existing = bot.inventory.find(w => w.type === item.subtype);
+        const needsAmmo = existing ? existing.ammo < existing.maxAmmo * 0.4 : true;
+        if (!existing && item.subtype === WeaponType.MACHINE_GUN) return; // skip default gun duplicates
+        if (!existing && item.subtype === bot.weapon.type && bot.weapon.ammo > bot.weapon.maxAmmo * 0.5) return;
+        if (!needsAmmo) return;
+        const d = distance(bot.pos, item.pos);
+        if (d < bestDist) { bestDist = d; best = item; }
+    });
+    return best;
+};

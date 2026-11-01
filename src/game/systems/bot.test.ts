@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { botHasLineOfSight, updateBotAI, clearBotMemory } from './bot';
-import { GameState, GameMode, Team, WeaponType, MapId } from '../../types';
+import { GameState, GameMode, Team, WeaponType, MapId, ItemType } from '../../types';
 import { WEAPONS_DATA } from '../../constants';
 
 const makeState = (): GameState => ({
@@ -71,18 +71,92 @@ describe('botHasLineOfSight', () => {
 });
 
 describe('updateBotAI', () => {
-  it('moves bot toward an enemy and can fire', () => {
+  const noFire = () => {};
+
+  it('walks towards a visible enemy and shoots at it', () => {
     const state = makeState();
     const bot = makeBot('bot1', Team.NONE, 0, 0);
     const enemy = makeBot('enemy', Team.NONE, 400, 0);
     state.players = [bot as any, enemy as any];
     const shots: any[] = [];
 
-    const flying = updateBotAI(bot as any, state, Date.now(), (_b, target) => shots.push(target));
+    const controls = updateBotAI(bot as any, state, 10_000, (_b, target) => shots.push(target));
 
-    expect(bot.vel.x).not.toBe(0);
-    // In absence of obstacles, bot should face and potentially shoot the enemy
-    expect(shots.length).toBeGreaterThanOrEqual(0);
-    expect(typeof flying).toBe('boolean');
+    expect(controls.inputX).toBe(1);
+    expect(shots).toHaveLength(1);
+    expect(bot.facingRight).toBe(true);
+  });
+
+  it('treats everyone as an enemy in free-for-all modes such as Gun Game', () => {
+    const state = makeState();
+    state.mode = GameMode.GUN_GAME;
+    const bot = makeBot('bot1', Team.NONE, 0, 0);
+    state.players = [bot as any, makeBot('enemy', Team.NONE, 400, 0) as any];
+    const shots: any[] = [];
+
+    updateBotAI(bot as any, state, 10_000, (_b, target) => shots.push(target), GameMode.GUN_GAME);
+
+    expect(shots).toHaveLength(1);
+  });
+
+  it('prefers a visible enemy over a closer one behind a wall', () => {
+    const state = makeState();
+    state.platforms = [{ id: 'wall', x: -150, y: -200, w: 20, h: 300, color: '#000' }];
+    const bot = makeBot('bot1', Team.NONE, 0, 0);
+    const hidden = makeBot('hidden', Team.NONE, -250, 0);
+    const visible = makeBot('visible', Team.NONE, 500, 0);
+    state.players = [bot as any, hidden as any, visible as any];
+    const shots: any[] = [];
+
+    updateBotAI(bot as any, state, 10_000, (_b, target) => shots.push(target));
+
+    expect(shots).toHaveLength(1);
+    expect(shots[0].x).toBeGreaterThan(0);
+  });
+
+  it('keeps shooting while it retreats to a medkit', () => {
+    const state = makeState();
+    const bot = { ...makeBot('bot1', Team.NONE, 0, 0), health: 30 };
+    state.players = [bot as any, makeBot('enemy', Team.NONE, 400, 0) as any];
+    state.pickups = [{ id: 'hp', type: ItemType.HEALTH, pos: { x: -500, y: 0 }, active: true, respawnTime: 0, value: 50 }];
+    const shots: any[] = [];
+
+    const controls = updateBotAI(bot as any, state, 10_000, (_b, target) => shots.push(target));
+
+    expect(controls.inputX).toBe(-1);
+    expect(shots).toHaveLength(1);
+  });
+
+  it('does not think a bot running at normal speed is stuck', () => {
+    const state = makeState();
+    const bot = makeBot('bot1', Team.NONE, 0, 0);
+    state.players = [bot as any, makeBot('enemy', Team.NONE, 3000, 0) as any];
+
+    let flew = false;
+    for (let tick = 0; tick < 240; tick++) {
+      bot.pos.x += 2; // ~240 px/s at 120 ticks/s
+      flew ||= updateBotAI(bot as any, state, 10_000 + tick * (1000 / 120), noFire).isFlying;
+    }
+    expect(flew).toBe(false);
+  });
+
+  it('jetpacks out when it tries to move but does not', () => {
+    const state = makeState();
+    const bot = makeBot('bot1', Team.NONE, 0, 0);
+    state.players = [bot as any, makeBot('enemy', Team.NONE, 3000, 0) as any];
+
+    let flew = false;
+    for (let tick = 0; tick < 240; tick++) {
+      flew ||= updateBotAI(bot as any, state, 10_000 + tick * (1000 / 120), noFire).isFlying;
+    }
+    expect(flew).toBe(true);
+  });
+
+  it('drops down to a goal below instead of hovering over it', () => {
+    const state = makeState();
+    const bot = { ...makeBot('bot1', Team.NONE, 0, 0), isGrounded: false };
+    state.players = [bot as any, makeBot('enemy', Team.NONE, 600, 400) as any];
+
+    expect(updateBotAI(bot as any, state, 10_000, noFire).isFlying).toBe(false);
   });
 });

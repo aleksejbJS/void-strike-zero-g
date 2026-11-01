@@ -16,7 +16,6 @@ export const DASH_COOLDOWN = 1100;
 export const DASH_FORCE = 10;
 
 // Bots tuning
-export const BOT_MOVE_SPEED = 0.28;
 export const BOT_AIM_DISTANCE = 900;
 export const BOT_VERTICAL_TOLERANCE = 300;
 export const BOT_FIRE_COOLDOWN_SCALE = 1.1;

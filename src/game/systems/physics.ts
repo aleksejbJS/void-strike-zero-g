@@ -166,9 +166,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 p.hasFlag = Team.NONE;
             }
         } else {
-            // Bot AI steers via velocity directly; it only tells us whether it is using the jetpack
-            const isFlying = updateBotAI(p, state, now, (bot, target) => fireWeapon(state, bot, target), state.mode);
-            controls = { inputX: 0, wantsJump: false, wantsDown: false, isFlying };
+            // Bots press the same controls a player has
+            const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
+            controls = { inputX: bot.inputX, wantsJump: false, wantsDown: false, isFlying: bot.isFlying };
         }
 
         // Force Pipeline — unified movement (gravity, input, jetpack, grapple, friction, speed caps)
