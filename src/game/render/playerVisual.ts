@@ -1,7 +1,7 @@
 // A player on screen: the fighter plus what hangs off it (grapple rope, carried flag).
 // The container sits at the player's feet; only the fighter inside it is mirrored.
 
-import { Container, Texture } from 'pixi.js';
+import { Container, Graphics, Texture } from 'pixi.js';
 import { Entity, Vector2 } from '../../types';
 import { createFighterView, drawFighter, FighterView } from './fighter/fighterView';
 import { FighterAnimator } from './fighter/fighterAnimator';
@@ -19,8 +19,11 @@ const animator = new FighterAnimator();
 export const createPlayerVisual = (p: Entity): Container => {
     const c = new Container();
     c.label = p.id;
+    // Soft contact shadow so a standing fighter sits on the deck instead of floating in front of it
+    const shadow = new Graphics().ellipse(0, 0, 22, 5).fill({ color: 0x000000, alpha: 0.45 });
+    shadow.label = 'contactShadow';
     const view = createFighterView();
-    c.addChild(view.root);
+    c.addChild(shadow, view.root);
     views.set(c, view);
     return c;
 };
@@ -50,6 +53,8 @@ export const updatePlayerVisual = (
 
     const frame = animator.frame(p, aimOf(p, camera, mouse, screenW, screenH, isLocal), now, textures);
     drawFighter(view, frame);
+    const shadow = c.getChildByLabel('contactShadow');
+    if (shadow) shadow.visible = p.isGrounded;
 
     const toWorld = (pt: Vector2) => ({ x: pt.x * frame.facing * RIG_SCALE, y: pt.y * RIG_SCALE });
     drawGrappleRope(c, p, toWorld(frame.pose.shoulderFront), now);

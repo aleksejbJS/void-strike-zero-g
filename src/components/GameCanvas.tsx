@@ -5,7 +5,8 @@ import { WEAPONS_DATA, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_L
 import { initAudio } from '../game/systems/audio';
 import { generateAssets } from '../game/systems/assets';
 import { updatePhysics } from '../game/systems/physics';
-import { drawStaticMap, drawBackground, syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
+import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
+import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { clearBotMemory } from '../game/systems/bot';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
@@ -338,6 +339,7 @@ export default function GameCanvas() {
 
         // Online match: the server (or the browser host) owns the simulation, we predict our own player
         let redrawMap: (() => void) | null = null;
+        let mapLook: MapLook | null = null;
         const isOnline = state.networkMode !== NetworkMode.OFFLINE;
         if (isOnline) {
             setNetError(null);
@@ -435,6 +437,8 @@ export default function GameCanvas() {
             worldContainer.addChild(platformLayer);
             worldContainer.addChild(gameLayer);
             app.stage.addChild(uiLayer);
+            const look = createMapLook({ stage: app.stage, world: worldContainer }, worldContainer, { platformLayer, backgroundLayer, cache: visualCache.current });
+            mapLook = look;
 
             // Subscribe to game events (kill feed, sounds)
             const unsubEvents = gameEvents.on((event) => {
@@ -473,8 +477,7 @@ export default function GameCanvas() {
 
                 gameState.current = makeInitialState();
                 initLevel();
-                drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
-                drawBackground(backgroundLayer, app.screen.width, app.screen.height);
+                look.redraw(gameState.current, app.screen.width, app.screen.height);
             };
 
             // Hunger Games HUD from the shared round state (same for offline and online)
@@ -686,9 +689,10 @@ export default function GameCanvas() {
             });
 
             // Draw static elements
-            redrawMap = () => drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
+            redrawMap = () => look.redraw(gameState.current, app.screen.width, app.screen.height);
             redrawMap();
-            drawBackground(backgroundLayer, app.screen.width, app.screen.height);
+            // Map look follows the camera after the frame's simulation and rendering
+            app.ticker.add(() => look.update(gameState.current.camera, Date.now(), app.screen.width, app.screen.height));
 
             // Load assets async
             const textures = await generateAssets();
@@ -696,7 +700,7 @@ export default function GameCanvas() {
             if (!isMounted) return;
             visualCache.current.textures = textures;
             // Redraw the map once textures are ready so tunnel tiles use real sprites
-            drawStaticMap(platformLayer, gameState.current.platforms, gameState.current.currentMap, visualCache.current);
+            look.texturesReady(gameState.current);
 
             // Upgrade already spawned pickups to use the newly loaded textures
             visualCache.current.pickups.forEach((container, id) => {
@@ -871,6 +875,7 @@ export default function GameCanvas() {
         return () => {
             isMounted = false;
             gameEvents.clear();
+            mapLook?.destroy(); // frees the baked map textures before the app goes away
             if (onKeyDown) window.removeEventListener('keydown', onKeyDown);
             if (onKeyUp) window.removeEventListener('keyup', onKeyUp);
             if (onMouseMove) window.removeEventListener('mousemove', onMouseMove);
