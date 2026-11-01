@@ -7,6 +7,7 @@ import { Entity, GameState, Projectile, WeaponType } from '../../types';
 import { gameEvents, GameEvent, EffectKind } from './events';
 import { nextId } from '../utils/id';
 import { createParticles, createRagdoll } from './effectSpawn';
+import { addMark } from './marks';
 
 // --- Emitters (called by the simulation) ---
 
@@ -82,6 +83,7 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
                     break;
                 case 'spark':
                     sparkAt(state, e.x, e.y, e.color ?? '#ffffff', e.count ?? 8);
+                    addMark(state.platforms, e.x, e.y);
                     break;
                 case 'respawn':
                     createParticles(state, e.x, e.y, 20, '#ffffff', 'spark');
