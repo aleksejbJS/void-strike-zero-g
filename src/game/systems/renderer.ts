@@ -5,25 +5,11 @@ import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
 import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../render/playerVisual';
 import { drawRagdollShape, placeRagdollPart } from '../render/ragdollView';
 import { nextHungerZone } from './gamemodes';
+import { ParticleView } from '../render/effects/particleView';
 
 // Performance optimizations
-const PARTICLE_POOL_SIZE = 100;
 const PROJECTILE_POOL_SIZE = 50;
-const particlePool: Graphics[] = [];
 const projectilePool: Graphics[] = [];
-
-const getPooledParticle = (): Graphics => {
-    return particlePool.pop() || new Graphics();
-};
-
-const returnPooledParticle = (particle: Graphics): void => {
-    if (particlePool.length < PARTICLE_POOL_SIZE) {
-        particle.clear();
-        particlePool.push(particle);
-    } else {
-        particle.destroy();
-    }
-};
 
 const getPooledProjectile = (): Graphics => {
     return projectilePool.pop() || new Graphics();
@@ -542,26 +528,9 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         }
     });
 
-    // Particles - Optimized with object pooling
-    for (const [id, gfx] of cache.particles.entries()) {
-        if (!state.particles.find(p => p.id === id)) {
-            gameLayer.removeChild(gfx);
-            returnPooledParticle(gfx);
-            cache.particles.delete(id);
-        }
-    }
-    state.particles.forEach(p => {
-        let gfx = cache.particles.get(p.id);
-        if (!gfx) {
-            gfx = getPooledParticle();
-            gameLayer.addChild(gfx);
-            cache.particles.set(p.id, gfx);
-        }
-        gfx.clear(); gfx.alpha = p.life;
-        if (p.type === 'shell') { gfx.rect(-2, -1, 4, 2).fill(0xfbbf24); gfx.rotation = p.rotation || 0; }
-        else { gfx.rect(0, 0, p.size, p.size).fill(p.color); }
-        gfx.position.set(p.pos.x, p.pos.y);
-    });
+    // Particles: pooled sprites and graphics, one per live particle
+    cache.particleView ??= new ParticleView(gameLayer);
+    cache.particleView.sync(state.particles);
 
     // Floating Text
     for (const [id, txt] of cache.floatingTexts.entries()) { if (!state.floatingTexts.find(t => t.id === id)) { gameLayer.removeChild(txt); txt.destroy(); cache.floatingTexts.delete(id); } }

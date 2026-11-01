@@ -7,6 +7,7 @@ import { generateAssets } from '../game/systems/assets';
 import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
 import { drawBotPaths } from '../game/render/botPathOverlay';
+import { ParticleView } from '../game/render/effects/particleView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
@@ -91,7 +92,7 @@ export default function GameCanvas() {
     const visualCache = useRef({
         players: new Map(),
         projectiles: new Map(),
-        particles: new Map(),
+        particleView: null as ParticleView | null,
         pickups: new Map(),
         decals: new Map(),
         floatingTexts: new Map(),
@@ -471,7 +472,9 @@ export default function GameCanvas() {
             const restartRound = () => {
                 visualCache.current.players.clear();
                 visualCache.current.projectiles.clear();
-                visualCache.current.particles.clear();
+                // The layer is emptied below; the renderer builds a fresh particle view next frame
+                visualCache.current.particleView?.clear();
+                visualCache.current.particleView = null;
                 visualCache.current.pickups.clear();
                 visualCache.current.decals.clear();
                 visualCache.current.floatingTexts.clear();
@@ -911,7 +914,8 @@ export default function GameCanvas() {
             // Clear visual cache to prevent reusing dead sprites
             visualCache.current.players.clear();
             visualCache.current.projectiles.clear();
-            visualCache.current.particles.clear();
+            visualCache.current.particleView?.clear();
+            visualCache.current.particleView = null;
             visualCache.current.pickups.clear();
             visualCache.current.decals.clear();
             sessionRef.current?.dispose();
