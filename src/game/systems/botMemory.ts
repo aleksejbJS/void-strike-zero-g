@@ -15,6 +15,7 @@ export interface BotMemory {
     progressCheckAt: number;
     progressPos: Vector2;   // position at the previous progress check
     unstickUntil: number;   // jetpack out of a stuck spot until this time
+    fireAllowedAt: number;  // reaction time: no shots at a freshly spotted target before this
 }
 
 // Progress is judged over a time window, not per tick: at 120 ticks/s a running
@@ -22,6 +23,11 @@ export interface BotMemory {
 export const BOT_PROGRESS_CHECK_MS = 500;
 export const BOT_MIN_PROGRESS = 15; // px per window while trying to move
 export const BOT_UNSTICK_MS = 400;
+
+// How long a bot takes to open fire on a target it has just spotted (a human takes about as long)
+const REACTION_MIN_MS = 400;
+const REACTION_MAX_MS = 900;
+export const reactionDelay = () => REACTION_MIN_MS + Math.random() * (REACTION_MAX_MS - REACTION_MIN_MS);
 
 const botMemory = new Map<string, BotMemory>();
 
@@ -39,6 +45,7 @@ export const getBotMemory = (bot: Entity, mode?: GameMode): BotMemory => {
             progressCheckAt: 0,
             progressPos: { ...bot.pos },
             unstickUntil: 0,
+            fireAllowedAt: 0,
         };
         botMemory.set(bot.id, mem);
     }

@@ -4,7 +4,7 @@ import { Entity, GameState, Vector2 } from '../../types';
 import { BOT_AIM_DISTANCE } from '../../constants';
 import { distance, normalize, checkPointInRect } from '../utils/math';
 import { isTeammate } from './combat';
-import { BotMemory } from './botMemory';
+import { BotMemory, reactionDelay } from './botMemory';
 
 // Re-picking a target only this often also works as the bot's reaction time
 const BOT_SCAN_INTERVAL_MS = 200;
@@ -46,6 +46,8 @@ export const senseTarget = (state: GameState, bot: Entity, mem: BotMemory, now: 
     if (now >= mem.nextScanAt) {
         mem.nextScanAt = now + BOT_SCAN_INTERVAL_MS;
         const { target, visible } = pickTarget(state, bot);
+        const spotted = visible && (target?.id !== mem.targetId || !mem.targetVisible);
+        if (spotted) mem.fireAllowedAt = now + reactionDelay();
         mem.targetId = target?.id ?? null;
         mem.targetVisible = visible;
     }
