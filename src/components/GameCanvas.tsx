@@ -27,8 +27,9 @@ import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
-import { createHungerZone, hungerSpawnPoint, isHungerRoundOver, hungerTimeLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
+import { createHungerZone, hungerSpawnPoint, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
+import { nextId } from '../game/utils/id';
 
 type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
 
@@ -124,6 +125,7 @@ export default function GameCanvas() {
     const [hungerRestartCountdown, setHungerRestartCountdown] = React.useState<number | null>(null);
     const [hungerTimeLeftSec, setHungerTimeLeftSec] = React.useState<number | null>(null);
     const [hungerTimeUp, setHungerTimeUp] = React.useState(false);
+    const [hungerFightIn, setHungerFightIn] = React.useState<number | null>(null);
     // Loop-owned values live in refs: the Pixi ticker closure never sees fresh React state
     const hungerWinnerShownRef = useRef(false);
     const hungerAliveKeyRef = useRef('');
@@ -438,7 +440,7 @@ export default function GameCanvas() {
             const unsubEvents = gameEvents.on((event) => {
                 if (event.type === 'KILL') {
                     setKillFeed((prev: any) => [...prev.slice(-4), {
-                        id: `kf_${Date.now()}`,
+                        id: nextId('kf_'), // two kills can land in the same millisecond
                         killer: event.killer,
                         killerColor: event.killerColor,
                         weapon: event.weapon,
@@ -499,6 +501,8 @@ export default function GameCanvas() {
                 setHungerRestartCountdown(roundOver ? Math.max(0, Math.ceil((gs.hungerRoundEndsAt! - now) / 1000)) : null);
                 const timeLeft = hungerTimeLeft(gs, now);
                 setHungerTimeLeftSec(timeLeft === null ? null : Math.ceil(timeLeft / 1000));
+                const shield = hungerShieldLeft(gs, now);
+                setHungerFightIn(shield > 0 ? Math.ceil(shield / 1000) : null);
 
                 const local = gs.players.find(p => p.id === localIdRef.current);
                 setIsLocalDead(!!local?.dead);
@@ -959,6 +963,8 @@ export default function GameCanvas() {
                     timeLeftSec: hungerTimeLeftSec,
                     shrinkSec: hungerShrinkCountdown,
                     restartSec: hungerRestartCountdown,
+                    fightInSec: hungerFightIn,
+                    winnerId: hungerWinnerId,
                     localDead: isLocalDead,
                     alive: hungerAlive,
                     onBet: placeHungerBet,

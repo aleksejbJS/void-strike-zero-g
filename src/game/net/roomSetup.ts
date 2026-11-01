@@ -104,8 +104,8 @@ export const resetHungerRound = (state: GameState, now: number) => {
         state.players.splice(botIndex, 1);
     }
 
+    state.hungerZone = createHungerZone(now); // resets spawn spots, so before respawning
     respawnEveryone(state);
-    state.hungerZone = createHungerZone(now);
     state.hungerWinnerId = null;
     state.hungerRoundEndsAt = undefined;
     state.hungerRoundStartedAt = now;

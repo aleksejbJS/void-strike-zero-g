@@ -2,6 +2,7 @@
 
 import { Entity, GameState, ItemType, Pickup, Weapon, WeaponType } from '../../types';
 import { distance } from '../utils/math';
+import { insideZone } from './hungerRound';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
@@ -33,7 +34,7 @@ export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null =
     let best: Pickup | null = null;
     let bestDist = Infinity;
     state.pickups.forEach(item => {
-        if (!item.active || item.type !== ItemType.WEAPON || !item.subtype) return;
+        if (!item.active || item.type !== ItemType.WEAPON || !item.subtype || !insideZone(state, item.pos)) return;
         const existing = bot.inventory.find(w => w.type === item.subtype);
         const needsAmmo = existing ? existing.ammo < existing.maxAmmo * 0.4 : true;
         if (!existing && item.subtype === WeaponType.MACHINE_GUN) return; // skip default gun duplicates

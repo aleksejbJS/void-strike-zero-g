@@ -5,6 +5,7 @@ import { distance } from '../utils/math';
 import { EXTRACTION_ZONE, getWaypoints } from '../data/level';
 import { BotMemory } from './botMemory';
 import { findWeaponPickup } from './botWeapons';
+import { insideZone } from './hungerRound';
 
 export interface BotGoal {
     moveTarget: Vector2;
@@ -18,7 +19,7 @@ const nearestPickup = (state: GameState, bot: Entity, type: ItemType): Pickup | 
     let best: Pickup | null = null;
     let bestDist = Infinity;
     state.pickups.forEach(item => {
-        if (!item.active || item.type !== type) return;
+        if (!item.active || item.type !== type || !insideZone(state, item.pos)) return;
         const d = distance(bot.pos, item.pos);
         if (d < bestDist) { bestDist = d; best = item; }
     });
@@ -98,7 +99,7 @@ const OBJECTIVES: Partial<Record<GameMode, typeof ctfGoal>> = {
 export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, mode?: GameMode): BotGoal => {
     // Hunger Games: get back inside the zone before anything else
     const hz = state.mode === GameMode.HUNGER_GAMES ? state.hungerZone : undefined;
-    if (hz && !(bot.pos.x > hz.x && bot.pos.x < hz.x + hz.w && bot.pos.y > hz.y && bot.pos.y < hz.y + hz.h)) {
+    if (hz && !insideZone(state, bot.pos)) {
         mem.state = 'retreat';
         return { moveTarget: { x: hz.x + hz.w / 2, y: hz.y + hz.h / 2 }, target };
     }

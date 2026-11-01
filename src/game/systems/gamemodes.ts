@@ -1,7 +1,7 @@
 // Game mode specific logic extracted from physics.ts
 
 import { GameState, Entity, WeaponType, ItemType, Team, GameMode } from '../../types';
-import { WEAPONS_DATA, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL, HUNGER_SHRINK_STEP, HUNGER_SHRINK_DELAY, HUNGER_MIN_ZONE } from '../../constants';
+import { WEAPONS_DATA, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL, HUNGER_SHRINK_STEP, HUNGER_SHRINK_DELAY, HUNGER_MIN_ZONE, HUNGER_QUIET_SHRINK } from '../../constants';
 import { emitText } from './effects';
 import { baseFlagPos } from '../data/level';
 
@@ -45,28 +45,42 @@ export const handleGunGameDeath = (target: Entity) => {
 };
 
 // Hunger Games: each death queues a shrink that fires HUNGER_SHRINK_DELAY later
-export const scheduleHungerZoneShrink = (state: GameState, now: number) => {
+export const scheduleHungerZoneShrink = (state: GameState, now: number, steps = 1) => {
     const hz = state.hungerZone;
     if (!hz) return;
     if (!hz.pendingShrink) {
         hz.pendingShrink = true;
         hz.nextShrinkAt = now + HUNGER_SHRINK_DELAY;
-        hz.pendingCount = 1;
+        hz.pendingCount = steps;
     } else {
-        hz.pendingCount = (hz.pendingCount || 1) + 1;
+        hz.pendingCount = (hz.pendingCount || 1) + steps;
     }
 };
 
-// Called every tick so the zone shrinks on time even if nobody else dies
+// A quiet shrink closes in as far as two deaths would: a round of nobody dying
+// reaches the smallest zone in about 3.5 minutes
+const QUIET_SHRINK_STEPS = 2;
+
+// Called every tick: fires queued shrinks, and queues one when nobody has died for a while
+// so quiet rounds still close in (with the usual warning countdown)
 export const tickHungerZoneShrink = (state: GameState, now: number) => {
     const hz = state.hungerZone;
-    if (!hz || !hz.pendingShrink || !hz.nextShrinkAt || now < hz.nextShrinkAt) return;
+    if (!hz) return;
+    const canShrink = hz.w > HUNGER_MIN_ZONE || hz.h > HUNGER_MIN_ZONE;
+    if (canShrink && !hz.pendingShrink && now - (hz.lastShrink ?? now) >= HUNGER_QUIET_SHRINK - HUNGER_SHRINK_DELAY) {
+        scheduleHungerZoneShrink(state, now, QUIET_SHRINK_STEPS);
+    }
+    if (!hz.pendingShrink || !hz.nextShrinkAt || now < hz.nextShrinkAt) return;
 
+    // Sides close in around the center, the ceiling comes down; the bottom stays at the
+    // arena floor so fighters always have ground to stand on
     const totalShrink = HUNGER_SHRINK_STEP * Math.max(1, hz.pendingCount || 1);
-    hz.x += totalShrink;
-    hz.y += totalShrink;
+    const centerX = hz.x + hz.w / 2;
+    const bottom = hz.y + hz.h;
     hz.w = Math.max(HUNGER_MIN_ZONE, hz.w - totalShrink * 2);
-    hz.h = Math.max(HUNGER_MIN_ZONE, hz.h - totalShrink * 2);
+    hz.h = Math.max(HUNGER_MIN_ZONE, hz.h - totalShrink);
+    hz.x = centerX - hz.w / 2;
+    hz.y = bottom - hz.h;
     hz.lastShrink = now;
     hz.pendingShrink = false;
     hz.nextShrinkAt = undefined;

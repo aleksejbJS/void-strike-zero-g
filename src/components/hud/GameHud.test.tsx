@@ -88,7 +88,7 @@ describe('GameHud', () => {
         const onBet = vi.fn();
         render(<GameHud {...base({ mode: GameMode.HUNGER_GAMES, hunger: {
             credits: 100, betTarget: null, winner: null, ended: false, timeUp: false, timeLeftSec: 192, shrinkSec: null,
-            restartSec: null, localDead: true, alive: [{ id: 'b2', name: 'Bot 2' }], onBet,
+            restartSec: null, fightInSec: null, winnerId: null, localDead: true, alive: [{ id: 'b2', name: 'Bot 2' }], onBet,
         } })} />);
         expect(screen.getByText('Round ends in 3:12')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Bot 2' }));

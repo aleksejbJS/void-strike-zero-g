@@ -9,6 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry, segmentInterse
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
+import { hungerShieldLeft } from './hungerRound';
 
 // --- Teams ---
 
@@ -56,6 +57,8 @@ export const resolveCollision = (p: Entity, plat: Platform) => {
 
 export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, knockbackForce = 0) => {
     if (target.dead) return;
+    // Falling out of the map still kills; everything else waits for the round-start shield
+    if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
 
     // Self-damage multiplier (rocket-jump)
     const isSelf = attackerId === target.id;

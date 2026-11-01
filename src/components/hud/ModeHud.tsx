@@ -15,13 +15,25 @@ export interface HungerHudState {
     timeLeftSec: number | null;
     shrinkSec: number | null;
     restartSec: number | null;
+    fightInSec: number | null; // round-start shield countdown
+    winnerId: string | null;
     localDead: boolean;
     alive: { id: string; name: string }[];
     onBet: (id: string) => void;
 }
 
+/** Round ranking with the winner on top (the list is sorted by kills, the last survivor may have fewer). */
+const winnerFirst = (ranking: PlayerScore[], winnerId: string | null) =>
+    winnerId ? [...ranking.filter(p => p.id === winnerId), ...ranking.filter(p => p.id !== winnerId)] : ranking;
+
 export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: PlayerScore[] }> = ({ t, s, ranking }) => (
     <>
+        {s.fightInSec !== null && !s.ended && (
+            <div role="status" className="pointer-events-none absolute inset-x-0 top-[28%] z-40 flex flex-col items-center gap-1">
+                <span className="font-display text-6xl font-black text-bay-hazard drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">{t('hud.fightIn', s.fightInSec)}</span>
+                <span className="rounded bg-bay-ink/80 px-2 py-0.5 text-sm text-bay-dust">{t('hud.shieldHint')}</span>
+            </div>
+        )}
         <div className={`${PANEL} pointer-events-none absolute left-1/2 top-6 z-40 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-sm`}>
             <span className="font-semibold text-lime-300">{t('hud.credits', s.credits)}</span>
             <span className="text-bay-dust">{s.betTarget ? t('hud.betPlaced', s.betTarget) : t('hud.betHint')}</span>
@@ -54,7 +66,7 @@ export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: Pla
                     <div className="mt-2 w-full px-6">
                         <div className="mb-1 font-display text-lg font-extrabold">{t('hud.finalRanking')}</div>
                         <ol className="m-0 flex list-none flex-col gap-0.5 p-0 text-sm">
-                            {ranking.map((p, i) => (
+                            {winnerFirst(ranking, s.winnerId).map((p, i) => (
                                 <li key={p.id} className="flex justify-between"><span className={i === 0 ? 'font-semibold text-bay-hazard' : ''}>{i + 1}. {p.name}</span><span>{p.score}</span></li>
                             ))}
                         </ol>

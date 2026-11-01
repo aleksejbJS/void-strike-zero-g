@@ -30,6 +30,8 @@ export interface HudKeys {
     'hud.roundEnds': string;
     'hud.zoneShrinks': string;
     'hud.nextRound': string;
+    'hud.fightIn': string;
+    'hud.shieldHint': string;
     'hud.timeUp': string;
     'hud.finalRanking': string;
     'hud.placeBet': string;
@@ -74,6 +76,8 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.roundEnds': 'Round ends in {0}',
         'hud.zoneShrinks': 'Zone shrinks in {0}s',
         'hud.nextRound': 'Next round in {0}s',
+        'hud.fightIn': 'Fight in {0}',
+        'hud.shieldHint': 'Nobody can be hurt yet: pick your spot',
         'hud.timeUp': "Time's up",
         'hud.finalRanking': 'Final ranking',
         'hud.placeBet': 'Bet 100 credits on a survivor',
@@ -116,6 +120,8 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.roundEnds': 'До конца раунда {0}',
         'hud.zoneShrinks': 'Зона сузится через {0} с',
         'hud.nextRound': 'Следующий раунд через {0} с',
+        'hud.fightIn': 'Бой через {0}',
+        'hud.shieldHint': 'Пока никто не получает урон — выберите позицию',
         'hud.timeUp': 'Время вышло',
         'hud.finalRanking': 'Итоги раунда',
         'hud.placeBet': 'Поставьте 100 кредитов на выжившего',

@@ -58,8 +58,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         }
     });
 
-    // Hunger Games shrinking zone damage
-    if (state.mode === GameMode.HUNGER_GAMES && state.hungerZone) {
+    // Hunger Games shrinking zone damage (frozen once the round is decided)
+    if (state.mode === GameMode.HUNGER_GAMES && state.hungerZone && !state.hungerRoundEndsAt) {
         tickHungerZoneShrink(state, now);
         const hz = state.hungerZone;
         const graceShrink = hz.lastShrink ? now - hz.lastShrink < 800 : false;
