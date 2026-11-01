@@ -1,0 +1,33 @@
+/* Hazard Bay UI: shared stripes and the menu's mode-preview animations */
+
+.hazard-stripes {
+    background: repeating-linear-gradient(-45deg, #FFC21A 0 16px, #1A1D21 16px 32px);
+}
+
+.hazard-stripes-sm {
+    background: repeating-linear-gradient(-45deg, #FFC21A 0 8px, #1A1D21 8px 16px);
+}
+
+/* A platform as drawn in the game: steel top over hazard tape */
+.hazard-platform {
+    background: repeating-linear-gradient(-45deg, #FFC21A 0 8px, #1A1D21 8px 16px);
+    box-shadow: inset 0 10px 0 #4A525E;
+}
+
+.fuel-stripes {
+    background: repeating-linear-gradient(-45deg, #FFC21A 0 6px, #E0A800 6px 12px);
+}
+
+@keyframes hb-fly-a { 0% { transform: translate(0, 0) } 40% { transform: translate(110px, -80px) } 70% { transform: translate(170px, -30px) } 100% { transform: translate(0, 0) } }
+@keyframes hb-fly-b { 0% { transform: translate(0, 0) } 35% { transform: translate(-120px, -50px) } 70% { transform: translate(-60px, 20px) } 100% { transform: translate(0, 0) } }
+@keyframes hb-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+@keyframes hb-tracer-r { 0% { opacity: 0; transform: translateX(0) } 10% { opacity: 1 } 70%, 100% { opacity: 0; transform: translateX(230px) } }
+@keyframes hb-tracer-l { 0% { opacity: 0; transform: translateX(0) } 10% { opacity: 1 } 70%, 100% { opacity: 0; transform: translateX(-200px) } }
+@keyframes hb-pop { 0%, 55% { opacity: 0; transform: translateY(0) } 65% { opacity: 1 } 100% { opacity: 0; transform: translateY(-26px) } }
+@keyframes hb-carry { 0% { transform: translate(0, 0) } 45% { transform: translate(-260px, -70px) } 90%, 100% { transform: translate(-520px, 0) } }
+@keyframes hb-chase { 0% { transform: translate(0, 0) } 45% { transform: translate(-220px, -110px) } 90%, 100% { transform: translate(-450px, -20px) } }
+@keyframes hb-shrink { from { transform: scale(1) } to { transform: scale(0.62) } }
+
+@media (prefers-reduced-motion: reduce) {
+    .hb-anim { animation: none !important; }
+}

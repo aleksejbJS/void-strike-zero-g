@@ -5,7 +5,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Void Strike: Zero G</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600&family=Fira+Sans+Extra+Condensed:wght@700;800;900&family=Fira+Sans:wght@400;500;600&display=swap">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // "Hazard Bay" UI theme: station steel + hazard-tape yellow, taken from the in-game platforms
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bay: {
+              ink: '#1A1D21', panel: '#22262C', steel: '#2B3038', plate: '#3C434D', edge: '#4A525E',
+              hazard: '#FFC21A', signal: '#FF4D2E', chalk: '#ECE9E2', dust: '#B7B2A8', deep: '#0E1116',
+            },
+          },
+          fontFamily: {
+            // Big Shoulders and Barlow have no Cyrillic: Russian text falls back to Fira per glyph
+            display: ['"Big Shoulders Display"', '"Fira Sans Extra Condensed"', 'sans-serif'],
+            body: ['Barlow', '"Fira Sans"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
   <style>
     body {
       margin: 0;

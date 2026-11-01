@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import GameCanvas from './components/GameCanvas';
-import MainMenu from './components/MainMenu';
+import MainMenu from './components/menu/MainMenu';
 import PlayerCustomization from './components/PlayerCustomization';
 import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
