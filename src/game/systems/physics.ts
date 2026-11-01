@@ -326,9 +326,10 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
-            // A bullet into a fighter draws blood; into a wall (and any explosive) it throws sparks
-            if (hitFighter && !explosive) emitEffect('blood', proj.pos.x, proj.pos.y, '#ef4444', 6);
-            else emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
+            // Any weapon hitting a fighter draws blood; a wall hit throws sparks. An explosive keeps its
+            // own spark either way (it is part of the blast, not of the hit).
+            if (hitFighter) emitEffect('blood', proj.pos.x, proj.pos.y, '#ef4444', 6);
+            if (explosive || !hitFighter) emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
         }
     });
     state.projectiles = state.projectiles.filter(p => p.active);

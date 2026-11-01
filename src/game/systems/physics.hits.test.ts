@@ -104,6 +104,23 @@ describe('Hit effects', () => {
     });
 });
 
+describe('Direct explosive hits', () => {
+    it('a rocket hitting a fighter announces blood and still explodes with its usual spark', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const victim = createMockPlayer('victim', Team.NONE);
+        victim.pos = { x: 100, y: 100 };
+        state.players.push(victim);
+        state.projectiles.push({ id: 'r', ownerId: 'shooter', type: WeaponType.ROCKET_LAUNCHER, pos: { x: 80, y: 70 }, vel: { x: 14, y: 0 }, active: true, radius: 4 });
+
+        tick(state);
+
+        expect(effects().map(e => e.effect)).toEqual(['explosion', 'blood', 'spark']);
+        expect(effects()[1]).toMatchObject({ color: '#ef4444', count: 6 });
+        expect(effects()[1].x).toBeGreaterThanOrEqual(85); // victim's hitbox left edge
+        expect(effects()[2]).toMatchObject({ color: WEAPONS_DATA[WeaponType.ROCKET_LAUNCHER].color, count: 8 });
+    });
+});
+
 describe('Rail shot effects', () => {
     const railFixture = () => {
         const state = createMockState(GameMode.DEATHMATCH);
