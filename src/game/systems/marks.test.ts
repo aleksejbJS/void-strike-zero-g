@@ -23,9 +23,15 @@ describe('placeMark', () => {
         expect(placeMark([floor], 50, 50)).toBeNull();
     });
 
-    it('treats a point on the boundary as outside', () => {
-        expect(placeMark([floor], 50, 100)).toBeNull();
-        expect(placeMark([floor], 0, 120)).toBeNull();
+    it('keeps a point that lies exactly on the boundary where it is', () => {
+        expect(placeMark([floor], 50, 100)).toEqual({ x: 50, y: 100 });
+        expect(placeMark([floor], 0, 120)).toEqual({ x: 0, y: 120 });
+        expect(placeMark([floor], 200, 150)).toEqual({ x: 200, y: 150 }); // a corner
+    });
+
+    it('still makes no mark just outside the boundary', () => {
+        expect(placeMark([floor], 50, 99.999)).toBeNull();
+        expect(placeMark([floor], -0.001, 120)).toBeNull();
     });
 });
 
@@ -73,6 +79,18 @@ describe('marks list', () => {
 });
 
 describe('spark events leave scorch marks', () => {
+    it('a rail-style hit exactly on a wall edge leaves a mark at that point', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const wall: Platform = { id: 'w', x: 100, y: 0, w: 40, h: 300, color: '' };
+        state.platforms.push(wall);
+
+        applyEffectEvent(state, { type: 'EFFECT', effect: 'spark', x: wall.x, y: 150, color: '#38bdf8', count: 10 });
+
+        const marks = liveMarks(Date.now());
+        expect(marks).toHaveLength(1);
+        expect(marks[0]).toMatchObject({ x: 100, y: 150 });
+    });
+
     it('a spark inside a platform makes one mark on its edge', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         state.platforms.push(floor);
