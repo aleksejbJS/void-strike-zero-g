@@ -84,8 +84,8 @@ export const Tracer: React.FC<{ x: number; y: number; color: string; dir: 'r' | 
 );
 
 /** Floating "+1" style pop-up. */
-export const Pop: React.FC<{ x: number; y: number; text: string; duration: string }> = ({ x, y, text, duration }) => (
-    <div className="hb-anim absolute font-display text-[22px] font-black text-bay-hazard" style={{ left: x, top: y, animation: `hb-pop ${duration} ease-out infinite` }}>{text}</div>
+export const Pop: React.FC<{ x: number; y: number; text: string; duration: string; delay?: string }> = ({ x, y, text, duration, delay = '0s' }) => (
+    <div className="hb-anim absolute font-display text-[22px] font-black text-bay-hazard" style={{ left: x, top: y, animation: `hb-pop ${duration} ease-out ${delay} infinite` }}>{text}</div>
 );
 
 /** Dark info box pinned inside the stage. */

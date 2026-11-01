@@ -39,7 +39,8 @@ export interface HazardKeys {
     'pv.blue': string;
     'pv.red': string;
     'pv.extraction': string;
-    'pv.redHolds': string;
+    'pv.infGoal': string;
+    'pv.intel': string;
     'pv.alive': string;
     'pv.roundEnds': string;
 }
@@ -81,7 +82,8 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'pv.blue': 'Blue',
         'pv.red': 'Red',
         'pv.extraction': 'Extraction',
-        'pv.redHolds': 'Red holds for {0}',
+        'pv.infGoal': 'Blue: bring the intel out · Red: hold for {0}',
+        'pv.intel': 'Intel',
         'pv.alive': 'Alive {0}',
         'pv.roundEnds': 'Round ends in {0}',
     },
@@ -121,7 +123,8 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'pv.blue': 'Синие',
         'pv.red': 'Красные',
         'pv.extraction': 'Эвакуация',
-        'pv.redHolds': 'Красным держаться {0}',
+        'pv.infGoal': 'Синие: вынести данные · Красные: продержаться {0}',
+        'pv.intel': 'Данные',
         'pv.alive': 'Живы {0}',
         'pv.roundEnds': 'До конца раунда {0}',
     },

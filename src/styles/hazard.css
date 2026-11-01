@@ -26,6 +26,11 @@
 @keyframes hb-pop { 0%, 55% { opacity: 0; transform: translateY(0) } 65% { opacity: 1 } 100% { opacity: 0; transform: translateY(-26px) } }
 @keyframes hb-carry { 0% { transform: translate(0, 0) } 45% { transform: translate(-260px, -70px) } 90%, 100% { transform: translate(-520px, 0) } }
 @keyframes hb-chase { 0% { transform: translate(0, 0) } 45% { transform: translate(-220px, -110px) } 90%, 100% { transform: translate(-450px, -20px) } }
+/* Infiltration: walk to the case, grab it, fly left, land in extraction, vanish and restart */
+@keyframes hb-inf-run { 0% { transform: translate(0, 0) } 16%, 22% { transform: translate(44px, 0) } 34% { transform: translate(10px, -100px) } 58% { transform: translate(-334px, -100px) } 74%, 100% { transform: translate(-334px, 0) } }
+@keyframes hb-inf-thief { 0%, 90% { opacity: 1 } 95%, 100% { opacity: 0 } }
+@keyframes hb-inf-held { 0%, 18% { opacity: 0 } 20%, 90% { opacity: 1 } 95%, 100% { opacity: 0 } }
+@keyframes hb-inf-case { 0%, 18% { opacity: 1 } 20%, 96% { opacity: 0 } 100% { opacity: 1 } }
 @keyframes hb-shrink { from { transform: scale(1) } to { transform: scale(0.62) } }
 
 @media (prefers-reduced-motion: reduce) {
