@@ -61,6 +61,20 @@ export const scheduleHungerZoneShrink = (state: GameState, now: number, steps = 
 // reaches the smallest zone in about 3.5 minutes
 const QUIET_SHRINK_STEPS = 2;
 
+type ZoneRect = { x: number; y: number; w: number; h: number; pendingCount?: number };
+
+/**
+ * The zone after the queued shrink (also drawn as the warning outline): sides close in
+ * around the center, the ceiling comes down, the bottom stays at the arena floor so
+ * fighters always have ground to stand on.
+ */
+export const nextHungerZone = (hz: ZoneRect) => {
+    const totalShrink = HUNGER_SHRINK_STEP * Math.max(1, hz.pendingCount || 1);
+    const w = Math.max(HUNGER_MIN_ZONE, hz.w - totalShrink * 2);
+    const h = Math.max(HUNGER_MIN_ZONE, hz.h - totalShrink);
+    return { x: hz.x + hz.w / 2 - w / 2, y: hz.y + hz.h - h, w, h };
+};
+
 // Called every tick: fires queued shrinks, and queues one when nobody has died for a while
 // so quiet rounds still close in (with the usual warning countdown)
 export const tickHungerZoneShrink = (state: GameState, now: number) => {
@@ -72,15 +86,7 @@ export const tickHungerZoneShrink = (state: GameState, now: number) => {
     }
     if (!hz.pendingShrink || !hz.nextShrinkAt || now < hz.nextShrinkAt) return;
 
-    // Sides close in around the center, the ceiling comes down; the bottom stays at the
-    // arena floor so fighters always have ground to stand on
-    const totalShrink = HUNGER_SHRINK_STEP * Math.max(1, hz.pendingCount || 1);
-    const centerX = hz.x + hz.w / 2;
-    const bottom = hz.y + hz.h;
-    hz.w = Math.max(HUNGER_MIN_ZONE, hz.w - totalShrink * 2);
-    hz.h = Math.max(HUNGER_MIN_ZONE, hz.h - totalShrink);
-    hz.x = centerX - hz.w / 2;
-    hz.y = bottom - hz.h;
+    Object.assign(hz, nextHungerZone(hz));
     hz.lastShrink = now;
     hz.pendingShrink = false;
     hz.nextShrinkAt = undefined;

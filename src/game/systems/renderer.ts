@@ -4,6 +4,7 @@ import { GameState, Platform, Entity, WeaponType, ItemType, Pickup, Team, MapId 
 import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
 import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../render/playerVisual';
 import { drawRagdollShape, placeRagdollPart } from '../render/ragdollView';
+import { nextHungerZone } from './gamemodes';
 
 // Performance optimizations
 const PARTICLE_POOL_SIZE = 100;
@@ -192,12 +193,8 @@ export const drawZoneOverlay = (layer: Graphics, hungerZone: any, time: number =
 
     // 4. Next zone preview (if shrinking soon)
     if (hz.pendingShrink) {
-        const shrink = 250 * (hz.pendingCount || 1);
-        const minSize = 1200;
-        const nx = hz.x + shrink;
-        const ny = hz.y + shrink;
-        const nw = Math.max(minSize, hz.w - shrink * 2);
-        const nh = Math.max(minSize, hz.h - shrink * 2);
+        // Same rule as the real shrink, so the warning shows exactly where the zone goes
+        const { x: nx, y: ny, w: nw, h: nh } = nextHungerZone(hz);
 
         // Warning pulse - faster when shrinking is imminent
         const warningPulse = 0.3 + Math.sin(t * 5) * 0.25;
