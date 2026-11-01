@@ -4,11 +4,11 @@ import { Weapon, WeaponType, ItemType } from './types';
 export const GRAVITY = 0.36;
 export const GROUND_FRICTION = 0.85;       // harder stop on ground (was 0.9)
 export const AIR_RESISTANCE = 0.995;       // longer arcs in air (was 0.99)
-export const MOVE_SPEED = 0.35;             // compensates GROUND_FRICTION 0.85 → steady ~2.3
-export const CROUCH_SPEED = 0.20;
+export const MOVE_SPEED = 0.70;            // with GROUND_FRICTION 0.85 → runs ~240 px/s
+export const CROUCH_SPEED = 0.40;          // ~135 px/s
 export const JUMP_FORCE = -14;
 export const DOUBLE_JUMP_FORCE = -10;
-export const SOFT_SPEED_CAP = 3.2;         // soft limit — gradual decay above
+export const SOFT_SPEED_CAP = 4.8;         // soft limit — gradual decay above
 export const HARD_SPEED_CAP = 8.0;         // absolute ceiling for rocket-jump
 export const SPEED_DECAY_ABOVE_CAP = 0.98; // decay per tick above soft cap
 export const AIR_STRAFE_FORCE = 0.08;      // weak air control without jetpack
