@@ -1,8 +1,8 @@
 // Per-bot memory kept between ticks: current goal, chosen target and progress tracking.
 
-import { Entity, GameMode, Vector2 } from '../../types';
+import { Entity, Vector2 } from '../../types';
 import { distance } from '../utils/math';
-import { getWaypoints } from '../data/level';
+import { BotMoves, BotNav, newBotMoves, newBotNav } from './botNavState';
 
 export type BotState = 'hunt' | 'defend' | 'retreat' | 'flag-run' | 'roam';
 
@@ -11,11 +11,12 @@ export interface BotMemory {
     targetId: string | null;
     targetVisible: boolean; // as of the last look around
     nextScanAt: number;     // when the bot looks around for a target again
-    roamIndex: number;
     progressCheckAt: number;
     progressPos: Vector2;   // position at the previous progress check
     unstickUntil: number;   // jetpack out of a stuck spot until this time
     fireAllowedAt: number;  // reaction time: no shots at a freshly spotted target before this
+    nav: BotNav;            // route on the navigation graph
+    moves: BotMoves;        // strafe, dodge and escape timing
 }
 
 // Progress is judged over a time window, not per tick: at 120 ticks/s a running
@@ -33,7 +34,10 @@ const botMemory = new Map<string, BotMemory>();
 
 export const clearBotMemory = () => botMemory.clear();
 
-export const getBotMemory = (bot: Entity, mode?: GameMode): BotMemory => {
+/** A bot's memory if it has one, without creating it (debug overlay). */
+export const peekBotMemory = (id: string): BotMemory | undefined => botMemory.get(id);
+
+export const getBotMemory = (bot: Entity): BotMemory => {
     let mem = botMemory.get(bot.id);
     if (!mem) {
         mem = {
@@ -41,11 +45,12 @@ export const getBotMemory = (bot: Entity, mode?: GameMode): BotMemory => {
             targetId: null,
             targetVisible: false,
             nextScanAt: 0,
-            roamIndex: Math.floor(Math.random() * getWaypoints(mode).length),
             progressCheckAt: 0,
             progressPos: { ...bot.pos },
             unstickUntil: 0,
             fireAllowedAt: 0,
+            nav: newBotNav(),
+            moves: newBotMoves(bot.health),
         };
         botMemory.set(bot.id, mem);
     }

@@ -1,11 +1,14 @@
 // Where a bot wants to go and whom it fights, per game mode.
 
-import { Entity, GameMode, GameState, ItemType, Pickup, Team, Vector2, WeaponType } from '../../types';
+import { Entity, GameMode, GameState, ItemType, Pickup, Team, Vector2 } from '../../types';
 import { distance } from '../utils/math';
-import { EXTRACTION_ZONE, getWaypoints } from '../data/level';
+import { baseFlagPos, EXTRACTION_ZONE } from '../data/level';
 import { BotMemory } from './botMemory';
-import { findWeaponPickup } from './botWeapons';
+import { findWeaponPickup, pickupReachable } from './botWeapons';
 import { insideZone } from './hungerRound';
+import { NavGraph } from './botNavGraph';
+import { roamGoal } from './botRoam';
+import { preferredRange } from './botCombatMoves';
 
 export interface BotGoal {
     moveTarget: Vector2;
@@ -13,13 +16,12 @@ export interface BotGoal {
 }
 
 const LOW_HEALTH = 60;
-const CTF_BASES = { [Team.BLUE]: { x: -350, y: 450 }, [Team.RED]: { x: 2350, y: 450 } };
 
 const nearestPickup = (state: GameState, bot: Entity, type: ItemType): Pickup | null => {
     let best: Pickup | null = null;
     let bestDist = Infinity;
     state.pickups.forEach(item => {
-        if (!item.active || item.type !== type || !insideZone(state, item.pos)) return;
+        if (!item.active || item.type !== type || !pickupReachable(state, item)) return;
         const d = distance(bot.pos, item.pos);
         if (d < bestDist) { bestDist = d; best = item; }
     });
@@ -62,32 +64,29 @@ const infiltrationGoal = (state: GameState, bot: Entity, mem: BotMemory, target:
 const ctfGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null): BotGoal | null => {
     if (bot.hasFlag !== Team.NONE) {
         mem.state = 'flag-run';
-        return { moveTarget: CTF_BASES[bot.team === Team.BLUE ? Team.BLUE : Team.RED], target };
+        return { moveTarget: baseFlagPos(bot.team === Team.BLUE ? Team.BLUE : Team.RED), target };
     }
     const enemyCarrier = state.players.find(p => p.hasFlag === bot.team);
     if (enemyCarrier) { mem.state = 'defend'; return { moveTarget: enemyCarrier.pos, target: enemyCarrier }; }
+    // A teammate has the enemy flag: escort it home (shooting whoever chases it on the way)
+    const teamCarrier = state.players.find(p => p !== bot && !p.dead && p.team === bot.team && p.hasFlag !== Team.NONE);
+    if (teamCarrier) { mem.state = 'defend'; return { moveTarget: teamCarrier.pos, target }; }
     const enemyFlag = state.pickups.find(i => i.type === ItemType.FLAG && i.team !== bot.team && i.active);
     if (enemyFlag) { mem.state = 'flag-run'; return { moveTarget: enemyFlag.pos, target }; }
     return null;
 };
 
-const fightOrRoam = (bot: Entity, mem: BotMemory, target: Entity | null, mode?: GameMode): BotGoal => {
+const fightOrRoam = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, graph: NavGraph, now: number): BotGoal => {
     if (target) {
         mem.state = 'hunt';
         // An enemy behind a wall: go and find it instead of holding distance
         if (!mem.targetVisible) return { moveTarget: target.pos, target };
-        const dist = distance(bot.pos, target.pos);
-        const close = bot.weapon.type === WeaponType.SHOTGUN || bot.weapon.type === WeaponType.CHAINSAW;
-        const preferredDist = close ? 120 : 320;
-        if (dist > preferredDist) return { moveTarget: target.pos, target };
-        if (dist < preferredDist - 120) return { moveTarget: { x: bot.pos.x - (target.pos.x - bot.pos.x), y: bot.pos.y }, target };
+        // Close it to the weapon's range; within it hold the surface (combat moves strafe and back off)
+        if (distance(bot.pos, target.pos) > preferredRange(bot)) return { moveTarget: target.pos, target };
         return { moveTarget: bot.pos, target };
     }
     mem.state = 'roam';
-    const waypoints = getWaypoints(mode);
-    const wp = waypoints[mem.roamIndex % waypoints.length];
-    if (distance(bot.pos, wp) < 50) mem.roamIndex = (mem.roamIndex + 1) % waypoints.length;
-    return { moveTarget: wp, target };
+    return { moveTarget: roamGoal(state, bot, mem.nav, graph, now), target };
 };
 
 const OBJECTIVES: Partial<Record<GameMode, typeof ctfGoal>> = {
@@ -96,7 +95,7 @@ const OBJECTIVES: Partial<Record<GameMode, typeof ctfGoal>> = {
     [GameMode.CTF]: ctfGoal,
 };
 
-export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, mode?: GameMode): BotGoal => {
+export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, graph: NavGraph, now: number): BotGoal => {
     // Hunger Games: get back inside the zone before anything else
     const hz = state.mode === GameMode.HUNGER_GAMES ? state.hungerZone : undefined;
     if (hz && !insideZone(state, bot.pos)) {
@@ -105,13 +104,14 @@ export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target
     }
 
     // Low on health: go for a medkit, still shooting back on the way
-    const medkit = bot.health < LOW_HEALTH ? nearestPickup(state, bot, ItemType.HEALTH) : null;
+    // (a flag carrier heads straight home instead)
+    const medkit = bot.health < LOW_HEALTH && bot.hasFlag === Team.NONE ? nearestPickup(state, bot, ItemType.HEALTH) : null;
     if (medkit) {
         mem.state = 'retreat';
         return { moveTarget: medkit.pos, target };
     }
 
-    const goal = OBJECTIVES[state.mode]?.(state, bot, mem, target) ?? fightOrRoam(bot, mem, target, mode);
+    const goal = OBJECTIVES[state.mode]?.(state, bot, mem, target) ?? fightOrRoam(state, bot, mem, target, graph, now);
 
     // Detour for a weapon when low on ammo, still on the starter gun, or idle in free-for-all modes
     if (bot.hasFlag === Team.NONE) {

@@ -6,6 +6,7 @@ import { initAudio } from '../game/systems/audio';
 import { generateAssets } from '../game/systems/assets';
 import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
+import { drawBotPaths } from '../game/render/botPathOverlay';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
@@ -431,6 +432,7 @@ export default function GameCanvas() {
             const zoneLayer = new Graphics();
             const platformLayer = new Graphics();
             const gameLayer = new Container();
+            const botPathLayer = new Graphics(); // F3: bots' routes
             const uiLayer = new Container();
 
             worldContainer.addChild(backgroundLayer);
@@ -438,6 +440,7 @@ export default function GameCanvas() {
             worldContainer.addChild(zoneLayer);
             worldContainer.addChild(platformLayer);
             worldContainer.addChild(gameLayer);
+            worldContainer.addChild(botPathLayer);
             app.stage.addChild(uiLayer);
             // In-world ad places get real TrafficStars banners from ads.json (house posters otherwise)
             const adsLayer = containerRef.current ? createAdsController(containerRef.current, new URL('ads.json', document.baseURI).href) : null;
@@ -630,6 +633,8 @@ export default function GameCanvas() {
                     if (gunGameWinner) setGunGameWinner(null);
                     gunGameEndedRef.current = false;
                 }
+
+                drawBotPaths(botPathLayer, gameState.current, debugVisibleRef.current);
 
                 // Zone overlay
                 if (liveMode === GameMode.HUNGER_GAMES) {

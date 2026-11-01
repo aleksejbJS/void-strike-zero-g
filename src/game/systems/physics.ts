@@ -168,7 +168,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         } else {
             // Bots press the same controls a player has
             const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
-            controls = { inputX: bot.inputX, wantsJump: false, wantsDown: false, isFlying: bot.isFlying };
+            updateGrapple(state, p, bot.hook, bot.hookAim ?? p.pos);
+            controls = { inputX: bot.inputX, wantsJump: bot.reel, wantsDown: false, isFlying: bot.isFlying };
         }
 
         // Force Pipeline — unified movement (gravity, input, jetpack, grapple, friction, speed caps)

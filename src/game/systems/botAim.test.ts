@@ -28,7 +28,10 @@ describe('updateBotAI in Hunger Games', () => {
 
   it('walks off its platform to reach an enemy straight below', () => {
     const state = hungerState();
-    state.platforms = [{ id: 'ledge', x: -100, y: 0, w: 300, h: 20, color: '#000' }];
+    state.platforms = [
+      { id: 'ledge', x: -100, y: 0, w: 300, h: 20, color: '#000' },
+      { id: 'floor', x: -500, y: 400, w: 1000, h: 100, color: '#000' },
+    ];
     const bot = makeBot('bot1', Team.NONE, 0, 0);
     state.players = [bot as any, makeBot('enemy', Team.NONE, 10, 400) as any];
 

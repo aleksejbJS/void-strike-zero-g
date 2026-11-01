@@ -86,6 +86,7 @@ describe('updateBotAI', () => {
 
   it('does not think a bot running at normal speed is stuck', () => {
     const state = makeState();
+    state.platforms = [{ id: 'floor', x: -5000, y: 0, w: 10000, h: 200, color: '#000' }]; // bots navigate by surfaces
     const bot = makeBot('bot1', Team.NONE, 0, 0);
     state.players = [bot as any, makeBot('enemy', Team.NONE, 3000, 0) as any];
 
@@ -99,6 +100,7 @@ describe('updateBotAI', () => {
 
   it('jetpacks out when it tries to move but does not', () => {
     const state = makeState();
+    state.platforms = [{ id: 'floor', x: -5000, y: 0, w: 10000, h: 200, color: '#000' }]; // bots navigate by surfaces
     const bot = makeBot('bot1', Team.NONE, 0, 0);
     state.players = [bot as any, makeBot('enemy', Team.NONE, 3000, 0) as any];
 
@@ -111,6 +113,7 @@ describe('updateBotAI', () => {
 
   it('drops down to a goal below instead of hovering over it', () => {
     const state = makeState();
+    state.platforms = [{ id: 'floor', x: -5000, y: 400, w: 10000, h: 200, color: '#000' }];
     const bot = { ...makeBot('bot1', Team.NONE, 0, 0), isGrounded: false };
     state.players = [bot as any, makeBot('enemy', Team.NONE, 600, 400) as any];
 

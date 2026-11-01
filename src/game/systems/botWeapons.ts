@@ -3,6 +3,7 @@
 import { Entity, GameState, ItemType, Pickup, Weapon, WeaponType } from '../../types';
 import { distance } from '../utils/math';
 import { insideZone } from './hungerRound';
+import { solidAt } from './botNavGraph';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
@@ -30,11 +31,16 @@ export const pickBestWeapon = (bot: Entity, dist: number) => {
     bot.weapon = best;
 };
 
+/** A pickup a bot can go for: inside the Hunger Games zone and not buried in a platform
+ *  (some maps place items inside solid blocks, where nobody can collect them). */
+export const pickupReachable = (state: GameState, item: Pickup) =>
+    insideZone(state, item.pos) && !solidAt(state.platforms, item.pos.x, item.pos.y);
+
 export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null => {
     let best: Pickup | null = null;
     let bestDist = Infinity;
     state.pickups.forEach(item => {
-        if (!item.active || item.type !== ItemType.WEAPON || !item.subtype || !insideZone(state, item.pos)) return;
+        if (!item.active || item.type !== ItemType.WEAPON || !item.subtype || !pickupReachable(state, item)) return;
         const existing = bot.inventory.find(w => w.type === item.subtype);
         const needsAmmo = existing ? existing.ammo < existing.maxAmmo * 0.4 : true;
         if (!existing && item.subtype === WeaponType.MACHINE_GUN) return; // skip default gun duplicates
