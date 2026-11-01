@@ -1,6 +1,6 @@
 # In-World Ads (TrafficStars) — Spec
 
-Status: draft for approval · 2026-11-01
+Status: steps 1–3 implemented (station art + places, banner overlay, admin page) · step 4 pending · 2026-11-01
 
 ## Goal
 
@@ -94,12 +94,17 @@ read the game state or the player's data.
 
 | File | Responsibility |
 |---|---|
-| `src/game/ads/adPlaces.ts` | ad places per map (data) |
+| `src/game/render/scene/adPlaces.ts` | ad places of the station (data, layer → screen) |
+| `src/game/render/scene/adFrames.ts`, `houseAds.ts` | in-world frames and house posters |
 | `src/game/ads/adConfig.ts` | load and validate `ads.json` |
-| `src/game/ads/adVisibility.ts` | on-screen share, 1 s rule, fighter overlap |
-| `src/components/ads/AdOverlay.tsx` | positioned iframes over the canvas |
-| `src/components/ads/HouseAd.ts` | house posters drawn in the scene |
-| `src/components/ads/AdsAdmin.tsx` | the admin page |
+| `src/game/ads/adVisibility.ts` | on-screen share, 1 s rule, refresh, fight overlap |
+| `src/game/ads/adOverlay.ts` | sandboxed iframes over the canvas, platform clip-path, fill check |
+| `src/game/ads/adsController.ts` | wires config, scene and overlay into the game loop |
+| `src/components/ads/AdsAdmin.tsx`, `AdPlaceCard.tsx`, `BannerTest.tsx`, `adsDraft.ts` | the admin page |
+
+Implementation notes: platforms standing in front of a place are cut out of the banner
+with `clip-path: path(evenodd, …)`; a small script next to the spot code reports after
+5 s whether anything rendered (if not, the banner hides and the house poster shows).
 
 ## Order of work
 
