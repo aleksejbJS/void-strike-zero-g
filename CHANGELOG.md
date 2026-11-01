@@ -23,6 +23,14 @@
 - Hunger Games online; players joining mid-round watch until the next one
 - The server validates everything clients send and no longer crashes on malformed messages
 
+### 🤖 Movement and Bots
+- Running and crouch-walking are twice as fast (about 240 px/s); jumps and the jetpack are unchanged
+- Bots move with the same controls as players, at the same speed
+- Bots pick an enemy they can see instead of one behind a wall, and look for hidden enemies instead of waiting
+- Bots fight in Gun Game (they used to ignore everyone)
+- Bots shoot back while retreating to a medkit, aim at the body and lead moving targets correctly
+- Bots no longer hop in place every quarter second, and can drop down to lower floors instead of hovering
+
 ### 🎯 Gameplay Fixes
 - Same game speed on 60, 120 and 144 Hz screens (fixed 120 ticks per second)
 - Railgun and explosions no longer go through walls; bullets hit only the first player in their path
@@ -35,7 +43,7 @@
 
 ### 🛠️ Technical
 - Shared authoritative game room used by both the Node server and the browser host
-- Large components split into small modules; 193 automated tests (from 56)
+- Large components split into small modules; 199 automated tests (from 56)
 
 ## Version 0.3.1 (2025-11-28)
 
