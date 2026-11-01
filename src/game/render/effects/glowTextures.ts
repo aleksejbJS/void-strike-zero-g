@@ -19,7 +19,7 @@ export const glowTexture = (): Texture => {
     const c = GLOW_SIZE / 2;
     const g = ctx.createRadialGradient(c, c, 0, c, c, c);
     g.addColorStop(0, 'rgba(255,255,255,1)');
-    g.addColorStop(0.4, 'rgba(255,255,255,0.45)'); // softer falloff than a straight line
+    g.addColorStop(0.4, 'rgba(255,255,255,0.65)'); // stays bright out to 40% of the radius, then falls off softly
     g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, GLOW_SIZE, GLOW_SIZE);

@@ -79,9 +79,11 @@ export const drawGraphic = (g: Graphics, p: Particle) => {
 
 /** Reposition and rescale a glow sprite: flash is a white burst, fireball a growing orange ball. */
 export const drawSprite = (s: Sprite, p: Particle) => {
-    const radius = p.type === 'fireball' ? p.size + (1 - p.life) * 34 : p.size;
+    const fireball = p.type === 'fireball';
+    const radius = fireball ? p.size + (1 - p.life) * 34 : p.size;
     s.position.set(p.pos.x, p.pos.y);
     s.tint = p.color;
-    s.alpha = p.life;
+    // The fireball stays at full strength through the first third of its life, then fades to 0
+    s.alpha = fireball ? Math.min(1, p.life * 1.6) : p.life;
     s.width = s.height = 2 * radius;
 };

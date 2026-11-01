@@ -1,6 +1,8 @@
 // Draws GameState.particles: one pooled display object per live particle id.
 // Glow kinds (flash, fireball) are additive Sprites on the shared glow texture; the rest
-// are Graphics repainted each frame. Each pool keeps at most POOL_MAX spare objects.
+// are Graphics repainted each frame. The glows live in a container above the Graphics one,
+// so a fireball always shines over the smoke instead of being painted under it.
+// Each pool keeps at most POOL_MAX spare objects.
 
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { Particle } from '../../../types';
@@ -24,9 +26,13 @@ export class ParticleView {
     private readonly slots = new Map<string, Slot>();
     private readonly spritePool: Sprite[] = [];
     private readonly graphicsPool: Graphics[] = [];
+    private readonly graphicsLayer = new Container();
+    private readonly glowLayer = new Container();
     private frame = 0;
 
-    constructor(private readonly layer: Container) {}
+    constructor(layer: Container) {
+        layer.addChild(this.graphicsLayer, this.glowLayer);
+    }
 
     /** Show exactly the given particles; objects of vanished ids go back to their pool. */
     sync(particles: Particle[]): void {
@@ -48,7 +54,7 @@ export class ParticleView {
         }
     }
 
-    /** Destroy every object, live or pooled (the map was rebuilt or the scene is going away). */
+    /** Destroy every object and both containers; the view is not usable afterwards. */
     clear(): void {
         for (const slot of this.slots.values()) this.dispose(slot.obj);
         this.slots.clear();
@@ -56,21 +62,23 @@ export class ParticleView {
         for (const obj of this.graphicsPool) this.dispose(obj);
         this.spritePool.length = 0;
         this.graphicsPool.length = 0;
+        this.dispose(this.graphicsLayer);
+        this.dispose(this.glowLayer);
     }
 
     private acquire(p: Particle): Slot {
         if (isSpriteKind(p.type)) {
             const obj = this.spritePool.pop() ?? newSprite();
-            this.layer.addChild(obj);
+            this.glowLayer.addChild(obj);
             return { seen: 0, kind: 'sprite', obj };
         }
         const obj = this.graphicsPool.pop() ?? new Graphics();
-        this.layer.addChild(obj);
+        this.graphicsLayer.addChild(obj);
         return { seen: 0, kind: 'graphics', obj };
     }
 
     private release(slot: Slot): void {
-        this.layer.removeChild(slot.obj);
+        slot.obj.parent?.removeChild(slot.obj);
         if (slot.kind === 'sprite') {
             if (this.spritePool.length < POOL_MAX) this.spritePool.push(slot.obj);
             else slot.obj.destroy();
@@ -82,7 +90,7 @@ export class ParticleView {
         }
     }
 
-    private dispose(obj: Sprite | Graphics): void {
+    private dispose(obj: Container): void {
         obj.parent?.removeChild(obj);
         if (!obj.destroyed) obj.destroy();
     }
