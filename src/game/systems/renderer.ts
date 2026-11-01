@@ -1,14 +1,15 @@
 import { Application, Container, Graphics, Sprite, Text, Texture, BlurFilter, Filter, GlProgram, Matrix } from 'pixi.js';
 // Bloom filter replaced with BlurFilter for glow effect
 import { GameState, Platform, Entity, WeaponType, ItemType, Pickup, Team, MapId } from '../../types';
-import { WEAPONS_DATA, SKINS, GUN_GAME_LADDER } from '../../constants';
+import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
+import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../render/playerVisual';
+import { drawRagdollShape, placeRagdollPart } from '../render/ragdollView';
 
 // Performance optimizations
 const PARTICLE_POOL_SIZE = 100;
 const PROJECTILE_POOL_SIZE = 50;
 const particlePool: Graphics[] = [];
 const projectilePool: Graphics[] = [];
-const colorCache = new Map<string, number>();
 
 const getPooledParticle = (): Graphics => {
     return particlePool.pop() || new Graphics();
@@ -36,15 +37,6 @@ const returnPooledProjectile = (projectile: Graphics): void => {
     }
 };
 
-const getCachedColor = (colorStr: string, fallback: number): number => {
-    if (colorCache.has(colorStr)) {
-        return colorCache.get(colorStr)!;
-    }
-    const color = getColor(colorStr, fallback);
-    colorCache.set(colorStr, color);
-    return color;
-};
-
 // Desired visual sizes (largest dimension) for pickup sprites
 const PICKUP_DISPLAY_SIZE: Partial<Record<ItemType, number>> = {
     // Unified size for standard pickups (except flags)
@@ -65,25 +57,6 @@ const BENEFICIAL_ITEMS = new Set<ItemType>([
 ]);
 
 const getTeamColor = (team: Team) => team === Team.BLUE ? 0x3b82f6 : team === Team.RED ? 0xef4444 : 0xf59e0b;
-
-const darken = (color: number, factor: number) => {
-    const r = ((color >> 16) & 0xff) * factor;
-    const g = ((color >> 8) & 0xff) * factor;
-    const b = (color & 0xff) * factor;
-    return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
-};
-
-
-const createSpritePart = (tex: Texture, label: string, targetSize = 48) => {
-    const container = new Container();
-    container.label = label;
-    const sprite = new Sprite(tex);
-    sprite.anchor.set(0.5);
-    const baseSize = Math.max(tex.width, tex.height) || 1;
-    sprite.scale.set(targetSize / baseSize);
-    container.addChild(sprite);
-    return container;
-};
 
 export const getPickupSpriteScale = (type: ItemType, texture: Texture) => {
     const targetSize = PICKUP_DISPLAY_SIZE[type] ?? 32;
@@ -265,436 +238,6 @@ export const drawZoneOverlay = (layer: Graphics, hungerZone: any, time: number =
             layer.circle(px + shake, py + shake, psize)
                 .fill({ color: 0xfed7aa, alpha: 0.6 + Math.sin(t * 4 + i) * 0.2 });
         }
-    }
-};
-
-// Helper to convert hex string to number safely
-const getColor = (colorStr: string | undefined, defaultColor: number) => {
-    if (!colorStr) return defaultColor;
-    if (colorStr.startsWith('#')) return parseInt(colorStr.replace('#', ''), 16);
-    return defaultColor;
-};
-
-// Create Visuals
-// Helper functions to create body parts
-const createLeg = (thighColor: number, shinColor: number, label: string) => {
-    const leg = new Container();
-    leg.label = label;
-    const thigh = new Graphics();
-    thigh.roundRect(-3, 0, 6, 16, 3).fill(thighColor);
-    leg.addChild(thigh);
-
-    const shin = new Container();
-    shin.label = 'shin';
-    shin.position.set(0, 14);
-    const shinGfx = new Graphics();
-    shinGfx.roundRect(-2, 0, 4, 18, 2).fill(shinColor);
-    shin.addChild(shinGfx);
-
-    const boot = new Graphics();
-    boot.rect(-4, 16, 10, 4).fill(0x0f172a);
-    shin.addChild(boot);
-    leg.addChild(shin);
-
-    return leg;
-};
-
-const createArm = (color: number, label: string, hasWeapon: boolean = false, texture?: Texture) => {
-    const arm = texture ? createSpritePart(texture, label, 32) : new Container();
-    if (!texture) {
-        arm.label = label;
-        const upperArm = new Graphics();
-        upperArm.roundRect(-3, -2, 18, 6, 3).fill(color);
-        arm.addChild(upperArm);
-    }
-
-    if (hasWeapon) {
-        const wGfx = new Graphics();
-        wGfx.label = 'weapon';
-        wGfx.position.set(14, 0);
-        arm.addChild(wGfx);
-    }
-
-    return arm;
-};
-
-const createHead = (color: number, texture?: Texture, style: string = 'human', accent?: number) => {
-    if (texture) return createSpritePart(texture, 'head', 28);
-    const head = new Container();
-    head.label = 'head';
-
-    const headGfx = new Graphics();
-    if (style === 'robot') {
-        headGfx.roundRect(-10, -12, 20, 16, 3).fill(color);
-        headGfx.rect(-8, -8, 16, 8).fill(accent ?? 0xe5e7eb);
-        headGfx.rect(-2, -18, 4, 6).fill(accent ?? 0xe5e7eb);
-    } else {
-        headGfx.circle(0, -4, 10).fill(color);
-        headGfx.rect(4, -8, 6, 8).fill(0x000000);
-        headGfx.rect(2, 0, 10, 4).fill(0x333333);
-        if (style === 'beast' || style === 'alien') {
-            const accentColor = accent ?? 0xe5e7eb;
-            headGfx.moveTo(-10, -8).lineTo(-4, -18).lineTo(0, -8).fill(color);
-            headGfx.moveTo(10, -8).lineTo(4, -18).lineTo(0, -8).fill(color);
-            headGfx.circle(-4, -10, 2).fill(accentColor);
-            headGfx.circle(4, -10, 2).fill(accentColor);
-        }
-    }
-    head.addChild(headGfx);
-
-    return head;
-};
-
-const createTorso = (color: number, texture?: Texture, style: string = 'human', accent?: number) => {
-    if (texture) return createSpritePart(texture, 'body', 36);
-    const torso = new Graphics();
-    torso.label = 'body';
-    torso.roundRect(-9, -24, 18, 28, 4).fill(color);
-    if (style === 'robot') {
-        const accentColor = accent ?? 0xe5e7eb;
-        torso.rect(-10, -8, 20, 10).fill(accentColor);
-        torso.rect(-6, -20, 12, 6).fill(0x0f172a);
-    }
-    return torso;
-};
-
-const createJetpack = (color: number, texture?: Texture) => {
-    if (texture) return createSpritePart(texture, 'jetpack', 26);
-    const jetpack = new Graphics();
-    jetpack.label = 'jetpack';
-    jetpack.rect(-16, -10, 8, 20).fill(color);
-    return jetpack;
-};
-
-const createPlayerVisual = (p: Entity, cache: any) => {
-    const c = new Container();
-    c.label = p.id;
-    c.sortableChildren = true;
-
-    const torsoColor = getCachedColor(p.torsoColor || p.color, 0xffffff);
-    const headColor = getCachedColor(p.headColor || p.color, torsoColor);
-    const armColor = getCachedColor(p.armColor || p.color, torsoColor);
-    const legColor = getCachedColor(p.legColor || '#475569', 0x475569);
-    const jetpackColor = getCachedColor(p.jetpackColor, 0xfbbf24);
-    const skin = SKINS.find(s => s.id === p.skinId);
-    const style = skin?.style || 'human';
-    const accentColor = getCachedColor(skin?.accent || '#e5e7eb', 0xe5e7eb);
-
-    // Create body parts in render order (back to front)
-    const headTex = cache.textures['skin_head'];
-    const bodyTex = cache.textures['skin_body'];
-    const jetpackTex = cache.textures['skin_jetpack'];
-    const armTex = cache.textures['skin_arm'];
-
-    const backLeg = createLeg(legColor, darken(legColor, 0.7), 'backLeg');
-    backLeg.zIndex = 1;
-    c.addChild(backLeg);
-
-    if (style === 'beast' || style === 'alien') {
-        const tail = new Graphics();
-        tail.label = 'tail';
-        tail.roundRect(-18, -2, 14, 4, 2).fill(accentColor);
-        tail.pivot.set(7, 0);
-        tail.position.set(-14, 6);
-        tail.zIndex = 1.5;
-        c.addChild(tail);
-    }
-
-    const jetpack = createJetpack(jetpackColor, jetpackTex);
-    jetpack.zIndex = 2;
-    c.addChild(jetpack);
-
-    const leftArm = createArm(armColor, 'leftArm', false, armTex);
-    leftArm.position.set(-8, -20);
-    leftArm.zIndex = 3;
-    c.addChild(leftArm);
-
-    const torso = createTorso(torsoColor, bodyTex, style, accentColor);
-    torso.zIndex = 4;
-    c.addChild(torso);
-
-    const head = createHead(headColor, headTex, style, accentColor);
-    head.position.set(0, -24);
-    head.zIndex = 5;
-    c.addChild(head);
-
-    const frontLeg = createLeg(legColor, darken(legColor, 0.7), 'frontLeg');
-    frontLeg.zIndex = 6;
-    c.addChild(frontLeg);
-
-    const rightArm = createArm(armColor, 'rightArm', true, armTex);
-    rightArm.position.set(0, -20);
-    rightArm.zIndex = 7;
-    c.addChild(rightArm);
-
-    const flame = new Graphics();
-    flame.label = 'flame';
-    flame.visible = false;
-    flame.zIndex = 0;
-    c.addChild(flame);
-
-    return c;
-};
-
-const updatePlayerVisual = (c: Container, p: Entity, camera: { x: number, y: number }, mouse: { x: number, y: number }, screenW: number, screenH: number, cache: any, isLocal: boolean) => {
-    if (!c) return;
-
-    // Hide player sprite if dead (we have a corpse decal now)
-    // Show and reset alpha if alive
-    c.visible = !p.dead;
-    if (!p.dead) c.alpha = 1;
-
-    if (p.dead) return; // Don't update visuals if dead/hidden
-
-    c.position.set(p.pos.x, p.pos.y);
-
-    const backLeg = c.getChildByLabel('backLeg') as Container;
-    const frontLeg = c.getChildByLabel('frontLeg') as Container;
-    const head = c.getChildByLabel('head') as Container;
-    const rightArm = c.getChildByLabel('rightArm') as Container;
-    const leftArm = c.getChildByLabel('leftArm') as Container;
-    const wGfx = rightArm?.getChildByLabel('weapon') as Graphics;
-    const flame = c.getChildByLabel('flame') as Graphics;
-    const backShin = backLeg?.getChildByLabel('shin') as Container;
-    const frontShin = frontLeg?.getChildByLabel('shin') as Container;
-    const jetpackVisual = c.getChildByLabel('jetpack');
-    const body = c.getChildByLabel('body') as Graphics;
-    const tail = c.getChildByLabel('tail') as Graphics;
-    const skin = SKINS.find(s => s.id === p.skinId);
-    const style = skin?.style || 'human';
-
-    if (!backLeg || !frontLeg || !head || !rightArm) return;
-
-    const crouchOffset = p.isCrouching ? 12 : 0;
-    c.pivot.y = 34 - crouchOffset;
-
-    if (p.isCrouching) {
-        body.position.y = 10;
-        head.position.y = -14;
-        rightArm.position.y = -10;
-        if (leftArm) leftArm.position.y = -10;
-        if (jetpackVisual) jetpackVisual.position.y = 0;
-    } else {
-        body.position.y = 0;
-        head.position.y = -24;
-        rightArm.position.y = -20;
-        if (leftArm) leftArm.position.y = -20;
-        if (jetpackVisual) jetpackVisual.position.y = -10;
-    }
-
-    let aim = 0;
-    if (isLocal) {
-        const cx = screenW / 2;
-        const cy = screenH / 2;
-        const shoulderWorldY = p.pos.y - 50 + crouchOffset;
-        const shoulderScreenX = (p.pos.x - camera.x) + cx;
-        const shoulderScreenY = (shoulderWorldY - camera.y) + cy;
-        aim = Math.atan2(mouse.y - shoulderScreenY, mouse.x - shoulderScreenX);
-    } else if (p.aim !== undefined && Number.isFinite(p.aim)) {
-        // Other humans: aim direction comes from the server
-        aim = p.aim;
-    } else {
-        aim = Math.atan2(p.vel.y, p.facingRight ? 100 : -100);
-    }
-
-    const facing = Math.abs(aim) > Math.PI / 2 ? -1 : 1;
-    c.scale.x = facing;
-
-    let localAim = aim;
-    if (facing === -1) localAim = Math.PI - aim;
-    while (localAim > Math.PI) localAim -= Math.PI * 2;
-    while (localAim < -Math.PI) localAim += Math.PI * 2;
-
-    // Right arm (weapon arm) follows aim
-    rightArm.rotation = localAim;
-
-    // Left arm has subtle animation
-    if (leftArm) {
-        if (Math.abs(p.vel.x) > 0.5) {
-            // Swing arm while running
-            const time = Date.now() * 0.012;
-            leftArm.rotation = Math.sin(time) * 0.4;
-        } else {
-            // Slight angle when idle
-            leftArm.rotation = localAim * 0.3;
-        }
-    }
-
-    head.rotation = Math.max(-0.5, Math.min(0.5, localAim * 0.5));
-
-
-
-    const isFlying = !p.isGrounded && p.vel.y < 0;
-    if (isFlying) {
-        frontLeg.rotation = 0.2 * facing; backLeg.rotation = 0.1 * facing;
-        frontShin.rotation = 0.5; backShin.rotation = 0.2;
-        flame.visible = true; flame.clear();
-        flame.moveTo(-15, 6).lineTo(-12, 18 + Math.random() * 6).lineTo(-9, 6).fill(0xfbbf24);
-        if (tail) tail.rotation = -0.4 * facing;
-    } else if (Math.abs(p.vel.x) > 0.5) {
-        const time = Date.now() * 0.015;
-        frontLeg.rotation = Math.sin(time) * 0.8; backLeg.rotation = Math.sin(time + Math.PI) * 0.8;
-        frontShin.rotation = Math.max(0, Math.sin(time - 1) * 1.5); backShin.rotation = Math.max(0, Math.sin(time + Math.PI - 1) * 1.5);
-        flame.visible = false;
-        if (tail) tail.rotation = Math.sin(time) * 0.3 * facing;
-    } else if (p.isCrouching) {
-        frontLeg.rotation = -0.5; backLeg.rotation = 0.5;
-        frontShin.rotation = 1.0; backShin.rotation = 1.0;
-        flame.visible = false;
-        if (tail) tail.rotation = -0.2 * facing;
-    } else {
-        frontLeg.rotation = 0; backLeg.rotation = 0; frontShin.rotation = 0; backShin.rotation = 0; flame.visible = false;
-        if (tail) tail.rotation = Math.max(-0.4, Math.min(0.4, p.vel.x * 0.03)) * facing;
-    }
-
-    wGfx.removeChildren(); // Clear previous graphics/sprites
-
-    // Check if we have a texture for this weapon
-    const weaponType = p.weapon.type;
-    const key = `weapon_${weaponType.toLowerCase().replace(' ', '_')}`;
-    const texture = cache.textures[key];
-
-    if (texture) {
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.2, 0.5); // Anchor near the handle/back
-
-        // Scale adjustment
-        const baseScale = getPickupSpriteScale(weaponType as any, texture);
-        let scale = baseScale;
-
-        // Specific adjustments for held weapons
-        if (weaponType === WeaponType.SHOTGUN) scale *= 1.6;
-        else if (weaponType === WeaponType.ROCKET_LAUNCHER) scale *= 1.6;
-        else if (weaponType === WeaponType.RAILGUN) scale *= 1.5;
-        else if (weaponType === WeaponType.MACHINE_GUN) scale *= 1.5;
-        else if (weaponType === WeaponType.CHAINSAW) scale *= 1.4;
-
-        sprite.scale.set(scale);
-
-        // Flip sprite if facing left? No, the container 'arm' is rotated.
-        // But we might need to flip Y if the arm rotation is > 90 degrees?
-        // Actually, the arm rotation logic (lines 118-125) handles the arm angle.
-        // However, if the player is facing left (scale.x = -1), the arm is flipped.
-        // Let's trust the existing arm rotation logic for now.
-
-        wGfx.addChild(sprite);
-    } else {
-        // Fallback to geometric shapes if texture missing
-        wGfx.clear();
-        const weaponColor = WEAPONS_DATA[p.weapon.type].color;
-        const type = p.weapon.type;
-        if (type === WeaponType.ROCKET_LAUNCHER) {
-            wGfx.rect(-10, -6, 34, 10).fill(0x57534e); wGfx.rect(10, -6, 14, 10).fill(weaponColor);
-        } else {
-            wGfx.rect(0, -4, 16, 8).fill(0x1e293b); wGfx.rect(16, -2, 10, 4).fill(0x94a3b8); wGfx.rect(2, -2, 12, 2).fill(weaponColor);
-        }
-    }
-
-
-
-    // Grappling Hook Rope/Chain Visualization
-    const existingRope = c.getChildByLabel('grappleRope') as Graphics;
-    if (p.grapple.active) {
-        let rope = existingRope;
-        if (!rope) {
-            rope = new Graphics();
-            rope.label = 'grappleRope';
-            c.addChildAt(rope, 0); // Add behind player
-        }
-        rope.clear();
-
-        // Calculate rope attachment point on player (shoulder area)
-        const shoulderOffsetY = p.isCrouching ? -10 : -20;
-        const shoulderOffsetX = 0;
-
-        // Rope endpoints (relative to player container)
-        const startX = shoulderOffsetX;
-        const startY = shoulderOffsetY;
-        const endX = p.grapple.pos.x - p.pos.x;
-        const endY = p.grapple.pos.y - p.pos.y;
-
-        // Draw animated chain segments
-        const distance = Math.sqrt(endX * endX + endY * endY);
-        const segments = Math.max(8, Math.floor(distance / 20)); // One segment every 20 pixels
-        const time = Date.now() * 0.003;
-
-        // Main rope line with glow
-        rope.moveTo(startX, startY)
-            .lineTo(endX, endY)
-            .stroke({ width: 3, color: 0x94a3b8, alpha: 0.8 });
-
-        // Glow effect
-        rope.moveTo(startX, startY)
-            .lineTo(endX, endY)
-            .stroke({ width: 6, color: 0x60a5fa, alpha: 0.3 });
-
-        // Draw chain segments
-        for (let i = 0; i <= segments; i++) {
-            const t = i / segments;
-            const x = startX + (endX - startX) * t;
-            const y = startY + (endY - startY) * t;
-
-            // Add slight wave effect for realism
-            const wave = Math.sin(time + i * 0.5) * 2;
-            const perpX = -(endY - startY) / distance;
-            const perpY = (endX - startX) / distance;
-
-            const segX = x + perpX * wave;
-            const segY = y + perpY * wave;
-
-            // Chain link segments
-            const size = 2 + Math.sin(time * 2 + i) * 0.5;
-            rope.circle(segX, segY, size).fill({ color: 0xe2e8f0, alpha: 0.9 });
-            rope.circle(segX, segY, size + 1).stroke({ width: 1, color: 0x64748b, alpha: 0.6 });
-        }
-
-        // Grapple hook at the end
-        const hookSize = 6;
-        rope.circle(endX, endY, hookSize).fill(0x475569);
-        rope.circle(endX, endY, hookSize - 2).fill(0x94a3b8);
-
-        // Hook glow
-        const pulse = 1 + Math.sin(time * 3) * 0.2;
-        rope.circle(endX, endY, hookSize * pulse * 1.5)
-            .fill({ color: 0x60a5fa, alpha: 0.3 });
-
-    } else if (existingRope) {
-        // Remove rope when grapple is not active
-        c.removeChild(existingRope);
-        existingRope.destroy();
-    }
-
-    const existingFlag = c.getChildByLabel('carriedFlag') as Container;
-    const flagGlow = c.getChildByLabel('flagGlow') as Graphics;
-    let flagFire = c.getChildByLabel('flagFire') as Graphics;
-    if (p.hasFlag !== Team.NONE) {
-        const isHTFCarrier = p.hasFlag === p.team;
-        const isIntelCarrier = p.hasFlag === Team.RED && p.team === Team.BLUE;
-        const color = isHTFCarrier ? 0xf97316 : isIntelCarrier ? 0xfacc15 : p.hasFlag === Team.BLUE ? 0x3b82f6 : 0xef4444;
-        if (!flagGlow) { const glow = new Graphics(); glow.label = 'flagGlow'; glow.position.set(0, -20); c.addChildAt(glow, 0); }
-        else { flagGlow.clear(); const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.1; flagGlow.circle(0, 0, 45 * pulse).fill({ color, alpha: 0.25 }); flagGlow.circle(0, 0, 35 * pulse).fill({ color, alpha: 0.2 }); }
-        let f = existingFlag;
-        if (!f) { f = new Container(); f.label = 'carriedFlag'; c.addChildAt(f, 2); const pole = new Graphics(); pole.moveTo(0, 0).lineTo(0, -60).stroke({ width: 4, color: 0xffffff }); f.addChild(pole); const cloth = new Graphics(); cloth.label = 'cloth'; f.addChild(cloth); }
-        const cloth = f.getChildByLabel('cloth') as Graphics;
-        cloth.clear(); const wave = Math.sin(Date.now() * 0.015) * 5; cloth.poly([0, -60, 35, -50 + wave, 35, -20 + wave, 0, -30]).fill(color);
-        f.position.set(-10, -40 + crouchOffset); f.rotation = -0.1 + (p.vel.x * -0.02 * facing);
-
-        if (isHTFCarrier) {
-            if (!flagFire) { flagFire = new Graphics(); flagFire.label = 'flagFire'; c.addChildAt(flagFire, 1); }
-            flagFire.clear();
-            for (let i = 0; i < 6; i++) {
-                const jitterX = (Math.random() - 0.5) * 20;
-                const jitterY = -30 - Math.random() * 10;
-                flagFire.circle(jitterX, jitterY, 3 + Math.random() * 2).fill({ color: 0xfbbf24, alpha: 0.9 });
-            }
-            flagFire.alpha = 0.9;
-        } else if (flagFire) {
-            c.removeChild(flagFire); flagFire.destroy();
-        }
-    } else {
-        if (existingFlag) { c.removeChild(existingFlag); existingFlag.destroy({ children: true }); }
-        if (flagGlow) { c.removeChild(flagGlow); flagGlow.destroy(); }
-        if (flagFire) { c.removeChild(flagFire); flagFire.destroy(); }
     }
 };
 
@@ -962,10 +505,10 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true }); cache.players.delete(id); }
     }
     state.players.forEach(p => {
-        if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true }); cache.players.delete(p.id); } return; }
+        if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
         let visual = cache.players.get(p.id);
-        if (!visual) { visual = createPlayerVisual(p, cache); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
-        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache, p.id === localPlayerId);
+        if (!visual) { visual = createPlayerVisual(p); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
+        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache.textures, p.id === localPlayerId);
     });
 
     // Projectiles - Optimized with object pooling
@@ -1076,39 +619,11 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         let gfx = cache.ragdollParts.get(part.id);
         if (!gfx) {
             gfx = new Graphics();
+            drawRagdollShape(gfx, part);
             gameLayer.addChild(gfx);
             cache.ragdollParts.set(part.id, gfx);
         }
-
-        gfx.clear();
-        gfx.position.set(part.pos.x, part.pos.y);
-        gfx.rotation = part.rotation;
-        gfx.alpha = Math.min(1, part.life / 2); // Fade out in last 2 seconds
-
-        const color = part.color === '#3b82f6' ? 0x3b82f6 :
-            part.color === '#ef4444' ? 0xef4444 :
-                part.color === '#22c55e' ? 0x22c55e :
-                    part.color === '#eab308' ? 0xeab308 : 0xffffff;
-
-        // Draw different shapes for different body parts
-        switch (part.type) {
-            case 'head':
-                gfx.circle(0, 0, 8).fill(color);
-                gfx.circle(-2, -2, 2).fill(0x000000); // Eye
-                gfx.circle(2, -2, 2).fill(0x000000); // Eye
-                break;
-            case 'torso':
-                gfx.roundRect(-10, -15, 20, 30, 4).fill(color);
-                break;
-            case 'arm-left':
-            case 'arm-right':
-                gfx.roundRect(-3, -12, 6, 24, 2).fill(color);
-                break;
-            case 'leg-left':
-            case 'leg-right':
-                gfx.roundRect(-4, -15, 8, 30, 3).fill(color);
-                break;
-        }
+        placeRagdollPart(gfx, part);
     });
 
     // HUD shows the player this browser controls

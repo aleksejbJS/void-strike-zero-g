@@ -66,13 +66,21 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         weapon_grenade_launcher: '/assets/items/granat.png',
         weapon_chainsaw: '/assets/items/chainsaw.png',
         weapon_plasma_gun: '/assets/items/plasma_gun.png',
+        // Trimmed pictures for weapons held by fighters (grip points in render/fighter/weaponGrips.ts)
+        held_machine_gun: '/assets/hud/machine_gun.png',
+        held_shotgun: '/assets/hud/shotgun.png',
+        held_rocket_launcher: '/assets/hud/rocket_launcher.png',
+        held_railgun: '/assets/hud/railgun.png',
+        held_grenade_launcher: '/assets/hud/grenade_launcher.png',
+        held_plasma_gun: '/assets/hud/plasma_gun.png',
+        held_chainsaw: '/assets/hud/chainsaw.png',
         jetpack: '/assets/items/jetpack.png',
         dirt_tile: '/assets/dirt_tile.png',
         grass_tile: '/assets/grass_tile.png'
     };
 
     // Bump bundle name to force reload when manifest changes
-    const bundleName = 'game-assets-v11';
+    const bundleName = 'game-assets-v12';
     const fallbackBundleName = 'game-assets-v10-fallback';
 
     try {

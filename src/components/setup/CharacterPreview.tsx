@@ -1,14 +1,14 @@
 // Live Pixi preview of the character standing on a hazard-taped platform.
-// Arms sway via Pixi's ticker directly (no React re-render per frame).
+// Breathing is animated via Pixi's ticker directly (no React re-render per frame).
 
 import React, { useEffect, useRef } from 'react';
 import { Application, Container, Texture } from 'pixi.js';
 import { generateAssets } from '../../game/systems/assets';
-import { buildCharacter, CharacterLook } from './characterArt';
+import { buildCharacter, CharacterArt, CharacterLook } from './characterArt';
 
 const CANVAS_W = 420;
 const CANVAS_H = 360;
-const SCALE = 3.4;
+const SCALE = 3.1;
 
 const prefersReducedMotion = () =>
     typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -19,15 +19,20 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
     const textures = useRef<Record<string, Texture> | null>(null);
     const lookRef = useRef(look);
     lookRef.current = look;
+    const art = useRef<CharacterArt | null>(null);
 
     const redraw = () => {
         const a = app.current;
         if (!a || !textures.current) return;
         a.stage.removeChildren().forEach(c => c.destroy({ children: true })); // textures are shared and kept
-        const character = buildCharacter(lookRef.current, textures.current);
-        character.position.set(CANVAS_W / 2, CANVAS_H);
-        character.scale.set(SCALE);
-        a.stage.addChild(character);
+        const built = buildCharacter(lookRef.current, textures.current);
+        built.update(Date.now() / 1000);
+        const holder = new Container();
+        holder.position.set(CANVAS_W / 2 - 20, CANVAS_H);
+        holder.scale.set(SCALE);
+        holder.addChild(built.root);
+        a.stage.addChild(holder);
+        art.current = built;
     };
 
     // Create the Pixi app once
@@ -48,14 +53,7 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
             host.current?.replaceChildren(created.canvas);
             redraw();
             if (prefersReducedMotion()) return;
-            created.ticker.add(() => {
-                const t = Date.now() * 0.01;
-                const body = (created.stage.children[0] as Container | undefined)?.children[0] as Container | undefined;
-                const left = body?.getChildByLabel('leftArm');
-                const right = body?.getChildByLabel('rightArm');
-                if (left) left.rotation = Math.sin(t) * 0.4;
-                if (right) right.rotation = Math.sin(t * 0.4) * 0.15 + 0.1;
-            });
+            created.ticker.add(() => art.current?.update(Date.now() / 1000));
         };
         setup().catch(err => console.error('Character preview failed to start:', err));
         return () => {

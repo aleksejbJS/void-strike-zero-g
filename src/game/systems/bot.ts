@@ -7,7 +7,7 @@ import { distance } from '../utils/math';
 import { getWaypoints } from '../data/level';
 import { FIXED_STEP_MS } from './fixedStep';
 import { BOT_UNSTICK_MS, detectStuck, getBotMemory } from './botMemory';
-import { canSee, centerOf, senseTarget } from './botSenses';
+import { canSee, centerOf, muzzleOf, senseTarget } from './botSenses';
 import { pickBestWeapon } from './botWeapons';
 import { chooseGoal } from './botGoals';
 
@@ -32,6 +32,8 @@ const aimAndFire = (state: GameState, bot: Entity, target: Entity, now: number, 
     const center = centerOf(target);
     const aim = { x: center.x + target.vel.x * lead, y: center.y + target.vel.y * lead };
     bot.facingRight = aim.x > bot.pos.x;
+    const muzzle = muzzleOf(bot);
+    bot.aim = Math.atan2(aim.y - muzzle.y, aim.x - muzzle.x); // drawn by the fighter's arms
 
     const fireReady = now - bot.lastFired > bot.weapon.fireRate * BOT_FIRE_COOLDOWN_SCALE;
     if (!fireReady || Math.abs(target.pos.y - bot.pos.y) >= BOT_VERTICAL_TOLERANCE) return;
@@ -66,7 +68,10 @@ export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeap
     if (now < mem.unstickUntil && bot.jetpackFuel > 0) isFlying = true;
 
     if (target) aimAndFire(state, bot, target, now, fireWeaponCallback);
-    else if (inputX !== 0) bot.facingRight = inputX > 0;
+    else {
+        bot.aim = undefined;
+        if (inputX !== 0) bot.facingRight = inputX > 0;
+    }
 
     return { inputX, isFlying };
 };
