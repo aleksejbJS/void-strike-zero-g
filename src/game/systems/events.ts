@@ -14,7 +14,8 @@ export type GameEvent =
     | { type: 'SOUND'; sound: string; subtype?: string }
     | { type: 'FLOAT_TEXT'; x: number; y: number; text: string; color: string }
     // Cosmetic effects at a position — see effects.ts
-    | { type: 'EFFECT'; effect: EffectKind; x: number; y: number; color?: string; count?: number }
+    // `size`: explosion scale (1 = a rocket); other effects ignore it
+    | { type: 'EFFECT'; effect: EffectKind; x: number; y: number; color?: string; count?: number; size?: number }
     | { type: 'DAMAGE'; x: number; y: number; amount: number }
     | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors }
     // An objective changed hands (HUD banner). `team`: the flag's team for CTF grabbed/lost/returned,

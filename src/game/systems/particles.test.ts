@@ -191,3 +191,29 @@ describe('particle budget', () => {
         expect(PARTICLE_BUDGET).toBe(500);
     });
 });
+
+describe('explosion debris', () => {
+    it('falls, slows down and leaves soot puffs behind while it flies fast', () => {
+        const p = makeParticle({ type: 'debris', vel: { x: 6, y: -6 }, size: 3 });
+        state.particles = [p];
+        for (let i = 0; i < 30; i++) updateParticles(state);
+        expect(p.vel.y).toBeGreaterThan(-6);
+        expect(Math.abs(p.vel.x)).toBeLessThan(6);
+        const soot = state.particles.filter(q => q.type === 'soot');
+        expect(soot.length).toBeGreaterThan(3);
+        // Puffs stay where they were dropped: a trail, not a cloud that follows the chunk
+        expect(soot.every(q => q.vel.x === 0 && q.vel.y === 0)).toBe(true);
+    });
+
+    it('stops trailing once it is nearly gone', () => {
+        const p = makeParticle({ type: 'debris', vel: { x: 6, y: -6 }, life: 0.3 });
+        state.particles = [p];
+        for (let i = 0; i < 20; i++) updateParticles(state);
+        expect(state.particles.some(q => q.type === 'soot')).toBe(false);
+    });
+
+    it('soot is a budgeted kind', () => {
+        state.particles = Array.from({ length: PARTICLE_BUDGET + 1 }, (_, i) => makeParticle({ id: `f${i}`, type: 'fire' }));
+        expect(createParticles(state, 0, 0, 1, '#333', 'soot')).toHaveLength(0);
+    });
+});

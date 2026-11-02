@@ -62,7 +62,7 @@ export const createRagdoll = (state: GameState, entity: Pick<Entity, 'pos' | 'he
 
 // Above this many live particles, the costly soft kinds (smoke, puff, dust) are not spawned
 export const PARTICLE_BUDGET = 500;
-const BUDGETED_KINDS: ReadonlySet<ParticleKind> = new Set(['smoke', 'puff', 'dust']);
+const BUDGETED_KINDS: ReadonlySet<ParticleKind> = new Set(['smoke', 'puff', 'dust', 'soot']);
 
 const between = (min: number, max: number) => min + Math.random() * (max - min);
 
@@ -73,6 +73,8 @@ const decayFor = (type: ParticleKind): number => {
         case 'fireball': return 0.015;
         case 'ring': return 0.017;
         case 'smoke': return 0.009;
+        case 'soot': return 0.007;
+        case 'debris': return between(0.013, 0.018);
         case 'puff': return 0.024;
         case 'dust': return 0.014;
         case 'ember': return between(0.010, 0.017);
@@ -85,6 +87,8 @@ const decayFor = (type: ParticleKind): number => {
 const sizeFor = (type: ParticleKind): number => {
     switch (type) {
         case 'smoke': return between(5, 15);
+        case 'soot': return between(10, 18);
+        case 'debris': return 3;
         case 'shell': return 3;
         case 'ember': return between(2, 4);
         case 'dust': return between(2, 3.5);

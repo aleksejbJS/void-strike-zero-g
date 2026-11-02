@@ -7,10 +7,14 @@ import { Entity, GameState, Projectile, WeaponType } from '../../types';
 import { gameEvents, GameEvent, EffectKind } from './events';
 import { nextId } from '../utils/id';
 import { createParticles, createRagdoll } from './effectSpawn';
+import { explosionBurst } from './explosionFx';
 import { addMark, addMarkAt } from './marks';
 import { flameColors } from '../render/fighter/parts/flamePalette';
 import { sanitizeBuild } from '../build/sanitizeBuild';
 import { presetBuild } from '../build/buildPresets';
+
+// The blast without its scorch mark (marks are page-wide: the menu preview must not leave any)
+export { explosionBurst };
 
 // --- Emitters (called by the simulation) ---
 
@@ -53,24 +57,10 @@ const STILL = { x: 0, y: 0 };
 
 const SCORCH_RADIUS = 18;
 
-const explosionAt = (state: GameState, x: number, y: number) => {
+const explosionAt = (state: GameState, x: number, y: number, scale?: number) => {
     // The impact point sits just outside the wall; a blast in mid-air leaves nothing
     addMarkAt(state.platforms, x, y, SCORCH_RADIUS, SCORCH_RADIUS);
-    explosionBurst(state, x, y);
-};
-
-/** The blast itself, without the scorch mark (marks are page-wide: the menu preview must not leave any). */
-// Flash, fireball and ring are stationary; the view grows them over their life
-export const explosionBurst = (state: GameState, x: number, y: number) => {
-    createParticles(state, x, y, 1, '#ffffff', 'flash', { size: 40, vel: STILL });
-    createParticles(state, x, y, 1, '#f97316', 'fireball', { size: 12, vel: STILL });
-    createParticles(state, x, y, 1, '#fdba74', 'ring', { size: 10, vel: STILL });
-    each(14, () => createParticles(state, x, y, 1, '#fbbf24', 'ember', {
-        vel: { x: between(-5, 5), y: between(-6, 1) },
-    }));
-    each(6, () => createParticles(state, x, y, 1, '#9ca3af', 'smoke', {
-        size: between(6, 12), vel: { x: between(-0.6, 0.6), y: between(-0.9, -0.3) },
-    }));
+    explosionBurst(state, x, y, scale);
 };
 
 const sparkAt = (state: GameState, x: number, y: number, color: string, count: number) => {
@@ -91,7 +81,7 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
         case 'EFFECT':
             switch (e.effect) {
                 case 'explosion':
-                    explosionAt(state, e.x, e.y);
+                    explosionAt(state, e.x, e.y, e.size);
                     break;
                 case 'blood':
                     bloodAt(state, e.x, e.y, e.count ?? 6, e.color ?? '#ef4444');

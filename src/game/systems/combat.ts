@@ -166,7 +166,9 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 // --- Explosions ---
 
 export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType) => {
-    emitEffect('explosion', pos.x, pos.y);
+    // Looks follow the blast radius; a grenade is drawn a bit smaller than a rocket (cosmetic only)
+    const size = (radius / 150) * (weaponType === WeaponType.GRENADE_LAUNCHER ? 0.85 : 1);
+    gameEvents.emit({ type: 'EFFECT', effect: 'explosion', x: pos.x, y: pos.y, size });
     gameEvents.emit({ type: 'SOUND', sound: 'explosion' });
 
     const wepData = weaponType ? WEAPONS_DATA[weaponType] : undefined;
