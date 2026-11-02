@@ -54,7 +54,8 @@ Decided 2026-11-02 from animated mockups (`.superpowers/brainstorm/*/content/vis
   not per-frame gradient fills.
 - Snapshots carry a projectile whole: `id, type, pos, vel, life` (ticks left, counted down
   from `PROJECTILE_MAX_LIFE`, 60 for grenades) — no rotation. Spin and pulsing are derived
-  from the age `maxLife − life`, so every client agrees without memory; trails (ghost orbs)
+  from the time the view first saw the projectile (clock-based, so online and offline run
+  per frame); `life` is not used for drawing; trails (ghost orbs)
   need remembered positions, kept in a per-id memory like `FighterAnimator` does and
   forgotten when the id disappears.
 - Cosmetic state lives in `GameState.particles` / `decals` (shared types in `types.ts`),
@@ -90,7 +91,7 @@ tail → opaque bright head), drawn as a sprite rotated along the velocity, blen
 | Shotgun | 6 strips 10 × 2.2, orange → white; one grey muzzle puff (r 5 → 13, 0.35 s) on the shot |
 | Plasma | white core r 4, blue glow r 14 pulsing ±15 % at ~4.5 Hz; three ghost orbs at remembered positions (every 2nd of the last 7), fading |
 | Rocket | drawn body: grey capsule 15 × 5, red nose cone, two grey fins, a highlight line; exhaust cone 10–16 px flickering (white → orange → transparent) with a glow r 14; the existing smoke puffs keep their rate but get the new puff look (§3) |
-| Grenade | dark-green ball r 4.5, lime band, highlight; spins 0.25 rad per tick from first-seen; sim gravity unchanged |
+| Grenade | dark-green ball r 4.5, lime band, highlight; spins 0.125 rad per tick from first-seen; sim gravity unchanged |
 | Railgun | beam from `state.beams`: white core 2.5 px, light-blue 7 px, blue glow 18 px (`add`), all fading with the beam's life; impact burst as in §2 in the rail colour plus white |
 | Chainsaw | no projectile; its `spark` events become streak sparks (§2) |
 
@@ -183,7 +184,7 @@ Same joint lengths and `RIG_SCALE`. On top of today's parts:
 
 ### 7. Patch notes
 
-- "What's new" gets a second before/after pair, "Shots and explosions" (dots → tracers),
+- "What's new" gets a second before/after pair, "Shots and hits" (dots → tracers),
   and the fighter pair's "after" picture is retaken with the new look.
 - EN/RU note lines and a CHANGELOG entry under 0.4.0.
 
@@ -237,7 +238,7 @@ Same joint lengths and `RIG_SCALE`. On top of today's parts:
 7. Landing squash and dust are detected from the drawn position, not `isGrounded` (my
    call: remote fighters are drawn 100 ms in the past; this keeps offline and online the
    same without touching the net code).
-8. Muzzle glow capped at 33 px and the flash fades over ~100 ms (my call: resolves the
+8. Muzzle glow capped at 33 px and the flash fades linearly over 120 ms (my call: resolves the
    conflict between §4 and the anti-goal, and fixes the ~21 ms flash that nobody sees).
 
 ## Builder's check (2026-11-02)

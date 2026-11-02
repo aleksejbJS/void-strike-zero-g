@@ -24,7 +24,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.4.0', date: null, comparisons: [
             { caption: 'The new fighter', ...FIGHTER },
-            { caption: 'Shots and explosions', ...shots('shots') },
+            { caption: 'Shots and hits', ...shots('shots') },
             { caption: 'Standard map: a space station', ...STATION },
             { caption: 'Tunnels: an asteroid mine', ...MINE },
             { caption: 'Hunger Games: a show arena', ...ARENA },
@@ -34,7 +34,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'New fighter: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, recoil, a helmet that looks where you aim',
             'Body parts fly apart in their own colors after a death',
             'Shots and hits look the part: glowing bullet trails, a plasma orb, a rocket with smoke, a spinning grenade, sparks and scorch marks on walls and floors, blood and a flash on a fighter that gets hit',
-            "Bigger explosions with a fireball, shockwave, embers and smoke; a warm flash of light on the fighter's hands when firing",
+            "Brighter, fuller explosions with a fireball, shockwave, embers and smoke; a warm flash of light on the fighter's hands when firing",
             'A sturdier fighter: larger head, chest and boots, thicker arms and legs, a shiny visor, pads and a strap, dust under the feet when running and landing',
             'New look for the menu, character setup and HUD',
             'Pick a mode and see how it plays, with its key rules',
@@ -82,7 +82,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ru: [
         { version: '0.4.0', date: null, comparisons: [
             { caption: 'Новый боец', ...FIGHTER },
-            { caption: 'Выстрелы и взрывы', ...shots('shots') },
+            { caption: 'Выстрелы и попадания', ...shots('shots') },
             { caption: 'Стандартная карта: космическая станция', ...STATION },
             { caption: 'Тоннели: шахта на астероиде', ...MINE },
             { caption: 'Голодные игры: шоу-арена', ...ARENA },
@@ -92,7 +92,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Новый боец: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, отдача, шлем смотрит туда, куда целитесь',
             'После смерти части тела разлетаются в своих цветах',
             'Выстрелы и попадания выглядят как надо: светящиеся следы пуль, плазменный шар, ракета с дымом, вращающаяся граната, искры и подпалины на стенах и полу, кровь и вспышка на бойце, в которого попали',
-            'Взрывы стали ярче: огненный шар, ударная волна, угли и дым; при стрельбе на руках бойца вспыхивает тёплый свет',
+            'Взрывы стали ярче и объёмнее: огненный шар, ударная волна, угли и дым; при стрельбе на руках бойца вспыхивает тёплый свет',
             'Боец стал плотнее: крупнее голова, грудь и ботинки, толще руки и ноги, блик на визоре, наколенники, налокотники и ремень, пыль под ногами при беге и приземлении',
             'Новый вид меню, экрана персонажа и интерфейса в бою',
             'Выберите режим и посмотрите, как он играется, с главными правилами',
