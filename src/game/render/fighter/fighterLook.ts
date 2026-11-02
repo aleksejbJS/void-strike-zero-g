@@ -66,3 +66,16 @@ export const shade = (color: number, k: number) => {
     const ch = (shift: number) => Math.max(0, Math.min(255, Math.round(((color >> shift) & 255) * k)));
     return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 };
+
+const FLASH_LIGHTEN = 0.7;
+
+/** The look brightened for a hit flash (amount 0..1); the same object when there is no flash. */
+export const flashLook = (look: FighterLook, amount: number): FighterLook => {
+    if (amount <= 0) return look;
+    const k = 1 + FLASH_LIGHTEN * amount;
+    return {
+        ...look,
+        head: shade(look.head, k), torso: shade(look.torso, k), arm: shade(look.arm, k),
+        leg: shade(look.leg, k), jet: shade(look.jet, k),
+    };
+};

@@ -2,7 +2,7 @@
 // The container sits at the player's feet; only the fighter inside it is mirrored.
 
 import { Container, Graphics, Texture } from 'pixi.js';
-import { Entity, Vector2 } from '../../types';
+import { Entity, GameState, Vector2 } from '../../types';
 import { createFighterView, drawFighter, FighterView } from './fighter/fighterView';
 import { FighterAnimator } from './fighter/fighterAnimator';
 import { RIG_SCALE, upperPoint } from './fighter/fighterPose';
@@ -43,7 +43,7 @@ const aimOf = (p: Entity, camera: Vector2, mouse: Vector2, screenW: number, scre
 
 export const updatePlayerVisual = (
     c: Container, p: Entity, camera: Vector2, mouse: Vector2, screenW: number, screenH: number,
-    textures: Record<string, Texture | undefined>, isLocal: boolean, now = Date.now(),
+    textures: Record<string, Texture | undefined>, isLocal: boolean, game: GameState, now = Date.now(),
 ) => {
     c.visible = !p.dead;
     const view = views.get(c);
@@ -51,7 +51,7 @@ export const updatePlayerVisual = (
     c.alpha = 1;
     c.position.set(p.pos.x, p.pos.y);
 
-    const frame = animator.frame(p, aimOf(p, camera, mouse, screenW, screenH, isLocal), now, textures);
+    const frame = animator.frame(p, aimOf(p, camera, mouse, screenW, screenH, isLocal), now, textures, game);
     drawFighter(view, frame);
     const shadow = c.getChildByLabel('contactShadow');
     if (shadow) shadow.visible = p.isGrounded;

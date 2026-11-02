@@ -478,7 +478,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
         let visual = cache.players.get(p.id);
         if (!visual) { visual = createPlayerVisual(p); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
-        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache.textures, p.id === localPlayerId);
+        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache.textures, p.id === localPlayerId, state);
     });
 
     // Projectiles: pooled sprites per live id; each shotgun shot leaves one muzzle puff where it was first seen

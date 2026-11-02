@@ -2,7 +2,7 @@
 
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
-import { FighterLook, shade } from './fighterLook';
+import { FighterLook, flashLook, shade } from './fighterLook';
 import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, limb } from './fighterParts';
 import { drawPad } from './fighterDetails';
 import { GLOVE } from './fighterPaint';
@@ -30,6 +30,9 @@ export interface FighterFrame {
     flicker: number;   // 0..1, flame length jitter
     tailSwing: number; // -1..1
     muzzleFlash: number; // 0..1
+    squash?: number;   // 0..1, landing squash (default 0)
+    headBob?: number;  // radians added to the head tilt (default 0)
+    hitFlash?: number; // 0..1, brightens the colours after a hit (default 0)
 }
 
 const FALLBACK_GUN = 0x1e293b;
@@ -37,6 +40,8 @@ const FLAME_GLOW_TINT = 0xff9a3c;
 const FLAME_GLOW_ALPHA = 0.7;
 const FLAME_GLOW_RADIUS = { min: 16, max: 20 };
 const BACK_KNEE_PAD = shade(GLOVE, 0.8);
+const SQUASH_WIDEN = 0.18;  // a full squash is 18% wider and 16% lower, pivoting on the feet
+const SQUASH_FLATTEN = 0.16;
 
 export const createFighterView = (): FighterView => {
     const root = new Container();
@@ -63,8 +68,11 @@ const placeFlameGlow = (glow: Sprite, pose: FighterPose, flicker: number) => {
 };
 
 export const drawFighter = (view: FighterView, f: FighterFrame) => {
-    const { pose, look, grip } = f;
-    view.root.scale.set(f.facing * RIG_SCALE, RIG_SCALE);
+    const { pose, grip } = f;
+    const look = flashLook(f.look, f.hitFlash ?? 0);
+    const squash = f.squash ?? 0;
+    // The root's origin is at the feet, so scaling about it keeps them planted
+    view.root.scale.set(f.facing * RIG_SCALE * (1 + SQUASH_WIDEN * squash), RIG_SCALE * (1 - SQUASH_FLATTEN * squash));
 
     view.flameGlow.visible = f.flame;
     if (f.flame) placeFlameGlow(view.flameGlow, pose, f.flicker);
@@ -93,7 +101,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
         view.headKey = headKey;
     }
     view.head.position.set(pose.head.x, pose.head.y);
-    view.head.rotation = pose.headTilt;
+    view.head.rotation = pose.headTilt + (f.headBob ?? 0);
 
     const w = view.weapon;
     if (f.weapon && w.texture !== f.weapon) w.texture = f.weapon;

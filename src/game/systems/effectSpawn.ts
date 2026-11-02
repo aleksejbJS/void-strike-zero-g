@@ -98,10 +98,11 @@ export type ParticleOverrides = Partial<Pick<Particle, 'decay' | 'size' | 'vel'>
 export const createParticles = (
     state: GameState, x: number, y: number, count: number, color: string,
     type: ParticleKind = 'spark', overrides: ParticleOverrides = {}
-) => {
-    if (BUDGETED_KINDS.has(type) && state.particles.length > PARTICLE_BUDGET) return;
+): Particle[] => {
+    const added: Particle[] = [];
+    if (BUDGETED_KINDS.has(type) && state.particles.length > PARTICLE_BUDGET) return added;
     for (let i = 0; i < count; i++) {
-        state.particles.push({
+        const particle: Particle = {
             id: nextId('pt_'),
             pos: { x, y },
             // Copied so particles sharing one override never share a mutable vector
@@ -115,6 +116,9 @@ export const createParticles = (
             size: overrides.size ?? sizeFor(type),
             type,
             rotation: Math.random() * Math.PI * 2
-        });
+        };
+        state.particles.push(particle);
+        added.push(particle);
     }
+    return added;
 };
