@@ -487,8 +487,8 @@ export default function GameCanvas() {
                 visualCache.current.pickups.clear();
                 visualCache.current.decals.clear();
                 visualCache.current.floatingTexts.clear();
-                decalLayer.removeChildren().forEach(c => c.destroy({ children: true }));
-                gameLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+                decalLayer.removeChildren().forEach(c => c.destroy({ children: true, context: true }));
+                gameLayer.removeChildren().forEach(c => c.destroy({ children: true, context: true }));
                 platformLayer.clear();
                 zoneLayer.clear();
                 clearMarks();

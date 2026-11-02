@@ -472,10 +472,10 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
     // Players
     const activePlayerIds = new Set(state.players.map(p => p.id));
     for (const [id, container] of cache.players) {
-        if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true }); cache.players.delete(id); }
+        if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true, context: true }); cache.players.delete(id); }
     }
     state.players.forEach(p => {
-        if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
+        if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true, context: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
         let visual = cache.players.get(p.id);
         if (!visual) { visual = createPlayerVisual(p); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
         updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache.textures, p.id === localPlayerId, state);

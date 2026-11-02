@@ -82,6 +82,6 @@ export class ProjectileView {
 
     private dispose(obj: Container): void {
         obj.parent?.removeChild(obj);
-        if (!obj.destroyed) obj.destroy({ children: true });
+        if (!obj.destroyed) obj.destroy({ children: true, context: true });
     }
 }

@@ -5,7 +5,7 @@ import { Entity, Team, Vector2 } from '../../types';
 
 const remove = (c: Container, label: string) => {
     const child = c.getChildByLabel(label);
-    if (child) { c.removeChild(child); child.destroy({ children: true }); }
+    if (child) { c.removeChild(child); child.destroy({ children: true, context: true }); }
 };
 
 const ensure = <T extends Container>(c: Container, label: string, make: () => T): T => {

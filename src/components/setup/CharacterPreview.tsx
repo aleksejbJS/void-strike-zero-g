@@ -24,7 +24,7 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
     const redraw = () => {
         const a = app.current;
         if (!a || !textures.current) return;
-        a.stage.removeChildren().forEach(c => c.destroy({ children: true })); // textures are shared and kept
+        a.stage.removeChildren().forEach(c => c.destroy({ children: true, context: true })); // textures are shared and kept
         const built = buildCharacter(lookRef.current, textures.current);
         built.update(Date.now() / 1000);
         const holder = new Container();
