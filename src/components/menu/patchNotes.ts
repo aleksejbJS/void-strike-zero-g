@@ -31,6 +31,9 @@ const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.5', date: null, points: [
+            'The character screen fits a laptop screen: the Start button is always in view and the part tiles scroll in their own panel',
+        ] },
         { version: '0.4.3', date: 'Nov 2, 2026', points: [
             'Build your fighter from parts: helmet, visor, ears, tail, jetpack, flame, torso pattern and shoulder badge; the old skins are now ready-made builds to start from, and your saved look stays',
             'New parts open one per level: every match you finish gives XP, a win gives more, and the end screen shows which part opened',
@@ -110,6 +113,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.5', date: null, points: [
+            'Экран персонажа помещается на экран ноутбука: кнопка «Начать матч» всегда на виду, а плитки деталей прокручиваются в своей панели',
+        ] },
         { version: '0.4.3', date: '02.11.2026', points: [
             'Соберите бойца из деталей: шлем, визор, уши, хвост, джетпак, пламя, узор на торсе и знак на плече; старые скины стали готовыми сборками, а ваш сохранённый облик остался',
             'Новые детали открываются по одной за уровень: за каждый доигранный матч даётся опыт, за победу — больше, а на экране итогов видно, какая деталь открылась',
