@@ -40,7 +40,8 @@ interface Slot {
 export interface AdOverlay {
     /** Returns the ids of places that currently show a network banner. `solidsFor` lists what
      *  stands in front of a place on screen (platforms, girders) to cut out of its banner. */
-    update(camera: Vector2, fight: ScreenRect[], solidsFor: (place: AdPlace, rect: ScreenRect) => ScreenRect[], now: number, screenW: number, screenH: number): Set<string>;
+    /** Rects and `screenW`/`screenH` are on the virtual screen (see render/viewport); `zoom` scales it to the window. */
+    update(camera: Vector2, fight: ScreenRect[], solidsFor: (place: AdPlace, rect: ScreenRect) => ScreenRect[], now: number, screenW: number, screenH: number, zoom?: number): Set<string>;
     destroy(): void;
 }
 
@@ -78,7 +79,7 @@ let tokenSeq = 0;
 export const createAdOverlay = (host: HTMLElement, places: AdPlace[], config: AdConfig): AdOverlay => {
     const root = document.createElement('div');
     root.setAttribute('aria-hidden', 'true');
-    Object.assign(root.style, { position: 'absolute', inset: '0', overflow: 'hidden', pointerEvents: 'none', zIndex: '0' });
+    Object.assign(root.style, { position: 'absolute', left: '0', top: '0', overflow: 'hidden', pointerEvents: 'none', zIndex: '0', transformOrigin: '0 0' });
     host.insertBefore(root, host.firstChild);
 
     const slots: Slot[] = places.flatMap(place => {
@@ -122,8 +123,18 @@ export const createAdOverlay = (host: HTMLElement, places: AdPlace[], config: Ad
     };
     window.addEventListener('message', onMessage);
 
+    // The root is the virtual screen, scaled to the window like the canvas world
+    let rootStyle = '';
+    const fitRoot = (w: number, h: number, zoom: number) => {
+        const next = `${w.toFixed(1)}|${h.toFixed(1)}|${zoom.toFixed(4)}`;
+        if (next === rootStyle) return;
+        rootStyle = next;
+        Object.assign(root.style, { width: `${w}px`, height: `${h}px`, transform: `scale(${zoom})` });
+    };
+
     return {
-        update(camera, fight, solidsFor, now, w, h) {
+        update(camera, fight, solidsFor, now, w, h, zoom = 1) {
+            fitRoot(w, h, zoom);
             const showing = new Set<string>();
             let loaded = slots.filter(s => s.frame).length;
             for (const s of slots) {
