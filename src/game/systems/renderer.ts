@@ -442,7 +442,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
     // Players
     const activePlayerIds = new Set(state.players.map(p => p.id));
     for (const [id, container] of cache.players) {
-        if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true, context: true }); cache.players.delete(id); }
+        if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true, context: true }); cache.players.delete(id); forgetPlayerVisual(id); }
     }
     state.players.forEach(p => {
         if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true, context: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
