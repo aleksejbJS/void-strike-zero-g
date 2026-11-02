@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.2 (unreleased)
+## Version 0.4.2 (2026-11-02)
 
 ### 🚩 Flags
 - All flags are drawn by code in one "station standard" design (spec: `docs/plans/2026-11-02-flag-look-spec.md`): steel pole with brass collars and a glowing crystal, segmented cloth with shaded folds, a dark hem with rivets, chevrons and a swallowtail end

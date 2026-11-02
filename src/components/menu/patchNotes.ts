@@ -31,7 +31,7 @@ const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.2', date: null, groups: [
+        { version: '0.4.2', date: 'Nov 2, 2026', groups: [
             { title: 'Flags', comparisons: [{ caption: 'Capture the Flag base', ...FLAG }], points: [
                 'Flags are redrawn: a steel pole with a glowing crystal, cloth with folds that waves in the wind, and a heavy base with hazard tape',
                 'A carried flag streams behind a running fighter and hangs down when they stop',
@@ -103,7 +103,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.2', date: null, groups: [
+        { version: '0.4.2', date: '02.11.2026', groups: [
             { title: 'Флаги', comparisons: [{ caption: 'База в «Захвате флага»', ...FLAG }], points: [
                 'Флаги нарисованы заново: стальное древко со светящимся кристаллом, ткань со складками, которая колышется на ветру, и тяжёлая база с жёлто-чёрной полосой',
                 'Флаг за спиной развевается позади бегущего бойца и обвисает, когда он останавливается',
