@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { Vector2, WeaponType } from '../../../types';
 import type { DeathEvent } from '../../systems/events';
 import { Corpse, createCorpse } from '../../systems/ragdoll/corpseBody';
-import { FighterPose, solvePose } from '../fighter/fighterPose';
+import { FighterPose, RIG_SCALE, solvePose } from '../fighter/fighterPose';
 import { gripPoints } from '../fighter/weaponGrips';
-import { piecesOf, poseFromCorpse } from './corpsePose';
+import { cutLegsOf, piecesOf, poseFromCorpse } from './corpsePose';
 
 const death = (extra: Partial<DeathEvent> = {}): DeathEvent => ({
     type: 'DEATH', x: 100, y: 500, color: '#fff', height: 72, vel: { x: 0, y: 0 }, facing: 1,
@@ -108,6 +108,33 @@ describe('piecesOf', () => {
             const torso = piecesOf(c).find(p => p.part === 'torso')!;
             // Pixi rotation is clockwise-positive in world space (y down), whatever the facing
             expect(torso.rotation).toBeCloseTo(0.5 + facing * poseFromCorpse(createCorpse(death({ facing }))).pose.lean, 1);
+        }
+    });
+
+    it('cut legs bend with their points: standing at death, kneeling when they fold', () => {
+        for (const facing of [1, -1] as const) {
+            const fresh = cutLegsOf(createCorpse(death({ kind: 'cut', facing })));
+            const idleJoints = joints(idle);
+            for (const id of ['knF', 'anF', 'knB', 'anB'] as const) {
+                expect(fresh[id].x).toBeCloseTo(idleJoints[id].x, 5);
+                expect(fresh[id].y).toBeCloseTo(idleJoints[id].y, 5);
+            }
+            // Folded under the hip: knees down on the floor, shins flat behind. The piece turned by its
+            // rotation (and mirrored with the facing) puts every knee and ankle back on its point.
+            const c = createCorpse(death({ kind: 'cut', facing }));
+            const { hip } = c.points;
+            c.points.knF = { x: hip.x + facing * 4, y: hip.y + 16, px: 0, py: 0 };
+            c.points.knB = { x: hip.x - facing * 2, y: hip.y + 16, px: 0, py: 0 };
+            c.points.anF = { x: hip.x - facing * 14, y: hip.y + 17, px: 0, py: 0 };
+            c.points.anB = { x: hip.x - facing * 19, y: hip.y + 17, px: 0, py: 0 };
+            const legs = piecesOf(c).find(p => p.part === 'legs')!;
+            const inPiece = cutLegsOf(c);
+            const cos = Math.cos(legs.rotation), sin = Math.sin(legs.rotation);
+            for (const id of ['knF', 'anF', 'knB', 'anB'] as const) {
+                const local = { x: inPiece[id].x * facing * RIG_SCALE, y: inPiece[id].y * RIG_SCALE };
+                expect(legs.at.x + local.x * cos - local.y * sin).toBeCloseTo(c.points[id].x, 5);
+                expect(legs.at.y + local.x * sin + local.y * cos).toBeCloseTo(c.points[id].y, 5);
+            }
         }
     });
 });

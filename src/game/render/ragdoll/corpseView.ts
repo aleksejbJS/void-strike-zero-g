@@ -4,6 +4,7 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { Corpse } from '../../systems/ragdoll/corpseBody';
+import { FighterLook } from '../fighter/fighterLook';
 import { RIG_SCALE } from '../fighter/fighterPose';
 import { HEAD_R } from '../fighter/fighterStyle';
 import { createFighterView, drawFighter, FighterView } from '../fighter/fighterView';
@@ -11,7 +12,8 @@ import { heldWeaponKey } from '../fighter/fighterAnimator';
 import { gripPoints } from '../fighter/weaponGrips';
 import { IDLE_PARTS } from '../fighter/parts/partMotionFrame';
 import { drawRagdollShape, lookOfCorpse } from '../ragdollView';
-import { piecesOf, poseFromCorpse } from './corpsePose';
+import { cutLegsOf, piecesOf, poseFromCorpse } from './corpsePose';
+import { drawLegsHalf } from './cutHalves';
 
 export interface CorpseView {
     root: Container;
@@ -19,6 +21,7 @@ export interface CorpseView {
     pieces?: Graphics[];   // a torn body (gib, cut), in the order of piecesOf
     gun: Sprite;
     head?: HeadRoll;       // a torn-off head (gib): it turns on its own, not with the neck it left
+    legsLook?: FighterLook; // cut legs: redrawn every frame, bending at the knees with their points
 }
 
 /** How far a torn-off head has turned, and where its point was when the turn was last updated. */
@@ -79,6 +82,7 @@ export const updateCorpseView = (v: CorpseView, c: Corpse): void => {
         piecesOf(c).forEach((p, i) => {
             pieces[i].position.set(p.at.x, p.at.y);
             pieces[i].rotation = p.part === 'head' && v.head ? rollHead(v.head, c) : p.rotation;
+            if (p.part === 'legs' && v.legsLook) drawLegsHalf(pieces[i].clear(), v.legsLook, cutLegsOf(c));
         });
     }
     placeGun(v.gun, c);
@@ -103,6 +107,7 @@ export const createCorpseView = (c: Corpse, textures: Textures): CorpseView => {
         // A gib head starts at its tilt at death and rolls on from there
         const headPiece = c.kind === 'gib' ? piecesOf(c).find(p => p.part === 'head') : undefined;
         view = { root, pieces, gun, head: headPiece && { turn: headPiece.rotation, x: c.points.head.x } };
+        if (c.kind === 'cut') view.legsLook = lookOfCorpse(c.colors);
     } else {
         const fighter = createFighterView();
         root.addChild(fighter.root);

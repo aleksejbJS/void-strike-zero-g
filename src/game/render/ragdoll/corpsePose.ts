@@ -98,9 +98,12 @@ const gibPieces = (c: Corpse, r: RigPoints): CorpsePiece[] => [
     piece(c, 'head', world(c, 'head'), headTiltOf(r)),
 ];
 
+/** How far the cut legs have turned from standing (rig space): the hip → between the knees line. */
+const legsTurn = (r: RigPoints) => upAngle(minus(middle(r.knF, r.knB), r.hip)) - LEGS_REST;
+
 /** Rail cut, back to front: the legs turn with the knees, the upper half (torso top, head, arms) with the neck → head line. */
 const cutPieces = (c: Corpse, r: RigPoints): CorpsePiece[] => [
-    piece(c, 'legs', world(c, 'hip'), upAngle(minus(middle(r.knF, r.knB), r.hip)) - LEGS_REST),
+    piece(c, 'legs', world(c, 'hip'), legsTurn(r)),
     piece(c, 'upper', world(c, 'neck'), headTiltOf(r)),
 ];
 
@@ -109,4 +112,23 @@ export const piecesOf = (c: Corpse): CorpsePiece[] => {
     if (c.kind === 'gib') return gibPieces(c, rigPoints(c));
     if (c.kind === 'cut') return cutPieces(c, rigPoints(c));
     return [];
+};
+
+/** Knees and ankles of cut legs inside their piece: rig units around the hip, before the piece's turn. */
+export interface CutLegs { knF: Vector2; anF: Vector2; knB: Vector2; anB: Vector2 }
+
+/** A rig point turned back by `a` (Pixi turns clockwise, y down). */
+const unturn = (p: Vector2, a: number): Vector2 => {
+    const cos = Math.cos(a), sin = Math.sin(a);
+    return { x: p.x * cos + p.y * sin, y: -p.x * sin + p.y * cos };
+};
+
+/**
+ * Where the cut legs' knees and ankles lie inside the legs piece, so the piece bends with them: legs
+ * that fold under the hip kneel instead of standing stiff with their boots through the floor.
+ */
+export const cutLegsOf = (c: Corpse): CutLegs => {
+    const r = rigPoints(c);
+    const a = legsTurn(r);
+    return { knF: unturn(r.knF, a), anF: unturn(r.anF, a), knB: unturn(r.knB, a), anB: unturn(r.anB, a) };
 };
