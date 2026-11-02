@@ -14,6 +14,8 @@ import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protoc
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { SessionSocket } from './sessionSocket';
+import { sanitizeBuild } from '../build/sanitizeBuild';
+import { presetBuild } from '../build/buildPresets';
 
 export interface SessionCallbacks {
     onJoined: (info: JoinAccepted) => void;
@@ -161,6 +163,8 @@ export class ClientSession {
         toLocalClock(snap, Date.now() - snap.serverTime);
         const { serverTime: _serverTime, players, ...shared } = snap;
         Object.assign(state, shared);
+        // A newer host may send parts this version does not know: drawing one would throw
+        for (const p of players) if (p.build) p.build = sanitizeBuild(p.build, presetBuild(p.skinId));
 
         const previous = new Map(state.players.map(p => [p.id, p]));
         state.players = players.map(server => {

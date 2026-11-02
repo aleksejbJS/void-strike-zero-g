@@ -55,6 +55,7 @@ const segmentAngle = (c: TailChain, i: number, m: PartMotionFrame) => {
 export const tailPoints = (tail: TailId, root: Vector2, m: PartMotionFrame): Vector2[] => {
     if (tail === 'none') return [];
     const c = CHAINS[tail];
+    if (!c) return []; // unknown id: last guard, builds are sanitized upstream
     const pts: Vector2[] = [{ ...root }];
     c.rest.forEach((_, i) => {
         const a = segmentAngle(c, i, m), p = pts[i];

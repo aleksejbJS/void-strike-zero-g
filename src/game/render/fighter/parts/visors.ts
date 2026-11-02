@@ -88,7 +88,7 @@ export const drawVisor = (g: Graphics, visor: VisorId, helmet: HelmetId, color: 
         return;
     }
     const { at, u } = visorSpace(helmet);
-    const shape = helmet === 'angular' && visor === 'strip' ? ANGULAR_STRIP : GLASS[visor];
+    const shape = helmet === 'angular' && visor === 'strip' ? ANGULAR_STRIP : GLASS[visor] ?? GLASS.strip; // unknown ids: last guard, builds are sanitized upstream
     const map = (pts: Vector2[]) => pts.map(p => at(p.x, p.y));
     const fit = (pts: Vector2[]) => helmet === 'angular' ? clipToConvex(map(pts), ANGULAR) : map(pts);
     shape.glass.map(fit).forEach(s => {

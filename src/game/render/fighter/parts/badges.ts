@@ -81,7 +81,7 @@ export const drawBadge = (g: Graphics, at: (x: number, y: number) => Vector2, lo
             strokeAll(g, local, digitStrokes(badgeNumber), DIGIT_LINE_W, look.pattern);
             return;
         case 'emblem': {
-            const { fills, holes } = EMBLEM_SHAPES[emblem];
+            const { fills, holes } = EMBLEM_SHAPES[emblem] ?? EMBLEM_SHAPES.skull;
             fillAll(g, local, fills, look.pattern);
             for (const hole of holes) g.poly(flat(hole.map(local))).fill(OUTLINE);
             return;

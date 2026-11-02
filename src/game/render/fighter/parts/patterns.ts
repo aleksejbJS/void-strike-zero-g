@@ -104,7 +104,7 @@ const drawPiece = (g: Graphics, at: At, piece: PatternPiece, color: number) => {
  * The living fighter draws the paint before its strap and pouch and the plates after them; a ragdoll draws 'all'.
  */
 export const drawPattern = (g: Graphics, at: At, look: FighterLook, layer: PatternLayer = 'all') => {
-    const pieces = PIECES[look.build.pattern].filter(piece =>
+    const pieces = (PIECES[look.build.pattern] ?? PIECES.none).filter(piece =>
         piece.points.length >= 3 && (layer === 'all' || (piece.kind === 'paint') === (layer === 'paint')));
     pieces.forEach(piece => drawPiece(g, at, piece, colorOf(piece.tone, look)));
     // The light edge goes over the stencils, so it is drawn once the plate is finished
