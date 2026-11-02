@@ -27,7 +27,7 @@ const CREEP = 1;
  * Fastest a point may move per tick: under half the thinnest map platform (20 units), a safety net
  * so a falling corpse (terminal speed would be about 72) never skips through a platform in one tick.
  */
-const MAX_SPEED = 9;
+export const MAX_SPEED = 9;
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
 

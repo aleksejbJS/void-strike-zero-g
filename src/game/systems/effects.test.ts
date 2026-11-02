@@ -81,8 +81,9 @@ describe('applyEffectEvent', () => {
         applyEffectEvent(state, { type: 'DEATH', x: 10, y: 20, color: '#ff0000', height: 72, vel: { x: 0, y: 0 }, facing: 1 });
         expect(state.corpses).toHaveLength(1);
         expect(state.corpses[0].kind).toBe('fall');
-        // A fall only slumps: nothing is thrown
-        expect(speedOf(state.corpses[0])).toBeLessThan(2.5);
+        // A fall only slumps: the body is not thrown (the dropped gun flips out on its own)
+        const body = Object.entries(state.corpses[0].points).filter(([id]) => !id.startsWith('gun')).map(([, p]) => p);
+        expect(Math.max(...body.map(p => Math.hypot(p.x - p.px, p.y - p.py)))).toBeLessThan(2.5);
     });
 
     it('DEATH from an older host (no vel, no facing, no kind) still leaves a corpse', () => {

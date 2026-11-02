@@ -3,7 +3,7 @@ import { GameMode, Platform } from '../../../types';
 import { createMockState } from '../../../test/mocks';
 import type { DeathEvent } from '../events';
 import { Corpse, CorpsePointId, createCorpse } from './corpseBody';
-import { speedOf, stepCorpse } from './corpseStep';
+import { MAX_SPEED, speedOf, stepCorpse } from './corpseStep';
 import { launchCorpse, pushCorpses } from './corpseLaunch';
 import { addCorpse, MAX_CORPSES, updateCorpses } from './corpses';
 
@@ -54,6 +54,24 @@ describe('launchCorpse', () => {
             expect(start.x - c.points.hip.x).toBeGreaterThan(20);
             expect(rose).toBe(true);
         }
+    });
+
+    it('a shot at chest height knocks the body onto its back, away from the shooter', () => {
+        for (let i = 0; i < REPEAT; i++) {
+            const c = launched('thrown', { dx: 15, dy: -6 });
+            run(c, 240);
+            const { head, hip } = c.points;
+            expect(head.x).toBeLessThan(hip.x);
+        }
+    });
+
+    it('a fast victim is slowed as a whole to the speed cap, not point by point', () => {
+        const c = createCorpse(death({ kind: 'thrown' }));
+        launchCorpse(c, { x: c.points.hip.x + 40, y: c.points.hip.y }, { x: -40, y: 0 });
+        const speeds = Object.values(c.points).map(p => Math.hypot(p.x - p.px, p.y - p.py));
+        expect(Math.max(...speeds)).toBeCloseTo(MAX_SPEED, 5);
+        // The slower points stay slower: the throw keeps its spin
+        expect(Math.min(...speeds)).toBeLessThan(MAX_SPEED - 1);
     });
 
     it('gib separates the pieces', () => {
@@ -110,6 +128,11 @@ describe('pushCorpses', () => {
         // 400 units away: not touched at all
         expect(Math.abs(far.points.hip.x - near.points.hip.x - 30)).toBeGreaterThan(300);
         expect(JSON.stringify(far.points)).toBe(farBefore);
+        // It hops off the floor, not only slides along it
+        const top = near.points.hip.y;
+        let highest = top;
+        run(near, 60, [FLOOR], () => { highest = Math.min(highest, near.points.hip.y); });
+        expect(top - highest).toBeGreaterThan(15);
     });
 });
 
