@@ -30,6 +30,9 @@ const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.1', date: 'Nov 2, 2026', points: [
+            'Fixed the black world at match start: starting a match quickly from the character screen could stop the world from drawing, leaving only the HUD until the page was reloaded',
+        ] },
         { version: '0.4.0', date: 'Nov 2, 2026', groups: [
             { title: 'Maps', comparisons: [
                 { caption: 'Standard map: a space station', ...STATION },
@@ -92,6 +95,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.1', date: '02.11.2026', points: [
+            'Исправлен чёрный мир в начале матча: быстрый старт матча с экрана персонажа мог остановить отрисовку мира — до перезагрузки страницы оставался виден только интерфейс',
+        ] },
         { version: '0.4.0', date: '02.11.2026', groups: [
             { title: 'Карты', comparisons: [
                 { caption: 'Стандартная карта: космическая станция', ...STATION },

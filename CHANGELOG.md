@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.1 (2026-11-02)
+
+### 🐛 Fixes
+- Black world at match start (production build): tearing down the character preview's Pixi canvas with `destroy(true)` released Pixi's page-wide batch pool while the match renderer was still using it, so its next frame crashed in the batcher ("Cannot read properties of null (reading 'clear')") and only the HUD stayed visible until the page was reloaded. Every Pixi app now goes through `destroyApp()` in `src/game/render/pixiApp.ts`, which removes the canvas without touching the global pools; a unit test guards the call
+
 ## Version 0.4.0 - "Hazard Bay" (2026-11-02)
 
 ### 🛰️ Map Looks: Station, Mine, Arena
