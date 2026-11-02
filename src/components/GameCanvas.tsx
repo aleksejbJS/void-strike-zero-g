@@ -14,6 +14,7 @@ import { screenToWorld, toView, viewportOf } from '../game/render/viewport';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
+import type { CorpseView } from '../game/render/ragdoll/corpseView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
@@ -108,6 +109,7 @@ export default function GameCanvas() {
         decals: new Map(),
         floatingTexts: new Map(),
         beamView: null as BeamView | null,
+        corpses: new Map<string, CorpseView>(),
         textures: {} as Record<string, Texture>,
     });
 
@@ -507,6 +509,7 @@ export default function GameCanvas() {
                 visualCache.current.pickups.clear();
                 visualCache.current.decals.clear();
                 visualCache.current.floatingTexts.clear();
+                visualCache.current.corpses.clear(); // their views go with the game layer below
                 decalLayer.removeChildren().forEach(c => c.destroy({ children: true, context: true }));
                 gameLayer.removeChildren().forEach(c => c.destroy({ children: true, context: true }));
                 platformLayer.clear();
@@ -966,6 +969,7 @@ export default function GameCanvas() {
             setInviteLink(null);
             localIdRef.current = 'player';
             visualCache.current.floatingTexts.clear();
+            visualCache.current.corpses.clear(); // destroyed with the app's stage
         };
     }, [actions, state.selectedMode, state.selectedSkin, state.playerColor, state.playerName, state.jetpackColor, state.headColor, state.armColor, state.legColor, state.torsoColor]);
 

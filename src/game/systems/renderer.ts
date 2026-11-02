@@ -10,6 +10,7 @@ import { BeamView } from '../render/projectiles/beamView';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
 import { createParticles } from './effectSpawn';
 import { createGroundFlagVisual, updateGroundFlagVisual } from '../render/flag/groundFlagView';
+import { syncCorpseViews } from '../render/ragdoll/corpseView';
 import { toView, Viewport } from '../render/viewport';
 
 // Desired visual sizes (largest dimension) for pickup sprites
@@ -439,6 +440,9 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
         if (p.type === ItemType.FLAG) updateGroundFlagVisual(obj, p, state.platforms, now);
         else updatePickupVisual(obj, p, cache);
     });
+
+    // Corpses: one view per lying corpse, behind the living fighters (cache.corpses is made on first use)
+    syncCorpseViews(gameLayer, state.corpses, cache, cache.textures);
 
     // Players
     const activePlayerIds = new Set(state.players.map(p => p.id));
