@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_BUILD, FighterBuild } from '../../build/buildParts';
 import { presetBuild } from '../../build/buildPresets';
-import { lookFromEntity, lookFromSetup } from './fighterLook';
+import { FighterLook, flashLook, lookFromEntity, lookFromSetup, shade } from './fighterLook';
 
 const entityColors = {
     color: '#3366cc', headColor: '#112233', torsoColor: '#445566', armColor: '#778899',
@@ -60,5 +60,24 @@ describe('lookFromSetup', () => {
         expect(look.jet).toBe(0x555555);
         expect(look.build).toBe(build);
         expect(look.visor).toBe(0x7fd3ff);
+    });
+});
+
+describe('flashLook', () => {
+    const look: FighterLook = { head: 0x808080, torso: 0x204060, arm: 0xf0f0f0, leg: 0x102030, jet: 0xfbbf24, visor: 0x336699, pattern: 0xe5e7eb, build: DEFAULT_BUILD };
+
+    it('reuses the same look when there is no flash', () => {
+        expect(flashLook(look, 0)).toBe(look);
+    });
+
+    it('lightens the colours by 70% at full flash and keeps the build', () => {
+        const lit = flashLook(look, 1);
+        expect(lit).not.toBe(look);
+        expect(lit.torso).toBe(shade(look.torso, 1.7));
+        expect(lit.head).toBe(shade(look.head, 1.7));
+        expect(lit.arm).toBe(0xffffff);
+        expect(lit.visor).toBe(shade(look.visor, 1.7));
+        expect(lit.pattern).toBe(shade(look.pattern, 1.7));
+        expect(lit.build).toBe(DEFAULT_BUILD);
     });
 });

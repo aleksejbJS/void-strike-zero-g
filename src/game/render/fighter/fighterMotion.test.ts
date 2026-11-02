@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FighterMotion, headBob } from './fighterMotion';
 import { DustBudget } from './fighterDust';
-import { FighterLook, flashLook, shade } from './fighterLook';
-import { DEFAULT_BUILD } from '../../build/buildParts';
 import { createMockState } from '../../../test/mocks';
 import { GameMode } from '../../../types';
 
@@ -111,25 +109,6 @@ describe('FighterMotion hit flash', () => {
         expect(m.observe(0, 80, 60).hitFlash).toBe(1);
         expect(m.observe(0, 80, 100).hitFlash).toBe(0);
         expect(m.observe(0, 100, 116).hitFlash).toBe(0);
-    });
-});
-
-describe('flashLook', () => {
-    const look: FighterLook = { head: 0x808080, torso: 0x204060, arm: 0xf0f0f0, leg: 0x102030, jet: 0xfbbf24, visor: 0x336699, pattern: 0xe5e7eb, build: DEFAULT_BUILD };
-
-    it('reuses the same look when there is no flash', () => {
-        expect(flashLook(look, 0)).toBe(look);
-    });
-
-    it('lightens the colours by 70% at full flash and keeps the build', () => {
-        const lit = flashLook(look, 1);
-        expect(lit).not.toBe(look);
-        expect(lit.torso).toBe(shade(look.torso, 1.7));
-        expect(lit.head).toBe(shade(look.head, 1.7));
-        expect(lit.arm).toBe(0xffffff);
-        expect(lit.visor).toBe(shade(look.visor, 1.7));
-        expect(lit.pattern).toBe(shade(look.pattern, 1.7));
-        expect(lit.build).toBe(DEFAULT_BUILD);
     });
 });
 

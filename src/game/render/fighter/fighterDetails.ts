@@ -84,7 +84,7 @@ export const drawNozzle = (g: Graphics, pose: FighterPose, lit: boolean) => {
 };
 
 /** Ellipse as a polygon (Graphics ellipses cannot be rotated). */
-const ellipsePoints = (cx: number, cy: number, rx: number, ry: number, rot: number, steps = 16): Vector2[] =>
+export const ellipsePoints = (cx: number, cy: number, rx: number, ry: number, rot: number, steps = 16): Vector2[] =>
     Array.from({ length: steps }, (_, i) => {
         const a = (i / steps) * Math.PI * 2, ex = Math.cos(a) * rx, ey = Math.sin(a) * ry;
         return { x: cx + ex * Math.cos(rot) - ey * Math.sin(rot), y: cy + ex * Math.sin(rot) + ey * Math.cos(rot) };
@@ -96,7 +96,7 @@ export const drawSpecular = (g: Graphics, r: number) => {
     g.poly(flat(ellipsePoints(-1.5 * k, -4.2 * k, 3.2 * k, 1.5 * k, -0.5))).fill({ color: WHITE, alpha: 0.35 });
 };
 
-const roundRectPoints = (x: number, y: number, w: number, h: number, r: number, steps = 5): Vector2[] => {
+export const roundRectPoints = (x: number, y: number, w: number, h: number, r: number, steps = 5): Vector2[] => {
     const pts: Vector2[] = [];
     const corner = (cx: number, cy: number, from: number) => {
         for (let i = 0; i <= steps; i++) {
@@ -112,7 +112,7 @@ const roundRectPoints = (x: number, y: number, w: number, h: number, r: number, 
 };
 
 /** The part of a convex polygon where f(p) <= 0 (one Sutherland-Hodgman pass). */
-const clipPoly = (pts: Vector2[], f: (p: Vector2) => number): Vector2[] => {
+export const clipPoly = (pts: Vector2[], f: (p: Vector2) => number): Vector2[] => {
     const out: Vector2[] = [];
     pts.forEach((p, i) => {
         const q = pts[(i + 1) % pts.length], fp = f(p), fq = f(q);
@@ -125,14 +125,19 @@ const clipPoly = (pts: Vector2[], f: (p: Vector2) => number): Vector2[] => {
     return out;
 };
 
-/** Glass over a rounded window, as three steps from its upper left to its lower right (no gradient fills in Pixi Graphics). */
-export const visorSheen = (g: Graphics, x: number, y: number, w: number, h: number, r: number) => {
-    const shape = roundRectPoints(x, y, w, h, r);
+/** Glass over any window shape, as three steps from its upper left to its lower right (no gradient fills in Pixi Graphics). */
+export const glassSheen = (g: Graphics, shape: Vector2[]) => {
+    const xs = shape.map(p => p.x), ys = shape.map(p => p.y);
+    const x = Math.min(...xs), y = Math.min(...ys), w = Math.max(...xs) - x, h = Math.max(...ys) - y;
     const along = (p: Vector2) => ((p.x - x) * w + (p.y - y) * h) / (w * w + h * h); // 0 at the upper left, 1 at the lower right
     g.poly(flat(shape)).fill({ color: VISOR_GLINT, alpha: 0.08 });
     g.poly(flat(clipPoly(shape, p => along(p) - 0.22))).fill({ color: VISOR_GLINT, alpha: 0.55 });
     g.poly(flat(clipPoly(shape, p => 0.82 - along(p)))).fill({ color: WHITE, alpha: 0.25 });
 };
+
+/** Glass sheen over a rounded window. */
+export const visorSheen = (g: Graphics, x: number, y: number, w: number, h: number, r: number) =>
+    glassSheen(g, roundRectPoints(x, y, w, h, r));
 
 /** Dark visor with its sheen, for a head of radius r. */
 export const drawVisor = (g: Graphics, r: number) => {

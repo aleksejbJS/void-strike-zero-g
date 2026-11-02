@@ -1,10 +1,13 @@
-// A fighter on screen: Pixi layers (flame glow, body, head, weapon, muzzle light, front arm) redrawn from a pose each frame.
+// A fighter on screen: Pixi layers (flame glow, body, ears, head, weapon, muzzle light, front arm) redrawn from a pose each frame.
 
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, headKeyOf, jointedLimb } from './fighterParts';
+import { FLAME_BASE, boot, drawFlame, drawJetpack, drawTail, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
+import { drawHead, headKeyOf } from './parts/helmets';
+import { drawEars } from './parts/ears';
+import { IDLE_PARTS } from './parts/partMotionFrame';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
@@ -14,6 +17,7 @@ export interface FighterView {
     root: Container;
     flameGlow: Sprite; // soft orange light behind the body, shown while the flame burns
     body: Graphics;    // jetpack, legs, back arm, torso
+    ears: Graphics;    // ears, horns and antennae behind the head, redrawn every frame
     head: Graphics;
     weapon: Sprite;
     light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
@@ -52,12 +56,13 @@ export const createFighterView = (): FighterView => {
     flameGlow.tint = FLAME_GLOW_TINT;
     flameGlow.visible = false;
     const body = new Graphics(); body.label = 'fighterBody';
+    const ears = new Graphics(); ears.label = 'fighterEars';
     const head = new Graphics(); head.label = 'fighterHead';
     const weapon = new Sprite(); weapon.label = 'fighterWeapon';
     const front = new Graphics(); front.label = 'fighterFront';
     const light = createMuzzleLight();
-    root.addChild(flameGlow, body, head, weapon, light, front);
-    return { root, flameGlow, body, head, weapon, light, front, headKey: '' };
+    root.addChild(flameGlow, body, ears, head, weapon, light, front);
+    return { root, flameGlow, body, ears, head, weapon, light, front, headKey: '' };
 };
 
 /** Place and size the glow at the middle of the flame; it follows the flicker. */
@@ -97,8 +102,11 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
         drawHead(view.head.clear(), look);
         view.headKey = headKey;
     }
-    view.head.position.set(pose.head.x, pose.head.y);
-    view.head.rotation = pose.headTilt + (f.headBob ?? 0);
+    drawEars(view.ears.clear(), look, IDLE_PARTS);
+    for (const layer of [view.ears, view.head]) {
+        layer.position.set(pose.head.x, pose.head.y);
+        layer.rotation = pose.headTilt + (f.headBob ?? 0);
+    }
 
     const w = view.weapon;
     if (f.weapon && w.texture !== f.weapon) w.texture = f.weapon;

@@ -4,11 +4,10 @@ import { Graphics } from 'pixi.js';
 import { Vector2 } from '../../../types';
 import { FighterPose, upperPoint } from './fighterPose';
 import { FighterLook, shade } from './fighterLook';
-import { BOOT, HEAD_K, HEAD_R, ROBOT_HEAD_K } from './fighterStyle';
+import { BOOT } from './fighterStyle';
 import { BELT, GLOVE, HAZARD, OUTLINE, OUTLINE_W, WHITE, dot, flat, outlinedPoly } from './fighterPaint';
 import {
-    drawChestLight, drawNozzle, drawPouch, drawSpecular, drawStrap, drawVisor, handGlint, limbHighlight,
-    plateHighlight, soleLine, torsoPoint, visorSheen,
+    drawChestLight, drawNozzle, drawPouch, drawStrap, handGlint, limbHighlight, plateHighlight, soleLine, torsoPoint,
 } from './fighterDetails';
 
 /** A limb segment: rounded bar with an outline and a light line along its upper side. */
@@ -97,51 +96,4 @@ export const drawTail = (g: Graphics, pose: FighterPose, look: FighterLook, swin
     const root = upperPoint(pose, -6, -1);
     const tip = { x: root.x - 9, y: root.y + 3 + swing * 3 };
     limb(g, root, tip, 3, look.pattern);
-};
-
-/** The ridge line over the top of a helmet, around the head's origin. */
-export const helmetRidge = (g: Graphics) => {
-    const r = HEAD_R - 2.2, from = Math.PI * 1.15, to = Math.PI * 1.75;
-    g.moveTo(r * Math.cos(from), r * Math.sin(from)).arc(0, 0, r, from, to).stroke({ width: 1.2, color: OUTLINE, cap: 'round' });
-};
-
-/** Identifies everything drawHead reads, so the view redraws the head only when one of these changes. */
-export const headKeyOf = (look: FighterLook) => {
-    const { helmet, visor, ears, pattern } = look.build;
-    return `${helmet}:${visor}:${ears}:${pattern}:${look.head}:${look.visor}:${look.pattern}`;
-};
-
-/** Head drawn around its own origin; the view positions and tilts it. */
-export const drawHead = (g: Graphics, look: FighterLook) => {
-    const { helmet, ears } = look.build;
-    if (helmet === 'box') {
-        const k = ROBOT_HEAD_K;
-        g.moveTo(1 * k, -6.5 * k).lineTo(1 * k, -10.5 * k).stroke({ width: 1.6 + OUTLINE_W, color: OUTLINE, cap: 'round' });
-        g.moveTo(1 * k, -6.5 * k).lineTo(1 * k, -10.5 * k).stroke({ width: 1.6, color: look.pattern, cap: 'round' });
-        g.roundRect(-6 * k, -6.5 * k, 13 * k, 12 * k, 2.5 * k).stroke({ width: OUTLINE_W, color: OUTLINE });
-        g.roundRect(-6 * k, -6.5 * k, 13 * k, 12 * k, 2.5 * k).fill(look.head);
-        g.roundRect(-1 * k, -3 * k, 8 * k, 4.5 * k, 1.5 * k).fill(look.visor);
-        visorSheen(g, -1 * k, -3 * k, 8 * k, 4.5 * k, 1.5 * k);
-        const l = -6 * k + 1.5, r = 7 * k - 1.5, t = -6.5 * k, b = 5.5 * k; // the straight part of the box edges
-        plateHighlight(g, [{ x: l, y: t }, { x: r, y: t }, { x: r, y: b }, { x: l, y: b }]);
-        return;
-    }
-    const k = HEAD_K;
-    const P = (x: number, y: number) => ({ x: x * k, y: y * k }); // ears and antennae keep their size relative to the head
-    if (ears === 'cat') {
-        plate(g, [P(-5.5, -3), P(-3.5, -11), P(-0.5, -5)], look.head);
-        plate(g, [P(0.5, -5.5), P(3.5, -11.5), P(5, -3.5)], look.head);
-    }
-    if (ears === 'antennae') {
-        limb(g, P(-1, -6), P(-4, -12), 1.2, look.head);
-        limb(g, P(2, -6), P(4, -12.5), 1.2, look.head);
-        dot(g, P(-4, -12), 1.6, look.pattern);
-        dot(g, P(4, -12.5), 1.6, look.pattern);
-    }
-    dot(g, { x: 0, y: 0 }, HEAD_R, look.head);
-    g.moveTo(0, 0).arc(0, 0, HEAD_R, Math.PI * 0.55, Math.PI * 1.25).closePath().fill(shade(look.head, 0.75));
-    drawSpecular(g, HEAD_R);
-    if (helmet === 'round' && ears === 'none') helmetRidge(g);
-    drawVisor(g, HEAD_R);
-    g.moveTo(2.6 * k, -1.8 * k).lineTo(7 * k, -1.8 * k).stroke({ width: 1, color: look.visor, cap: 'round' });
 };
