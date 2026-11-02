@@ -3,8 +3,9 @@
 // Whoever displays the game turns events into particles with applyEffectEvent,
 // so offline play and every online client look the same.
 
-import { Entity, GameState, Projectile, WeaponType } from '../../types';
-import { gameEvents, GameEvent, EffectKind } from './events';
+import { Entity, GameState, Projectile, Vector2, WeaponType } from '../../types';
+import { gameEvents, GameEvent, DeathEvent, EffectKind } from './events';
+import type { DeathKind } from './deathKind';
 import { nextId } from '../utils/id';
 import { createParticles, createRagdoll } from './effectSpawn';
 import { explosionBurst } from './explosionFx';
@@ -24,16 +25,18 @@ export const emitEffect = (effect: EffectKind, x: number, y: number, color?: str
 export const emitDamage = (x: number, y: number, amount: number) =>
     gameEvents.emit({ type: 'DAMAGE', x, y, amount: Math.round(amount) });
 
-export const emitDeath = (e: Entity) => gameEvents.emit(deathEvent(e));
+export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2) => gameEvents.emit(deathEvent(e, kind, from));
 
-/** The DEATH event for an entity: where it fell and the colours of its ragdoll. */
-export const deathEvent = (e: Entity): Extract<GameEvent, { type: 'DEATH' }> => ({
+/** The DEATH event for an entity: where it fell, how it died, how it moved and the colours of its ragdoll. */
+export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2): DeathEvent => ({
     type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
+    kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type,
     parts: {
         head: e.headColor || e.color,
         torso: e.torsoColor || e.color,
         arm: e.armColor || e.color,
         leg: e.legColor || '#475569',
+        jet: e.jetpackColor,
         build: e.build ?? presetBuild(e.skinId),
     },
 });

@@ -68,7 +68,7 @@ describe('explosion size', () => {
 describe('applyEffectEvent', () => {
     it('draws a death as blood, a decal and a ragdoll', () => {
         const state = createMockState(GameMode.DEATHMATCH);
-        applyEffectEvent(state, { type: 'DEATH', x: 10, y: 20, color: '#ff0000', height: 72 });
+        applyEffectEvent(state, { type: 'DEATH', x: 10, y: 20, color: '#ff0000', height: 72, vel: { x: 0, y: 0 }, facing: 1 });
         expect(state.particles.length).toBe(40);
         expect(state.decals.length).toBe(1);
         expect(state.ragdollParts.length).toBe(6);
@@ -204,7 +204,7 @@ describe('compositions', () => {
 
     it('a death bursts into 40 droplets in the fighter colour', () => {
         const state = createMockState(GameMode.DEATHMATCH);
-        applyEffectEvent(state, { type: 'DEATH', x: 10, y: 20, color: '#123456', height: 72 });
+        applyEffectEvent(state, { type: 'DEATH', x: 10, y: 20, color: '#123456', height: 72, vel: { x: 0, y: 0 }, facing: 1 });
         expect(count(state.particles)).toEqual({ blood: 40 });
         expect(state.particles.every(p => p.color === '#123456')).toBe(true);
         expect(state.particles.every(p => inRange(p.vel.x, -3, 3) && inRange(p.vel.y, -4, 0))).toBe(true);

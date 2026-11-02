@@ -3,7 +3,7 @@ import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
-import { checkPointInRect, checkRectOverlap, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
+import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
@@ -318,7 +318,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             if (target) {
                 hit = true;
                 hitFighter = true;
-                applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce);
+                const source = { weapon: proj.type, direct: true, from: prevPos, shooterDist: owner ? distance(owner.pos, target.pos) : undefined };
+                applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce, source);
             }
         }
         if (proj.type === WeaponType.GRENADE_LAUNCHER && proj.life <= 0) hit = true;

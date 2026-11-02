@@ -1,7 +1,8 @@
 // Game Event Bus — decouples physics from UI (sound, kill feed, etc.)
 
 import type { FighterBuild } from '../build/buildParts';
-import type { Team } from '../../types';
+import type { Team, Vector2, WeaponType } from '../../types';
+import type { DeathKind } from './deathKind';
 
 export type EffectKind = 'blood' | 'spark' | 'explosion' | 'shell' | 'respawn';
 
@@ -17,13 +18,18 @@ export type GameEvent =
     // `size`: explosion scale (1 = a rocket); other effects ignore it
     | { type: 'EFFECT'; effect: EffectKind; x: number; y: number; color?: string; count?: number; size?: number }
     | { type: 'DAMAGE'; x: number; y: number; amount: number }
-    | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors }
+    // How the fighter died, for the corpse each client simulates: `kind` (missing from older hosts: fall),
+    // `from` = blast centre / muzzle / beam origin, `vel` = victim velocity, `weapon` = the gun it held.
+    | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors;
+        kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType }
     // An objective changed hands (HUD banner). `team`: the flag's team for CTF grabbed/lost/returned,
     // the scoring team for CTF captured, the holder's team in Hold the Flag, NONE for intel.
     | { type: 'FLAG'; kind: FlagKind; action: FlagAction; team: Team };
 
-/** Colors of the body parts that fly apart on death, and the build whose parts they keep (none: the default build). */
-export interface RagdollColors { head: string; torso: string; arm: string; leg: string; build?: FighterBuild }
+export type DeathEvent = Extract<GameEvent, { type: 'DEATH' }>;
+
+/** Colors of the body parts that fly apart on death, and the build whose parts they keep (none: the default build). `jet`: the jetpack. */
+export interface RagdollColors { head: string; torso: string; arm: string; leg: string; jet?: string; build?: FighterBuild }
 
 type Listener = (event: GameEvent) => void;
 
