@@ -5,6 +5,7 @@ import { Application, Container, Graphics, Text, Texture } from 'pixi.js';
 import { GameState } from '../../../types';
 import { drawZoneOverlay, syncVisuals } from '../../../game/systems/renderer';
 import { createMapLook, MapLook } from '../../../game/render/scene/mapLook';
+import { Viewport } from '../../../game/render/viewport';
 import { forgetPlayerVisual } from '../../../game/render/playerVisual';
 import { ProjectileView } from '../../../game/render/projectiles/projectileView';
 import { ParticleView } from '../../../game/render/effects/particleView';
@@ -55,7 +56,9 @@ export const createPreviewRenderer = (app: Application, state: GameState, textur
 
     return {
         draw(s, labelledId) {
-            syncVisuals(app, world, gameLayer, decalLayer, uiLayer, s, cache, shake, OFF_SCREEN, null, null, null, null, null, '');
+            // The preview frames the world itself (VIEW_SCALE): the renderer draws on the canvas 1:1
+            const view: Viewport = { zoom: 1, w: app.screen.width, h: app.screen.height };
+            syncVisuals(view, world, gameLayer, decalLayer, uiLayer, s, cache, shake, OFF_SCREEN, null, null, null, null, null, '');
             if (s.hungerZone) drawZoneOverlay(zoneLayer, s.hungerZone);
             look.update(VIEW_CENTER, Date.now(), STAGE_W, STAGE_H);
             const labelled = labelledId ? s.players.find(p => p.id === labelledId && !p.dead) : undefined;

@@ -27,11 +27,16 @@ export interface PatchNote {
 const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
-const FLAG = shots('flag');
+const FLAG = shots('flag'), CAMERA = shots('camera');
 const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.6', date: 'Nov 2, 2026', groups: [
+            { title: 'Camera', comparisons: [{ caption: 'The same 2560 × 1440 window', ...CAMERA }], points: [
+                'Every screen now shows the same part of the map: fighters, flags and effects are bigger on large monitors, and a big monitor no longer sees further than a small one',
+            ] },
+        ] },
         { version: '0.4.5', date: 'Nov 2, 2026', groups: [
             { title: 'Menu', comparisons: [{ caption: 'Deathmatch preview', ...PREVIEWS }], points: [
                 'Mode previews in the menu are drawn by the game itself: real fighters in your own look, flags, rockets, ragdolls and the station, mine or arena behind them',
@@ -120,6 +125,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.6', date: '02.11.2026', groups: [
+            { title: 'Камера', comparisons: [{ caption: 'Одно и то же окно 2560 × 1440', ...CAMERA }], points: [
+                'Любой экран теперь показывает одинаковый кусок карты: на больших мониторах бойцы, флаги и эффекты крупнее, а большой монитор больше не видит дальше маленького',
+            ] },
+        ] },
         { version: '0.4.5', date: '02.11.2026', groups: [
             { title: 'Меню', comparisons: [{ caption: 'Превью «Боя насмерть»', ...PREVIEWS }], points: [
                 'Превью режимов в меню рисует сама игра: настоящие бойцы в вашем образе, флаги, ракеты, тряпичные куклы и станция, шахта или арена на фоне',

@@ -28,7 +28,8 @@ export const solidRects = (state: GameState, screenW: number, screenH: number): 
 
 export interface AdsController {
     attach(scene: MapScene | null): void;
-    update(state: GameState, now: number, screenW: number, screenH: number): void;
+    /** `screenW`/`screenH`: the virtual screen (render/viewport); `zoom` scales it to the window. */
+    update(state: GameState, now: number, screenW: number, screenH: number, zoom?: number): void;
     destroy(): void;
 }
 
@@ -53,13 +54,13 @@ export const createAdsController = (host: HTMLElement, configUrl: string): AdsCo
 
     return {
         attach(next) { scene = next; rebuild(); },
-        update(state, now, w, h) {
+        update(state, now, w, h, zoom = 1) {
             if (!overlay || !scene) return;
             const platforms = solidRects(state, w, h);
             const current = scene;
             const solidsFor = (place: AdPlace, rect: ScreenRect) =>
                 place.layer === 'wall' ? [...platforms, ...current.midSolidsIn(rect, state.camera, w, h)] : platforms;
-            const showing = overlay.update(state.camera, fightBlockers(state, w, h), solidsFor, now, w, h);
+            const showing = overlay.update(state.camera, fightBlockers(state, w, h), solidsFor, now, w, h, zoom);
             scene.adPlaces.forEach(v => setHouseHidden(v, showing.has(v.place.id)));
         },
         destroy() {
