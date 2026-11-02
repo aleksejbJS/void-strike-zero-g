@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { GameMode, WeaponType } from '../../types';
 import { WEAPONS_DATA } from '../../constants';
 import { translations } from '../../i18n/locales';
+import type { Reward } from '../../game/build/progress';
 import { GameHud, GameHudProps } from './GameHud';
 
 const t = ((key: keyof typeof translations.en, ...args: unknown[]) =>
@@ -32,9 +33,16 @@ const base = (over: Partial<GameHudProps> = {}): GameHudProps => ({
     onAchievementsClose: vi.fn(),
     hunger: null,
     gunGame: null,
+    reward: null,
     mobile: null,
     ...over,
 });
+
+const reward: Reward = {
+    gained: 50, levelBefore: 1, levelAfter: 2,
+    unlocked: [{ slot: 'ears', id: 'wolf', source: 'level', level: 2 }],
+};
+const result = { title: 'Alex wins', reason: 'Score limit reached', restartSec: 7, teams: null };
 
 describe('GameHud', () => {
     it('shows vitals, weapons and ammo', () => {
@@ -93,5 +101,39 @@ describe('GameHud', () => {
         expect(screen.getByText('Round ends in 3:12')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Bot 2' }));
         expect(onBet).toHaveBeenCalledWith('b2');
+    });
+
+    it('the results screen shows the XP and the opened part', () => {
+        render(<GameHud {...base({ reward, match: { timeLeftSec: null, goal: 'First to 20 kills', result } })} />);
+        expect(screen.getByText('+50 XP')).toBeInTheDocument();
+        expect(screen.getByText('Level 2!')).toBeInTheDocument();
+        expect(screen.getByText('New part — Ears & horns: Wolf')).toBeInTheDocument();
+    });
+
+    it('the results screen shows only the XP when no level was gained', () => {
+        render(<GameHud {...base({ reward: { gained: 20, levelBefore: 2, levelAfter: 2, unlocked: [] }, match: { timeLeftSec: null, goal: 'First to 20 kills', result } })} />);
+        expect(screen.getByText('+20 XP')).toBeInTheDocument();
+        expect(screen.queryByText(/^Level/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/New part/)).not.toBeInTheDocument();
+    });
+
+    it('no reward panel before the result appears', () => {
+        render(<GameHud {...base({ reward: null, match: { timeLeftSec: null, goal: 'First to 20 kills', result } })} />);
+        expect(screen.queryByText(/XP/)).not.toBeInTheDocument();
+    });
+
+    it('Hunger Games round result shows the XP', () => {
+        render(<GameHud {...base({ mode: GameMode.HUNGER_GAMES, reward, hunger: {
+            credits: 100, betTarget: null, winner: 'Alex', ended: true, timeUp: false, timeLeftSec: null, shrinkSec: null,
+            restartSec: 5, fightInSec: null, winnerId: 'me', localDead: false, alive: [], onBet: vi.fn(),
+        } })} />);
+        expect(screen.getByText('+50 XP')).toBeInTheDocument();
+        expect(screen.getByText('New part — Ears & horns: Wolf')).toBeInTheDocument();
+    });
+
+    it('Gun Game winner block shows the XP', () => {
+        render(<GameHud {...base({ mode: GameMode.GUN_GAME, reward, gunGame: { status: null, winner: 'Alex' } })} />);
+        expect(screen.getByText('+50 XP')).toBeInTheDocument();
+        expect(screen.getByText('Level 2!')).toBeInTheDocument();
     });
 });

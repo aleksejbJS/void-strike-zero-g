@@ -3,6 +3,7 @@
 
 import { GameState, GameMode, MapId } from '../../types';
 import { GameEvent } from '../systems/events';
+import type { FighterBuild } from '../build/buildParts';
 
 export const SNAPSHOT_RATE = 30; // snapshots per second sent to clients
 export const MAX_NAME_LENGTH = 16;
@@ -26,6 +27,7 @@ export interface JoinRequest {
     legColor: string;
     jetpackColor: string;
     skinId: string;
+    build: FighterBuild;
 }
 
 // Gameplay-relevant state only. Particles, decals, floating texts and ragdolls are

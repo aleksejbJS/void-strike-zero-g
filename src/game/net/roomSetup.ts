@@ -89,6 +89,7 @@ export const createJoinedPlayer = (id: string, req: JoinRequest, mode: GameMode,
     id, type: 'player', name: req.name, skinId: req.skinId,
     color: req.color, headColor: req.headColor, torsoColor: req.torsoColor,
     armColor: req.armColor, legColor: req.legColor, jetpackColor: req.jetpackColor,
+    build: req.build,
 });
 
 /** Team with fewer human players (team modes only). Bots don't count — joiners replace them. */

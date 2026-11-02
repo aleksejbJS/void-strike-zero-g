@@ -1,4 +1,6 @@
 
+import type { FighterBuild } from './game/build/buildParts';
+
 export type Vector2 = { x: number; y: number };
 
 export type Language = 'en' | 'ru';
@@ -91,6 +93,7 @@ export interface Entity {
   lastFired: number;
   type: 'player' | 'bot';
   skinId: string;
+  build?: FighterBuild; // Chosen parts; missing means the preset of skinId
   name: string; // Player display name
   score: number;
   grapple: {
@@ -185,6 +188,7 @@ export interface RagdollPart {
   rotation: number;
   angularVel: number;
   color: string;
+  build?: FighterBuild; // The build of the dead fighter, so the part keeps its ears, patterns and badge; missing = default build
   life: number;
   isGrounded: boolean;
   hungerOutTimer?: number;

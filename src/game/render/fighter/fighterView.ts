@@ -1,12 +1,16 @@
-// A fighter on screen: Pixi layers (flame glow, body, head, weapon, muzzle light, front arm) redrawn from a pose each frame.
+// A fighter on screen: Pixi layers (flame glow, body, ears, head, weapon, muzzle light, front arm) redrawn from a pose each frame.
 
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
-import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
+import { FighterPose, RIG_SCALE } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, limb } from './fighterParts';
-import { drawPad } from './fighterDetails';
-import { GLOVE } from './fighterPaint';
+import { boot, drawShoulderBadge, drawTorso, hand, jointedLimb } from './fighterParts';
+import { drawFlame, drawJetpack, flameMiddles } from './parts/jetpacks';
+import { flameColors } from './parts/flamePalette';
+import { drawHead, headKeyOf } from './parts/helmets';
+import { drawEars } from './parts/ears';
+import { drawTail } from './parts/tails';
+import { PartMotionFrame } from './parts/partMotionFrame';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
@@ -14,8 +18,9 @@ import { createMuzzleLight, drawMuzzle, muzzlePoint } from './muzzleFlash';
 
 export interface FighterView {
     root: Container;
-    flameGlow: Sprite; // soft orange light behind the body, shown while the flame burns
+    flameGlow: Sprite; // soft light in the flame colour behind the body, shown while the flame burns
     body: Graphics;    // jetpack, legs, back arm, torso
+    ears: Graphics;    // ears, horns and antennae behind the head, redrawn every frame
     head: Graphics;
     weapon: Sprite;
     light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
@@ -32,7 +37,7 @@ export interface FighterFrame {
     weaponType: WeaponType; // picks the size of the muzzle flash
     flame: boolean;
     flicker: number;   // 0..1, flame length jitter
-    tailSwing: number; // -1..1
+    parts: PartMotionFrame; // tail, ears, lamp and wings as the springs hold them
     muzzleFlash: number; // 0..1, strength of the flash (0 = none)
     squash?: number;   // 0..1, landing squash (default 0)
     headBob?: number;  // radians added to the head tilt (default 0)
@@ -40,10 +45,8 @@ export interface FighterFrame {
 }
 
 const FALLBACK_GUN = 0x1e293b;
-const FLAME_GLOW_TINT = 0xff9a3c;
 const FLAME_GLOW_ALPHA = 0.7;
 const FLAME_GLOW_RADIUS = { min: 16, max: 20 };
-const BACK_KNEE_PAD = shade(GLOVE, 0.8);
 const SQUASH_WIDEN = 0.18;  // a full squash is 18% wider and 16% lower, pivoting on the feet
 const SQUASH_FLATTEN = 0.16;
 
@@ -52,22 +55,23 @@ export const createFighterView = (): FighterView => {
     const flameGlow = new Sprite(glowTexture()); flameGlow.label = 'fighterFlameGlow';
     flameGlow.anchor.set(0.5);
     flameGlow.blendMode = 'add';
-    flameGlow.tint = FLAME_GLOW_TINT;
     flameGlow.visible = false;
     const body = new Graphics(); body.label = 'fighterBody';
+    const ears = new Graphics(); ears.label = 'fighterEars';
     const head = new Graphics(); head.label = 'fighterHead';
     const weapon = new Sprite(); weapon.label = 'fighterWeapon';
     const front = new Graphics(); front.label = 'fighterFront';
     const light = createMuzzleLight();
-    root.addChild(flameGlow, body, head, weapon, light, front);
-    return { root, flameGlow, body, head, weapon, light, front, headKey: '' };
+    root.addChild(flameGlow, body, ears, head, weapon, light, front);
+    return { root, flameGlow, body, ears, head, weapon, light, front, headKey: '' };
 };
 
-/** Place and size the glow at the middle of the flame; it follows the flicker. */
-const placeFlameGlow = (glow: Sprite, pose: FighterPose, flicker: number) => {
-    const base = upperPoint(pose, FLAME_BASE.x, FLAME_BASE.y);
-    const len = flameLength(flicker);
-    glow.position.set(base.x - pose.lean * len * 0.5, base.y + len * 0.5);
+/** Place, size and tint the glow at the middle of the flames (their average with two nozzles); it follows the flicker. */
+const placeFlameGlow = (glow: Sprite, pose: FighterPose, look: FighterLook, flicker: number) => {
+    const middles = flameMiddles(pose, look.build.jetpack, flicker);
+    const avg = (pick: (p: { x: number; y: number }) => number) => middles.reduce((sum, p) => sum + pick(p), 0) / middles.length;
+    glow.position.set(avg(p => p.x), avg(p => p.y));
+    glow.tint = flameColors(look.build.flame).glow;
     glow.width = glow.height = 2 * (FLAME_GLOW_RADIUS.min + flicker * (FLAME_GLOW_RADIUS.max - FLAME_GLOW_RADIUS.min));
     glow.alpha = FLAME_GLOW_ALPHA;
 };
@@ -80,33 +84,32 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     view.root.scale.set(f.facing * RIG_SCALE * (1 + SQUASH_WIDEN * squash), RIG_SCALE * (1 - SQUASH_FLATTEN * squash));
 
     view.flameGlow.visible = f.flame;
-    if (f.flame) placeFlameGlow(view.flameGlow, pose, f.flicker);
+    if (f.flame) placeFlameGlow(view.flameGlow, pose, look, f.flicker);
 
     const b = view.body.clear();
-    if (f.flame) drawFlame(b, pose, f.flicker);
-    drawTail(b, pose, look, f.tailSwing);
-    drawJetpack(b, pose, look, f.flame);
+    // The flame goes over the tail (a tail just taking off still swings through it) and under the jetpack
+    drawTail(b, pose, look, f.parts);
+    if (f.flame) drawFlame(b, pose, look, f.flicker);
+    drawJetpack(b, pose, look, f.flame, f.parts);
     const legDark = shade(look.leg, 0.72);
-    limb(b, pose.hip, pose.backLeg.joint, 6.2 * LIMB_W, legDark);
-    limb(b, pose.backLeg.joint, pose.backLeg.end, 5.4 * LIMB_W, legDark);
-    drawPad(b, pose.backLeg.joint, 2.4, BACK_KNEE_PAD);
+    jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
     boot(b, pose.backLeg.end, 0x1b1f25);
     const armDark = shade(look.arm, 0.72);
-    limb(b, pose.shoulderBack, pose.backArm.joint, 4.6 * LIMB_W, armDark);
-    limb(b, pose.backArm.joint, pose.backArm.end, 4.2 * LIMB_W, armDark);
+    jointedLimb(b, pose.shoulderBack, pose.backArm.joint, pose.backArm.end, { widths: [4.6 * LIMB_W, 4.2 * LIMB_W], colors: [armDark, armDark] });
     drawTorso(b, pose, look);
-    limb(b, pose.hip, pose.frontLeg.joint, 6.4 * LIMB_W, look.leg);
-    limb(b, pose.frontLeg.joint, pose.frontLeg.end, 5.6 * LIMB_W, shade(look.leg, 0.9));
-    drawPad(b, pose.frontLeg.joint, 2.6);
+    jointedLimb(b, pose.hip, pose.frontLeg.joint, pose.frontLeg.end, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [look.leg, shade(look.leg, 0.9)] });
     boot(b, pose.frontLeg.end, 0x252a32);
 
-    const headKey = `${look.style}:${look.head}:${look.accent}`;
+    const headKey = headKeyOf(look);
     if (view.headKey !== headKey) {
         drawHead(view.head.clear(), look);
         view.headKey = headKey;
     }
-    view.head.position.set(pose.head.x, pose.head.y);
-    view.head.rotation = pose.headTilt + (f.headBob ?? 0);
+    drawEars(view.ears.clear(), look, f.parts);
+    for (const layer of [view.ears, view.head]) {
+        layer.position.set(pose.head.x, pose.head.y);
+        layer.rotation = pose.headTilt + (f.headBob ?? 0);
+    }
 
     const w = view.weapon;
     if (f.weapon && w.texture !== f.weapon) w.texture = f.weapon;
@@ -121,9 +124,8 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     else view.light.visible = false;
     hand(fr, pose.backArm.end);
-    limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8 * LIMB_W, look.arm);
-    limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4 * LIMB_W, shade(look.arm, 0.92));
-    drawPad(fr, pose.frontArm.joint, 2);
+    jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });
+    drawShoulderBadge(fr, pose, look, f.facing); // over the arm, under the hand
     hand(fr, pose.frontArm.end);
 };
 

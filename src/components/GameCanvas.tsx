@@ -37,6 +37,8 @@ import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
 import { spawnPointFor } from '../game/net/roomSetup';
+import { currentBuild } from '../game/build/currentBuild';
+import { useMatchRewards } from './hud/useMatchRewards';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
@@ -93,6 +95,7 @@ export default function GameCanvas() {
         hungerZone: undefined,
         hungerWinnerId: null
     });
+    const reward = useMatchRewards(gameState, localIdRef); // XP for the match that just ended
 
     const visualCache = useRef({
         players: new Map(),
@@ -259,7 +262,7 @@ export default function GameCanvas() {
                 jetpackFuel: 100, maxFuel: 100, jetpackColor: state.jetpackColor,
                 dead: false, respawnTimer: 0, team: playerTeam,
                 facingRight: true, weapon: startWeapon, inventory: [startWeapon], lastFired: 0, skinId: state.selectedSkin,
-                name: state.playerName, score: 0,
+                name: state.playerName, score: 0, build: currentBuild(),
                 gunLevel: gameMode === GameMode.GUN_GAME ? 0 : undefined,
                 gunProgress: gameMode === GameMode.GUN_GAME ? 0 : undefined,
                 grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE
@@ -379,6 +382,7 @@ export default function GameCanvas() {
                 armColor: state.armColor,
                 legColor: state.legColor,
                 jetpackColor: state.jetpackColor,
+                build: currentBuild(),
             }, physicsEngine.current, {
                 onJoined: info => {
                     localIdRef.current = info.id;
@@ -1009,6 +1013,7 @@ export default function GameCanvas() {
                     status: gunGameStatus && { ...gunGameStatus, perLevel: GUN_GAME_KILLS_PER_LEVEL },
                     winner: gunGameWinner,
                 } : null}
+                reward={reward}
                 mobile={isMobile ? {
                     joystick: touchJoystick,
                     jumpDown: touchButtons.jump,

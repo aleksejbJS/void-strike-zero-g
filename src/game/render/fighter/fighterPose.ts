@@ -5,7 +5,7 @@ import { Vector2 } from '../../../types';
 import { solveLimb, Limb } from './ik';
 import { GripPoints } from './weaponGrips';
 import { BOOT, HEAD_R, ROBOT_HEAD_K, TORSO_W } from './fighterStyle';
-import { FighterStyle } from './fighterLook';
+import { HelmetId } from '../../build/buildParts';
 
 export const RIG_SCALE = 1.12;
 export const THIGH = 14.5;
@@ -132,10 +132,11 @@ export const solvePose = (input: PoseInput): FighterPose => {
     };
 };
 
-/** The corners of the head shape (the robot's box, rotated by the head tilt; a circle's extreme points otherwise). */
-const headOutline = (pose: FighterPose, style: FighterStyle): Vector2[] => {
+/** The corners of the head shape (the box helmet, rotated by the head tilt; a circle's extreme points otherwise). */
+const headOutline = (pose: FighterPose, helmet: HelmetId): Vector2[] => {
     const { head, headTilt } = pose;
-    if (style !== 'robot') {
+    if (helmet !== 'box') {
+        // Round, dome and angular helmets are all drawn inside the HEAD_R circle.
         return [{ x: head.x - HEAD_R, y: head.y - HEAD_R }, { x: head.x + HEAD_R, y: head.y + HEAD_R }];
     }
     const k = ROBOT_HEAD_K, c = Math.cos(headTilt), s = Math.sin(headTilt);
@@ -147,11 +148,11 @@ const headOutline = (pose: FighterPose, style: FighterStyle): Vector2[] => {
  * How far the body reaches from the feet line and the centre line, in rig units.
  * `left` and `top` are negative. The weapon is left out on purpose: it may leave the hitbox.
  */
-export const bodyExtents = (pose: FighterPose, style: FighterStyle = 'human'): { left: number; right: number; top: number } => {
+export const bodyExtents = (pose: FighterPose, helmet: HelmetId = 'round'): { left: number; right: number; top: number } => {
     const shoulderReach = 7.6 * TORSO_W;
     const jetpack = [upperPoint(pose, -12.5, -17), upperPoint(pose, -12.5, -3)];
     const boots = [pose.frontLeg.end, pose.backLeg.end];
-    const head = headOutline(pose, style);
+    const head = headOutline(pose, helmet);
     const xs = [
         ...head.map(p => p.x),
         pose.shoulderFront.x - shoulderReach, pose.shoulderFront.x + shoulderReach,

@@ -1,5 +1,39 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.3 (2026-11-02)
+
+### 🧩 Fighter Builder
+- The fighter is built from parts (spec: `docs/plans/2026-11-02-fighter-builder-spec.md`); any part combines with any other:
+  - Helmet: round, robot box (keeps its short antenna), glass dome (a bubble on a collar with a cartoon face in the head color), angular trooper helmet
+  - Visor: strip, full glass, slit, T-shape, two eyes; each visor adapts to the helmet (on the robot box the strip stays a solid glowing panel); the visor glow is its own color
+  - Ears, horns and antennae: none, cat, two antennae, wolf, bunny, round, little horns, ram horns, lamp antenna (blinks when firing), crest
+  - Tail: none, cat (long S-curve, tip up), tentacle (thin and wavy with a glowing tip), lizard (tapering, spikes on top), mechanical (metal links with a light at the tip); the old straight stick tail is gone
+  - Jetpack body: pack, twin tanks, rocket, wings (folded on the ground, open in flight), scrap; twin tanks and scrap burn two flames
+  - Flame color: fire, blue, toxic green, purple, white
+  - Torso pattern: none, chest band, racing stripes, hazard band, camo, split; the pattern has its own color
+  - Shoulder badge on the front shoulder pad, in the pattern color: none, chevron, a number (0–99), an emblem (skull, star or bolt)
+- Tails, floppy ears, the lamp and the wings move on critically damped springs driven by the fighter's speed, state and last shot, so they react to running, jumping and jetpack flight without jitter
+- The 11 skins are now presets: a ready build plus palette made of free parts; picking one replaces the whole build, then every part can be changed ("(changed)" shows under the preset name)
+- A returning player's saved skin and colors turn into the matching preset build on first load, so nobody loses their look
+
+### 📈 Levels and Unlocks
+- Finishing a match while still in it gives 20 XP; winning it (first place, winning team, last one standing, Gun Game winner) gives 30 more; matches against bots count, leaving early gives nothing, and joining during a results screen pays nothing
+- Level = 1 + floor(XP / 50); part *k* of the 30-item unlock order opens at level *k* + 1, so everything is open at level 31 (1,500 XP); achievements keep their own XP and open no parts
+- The results screen, the Hunger Games round result and the Gun Game winner block show the XP gained, the new level and the part it opened, with its slot
+- Progress is saved in the browser; each unlock records what opened it (today always `level`) so purchases can be added later
+
+### 🛠️ Setup Screen
+- Tabs with picture tiles: Head (helmet, visor, ears, visor glow), Body (tail, pattern, badge), Jetpack (body, flame), Colors (the body colors plus the pattern color)
+- The chosen tile has a hazard-yellow border; locked tiles are dimmed with a lock and "Lvl N"; an XP bar under the preview shows the level and the XP to the next part
+- The preview keeps a fixed height
+
+### 🌐 Online and Ragdolls
+- The join request carries the build (part ids, badge number, visor and pattern colors); the host checks every id against the known lists and falls back to the free default for anything unknown (unlocks are not checked: progress is client-side by design); players on older clients get their skin's preset
+- Every client draws other players with their build; the ragdoll head keeps helmet, visor and ears, the ragdoll torso keeps pattern and badge
+
+### 🦾 Limbs
+- Arms and legs are drawn as one piece per limb (both outlines, then both fills, then highlights), so the joints bend smoothly without the round knee and elbow pads that hid the seam; the living fighter and the ragdoll share the same limb drawer
+
 ## Version 0.4.2 (2026-11-02)
 
 ### 🚩 Flags

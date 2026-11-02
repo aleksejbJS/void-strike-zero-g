@@ -4,6 +4,8 @@
 import { PlayerInput } from '../../types';
 import { SKINS } from '../../constants';
 import { JoinRequest, MAX_NAME_LENGTH } from './protocol';
+import { sanitizeBuild } from '../build/sanitizeBuild';
+import { presetBuild } from '../build/buildPresets';
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const FALLBACK_COLOR = '#3b82f6';
@@ -18,7 +20,10 @@ const color = (v: unknown) => (typeof v === 'string' && HEX_COLOR.test(v) ? v : 
 
 const clamp = (v: number) => Math.max(WORLD_MIN, Math.min(WORLD_MAX, v));
 
-/** Returns a clean JoinRequest, or null if the payload is unusable. Bad colors/skins fall back to defaults. */
+/**
+ * Returns a clean JoinRequest, or null if the payload is unusable. Bad colors/skins fall back to defaults.
+ * The build is cleaned field by field; a missing or broken field falls back to the skin's preset (older clients send none).
+ */
 export const validateJoin = (raw: unknown): JoinRequest | null => {
     if (!isObject(raw) || typeof raw.name !== 'string') return null;
 
@@ -37,6 +42,7 @@ export const validateJoin = (raw: unknown): JoinRequest | null => {
         armColor: color(raw.armColor),
         legColor: color(raw.legColor),
         jetpackColor: color(raw.jetpackColor),
+        build: sanitizeBuild(raw.build, presetBuild(skinId)),
     };
 };
 

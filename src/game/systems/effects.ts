@@ -8,6 +8,9 @@ import { gameEvents, GameEvent, EffectKind } from './events';
 import { nextId } from '../utils/id';
 import { createParticles, createRagdoll } from './effectSpawn';
 import { addMark, addMarkAt } from './marks';
+import { flameColors } from '../render/fighter/parts/flamePalette';
+import { sanitizeBuild } from '../build/sanitizeBuild';
+import { presetBuild } from '../build/buildPresets';
 
 // --- Emitters (called by the simulation) ---
 
@@ -25,6 +28,7 @@ export const emitDeath = (e: Entity) =>
             torso: e.torsoColor || e.color,
             arm: e.armColor || e.color,
             leg: e.legColor || '#475569',
+            build: e.build ?? presetBuild(e.skinId),
         },
     });
 
@@ -110,7 +114,9 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
                 rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
             });
-            createRagdoll(state, { pos: { x: e.x, y: e.y }, height: e.height, color: e.color }, e.parts);
+            // The build comes from the host: unknown part ids would throw while drawing
+            createRagdoll(state, { pos: { x: e.x, y: e.y }, height: e.height, color: e.color },
+                e.parts && { ...e.parts, build: e.parts.build && sanitizeBuild(e.parts.build) });
             break;
         case 'FLOAT_TEXT':
             floatText(state, e.x, e.y, e.text, e.color);
@@ -122,7 +128,9 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
 
 /** Jetpack flame behind a flying entity. `thrustX` tilts it opposite to sideways thrust. */
 export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense = false) => {
-    if (Math.random() < 0.5) createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, '#fbbf24', 'fire');
+    if (Math.random() >= 0.5) return;
+    const color = flameColors(p.build?.flame ?? 'fire').particle;
+    createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, color, 'fire');
 };
 
 // Smoke leaves a rocket from its tail, so the puffs do not cover the drawn hull

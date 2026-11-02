@@ -4,8 +4,10 @@ import { SetupKeys, setupStrings } from './setupStrings';
 import { HudKeys, hudStrings } from './hudStrings';
 import { ObjectiveKeys, objectiveStrings } from './objectiveStrings';
 import { MatchKeys, matchStrings } from './matchStrings';
+import { BuilderKeys, builderStrings } from './builderStrings';
+import { RewardKeys, rewardStrings } from './rewardStrings';
 
-export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys {
+export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys {
   // Menu
   'menu.title': string;
   'menu.deploy': string;
@@ -96,6 +98,8 @@ export const translations: Record<Language, TranslationKeys> = {
     ...hudStrings.en,
     ...objectiveStrings.en,
     ...matchStrings.en,
+    ...builderStrings.en,
+    ...rewardStrings.en,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'DEPLOY',
@@ -184,6 +188,8 @@ export const translations: Record<Language, TranslationKeys> = {
     ...hudStrings.ru,
     ...objectiveStrings.ru,
     ...matchStrings.ru,
+    ...builderStrings.ru,
+    ...rewardStrings.ru,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'СТАРТ',

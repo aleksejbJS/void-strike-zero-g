@@ -3,6 +3,7 @@
 import React from 'react';
 import { GameMode, KillMessage, Weapon, WeaponType } from '../../types';
 import type { PlayerScore, StatsState } from '../../store/uiStore';
+import type { Reward } from '../../game/build/progress';
 import { Achievement } from '../../game/systems/achievements';
 import { GUN_GAME_KILLS_PER_LEVEL, GUN_GAME_LADDER } from '../../constants';
 import { Vitals } from './Vitals';
@@ -40,6 +41,7 @@ export interface GameHudProps {
     onAchievementsClose: () => void;
     hunger: HungerHudState | null;
     gunGame: { status: GunGameStatus | null; winner: string | null } | null;
+    reward: Reward | null; // XP for the match that just ended; null while play goes on
     mobile: { joystick: Joystick | null; jumpDown: boolean; hookDown: boolean; onJump: (down: boolean) => void; onHook: (down: boolean) => void } | null;
 }
 
@@ -57,8 +59,8 @@ export const GameHud: React.FC<GameHudProps> = p => {
                     gunLadder={mode === GameMode.GUN_GAME ? { total: GUN_GAME_LADDER.length, perLevel: GUN_GAME_KILLS_PER_LEVEL } : undefined} />
             )}
             {isTeamMode(mode) && <TeamScore t={t} blue={p.scores.blue} red={p.scores.red} objective={p.objective} timer={clock} goal={p.match?.goal} />}
-            {mode === GameMode.HUNGER_GAMES && p.hunger && <HungerHud t={t} s={p.hunger} ranking={p.playerScores} />}
-            {mode === GameMode.GUN_GAME && p.gunGame && <GunGameHud t={t} status={p.gunGame.status} winner={p.gunGame.winner} />}
+            {mode === GameMode.HUNGER_GAMES && p.hunger && <HungerHud t={t} s={p.hunger} ranking={p.playerScores} reward={p.reward} />}
+            {mode === GameMode.GUN_GAME && p.gunGame && <GunGameHud t={t} status={p.gunGame.status} winner={p.gunGame.winner} reward={p.reward} />}
 
             <div className="absolute right-8 top-7 z-50 flex flex-col items-end gap-2.5">
                 <HudButtons t={t} muted={p.muted} onToggleMute={p.onToggleMute} onOpenAchievements={p.onAchievementsOpen} />
@@ -75,7 +77,7 @@ export const GameHud: React.FC<GameHudProps> = p => {
             {p.mobile && <MobileControls t={t} {...p.mobile} />}
             {stats.dead && mode !== GameMode.HUNGER_GAMES && <DeathOverlay t={t} respawnMs={stats.respawn} />}
             {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} />}
-            {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} onLeave={p.onLeave} />}
+            {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} reward={p.reward} onLeave={p.onLeave} />}
             {p.achievementsOpen && <AchievementsPanel t={t} onClose={p.onAchievementsClose} />}
         </div>
     );
