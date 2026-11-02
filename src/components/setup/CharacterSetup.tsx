@@ -66,8 +66,9 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
                 </header>
                 <div aria-hidden="true" className="hazard-stripes -mx-4 -mt-3 h-3.5 sm:-mx-[72px]" />
 
-                <main className="grid flex-grow grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_560px]">
-                    <div className="flex min-w-0 flex-col gap-4">
+                <main className="grid flex-grow grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_560px] lg:items-start">
+                    {/* Fixed-height preview that stays in view while the part tabs change height */}
+                    <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-6">
                         <CharacterPreview look={{ build, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', draft.presetIndex + 1, SKINS.length)} />
                         <div className="flex items-center gap-4">
                             <button type="button" onClick={() => draft.stepPreset(-1)} aria-label={t('cs.prevSkin')} className={arrowClass}><Chevron dir="l" /></button>
