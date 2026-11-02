@@ -32,7 +32,7 @@ const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.9', date: null, groups: [
+        { version: '0.4.9', date: 'Nov 2, 2026', groups: [
             { title: 'Explosions', comparisons: [{ caption: 'A rocket blast', ...EXPLOSION }], points: [
                 'Bigger, dirtier explosions: a lumpy fireball, hot debris flying out on smoke trails and a cloud of smoke that hangs for a moment; a grenade blast is a bit smaller than a rocket',
                 'The screen shakes when something blows up near you',
@@ -137,7 +137,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.9', date: null, groups: [
+        { version: '0.4.9', date: '02.11.2026', groups: [
             { title: 'Взрывы', comparisons: [{ caption: 'Взрыв ракеты', ...EXPLOSION }], points: [
                 'Взрывы крупнее и «грязнее»: комковатый огненный шар, раскалённые осколки разлетаются с дымными шлейфами, облако дыма висит ещё мгновение; взрыв гранаты чуть меньше ракетного',
                 'Экран трясёт, когда что-то взрывается рядом с вами',

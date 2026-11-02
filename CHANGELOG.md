@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.9 (unreleased)
+## Version 0.4.9 (2026-11-02)
 
 ### 💥 Explosions
 - New blast composition (`systems/explosionFx.ts`, spec: `docs/plans/2026-11-02-match-feel-spec.md`, part 3): a bigger flash, a core fireball plus 3 offset billows (lumpy, not a disc), the ring, 10 hot debris chunks flung mostly upward that cool from ember orange to dark and drop smoke puffs behind them (trails), 10 embers, a 7-puff smoke cloud that lives ~1.5 s, 3 light smoke puffs
