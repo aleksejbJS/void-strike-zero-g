@@ -35,7 +35,7 @@ export const buildCharacter = (look: CharacterLook, textures: Record<string, Tex
 
     const update = (t: number) => drawFighter(view, {
         pose: solvePose({ state: 'idle', aim: PREVIEW_AIM, t, phase: 0, moveDir: 1, recoil: 0, grip }),
-        look: fighterLook, facing: 1, grip, weapon,
+        look: fighterLook, facing: 1, grip, weapon, weaponType: WeaponType.MACHINE_GUN,
         flame: false, flicker: 0, tailSwing: Math.sin(t * 2) * 0.5, muzzleFlash: 0,
     });
     update(0);

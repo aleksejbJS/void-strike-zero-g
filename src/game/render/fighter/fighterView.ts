@@ -1,6 +1,7 @@
-// A fighter on screen: Pixi layers (flame glow, body, head, weapon, front arm) redrawn from a pose each frame.
+// A fighter on screen: Pixi layers (flame glow, body, head, weapon, muzzle light, front arm) redrawn from a pose each frame.
 
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
 import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, limb } from './fighterParts';
@@ -9,6 +10,7 @@ import { GLOVE } from './fighterPaint';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
+import { createMuzzleLight, drawMuzzle, muzzlePoint } from './muzzleFlash';
 
 export interface FighterView {
     root: Container;
@@ -16,6 +18,7 @@ export interface FighterView {
     body: Graphics;    // jetpack, legs, back arm, torso
     head: Graphics;
     weapon: Sprite;
+    light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
     front: Graphics;   // hands and the front arm, over the weapon
     headKey: string;   // look the head was drawn for
 }
@@ -26,10 +29,11 @@ export interface FighterFrame {
     facing: number;    // 1 right, -1 left
     grip: GripPoints;
     weapon?: Texture;
+    weaponType: WeaponType; // picks the size of the muzzle flash
     flame: boolean;
     flicker: number;   // 0..1, flame length jitter
     tailSwing: number; // -1..1
-    muzzleFlash: number; // 0..1
+    muzzleFlash: number; // 0..1, strength of the flash (0 = none)
     squash?: number;   // 0..1, landing squash (default 0)
     headBob?: number;  // radians added to the head tilt (default 0)
     hitFlash?: number; // 0..1, brightens the colours after a hit (default 0)
@@ -54,8 +58,9 @@ export const createFighterView = (): FighterView => {
     const head = new Graphics(); head.label = 'fighterHead';
     const weapon = new Sprite(); weapon.label = 'fighterWeapon';
     const front = new Graphics(); front.label = 'fighterFront';
-    root.addChild(flameGlow, body, head, weapon, front);
-    return { root, flameGlow, body, head, weapon, front, headKey: '' };
+    const light = createMuzzleLight();
+    root.addChild(flameGlow, body, head, weapon, light, front);
+    return { root, flameGlow, body, head, weapon, light, front, headKey: '' };
 };
 
 /** Place and size the glow at the middle of the flame; it follows the flicker. */
@@ -113,13 +118,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
 
     const fr = view.front.clear();
     if (!f.weapon) drawFallbackGun(fr, f);
-    if (f.muzzleFlash > 0.55) {
-        const len = grip.length + 2;
-        const c = Math.cos(pose.gunAngle), s = Math.sin(pose.gunAngle);
-        const mx = pose.gunTopLeft.x + c * len - s * grip.axisY;
-        const my = pose.gunTopLeft.y + s * len + c * grip.axisY;
-        fr.circle(mx, my, 3.5 * f.muzzleFlash).fill({ color: 0xffd65a, alpha: 0.95 });
-    }
+    drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     hand(fr, pose.backArm.end);
     limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8 * LIMB_W, look.arm);
     limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4 * LIMB_W, shade(look.arm, 0.92));

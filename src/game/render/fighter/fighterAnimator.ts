@@ -9,6 +9,7 @@ import { gripPoints } from './weaponGrips';
 import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob } from './fighterMotion';
 import { DustBudget } from './fighterDust';
+import { flashStrength } from './muzzleFlash';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
 const STRIDE_CYCLE_PX = 4 * 11 * RIG_SCALE; // ground covered by one full step cycle
@@ -83,11 +84,12 @@ export class FighterAnimator {
         }
         return {
             pose, grip, weapon, facing,
+            weaponType: p.weapon.type,
             look: lookFromEntity(p),
             flame: state === 'fly',
             flicker: Math.random(),
             tailSwing: Math.sin(m.phase),
-            muzzleFlash: recoil,
+            muzzleFlash: flashStrength(since),
             squash: motion.squash,
             headBob: headBob(state, m.phase),
             hitFlash: motion.hitFlash,
