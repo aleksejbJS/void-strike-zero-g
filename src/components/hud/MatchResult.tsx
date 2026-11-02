@@ -2,18 +2,21 @@
 
 import React from 'react';
 import type { PlayerScore } from '../../store/uiStore';
+import type { Reward } from '../../game/build/progress';
 import type { MatchHud } from './matchHud';
 import { PANEL } from './hudIcons';
+import { RewardPanel } from './RewardPanel';
 import type { Translate } from '../menu/types';
 
 interface Props {
     t: Translate;
     result: NonNullable<MatchHud['result']>;
     ranking: PlayerScore[];
+    reward: Reward | null;
     onLeave: () => void;
 }
 
-export const MatchResult: React.FC<Props> = ({ t, result, ranking, onLeave }) => (
+export const MatchResult: React.FC<Props> = ({ t, result, ranking, reward, onLeave }) => (
     <div className="absolute inset-0 z-[55] flex items-center justify-center bg-[rgba(14,17,22,0.7)]">
         <div role="dialog" aria-labelledby="match-result-title" className={`${PANEL} flex w-[480px] max-w-[92vw] flex-col items-center overflow-hidden pb-6`}>
             <div aria-hidden="true" className="hazard-stripes h-3.5 w-full" />
@@ -38,6 +41,8 @@ export const MatchResult: React.FC<Props> = ({ t, result, ranking, onLeave }) =>
                     ))}
                 </ol>
             </div>
+
+            {reward && <div className="mt-5 w-full"><RewardPanel t={t} reward={reward} /></div>}
 
             <div className="mt-6 flex w-full items-center justify-between gap-4 px-7">
                 <span className="text-sm text-bay-dust">{t('match.next', result.restartSec)}</span>

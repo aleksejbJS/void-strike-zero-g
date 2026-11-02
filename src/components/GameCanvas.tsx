@@ -37,6 +37,7 @@ import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
 import { spawnPointFor } from '../game/net/roomSetup';
 import { currentBuild } from '../game/build/currentBuild';
+import { useMatchRewards } from './hud/useMatchRewards';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
@@ -93,6 +94,7 @@ export default function GameCanvas() {
         hungerZone: undefined,
         hungerWinnerId: null
     });
+    const reward = useMatchRewards(gameState, localIdRef); // XP for the match that just ended
 
     const visualCache = useRef({
         players: new Map(),
@@ -1013,6 +1015,7 @@ export default function GameCanvas() {
                     status: gunGameStatus && { ...gunGameStatus, perLevel: GUN_GAME_KILLS_PER_LEVEL },
                     winner: gunGameWinner,
                 } : null}
+                reward={reward}
                 mobile={isMobile ? {
                     joystick: touchJoystick,
                     jumpDown: touchButtons.jump,

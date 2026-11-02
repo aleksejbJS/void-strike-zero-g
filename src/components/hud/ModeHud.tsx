@@ -2,8 +2,10 @@
 
 import React from 'react';
 import type { PlayerScore } from '../../store/uiStore';
+import type { Reward } from '../../game/build/progress';
 import { PANEL } from './hudIcons';
 import { formatClock } from './format';
+import { RewardPanel } from './RewardPanel';
 import type { Translate } from '../menu/types';
 
 export interface HungerHudState {
@@ -26,7 +28,7 @@ export interface HungerHudState {
 const winnerFirst = (ranking: PlayerScore[], winnerId: string | null) =>
     winnerId ? [...ranking.filter(p => p.id === winnerId), ...ranking.filter(p => p.id !== winnerId)] : ranking;
 
-export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: PlayerScore[] }> = ({ t, s, ranking }) => (
+export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: PlayerScore[]; reward: Reward | null }> = ({ t, s, ranking, reward }) => (
     <>
         {s.fightInSec !== null && !s.ended && (
             <div role="status" className="pointer-events-none absolute inset-x-0 top-[28%] z-40 flex flex-col items-center gap-1">
@@ -71,6 +73,7 @@ export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: Pla
                             ))}
                         </ol>
                     </div>
+                    {reward && <div className="mt-2 w-full"><RewardPanel t={t} reward={reward} /></div>}
                 </div>
             </div>
         )}
@@ -85,7 +88,7 @@ export interface GunGameStatus {
     perLevel: number;
 }
 
-export const GunGameHud: React.FC<{ t: Translate; status: GunGameStatus | null; winner: string | null }> = ({ t, status, winner }) => (
+export const GunGameHud: React.FC<{ t: Translate; status: GunGameStatus | null; winner: string | null; reward: Reward | null }> = ({ t, status, winner, reward }) => (
     <>
         {status && (
             <div className={`${PANEL} pointer-events-none absolute left-1/2 top-6 z-40 flex w-[300px] -translate-x-1/2 flex-col gap-1.5 px-4 py-3`}>
@@ -105,6 +108,7 @@ export const GunGameHud: React.FC<{ t: Translate; status: GunGameStatus | null; 
                     <div aria-hidden="true" className="hazard-stripes h-3 w-full" />
                     <span className="mt-4 px-8 font-display text-4xl font-black">{t('hud.winner', winner)}</span>
                     <span className="text-sm text-bay-dust">{t('hud.gunComplete')}</span>
+                    {reward && <div className="mt-2 w-full"><RewardPanel t={t} reward={reward} /></div>}
                 </div>
             </div>
         )}
