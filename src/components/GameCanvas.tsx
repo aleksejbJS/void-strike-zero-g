@@ -9,6 +9,7 @@ import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/syst
 import { drawBotPaths } from '../game/render/botPathOverlay';
 import { ParticleView } from '../game/render/effects/particleView';
 import { drawMarks } from '../game/render/effects/marksView';
+import { destroyApp } from '../game/render/pixiApp';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
@@ -417,7 +418,7 @@ export default function GameCanvas() {
 
             if (!isMounted) {
                 // Keep textures: they are shared via the generateAssets() cache
-                app.destroy(true, { children: true, texture: false });
+                destroyApp(app);
                 return;
             }
 
@@ -922,7 +923,7 @@ export default function GameCanvas() {
             }
 
             // Keep textures: they are shared via the generateAssets() cache and reused next game
-            if (pixiApp.current) pixiApp.current.destroy(true, { children: true, texture: false });
+            if (pixiApp.current) destroyApp(pixiApp.current);
             gameState.current = makeInitialState();
             clearMarks();
             // Clear visual cache to prevent reusing dead sprites
