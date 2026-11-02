@@ -9,6 +9,7 @@ import { BodyColor, BodyPart, presetsFor } from '../colorPresets';
 import { BadgeOptions } from './BadgeOptions';
 import { PartTiles } from './PartTiles';
 import { TABS, TabId } from './builderSlots';
+import { usePartThumbnails } from './usePartThumbnails';
 
 interface Props {
     build: FighterBuild;
@@ -20,6 +21,13 @@ interface Props {
 
 const BODY_COLORS: BodyColor[] = ['torso', 'head', 'arms', 'legs', 'jetpack'];
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-chalk';
+
+/** A slot's tiles with their pictures; mounted only for the open tab, so only its pictures are drawn. */
+const SlotTiles: React.FC<{ slot: Slot; build: FighterBuild; colors: Record<BodyColor, string>; level: number; onPick: (id: string) => void }> =
+    ({ slot, build, colors, level, onPick }) => {
+        const thumbs = usePartThumbnails(slot, build, colors);
+        return <PartTiles slot={slot} value={build[slot]} level={level} thumbs={thumbs} onPick={onPick} />;
+    };
 
 export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, onColor }) => {
     const { t, language } = useTranslation();
@@ -64,7 +72,7 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
 
             <div role="tabpanel" id={`${baseId}-panel`} aria-labelledby={`${baseId}-tab-${tab}`} className="flex flex-col gap-4">
                 {current.slots.map(slot => (
-                    <PartTiles key={slot} slot={slot} value={build[slot]} level={level} onPick={pick(slot)} />
+                    <SlotTiles key={slot} slot={slot} build={build} colors={colors} level={level} onPick={pick(slot)} />
                 ))}
                 {tab === 'head' && <div className="-mb-2.5 -mt-1">{visorRow}</div>}
                 {tab === 'body' && <BadgeOptions build={build} onBuild={onBuild} />}

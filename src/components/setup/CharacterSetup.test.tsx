@@ -8,6 +8,8 @@ import CharacterSetup from './CharacterSetup';
 
 // Pixi needs WebGL, which jsdom lacks; the preview has its own manual check
 vi.mock('./CharacterPreview', () => ({ CharacterPreview: ({ badge }: { badge: string }) => <div>{badge}</div> }));
+// Tile pictures are drawn by Pixi too; without them the tiles show names only
+vi.mock('./builder/usePartThumbnails', () => ({ usePartThumbnails: () => ({}) }));
 
 let store: ReturnType<typeof useUIStore>;
 const Spy: React.FC = () => { store = useUIStore(); return null; };
