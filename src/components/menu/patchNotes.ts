@@ -32,7 +32,7 @@ const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.10', date: null, points: [
+        { version: '0.4.10', date: 'Nov 2, 2026', points: [
             'Fixed: on the "Jetpack repair" poster the small line ran over the big one',
             'Fixed: on phones the top of the helmet was cut off in the character preview',
         ] },
@@ -141,7 +141,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.10', date: null, points: [
+        { version: '0.4.10', date: '02.11.2026', points: [
             'Исправлено: на постере «Джетпак починим за час» мелкая строка наезжала на крупную',
             'Исправлено: на телефоне в превью персонажа обрезался верх шлема',
         ] },

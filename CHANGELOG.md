@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.10 (unreleased)
+## Version 0.4.10 (2026-11-02)
 
 ### 🐛 Fixes
 - House posters lay out their texts with `textRow` (`render/scene/textRow.ts`): each text starts after the measured end of the previous one and the row shrinks to fit. The fixed x positions overlapped because Big Shoulders has no Cyrillic and the Fira fallback is wider ("ПОЧИНИМ ЗА ЧАС" ran over "ДОК 4 · КРУГЛОСУТОЧНО")
