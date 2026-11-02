@@ -28,3 +28,6 @@ dist-ssr
 
 # Brainstorm mockups (superpowers visual companion)
 .superpowers/
+
+# Playwright MCP screenshots and scripts (local verification scratch)
+.playwright-mcp/
