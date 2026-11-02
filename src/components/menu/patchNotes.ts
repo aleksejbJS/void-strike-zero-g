@@ -31,6 +31,13 @@ const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.3', date: null, points: [
+            'Build your fighter from parts: helmet, visor, ears, tail, jetpack, flame, torso pattern and shoulder badge; the old skins are now ready-made builds to start from, and your saved look stays',
+            'New parts open one per level: every match you finish gives XP, a win gives more, and the end screen shows which part opened',
+            'New parts include wolf and bunny ears, horns, lizard and mechanical tails, a glass dome, wings and a rocket jetpack, blue, toxic, purple and white flames, camo and number badges',
+            'Real tails instead of the old stick: they curve and swing when running, jumping and flying; bunny ears flop and wings open in flight',
+            'Arms and legs bend in one smooth piece, without the round knee and elbow pads',
+        ] },
         { version: '0.4.2', date: 'Nov 2, 2026', groups: [
             { title: 'Flags', comparisons: [{ caption: 'Capture the Flag base', ...FLAG }], points: [
                 'Flags are redrawn: a steel pole with a glowing crystal, cloth with folds that waves in the wind, and a heavy base with hazard tape',
@@ -103,6 +110,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.3', date: null, points: [
+            'Соберите бойца из деталей: шлем, визор, уши, хвост, джетпак, пламя, узор на торсе и знак на плече; старые скины стали готовыми сборками, а ваш сохранённый облик остался',
+            'Новые детали открываются по одной за уровень: за каждый доигранный матч даётся опыт, за победу — больше, а на экране итогов видно, какая деталь открылась',
+            'Среди новых деталей — волчьи и заячьи уши, рожки, хвосты ящера и механический, стеклянный купол, крылышки и ракета, синее, ядовитое, фиолетовое и белое пламя, камуфляж и знак с номером',
+            'Настоящие хвосты вместо прежней палки: изгибаются и раскачиваются на бегу, в прыжке и в полёте; заячьи уши болтаются, а крылышки раскрываются в полёте',
+            'Руки и ноги сгибаются одним плавным куском, без круглых наколенников и налокотников',
+        ] },
         { version: '0.4.2', date: '02.11.2026', groups: [
             { title: 'Флаги', comparisons: [{ caption: 'База в «Захвате флага»', ...FLAG }], points: [
                 'Флаги нарисованы заново: стальное древко со светящимся кристаллом, ткань со складками, которая колышется на ветру, и тяжёлая база с жёлто-чёрной полосой',
