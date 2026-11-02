@@ -2,6 +2,7 @@
 // One picture per standard banner size, drawn at the banner's native resolution.
 
 import { makeCanvas } from './canvasKit';
+import { textRow } from './textRow';
 
 export type AdSize = '300x250' | '300x100' | '728x90';
 
@@ -43,8 +44,10 @@ const voidLeague = () => {
     const g = ctx.createLinearGradient(0, 0, 728, 0);
     g.addColorStop(0, '#0d3b2e'); g.addColorStop(1, '#06140f');
     ctx.fillStyle = g; ctx.fillRect(0, 0, 728, 90);
-    ctx.fillStyle = '#a3e635'; ctx.font = `900 50px ${FONT}`; ctx.fillText('VOID LEAGUE', 24, 62);
-    ctx.fillStyle = '#e7f5d0'; ctx.font = `700 26px ${FONT}`; ctx.fillText('ФИНАЛ СЕЗОНА — В СУББОТУ', 330, 58);
+    textRow(ctx, [
+        { text: 'VOID LEAGUE', color: '#a3e635', weight: 900, size: 50, y: 62 },
+        { text: 'ФИНАЛ СЕЗОНА — В СУББОТУ', color: '#e7f5d0', weight: 700, size: 26, y: 58 },
+    ], 24, 704, 36, FONT);
     return canvas;
 };
 
@@ -52,9 +55,11 @@ const jetpackRepair = () => {
     const { canvas, ctx } = makeCanvas(728, 90);
     ctx.fillStyle = '#16181d'; ctx.fillRect(0, 0, 728, 90);
     ctx.fillStyle = '#ffc21a'; ctx.fillRect(0, 0, 14, 90);
-    ctx.fillStyle = '#ffc21a'; ctx.font = `900 46px ${FONT}`; ctx.fillText('ДЖЕТПАК', 34, 60);
-    ctx.fillStyle = '#ece9e2'; ctx.fillText('ПОЧИНИМ ЗА ЧАС', 250, 60);
-    ctx.fillStyle = '#b7b2a8'; ctx.font = `600 20px ${FONT}`; ctx.fillText('ДОК 4 · КРУГЛОСУТОЧНО', 560, 56);
+    textRow(ctx, [
+        { text: 'ДЖЕТПАК', color: '#ffc21a', weight: 900, size: 46, y: 60 },
+        { text: 'ПОЧИНИМ ЗА ЧАС', color: '#ece9e2', weight: 900, size: 46, y: 60 },
+        { text: 'ДОК 4 · КРУГЛОСУТОЧНО', color: '#b7b2a8', weight: 600, size: 20, y: 56 },
+    ], 34, 708, 22, FONT);
     return canvas;
 };
 
