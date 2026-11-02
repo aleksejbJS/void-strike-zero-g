@@ -4,8 +4,11 @@ import { Graphics } from 'pixi.js';
 import { RagdollPart } from '../../types';
 import { RIG_SCALE } from './fighter/fighterPose';
 import { shade } from './fighter/fighterLook';
-import { boot, dot, limb, plate } from './fighter/fighterParts';
+import { boot, dot, helmetRidge, limb, plate, shoulderPad } from './fighter/fighterParts';
 import { HEAD_K, HEAD_R, LIMB_W, TORSO_W } from './fighter/fighterStyle';
+
+// Fighter torso points are relative to the hip, which sits 9.5 units below the middle of the ragdoll torso.
+const HIP_BELOW_CENTER = 9.5;
 
 const toNumber = (color: string) => /^#[0-9a-f]{6}$/i.test(color) ? parseInt(color.slice(1), 16) : 0xffffff;
 
@@ -25,11 +28,13 @@ export const drawRagdollShape = (g: Graphics, part: RagdollPart) => {
     switch (part.type) {
         case 'head':
             dot(g, { x: 0, y: 0 }, HEAD_R, color);
+            helmetRidge(g);
             g.roundRect(1 * k, -3 * k, 7.4 * k, 5.4 * k, 2.4 * k).fill(0x0e1116);
             break;
         case 'torso':
             plate(g, [T(-6.2, 10), T(6.2, 10), T(7.6, -10), T(-6.6, -10)], color);
             plate(g, [T(-6.4, 8), T(6.4, 8), T(6.3, 11), T(-6.3, 11)], 0x1a1d21);
+            shoulderPad(g, (x, y) => ({ x, y: y + HIP_BELOW_CENTER }), color);
             break;
         case 'arm-left':
         case 'arm-right':

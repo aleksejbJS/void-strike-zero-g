@@ -4,7 +4,8 @@
 import { Vector2 } from '../../../types';
 import { solveLimb, Limb } from './ik';
 import { GripPoints } from './weaponGrips';
-import { BOOT, HEAD_R, TORSO_W } from './fighterStyle';
+import { BOOT, HEAD_R, ROBOT_HEAD_K, TORSO_W } from './fighterStyle';
+import { FighterStyle } from './fighterLook';
 
 export const RIG_SCALE = 1.12;
 export const THIGH = 14.5;
@@ -14,6 +15,7 @@ export const FOREARM = 11.5;
 const STRIDE = 11;     // how far a foot travels forward/back from the hip while running
 const STEP_LIFT = 7;
 const ANKLE_Y = -2.5;
+const CROUCH_TILT = 0.1; // largest head tilt while crouched (radians)
 const GRIP_REACH = 3;  // the rear hand sits this far down the barrel from the chest
 
 export type FighterState = 'idle' | 'run' | 'fly' | 'fall' | 'crouch';
@@ -103,6 +105,10 @@ export const solvePose = (input: PoseInput): FighterPose => {
         y: chest.y + d.y * (gx + slide) + n.y * (gy - input.grip.axisY),
     });
 
+    // A crouched head stays nearly level so the head box does not swing out of the crouch hitbox
+    const aimTilt = Math.max(-0.45, Math.min(0.45, input.aim * 0.45)) + lean * 0.5;
+    const tilt = input.state === 'crouch' ? Math.max(-CROUCH_TILT, Math.min(CROUCH_TILT, aimTilt)) : aimTilt;
+
     const shoulderFront = upperPoint(frame, 2.5, -19);
     const shoulderBack = upperPoint(frame, -2.5, -19);
     const g = input.grip;
@@ -120,27 +126,39 @@ export const solvePose = (input: PoseInput): FighterPose => {
         shoulderFront,
         shoulderBack,
         head: upperPoint(frame, 2.2, -27.5),
-        headTilt: Math.max(-0.45, Math.min(0.45, input.aim * 0.45)) + lean * 0.5,
+        headTilt: tilt,
         gunTopLeft: onGun(0, 0),
         gunAngle,
     };
+};
+
+/** The corners of the head shape (the robot's box, rotated by the head tilt; a circle's extreme points otherwise). */
+const headOutline = (pose: FighterPose, style: FighterStyle): Vector2[] => {
+    const { head, headTilt } = pose;
+    if (style !== 'robot') {
+        return [{ x: head.x - HEAD_R, y: head.y - HEAD_R }, { x: head.x + HEAD_R, y: head.y + HEAD_R }];
+    }
+    const k = ROBOT_HEAD_K, c = Math.cos(headTilt), s = Math.sin(headTilt);
+    const corner = (x: number, y: number) => ({ x: head.x + x * k * c - y * k * s, y: head.y + x * k * s + y * k * c });
+    return [corner(-6, -6.5), corner(7, -6.5), corner(7, 5.5), corner(-6, 5.5)];
 };
 
 /**
  * How far the body reaches from the feet line and the centre line, in rig units.
  * `left` and `top` are negative. The weapon is left out on purpose: it may leave the hitbox.
  */
-export const bodyExtents = (pose: FighterPose): { left: number; right: number; top: number } => {
+export const bodyExtents = (pose: FighterPose, style: FighterStyle = 'human'): { left: number; right: number; top: number } => {
     const shoulderReach = 7.6 * TORSO_W;
     const jetpack = [upperPoint(pose, -12.5, -17), upperPoint(pose, -12.5, -3)];
     const boots = [pose.frontLeg.end, pose.backLeg.end];
+    const head = headOutline(pose, style);
     const xs = [
-        pose.head.x - HEAD_R, pose.head.x + HEAD_R,
+        ...head.map(p => p.x),
         pose.shoulderFront.x - shoulderReach, pose.shoulderFront.x + shoulderReach,
         pose.shoulderBack.x - shoulderReach, pose.shoulderBack.x + shoulderReach,
         ...boots.flatMap(b => [b.x - BOOT.heel, b.x + BOOT.w - BOOT.heel]),
         ...jetpack.map(p => p.x),
     ];
-    const ys = [pose.head.y - HEAD_R, pose.shoulderFront.y, pose.shoulderBack.y, ...jetpack.map(p => p.y)];
+    const ys = [...head.map(p => p.y), pose.shoulderFront.y, pose.shoulderBack.y, ...jetpack.map(p => p.y)];
     return { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys) };
 };

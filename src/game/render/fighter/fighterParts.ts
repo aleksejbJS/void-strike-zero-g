@@ -56,6 +56,10 @@ export const drawJetpack = (g: Graphics, pose: FighterPose, look: FighterLook) =
     plate(g, [U(-12.5, -12), U(-5, -12.5), U(-5, -10), U(-12.5, -9.5)], HAZARD);
 };
 
+/** Pad on the front shoulder. `at` maps torso-frame points (feet-up rig units) to the drawing space. */
+export const shoulderPad = (g: Graphics, at: (x: number, y: number) => Vector2, torso: number) =>
+    plate(g, [at(0.5, -21), at(8.5, -21.3), at(9, -15.5), at(1, -15.5)], shade(torso, 0.9));
+
 export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => {
     const U = (x: number, y: number) => upperPoint(pose, x * TORSO_W, y); // torso points get the body width
     plate(g, [U(-6.2, 0.5), U(6.2, 0.5), U(7.6, -19.5), U(-6.6, -20)], look.torso);
@@ -65,9 +69,7 @@ export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => 
     if (look.style === 'robot') plate(g, [U(-6.4, -12), U(7, -12.2), U(7.1, -9), U(-6.3, -8.8)], look.accent);
     plate(g, [U(-6.4, -1.8), U(6.4, -1.8), U(6.3, 1.6), U(-6.3, 1.6)], BELT);
     plate(g, [U(2, -1.2), U(4.6, -1.2), U(4.6, 1), U(2, 1)], HAZARD);
-    // Shoulder pad on the front shoulder, under the front arm
-    const P = (x: number, y: number) => upperPoint(pose, x, y);
-    plate(g, [P(0.5, -21), P(8.5, -21.3), P(9, -15.5), P(1, -15.5)], shade(look.torso, 0.9));
+    shoulderPad(g, (x, y) => upperPoint(pose, x, y), look.torso); // under the front arm
 };
 
 /** Beasts and aliens have a tail that swings with the run cycle. */
@@ -76,6 +78,12 @@ export const drawTail = (g: Graphics, pose: FighterPose, look: FighterLook, swin
     const root = upperPoint(pose, -6, -1);
     const tip = { x: root.x - 9, y: root.y + 3 + swing * 3 };
     limb(g, root, tip, 3, look.accent);
+};
+
+/** The ridge line over the top of a helmet, around the head's origin. */
+export const helmetRidge = (g: Graphics) => {
+    const r = HEAD_R - 2.2, from = Math.PI * 1.15, to = Math.PI * 1.75;
+    g.moveTo(r * Math.cos(from), r * Math.sin(from)).arc(0, 0, r, from, to).stroke({ width: 1.2, color: OUTLINE, cap: 'round' });
 };
 
 /** Head drawn around its own origin; the view positions and tilts it. */
@@ -89,24 +97,21 @@ export const drawHead = (g: Graphics, look: FighterLook) => {
         g.roundRect(-1 * k, -3 * k, 8 * k, 4.5 * k, 1.5 * k).fill(look.accent);
         return;
     }
+    const k = HEAD_K;
+    const P = (x: number, y: number) => ({ x: x * k, y: y * k }); // ears and antennae keep their size relative to the head
     if (look.style === 'beast') {
-        plate(g, [{ x: -5.5, y: -3 }, { x: -3.5, y: -11 }, { x: -0.5, y: -5 }], look.head);
-        plate(g, [{ x: 0.5, y: -5.5 }, { x: 3.5, y: -11.5 }, { x: 5, y: -3.5 }], look.head);
+        plate(g, [P(-5.5, -3), P(-3.5, -11), P(-0.5, -5)], look.head);
+        plate(g, [P(0.5, -5.5), P(3.5, -11.5), P(5, -3.5)], look.head);
     }
     if (look.style === 'alien') {
-        limb(g, { x: -1, y: -6 }, { x: -4, y: -12 }, 1.2, look.head);
-        limb(g, { x: 2, y: -6 }, { x: 4, y: -12.5 }, 1.2, look.head);
-        dot(g, { x: -4, y: -12 }, 1.6, look.accent);
-        dot(g, { x: 4, y: -12.5 }, 1.6, look.accent);
+        limb(g, P(-1, -6), P(-4, -12), 1.2, look.head);
+        limb(g, P(2, -6), P(4, -12.5), 1.2, look.head);
+        dot(g, P(-4, -12), 1.6, look.accent);
+        dot(g, P(4, -12.5), 1.6, look.accent);
     }
-    const k = HEAD_K;
     dot(g, { x: 0, y: 0 }, HEAD_R, look.head);
     g.moveTo(0, 0).arc(0, 0, HEAD_R, Math.PI * 0.55, Math.PI * 1.25).closePath().fill(shade(look.head, 0.75));
-    if (look.style === 'human') {
-        // Helmet ridge over the top of the head
-        const r = HEAD_R - 2.2, from = Math.PI * 1.15, to = Math.PI * 1.75;
-        g.moveTo(r * Math.cos(from), r * Math.sin(from)).arc(0, 0, r, from, to).stroke({ width: 1.2, color: OUTLINE, cap: 'round' });
-    }
+    if (look.style === 'human') helmetRidge(g);
     g.roundRect(1 * k, -3 * k, 7.4 * k, 5.4 * k, 2.4 * k).fill(VISOR);
     const glint = look.style === 'human' ? VISOR_GLINT : look.accent;
     g.moveTo(2.6 * k, -1.8 * k).lineTo(7 * k, -1.8 * k).stroke({ width: 1, color: glint, cap: 'round' });
