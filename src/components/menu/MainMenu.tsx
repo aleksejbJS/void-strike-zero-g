@@ -72,7 +72,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
 
                 <main className="relative grid flex-grow grid-cols-1 gap-7 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
                     <ModeList title={t('hb.chooseMode')} selected={mode} info={info} onSelect={setMode} />
-                    <ModePreview mode={mode} info={info[mode]} t={t} />
+                    <ModePreview mode={mode} map={currentMap.id} info={info[mode]} t={t} />
                     <PlayPanel
                         t={t}
                         maps={maps}
