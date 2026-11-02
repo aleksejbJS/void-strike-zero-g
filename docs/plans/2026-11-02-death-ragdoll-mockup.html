@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Смерти бойца — макет</title>
+<style>
+  body { margin: 0; background: #1A1D21; color: #ECE9E2; font-family: system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 4px 0; }
+  p.sub { color: #B7B2A8; margin: 0 0 12px; font-size: 14px; }
+  canvas { width: 100%; background: #22262C; border-radius: 6px; display: block; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+  button { background: #2B3038; color: #ECE9E2; border: 2px solid transparent; border-radius: 4px; padding: 9px 13px; font-size: 15px; cursor: pointer; }
+  button:hover { background: #3C434D; }
+  button.on { border-color: #FFC21A; }
+  button small { display: block; color: #B7B2A8; font-size: 12px; }
+  .note { font-size: 14px; color: #B7B2A8; min-height: 40px; line-height: 1.45; }
+  label { font-size: 14px; color: #B7B2A8; margin-right: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Как погибает боец — живой макет</h1>
+  <p class="sub">Нажмите оружие, боец погибнет так, как предлагается. Сцена повторяется сама. Это набросок механики («кукла» на суставах, как в Soldat), не финальная графика.</p>
+  <canvas id="c" width="1100" height="430"></canvas>
+  <div class="btns" id="btns"></div>
+  <div class="note" id="note"></div>
+  <label><input type="checkbox" id="slow"> Замедление ×0.3</label>
+  <label><input type="checkbox" id="pause"> Пауза</label>
+</div>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, G = H - 64, FX = 560, GRAV = 0.42;
+let slow = false, paused = false;
+document.getElementById('slow').onchange = e => slow = e.target.checked;
+document.getElementById('pause').onchange = e => paused = e.target.checked;
+
+// Standing pose, feet at (0,0), facing right
+const POSE = {
+  head: [3, -136], neck: [0, -112], belly: [0, -88], pelvis: [0, -64],
+  shL: [0, -110], elL: [-2, -88], haL: [18, -80],
+  shR: [0, -110], elR: [18, -96], haR: [38, -92],
+  hiL: [0, -64], knL: [-6, -33], ftL: [-10, 0],
+  hiR: [0, -64], knR: [9, -33], ftR: [13, 0],
+};
+// [a, b, joint?]  joints are the ones a big blast tears apart
+const LINKS = [
+  ['head', 'neck', 1], ['head', 'belly', 1], ['neck', 'belly'], ['belly', 'pelvis'], ['neck', 'pelvis'],
+  ['neck', 'shL', 1], ['shL', 'elL'], ['elL', 'haL'], ['neck', 'shR', 1], ['shR', 'elR'], ['elR', 'haR'],
+  ['pelvis', 'hiL', 1], ['hiL', 'knL'], ['knL', 'ftL'], ['pelvis', 'hiR', 1], ['hiR', 'knR'], ['knR', 'ftR'],
+];
+// Joint limits as "keep at least this far apart": knees and elbows never fold flat, legs never fold into the belly
+const LIMITS = [['hiL', 'ftL', 0.62], ['hiR', 'ftR', 0.62], ['shL', 'haL', 0.55], ['shR', 'haR', 0.55],
+  ['belly', 'knL', 0.8], ['belly', 'knR', 0.8], ['neck', 'knL', 0.8], ['neck', 'knR', 0.8], ['head', 'pelvis', 0.9]];
+
+let P, S, gun, state, deathAt, fadeAfter, timeline, now, fx, scenario;
+
+const pt = (x, y) => ({ x, y, px: x, py: y });
+const vel = (p, vx, vy) => { p.px = p.x - vx; p.py = p.y - vy; };
+const linked = (a, b) => S.some(s => !s.min && ((s.a === a && s.b === b) || (s.a === b && s.b === a)));
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+function reset() {
+  P = {};
+  for (const k in POSE) P[k] = pt(FX + POSE[k][0], G + POSE[k][1]);
+  S = LINKS.map(([a, b, j]) => ({ a, b, j: !!j, len: Math.hypot(P[a].x - P[b].x, P[a].y - P[b].y) }));
+  for (const [a, b, f] of LIMITS) S.push({ a, b, min: true, j: false, len: f * Math.hypot(P[a].x - P[b].x, P[a].y - P[b].y) });
+  gun = { a: pt(FX + 6, G - 88), b: pt(FX + 66, G - 92), free: false };
+  state = 'alive'; deathAt = 0; now = 0;
+  fx = { blood: [], splats: [], chunks: [], flashes: [], smoke: [], beams: [], tracers: [] };
+}
+
+function die(fade = 3.6) { state = 'dead'; deathAt = now; fadeAfter = fade; gun.free = true;
+  vel(gun.a, rnd(-1, 1), rnd(-4, -2)); vel(gun.b, rnd(1, 3), rnd(-5, -2)); }
+function breakJoints() { S = S.filter(s => !s.j && !s.min); }
+function bleed(x, y, n, sp, dir = 0) {
+  for (let i = 0; i < n; i++) {
+    const a = dir + rnd(-1.4, 1.4), v = rnd(1, sp);
+    fx.blood.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, r: rnd(1.5, 3.5), life: 1 });
+  }
+}
+function chunks(x, y, n, sp) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(-Math.PI, 0) + rnd(-0.4, 0.4), v = rnd(4, sp);
+    fx.chunks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, rot: 0, vr: rnd(-0.3, 0.3), w: rnd(5, 10), h: rnd(4, 7), life: 1 });
+  }
+}
+function blast(x, y, power, reach) {
+  fx.flashes.push({ x, y, t: 0, r: power * 3.2 });
+  for (let i = 0; i < 10; i++) fx.smoke.push({ x: x + rnd(-20, 20), y: y + rnd(-20, 10), r: rnd(14, 26), vy: rnd(-0.8, -0.2), vx: rnd(-0.5, 0.5), life: 1 });
+  for (const k in P) {
+    const p = P[k], dx = p.x - x, dy = p.y - y, d = Math.max(20, Math.hypot(dx, dy));
+    const f = power * Math.max(0.25, 1 - d / reach);
+    vel(p, dx / d * f + rnd(-1, 1), dy / d * f - power * 0.45 + rnd(-1, 1));
+  }
+}
+function tracer(x1, y1, x2, y2) { fx.tracers.push({ x1, y1, x2, y2, t: 0 }); }
+
+const SCENES = {
+  mg: {
+    label: 'Пулемёт', hint: 'падает',
+    note: 'Пули: 3 попадания. На последнем ноги подкашиваются, и боец падает целым телом назад. Оружие выпадает из рук. Тело лежит пару секунд и растворяется.',
+    run: () => [
+      [0.5, () => { tracer(W, G - 95, P.belly.x, P.belly.y); bleed(P.belly.x, P.belly.y, 4, 2.5, Math.PI); vel(P.neck, -0.8, 0); }],
+      [0.62, () => { tracer(W, G - 112, P.neck.x, P.neck.y); bleed(P.neck.x, P.neck.y, 4, 2.5, Math.PI); }],
+      [0.74, () => {
+        tracer(W, G - 132, P.head.x, P.head.y); bleed(P.head.x, P.head.y, 7, 3, Math.PI);
+        die();
+        vel(P.head, -3.2, -0.6); vel(P.neck, -2.2, -0.2); vel(P.belly, -1.2, 0); vel(P.pelvis, -0.4, 0);
+        vel(P.knL, 1.6, 0); vel(P.knR, 1.8, 0); vel(P.haR, -1, 1); vel(P.haL, -1, 1);
+      }],
+    ],
+  },
+  shotgun: {
+    label: 'Дробовик в упор', hint: 'отбрасывает',
+    note: 'Выстрел в упор: тело отбрасывает на пару метров, оно кувыркается и падает. Кровь брызгает в сторону выстрела.',
+    run: () => [[0.5, () => {
+      for (let i = 0; i < 6; i++) tracer(FX + 150, G - 100, P.belly.x + rnd(-6, 6), P.belly.y + rnd(-30, 20));
+      die();
+      for (const k in P) vel(P[k], rnd(-7, -5.5), rnd(-4, -2.5));
+      vel(P.head, -8.5, -4); vel(P.ftL, -3, -1); vel(P.ftR, -3, -1);
+      bleed(P.belly.x, P.belly.y, 22, 6, Math.PI);
+    }]],
+  },
+  rocket: {
+    label: 'Ракета рядом', hint: 'отбрасывает труп',
+    note: 'Ракета взрывается рядом (здоровья хватало): тело целиком подбрасывает и швыряет, как у Soldat. Руки и ноги болтаются, тело летит кувырком и падает, брызги крови.',
+    run: () => [
+      [0.25, () => { fx.rocket = { x: W, y: G - 40 }; }],
+      [0.48, () => { fx.rocket = null; blast(FX + 70, G - 18, 15, 260); die(); bleed(P.belly.x, P.belly.y, 18, 5, -2.4); }],
+    ],
+  },
+  gib: {
+    label: 'Ракета вплотную', hint: 'или мало HP → разрыв',
+    note: 'Взрыв вплотную или у бойца мало здоровья: тело разрывает на части (голова, торс, руки, ноги). Куски с кровавыми краями разлетаются, тёмные ошмётки, облако крови. Части лежат и растворяются.',
+    run: () => [
+      [0.25, () => { fx.rocket = { x: W, y: G - 70 }; }],
+      [0.45, () => {
+        fx.rocket = null; blast(FX + 26, G - 64, 12, 200); breakJoints(); die(3);
+        for (const k in P) { const p = P[k]; vel(p, (p.x - p.px) * 0.8 + rnd(-2.5, 2.5), (p.y - p.py) * 0.75 + rnd(-2, 1)); }
+        bleed(FX, G - 80, 45, 8, -Math.PI / 2); chunks(FX, G - 80, 12, 11);
+      }],
+    ],
+  },
+  rail: {
+    label: 'Рельсотрон', hint: 'разрезает',
+    note: 'Луч рельсотрона проходит через пояс: верхняя половина слетает по линии выстрела и кувыркается, нижняя оседает на месте. На срезе — кровь.',
+    run: () => [[0.55, () => {
+      const y = P.belly.y + 10; fx.beams.push({ y, t: 0 });
+      S = S.filter(s => !((s.a === 'belly' && s.b === 'pelvis') || (s.a === 'neck' && s.b === 'pelvis') || (s.min && /kn|pelvis/.test(s.a + s.b))));
+      die();
+      for (const k of ['head', 'neck', 'belly', 'shL', 'elL', 'haL', 'shR', 'elR', 'haR']) vel(P[k], rnd(-9, -7), rnd(-3.5, -2));
+      vel(P.head, -10, -3.6);
+      for (const k of ['pelvis', 'hiL', 'hiR', 'knL', 'knR']) vel(P[k], rnd(-0.6, 0.4), 0.5);
+      for (let i = 0; i < 26; i++) fx.blood.push({ x: FX + rnd(-12, 12), y, vx: rnd(-6, 0), vy: rnd(-2.5, 1), r: rnd(1.5, 3), life: 1 });
+    }]],
+  },
+  now: {
+    label: 'Как сейчас в игре', hint: 'для сравнения',
+    note: 'Сейчас при любой смерти боец распадается на 6 несвязанных кусков, которые разлетаются в случайные стороны и исчезают примерно через 2 секунды.',
+    run: () => [[0.5, () => {
+      breakJoints(); die(1.6);
+      const groups = [['head'], ['neck', 'belly', 'pelvis'], ['shL', 'elL', 'haL'], ['shR', 'elR', 'haR'], ['hiL', 'knL', 'ftL'], ['hiR', 'knR', 'ftR']];
+      for (const g of groups) { const vx = rnd(-5, 5), vy = rnd(-8, 0); for (const k of g) vel(P[k], vx, vy); }
+      bleed(FX, G - 80, 30, 4, -Math.PI / 2);
+    }]],
+  },
+};
+
+function start(key) {
+  scenario = key; reset();
+  timeline = SCENES[key].run().map(([t, f]) => ({ t, f, done: false }));
+  document.getElementById('note').textContent = SCENES[key].note;
+  document.querySelectorAll('#btns button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+}
+
+const btns = document.getElementById('btns');
+for (const k in SCENES) {
+  const b = document.createElement('button'); b.dataset.k = k; b.dataset.choice = k;
+  b.innerHTML = `${SCENES[k].label}<small>${SCENES[k].hint}</small>`;
+  b.onclick = () => start(k); btns.appendChild(b);
+}
+
+// --- physics, fixed 60 steps per second ---
+function stepBodies(points, sticks) {
+  for (const p of points) {
+    const vx = (p.x - p.px) * 0.995, vy = (p.y - p.py) * 0.995;
+    p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + GRAV;
+  }
+  for (let it = 0; it < 8; it++) {
+    for (const s of sticks) {
+      const a = s.pa, b = s.pb, dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.001;
+      if (s.min && d >= s.len) continue;
+      const k = (d - s.len) / d * 0.5;
+      a.x += dx * k; a.y += dy * k; b.x -= dx * k; b.y -= dy * k;
+    }
+    for (const p of points) if (p.y > G) { const vy = p.y - p.py; p.y = G; p.py = G + vy * 0.25; const vx = p.x - p.px; p.px = p.x - vx * 0.75; }
+    for (const p of points) { if (p.x < 10) { p.x = 10; } if (p.x > W - 10) { p.x = W - 10; } }
+  }
+}
+function step() {
+  now += 1 / 60;
+  for (const e of timeline) if (!e.done && now >= e.t) { e.done = true; e.f(); }
+  if (fx.rocket) fx.rocket.x -= 22;
+  if (state === 'dead') {
+    for (const s of S) { s.pa = P[s.a]; s.pb = P[s.b]; }
+    stepBodies(Object.values(P), S);
+    stepBodies([gun.a, gun.b], [{ pa: gun.a, pb: gun.b, len: 60 }]);
+  }
+  for (const b of fx.blood) { b.x += b.vx; b.y += b.vy; b.vy += GRAV * 0.8; b.vx *= 0.99; if (b.y >= G) { fx.splats.push({ x: b.x, r: b.r * rnd(1, 2.2) }); b.life = 0; } }
+  fx.blood = fx.blood.filter(b => b.life > 0);
+  for (const c of fx.chunks) { c.x += c.vx; c.y += c.vy; c.vy += GRAV; c.rot += c.vr; if (c.y > G - 3) { c.y = G - 3; c.vy *= -0.3; c.vx *= 0.7; c.vr *= 0.6; } c.life -= 0.006; }
+  for (const s of fx.smoke) { s.x += s.vx; s.y += s.vy; s.r += 0.25; s.life -= 0.011; }
+  fx.smoke = fx.smoke.filter(s => s.life > 0);
+  for (const f of fx.flashes) f.t += 1 / 60;
+  for (const t of fx.tracers) t.t += 1 / 60;
+  for (const b of fx.beams) b.t += 1 / 60;
+  if (now > 6.2) start(scenario);
+}
+
+// --- drawing ---
+function bg() {
+  ctx.fillStyle = '#22262C'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 2;
+  for (let x = 0; x < W; x += 110) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, G); ctx.stroke(); }
+  for (let y = 40; y < G; y += 90) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.fillStyle = '#4A525E'; ctx.fillRect(0, G, W, 6);
+  ctx.fillStyle = '#2B3038'; ctx.fillRect(0, G + 6, W, 14);
+  for (let x = -20; x < W; x += 28) { ctx.fillStyle = '#FFC21A'; ctx.beginPath(); ctx.moveTo(x, G + 34); ctx.lineTo(x + 12, G + 20); ctx.lineTo(x + 24, G + 20); ctx.lineTo(x + 12, G + 34); ctx.fill(); }
+  ctx.fillStyle = '#1A1D21'; ctx.fillRect(0, G + 34, W, H - G - 34);
+}
+function limb(pts, w, col) {
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [lw, c] of [[w + 5, '#0E1116'], [w, col]]) {
+    ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for (const p of pts.slice(1)) ctx.lineTo(p.x, p.y); ctx.stroke();
+  }
+}
+function cap(p) { ctx.fillStyle = '#b91c1c'; ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill(); }
+function fighter(alpha) {
+  ctx.globalAlpha = alpha;
+  const { head, neck, belly, pelvis } = P;
+  const torn = !linked('neck', 'shL');
+  // legs (back first)
+  limb([P.hiL, P.knL, P.ftL], 11, '#3d4756'); limb([P.shL, P.elL, P.haL], 9, '#2557b8');
+  // jetpack on the back of the torso
+  const dx = belly.x - neck.x, dy = belly.y - neck.y, d = Math.hypot(dx, dy) || 1, nx = -dy / d, ny = dx / d;
+  const face = state === 'alive' ? 1 : (head.x >= pelvis.x ? 1 : -1);
+  ctx.save(); ctx.translate((neck.x + belly.x) / 2 - nx * 15 * face, (neck.y + belly.y) / 2 - ny * 15 * face);
+  ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2); ctx.fillStyle = '#0E1116'; ctx.fillRect(-9, -18, 18, 36);
+  ctx.fillStyle = '#ef4444'; ctx.fillRect(-7, -16, 14, 32); ctx.restore();
+  limb([neck, belly], 24, '#3b82f6');
+  if (linked('belly', 'pelvis')) limb([belly, pelvis], 24, '#3b82f6'); else { limb([pelvis, { x: pelvis.x, y: pelvis.y - 2 }], 22, '#3b82f6'); cap(belly); cap(pelvis); }
+  limb([P.hiR, P.knR, P.ftR], 11, '#475569');
+  // head + visor
+  ctx.fillStyle = '#0E1116'; ctx.beginPath(); ctx.arc(head.x, head.y, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3b82f6'; ctx.beginPath(); ctx.arc(head.x, head.y, 13.5, 0, Math.PI * 2); ctx.fill();
+  const ha = Math.atan2(head.y - neck.y, head.x - neck.x) + Math.PI / 2 * face;
+  ctx.save(); ctx.translate(head.x + Math.cos(ha) * 6, head.y + Math.sin(ha) * 6); ctx.rotate(ha);
+  ctx.fillStyle = '#0E1116'; ctx.fillRect(-4, -8, 10, 16); ctx.fillStyle = '#67e8f9'; ctx.fillRect(-2, -6, 6, 12); ctx.restore();
+  limb([P.shR, P.elR, P.haR], 9, '#3b82f6');
+  if (torn) for (const k of ['shL', 'shR', 'hiL', 'hiR', 'neck', 'pelvis']) cap(P[k]);
+  ctx.globalAlpha = 1;
+}
+function draw() {
+  bg();
+  ctx.fillStyle = '#7f1d1d'; for (const s of fx.splats) { ctx.beginPath(); ctx.ellipse(s.x, G + 1, s.r * 1.8, s.r * 0.6, 0, 0, Math.PI * 2); ctx.fill(); }
+  for (const s of fx.smoke) { ctx.fillStyle = `rgba(110,104,96,${0.5 * s.life})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+  const alpha = state === 'dead' ? Math.max(0, Math.min(1, 1 - (now - deathAt - fadeAfter))) : 1;
+  fighter(alpha);
+  // gun
+  ctx.globalAlpha = gun.free ? alpha : 1;
+  const ga = state === 'alive' ? { a: { x: P.haL.x - 10, y: P.haL.y - 4 }, b: { x: P.haR.x + 30, y: P.haR.y + 2 } } : gun;
+  ctx.strokeStyle = '#0E1116'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(ga.a.x, ga.a.y); ctx.lineTo(ga.b.x, ga.b.y); ctx.stroke();
+  ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(ga.a.x, ga.a.y); ctx.lineTo(ga.b.x, ga.b.y); ctx.stroke();
+  ctx.globalAlpha = 1;
+  for (const c of fx.chunks) { ctx.save(); ctx.globalAlpha = Math.max(0, c.life); ctx.translate(c.x, c.y); ctx.rotate(c.rot); ctx.fillStyle = '#3a1513'; ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h); ctx.restore(); }
+  ctx.fillStyle = '#dc2626'; for (const b of fx.blood) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); }
+  for (const t of fx.tracers) if (t.t < 0.08) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(t.x1, t.y1); ctx.lineTo(t.x2, t.y2); ctx.stroke(); }
+  for (const b of fx.beams) if (b.t < 0.35) { ctx.globalAlpha = 1 - b.t / 0.35; ctx.strokeStyle = '#67e8f9'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, b.y); ctx.lineTo(W, b.y); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 1; }
+  if (fx.rocket) { ctx.fillStyle = '#9ca3af'; ctx.fillRect(fx.rocket.x, fx.rocket.y - 4, 26, 8); ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(fx.rocket.x + 30, fx.rocket.y, 6, 0, Math.PI * 2); ctx.fill(); }
+  for (const f of fx.flashes) if (f.t < 0.5) { const k = f.t / 0.5; ctx.fillStyle = `rgba(255,${200 - k * 120},60,${1 - k})`; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + k), 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = '#FFC21A'; ctx.font = '600 16px system-ui'; ctx.fillText(SCENES[scenario].label + ' — ' + SCENES[scenario].hint, 16, 26);
+}
+
+let last = performance.now(), acc = 0;
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  if (!paused) { acc += dt * (slow ? 0.3 : 1); while (acc >= 1 / 60) { step(); acc -= 1 / 60; } }
+  draw(); requestAnimationFrame(frame);
+}
+start('mg');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
