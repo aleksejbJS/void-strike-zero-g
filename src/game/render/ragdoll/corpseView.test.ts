@@ -131,6 +131,39 @@ describe('corpse views', () => {
         destroyCorpseView(v);
     });
 
+    it('a torn-off head keeps its own turn when the torso moves', () => {
+        const { c, v } = viewOf('gib');
+        const head = v.pieces!.find(g => g.label === 'corpse-head')!;
+        const before = head.rotation;
+        // The torso tumbles a full radian around the hip; the head point stays where it is
+        const hip = { ...c.points.hip };
+        for (const id of ['neck', 'shF', 'elF', 'haF', 'shB', 'elB', 'haB', 'knF', 'anF', 'knB', 'anB'] as const) {
+            const p = c.points[id], dx = p.x - hip.x, dy = p.y - hip.y;
+            p.x = hip.x + dx * Math.cos(1) - dy * Math.sin(1);
+            p.y = hip.y + dx * Math.sin(1) + dy * Math.cos(1);
+        }
+        updateCorpseView(v, c);
+        expect(head.rotation).toBe(before);
+        destroyCorpseView(v);
+    });
+
+    it('a torn-off head rolls while it moves and stops when it is still', () => {
+        const { c, v } = viewOf('gib');
+        const head = v.pieces!.find(g => g.label === 'corpse-head')!;
+        const start = head.rotation;
+        c.points.head.x += 10; // rolling right turns it clockwise
+        updateCorpseView(v, c);
+        const rolled = head.rotation;
+        expect(rolled).toBeGreaterThan(start);
+        updateCorpseView(v, c);
+        updateCorpseView(v, c);
+        expect(head.rotation).toBe(rolled);
+        c.points.head.x -= 10; // and back
+        updateCorpseView(v, c);
+        expect(head.rotation).toBeCloseTo(start, 10);
+        destroyCorpseView(v);
+    });
+
     it('views of removed corpses are destroyed', () => {
         const layer = new Container();
         const cache: { corpses?: Map<string, CorpseView> } = {};

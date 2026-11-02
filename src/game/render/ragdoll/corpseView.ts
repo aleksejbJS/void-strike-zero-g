@@ -5,6 +5,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { Corpse } from '../../systems/ragdoll/corpseBody';
 import { RIG_SCALE } from '../fighter/fighterPose';
+import { HEAD_R } from '../fighter/fighterStyle';
 import { createFighterView, drawFighter, FighterView } from '../fighter/fighterView';
 import { heldWeaponKey } from '../fighter/fighterAnimator';
 import { gripPoints } from '../fighter/weaponGrips';
@@ -17,12 +18,18 @@ export interface CorpseView {
     fighter?: FighterView; // a whole body (fall, thrown)
     pieces?: Graphics[];   // a torn body (gib, cut), in the order of piecesOf
     gun: Sprite;
+    head?: HeadRoll;       // a torn-off head (gib): it turns on its own, not with the neck it left
 }
+
+/** How far a torn-off head has turned, and where its point was when the turn was last updated. */
+export interface HeadRoll { turn: number; x: number }
 
 type Textures = Record<string, Texture | undefined>;
 
 /** Weapon picture height / width when the texture is not known (as in corpseBody.ts and the animator). */
 const GUN_ASPECT = 0.23;
+/** A torn-off head rolls like a ball of the head's size: one radian per this many world units moved sideways. */
+const HEAD_ROLL_RADIUS = HEAD_R * RIG_SCALE;
 
 /** 1 while the corpse lies, then linear to 0 from fadeAt to removeAt. */
 const alphaOf = (c: Corpse) => {
@@ -52,6 +59,17 @@ const drawBody = (fighter: FighterView, c: Corpse) => {
     });
 };
 
+/**
+ * The torn-off head is a lone point with no neck to turn it: it rolls with its sideways travel
+ * (moving right turns it clockwise) and stops turning when the point stops.
+ */
+const rollHead = (head: HeadRoll, c: Corpse) => {
+    const x = c.points.head.x;
+    head.turn += (x - head.x) / HEAD_ROLL_RADIUS;
+    head.x = x;
+    return head.turn;
+};
+
 /** Move the view to the corpse's points and set its fade. */
 export const updateCorpseView = (v: CorpseView, c: Corpse): void => {
     v.root.alpha = alphaOf(c);
@@ -60,7 +78,7 @@ export const updateCorpseView = (v: CorpseView, c: Corpse): void => {
         const pieces = v.pieces;
         piecesOf(c).forEach((p, i) => {
             pieces[i].position.set(p.at.x, p.at.y);
-            pieces[i].rotation = p.rotation;
+            pieces[i].rotation = p.part === 'head' && v.head ? rollHead(v.head, c) : p.rotation;
         });
     }
     placeGun(v.gun, c);
@@ -82,7 +100,9 @@ export const createCorpseView = (c: Corpse, textures: Textures): CorpseView => {
             return g;
         });
         root.addChild(...pieces);
-        view = { root, pieces, gun };
+        // A gib head starts at its tilt at death and rolls on from there
+        const headPiece = c.kind === 'gib' ? piecesOf(c).find(p => p.part === 'head') : undefined;
+        view = { root, pieces, gun, head: headPiece && { turn: headPiece.rotation, x: c.points.head.x } };
     } else {
         const fighter = createFighterView();
         root.addChild(fighter.root);

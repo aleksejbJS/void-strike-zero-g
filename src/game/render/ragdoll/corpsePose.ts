@@ -94,6 +94,7 @@ const gibPieces = (c: Corpse, r: RigPoints): CorpsePiece[] => [
     piece(c, 'torso', middle(world(c, 'hip'), world(c, 'neck')), leanOf(r)),
     piece(c, 'leg-front', world(c, 'knF'), upAngle(minus(r.anF, r.knF)) - DOWN),
     piece(c, 'arm-front', world(c, 'elF'), upAngle(minus(r.shF, r.elF))),
+    // Right only at death: the head has left its neck, so the corpse view rolls it on its own from there
     piece(c, 'head', world(c, 'head'), headTiltOf(r)),
 ];
 
