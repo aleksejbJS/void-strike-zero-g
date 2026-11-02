@@ -89,11 +89,3 @@ export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => 
     plate(g, [U(2, -1.2), U(4.6, -1.2), U(4.6, 1), U(2, 1)], HAZARD, false);
     shoulderPad(g, (x, y) => upperPoint(pose, x, y), look.torso); // under the front arm
 };
-
-/** A fighter with a tail part has one that swings with the run cycle. */
-export const drawTail = (g: Graphics, pose: FighterPose, look: FighterLook, swing: number) => {
-    if (look.build.tail === 'none') return;
-    const root = upperPoint(pose, -6, -1);
-    const tip = { x: root.x - 9, y: root.y + 3 + swing * 3 };
-    limb(g, root, tip, 3, look.pattern);
-};

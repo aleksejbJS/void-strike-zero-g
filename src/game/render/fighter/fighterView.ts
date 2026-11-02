@@ -4,9 +4,10 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { FLAME_BASE, boot, drawFlame, drawJetpack, drawTail, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
+import { FLAME_BASE, boot, drawFlame, drawJetpack, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
 import { drawHead, headKeyOf } from './parts/helmets';
 import { drawEars } from './parts/ears';
+import { drawTail } from './parts/tails';
 import { PartMotionFrame } from './parts/partMotionFrame';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
@@ -86,7 +87,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
 
     const b = view.body.clear();
     if (f.flame) drawFlame(b, pose, f.flicker);
-    drawTail(b, pose, look, Math.sin(f.parts.tailWave)); // the old swing-only tail, until the part shapes replace it
+    drawTail(b, pose, look, f.parts);
     drawJetpack(b, pose, look, f.flame);
     const legDark = shade(look.leg, 0.72);
     jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
