@@ -4,7 +4,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
+import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, headKeyOf, jointedLimb } from './fighterParts';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
@@ -92,7 +92,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     jointedLimb(b, pose.hip, pose.frontLeg.joint, pose.frontLeg.end, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [look.leg, shade(look.leg, 0.9)] });
     boot(b, pose.frontLeg.end, 0x252a32);
 
-    const headKey = `${look.style}:${look.head}:${look.accent}`;
+    const headKey = headKeyOf(look);
     if (view.headKey !== headKey) {
         drawHead(view.head.clear(), look);
         view.headKey = headKey;

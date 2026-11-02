@@ -1,8 +1,9 @@
 // Character setup ("Hazard Bay" design): skin, name and colors before a match.
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SKINS } from '../../constants';
 import { MapId, NetworkMode } from '../../types';
+import { presetBuild } from '../../game/build/buildPresets';
 import { useUIStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { MODE_INFO } from '../menu/modeInfo';
@@ -31,6 +32,7 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
         jetpack: state.jetpackColor || '#ef4444',
     });
     const skin = SKINS[skinIndex];
+    const build = useMemo(() => presetBuild(skin.id), [skin.id]); // the skin's starting build until the builder screen exists
 
     // Functional update: rapid clicks each count
     const changeSkin = (step: number) => setSkinIndex(i => (i + step + SKINS.length) % SKINS.length);
@@ -76,7 +78,7 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
 
                 <main className="grid flex-grow grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_560px]">
                     <div className="flex min-w-0 flex-col gap-4">
-                        <CharacterPreview look={{ skin, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', skinIndex + 1, SKINS.length)} />
+                        <CharacterPreview look={{ build, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', skinIndex + 1, SKINS.length)} />
                         <div className="flex items-center gap-4">
                             <button type="button" onClick={() => changeSkin(-1)} aria-label={t('cs.prevSkin')} className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate ${focusRing}`}><Chevron dir="l" /></button>
                             <div className="flex flex-grow flex-col items-center gap-0.5 text-center">

@@ -1,9 +1,8 @@
-// Colors and skin style of a fighter, from a player entity or from the character-setup choices.
+// Colors and build of a fighter, from a player entity or from the character-setup choices.
 
 import { Entity } from '../../../types';
-import { SKINS } from '../../../constants';
-
-export type FighterStyle = 'human' | 'robot' | 'beast' | 'alien';
+import { FighterBuild } from '../../build/buildParts';
+import { presetBuild } from '../../build/buildPresets';
 
 export interface FighterLook {
     head: number;
@@ -11,8 +10,9 @@ export interface FighterLook {
     arm: number;
     leg: number;
     jet: number;
-    accent: number;
-    style: FighterStyle;
+    visor: number;   // visor panel and glint
+    pattern: number; // pattern, tail and antenna-tip colour
+    build: FighterBuild;
 }
 
 const DEFAULT_LEG = 0x475569;
@@ -22,18 +22,17 @@ const DEFAULT_ACCENT = 0xe5e7eb;
 const toNumber = (color: string | undefined, fallback: number) =>
     color && /^#[0-9a-f]{6}$/i.test(color) ? parseInt(color.slice(1), 16) : fallback;
 
-const skinOf = (skinId: string | undefined) => SKINS.find(s => s.id === skinId);
+type EntityColors = Pick<Entity, 'color' | 'headColor' | 'torsoColor' | 'armColor' | 'legColor' | 'jetpackColor'>;
 
-const styleOf = (skin: ReturnType<typeof skinOf>): FighterStyle => {
-    const style = skin?.style;
-    return style === 'robot' || style === 'beast' || style === 'alien' ? style : 'human';
-};
+/** The build's own colours: the same for every way of getting a look. */
+const buildColors = (build: FighterBuild) => ({
+    visor: toNumber(build.visorColor, DEFAULT_ACCENT),
+    pattern: toNumber(build.patternColor, DEFAULT_ACCENT),
+    build,
+});
 
-const accentOf = (skin: ReturnType<typeof skinOf>) =>
-    toNumber(skin && 'accent' in skin ? skin.accent : undefined, DEFAULT_ACCENT);
-
-export const lookFromEntity = (p: Pick<Entity, 'color' | 'headColor' | 'torsoColor' | 'armColor' | 'legColor' | 'jetpackColor' | 'skinId'>): FighterLook => {
-    const skin = skinOf(p.skinId);
+/** The entity's own build, or the preset of its skin when the entity has none (older hosts, bots). */
+export const lookFromEntity = (p: EntityColors & Pick<Entity, 'skinId' | 'build'>): FighterLook => {
     const torso = toNumber(p.torsoColor || p.color, 0xffffff);
     return {
         torso,
@@ -41,25 +40,20 @@ export const lookFromEntity = (p: Pick<Entity, 'color' | 'headColor' | 'torsoCol
         arm: toNumber(p.armColor || p.color, torso),
         leg: toNumber(p.legColor, DEFAULT_LEG),
         jet: toNumber(p.jetpackColor, DEFAULT_JET),
-        accent: accentOf(skin),
-        style: styleOf(skin),
+        ...buildColors(p.build ?? presetBuild(p.skinId)),
     };
 };
 
 export interface SetupColors { head: string; torso: string; arms: string; legs: string; jetpack: string }
 
-export const lookFromSetup = (colors: SetupColors, skinId: string): FighterLook => {
-    const skin = skinOf(skinId);
-    return {
-        head: toNumber(colors.head, 0xffffff),
-        torso: toNumber(colors.torso, 0xffffff),
-        arm: toNumber(colors.arms, 0xffffff),
-        leg: toNumber(colors.legs, DEFAULT_LEG),
-        jet: toNumber(colors.jetpack, DEFAULT_JET),
-        accent: accentOf(skin),
-        style: styleOf(skin),
-    };
-};
+export const lookFromSetup = (colors: SetupColors, build: FighterBuild): FighterLook => ({
+    head: toNumber(colors.head, 0xffffff),
+    torso: toNumber(colors.torso, 0xffffff),
+    arm: toNumber(colors.arms, 0xffffff),
+    leg: toNumber(colors.legs, DEFAULT_LEG),
+    jet: toNumber(colors.jetpack, DEFAULT_JET),
+    ...buildColors(build),
+});
 
 /** Darken (k < 1) or lighten (k > 1) a 0xRRGGBB color. */
 export const shade = (color: number, k: number) => {
@@ -77,5 +71,6 @@ export const flashLook = (look: FighterLook, amount: number): FighterLook => {
         ...look,
         head: shade(look.head, k), torso: shade(look.torso, k), arm: shade(look.arm, k),
         leg: shade(look.leg, k), jet: shade(look.jet, k),
+        visor: shade(look.visor, k), pattern: shade(look.pattern, k),
     };
 };

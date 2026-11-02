@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { solveLimb } from './ik';
 import { bodyExtents, FighterState, RIG_SCALE, solvePose, upperPoint } from './fighterPose';
 import { HITBOX } from './fighterStyle';
-import { FighterStyle } from './fighterLook';
+import { HELMETS } from '../../build/buildParts';
 import { gripPoints } from './weaponGrips';
 import { faceAim } from './fighterAnimator';
 import { WeaponType } from '../../../types';
@@ -89,14 +89,13 @@ describe('solvePose', () => {
 });
 
 describe('stays inside the hitbox', () => {
-    const styles: FighterStyle[] = ['human', 'robot', 'beast', 'alien'];
     const aims = [-1.2, -0.6, 0, 0.6, 1.2];
     const phases = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
     it.each(['idle', 'run', 'fly', 'fall', 'crouch'] as FighterState[])('%s pose stays within 6 px of the hitbox', state => {
         const height = state === 'crouch' ? HITBOX.crouched : HITBOX.standing;
-        for (const style of styles) for (const aim of aims) for (const phase of phases) {
-            const e = bodyExtents(pose(state, { phase, aim }), style);
-            const where = `${style} aim ${aim} phase ${phase.toFixed(2)}`;
+        for (const helmet of HELMETS) for (const aim of aims) for (const phase of phases) {
+            const e = bodyExtents(pose(state, { phase, aim }), helmet);
+            const where = `${helmet} aim ${aim} phase ${phase.toFixed(2)}`;
             expect(e.right * RIG_SCALE, `right, ${where}`).toBeLessThanOrEqual(HITBOX.halfW + HITBOX.margin);
             expect(-e.left * RIG_SCALE, `left, ${where}`).toBeLessThanOrEqual(HITBOX.halfW + HITBOX.margin);
             expect(-e.top * RIG_SCALE, `top, ${where}`).toBeLessThanOrEqual(height + HITBOX.margin);

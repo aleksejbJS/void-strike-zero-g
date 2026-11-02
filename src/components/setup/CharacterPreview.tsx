@@ -63,8 +63,8 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
         };
     }, []);
 
-    // Redraw when colors or skin change
-    useEffect(redraw, [look.skin, look.torso, look.head, look.arms, look.legs, look.jetpack]);
+    // Redraw when colors or the build change
+    useEffect(redraw, [look.build, look.torso, look.head, look.arms, look.legs, look.jetpack]);
 
     return (
         <div role="img" aria-label={label} className="relative min-h-[300px] flex-grow overflow-hidden rounded bg-bay-panel">

@@ -1,4 +1,6 @@
 
+import type { FighterBuild } from './game/build/buildParts';
+
 export type Vector2 = { x: number; y: number };
 
 export type Language = 'en' | 'ru';
@@ -91,6 +93,7 @@ export interface Entity {
   lastFired: number;
   type: 'player' | 'bot';
   skinId: string;
+  build?: FighterBuild; // Chosen parts; missing means the preset of skinId
   name: string; // Player display name
   score: number;
   grapple: {
