@@ -6,7 +6,7 @@ import { Vector2, WeaponType } from '../../../types';
 import { glowTexture } from '../effects/glowTextures';
 import { FighterPose, RIG_SCALE } from './fighterPose';
 import { GripPoints } from './weaponGrips';
-import { isBigFlash } from './muzzleEnvelope';
+import { hasMuzzleFlash, isBigFlash } from './muzzleEnvelope';
 
 const STAR_COLOR = 0xffecaa;
 const CORE_COLOR = 0xffffff;
@@ -67,10 +67,10 @@ const ellipsePoints = (at: Vector2, angle: number, rx: number, ry: number): numb
     return points;
 };
 
-/** Draw the flash at strength k (0..1); k = 0 draws nothing and hides the light. */
+/** Draw the flash at strength k (0..1); k = 0, or a weapon without a flash, draws nothing and hides the light. */
 export const drawMuzzle = (front: Graphics, light: Sprite, muzzle: Vector2, angle: number, k: number, weapon: WeaponType) => {
-    light.visible = k > 0;
-    if (k <= 0) return;
+    light.visible = k > 0 && hasMuzzleFlash(weapon);
+    if (!light.visible) return;
     const big = isBigFlash(weapon);
     const size = k * (big ? BIG_FLASH : 1);
 
