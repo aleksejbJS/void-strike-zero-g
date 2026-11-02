@@ -34,6 +34,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.4.7', date: 'Nov 2, 2026', points: [
             'The character screen fits a laptop screen: the Start button is always in view and the part tiles scroll in their own panel',
+        ] },
         { version: '0.4.6', date: 'Nov 2, 2026', groups: [
             { title: 'Camera', comparisons: [{ caption: 'The same 2560 × 1440 window', ...CAMERA }], points: [
                 'Every screen now shows the same part of the map: fighters, flags and effects are bigger on large monitors, and a big monitor no longer sees further than a small one',
@@ -129,6 +130,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ru: [
         { version: '0.4.7', date: '02.11.2026', points: [
             'Экран персонажа помещается на экран ноутбука: кнопка «Начать матч» всегда на виду, а плитки деталей прокручиваются в своей панели',
+        ] },
         { version: '0.4.6', date: '02.11.2026', groups: [
             { title: 'Камера', comparisons: [{ caption: 'Одно и то же окно 2560 × 1440', ...CAMERA }], points: [
                 'Любой экран теперь показывает одинаковый кусок карты: на больших мониторах бойцы, флаги и эффекты крупнее, а большой монитор больше не видит дальше маленького',
