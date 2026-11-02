@@ -9,6 +9,7 @@ import { solvePose } from '../../game/render/fighter/fighterPose';
 import { lookFromSetup } from '../../game/render/fighter/fighterLook';
 import { gripPoints } from '../../game/render/fighter/weaponGrips';
 import { heldWeaponKey } from '../../game/render/fighter/fighterAnimator';
+import { IDLE_PARTS } from '../../game/render/fighter/parts/partMotionFrame';
 
 export interface CharacterLook {
     build: FighterBuild;
@@ -36,7 +37,7 @@ export const buildCharacter = (look: CharacterLook, textures: Record<string, Tex
     const update = (t: number) => drawFighter(view, {
         pose: solvePose({ state: 'idle', aim: PREVIEW_AIM, t, phase: 0, moveDir: 1, recoil: 0, grip }),
         look: fighterLook, facing: 1, grip, weapon, weaponType: WeaponType.MACHINE_GUN,
-        flame: false, flicker: 0, tailSwing: Math.sin(t * 2) * 0.5, muzzleFlash: 0,
+        flame: false, flicker: 0, parts: { ...IDLE_PARTS, tailWave: t }, muzzleFlash: 0,
     });
     update(0);
     return { root: view.root, update };

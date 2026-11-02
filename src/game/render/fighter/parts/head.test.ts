@@ -19,6 +19,18 @@ const instructionCount = (draw: (g: Graphics) => void) => {
     return n;
 };
 
+/**
+ * The recorded drawing instructions as text, to tell two drawings apart. Fill textures (they point back at the
+ * context) and path ids (they count up with every path) are left out, so equal drawings give equal text.
+ */
+const instructionsOf = (draw: (g: Graphics) => void) => {
+    const g = new Graphics();
+    draw(g);
+    const text = JSON.stringify(g.context.instructions, (key, value) => (key === 'texture' || key === 'uid' ? undefined : value));
+    g.destroy({ children: true, context: true });
+    return text;
+};
+
 const ACTIVE: PartMotionFrame = { ...IDLE_PARTS, earFlop: 1, lampOn: true };
 
 describe('drawHead', () => {
@@ -46,6 +58,19 @@ describe('drawEars', () => {
             }
         });
     }
+
+    it('tips the bunny ears back as they flop', () => {
+        const bunny = lookWith({ ears: 'bunny' });
+        const drawn = (earFlop: number) => instructionsOf(g => drawEars(g, bunny, { ...IDLE_PARTS, earFlop }));
+        expect(drawn(1)).not.toBe(drawn(0));
+        expect(drawn(0.5)).not.toBe(drawn(0));
+    });
+
+    it('lights the lamp bulb when it is on', () => {
+        const lamp = lookWith({ ears: 'lamp' });
+        const drawn = (lampOn: boolean) => instructionsOf(g => drawEars(g, lamp, { ...IDLE_PARTS, lampOn }));
+        expect(drawn(true)).not.toBe(drawn(false));
+    });
 
     it('draws nothing without ears', () => {
         expect(instructionCount(g => drawEars(g, lookWith({ ears: 'none' }), IDLE_PARTS))).toBe(0);

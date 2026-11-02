@@ -7,7 +7,7 @@ import { FighterLook, flashLook, shade } from './fighterLook';
 import { FLAME_BASE, boot, drawFlame, drawJetpack, drawTail, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
 import { drawHead, headKeyOf } from './parts/helmets';
 import { drawEars } from './parts/ears';
-import { IDLE_PARTS } from './parts/partMotionFrame';
+import { PartMotionFrame } from './parts/partMotionFrame';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
@@ -34,7 +34,7 @@ export interface FighterFrame {
     weaponType: WeaponType; // picks the size of the muzzle flash
     flame: boolean;
     flicker: number;   // 0..1, flame length jitter
-    tailSwing: number; // -1..1
+    parts: PartMotionFrame; // tail, ears, lamp and wings as the springs hold them
     muzzleFlash: number; // 0..1, strength of the flash (0 = none)
     squash?: number;   // 0..1, landing squash (default 0)
     headBob?: number;  // radians added to the head tilt (default 0)
@@ -86,7 +86,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
 
     const b = view.body.clear();
     if (f.flame) drawFlame(b, pose, f.flicker);
-    drawTail(b, pose, look, f.tailSwing);
+    drawTail(b, pose, look, Math.sin(f.parts.tailWave)); // the old swing-only tail, until the part shapes replace it
     drawJetpack(b, pose, look, f.flame);
     const legDark = shade(look.leg, 0.72);
     jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
@@ -102,7 +102,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
         drawHead(view.head.clear(), look);
         view.headKey = headKey;
     }
-    drawEars(view.ears.clear(), look, IDLE_PARTS);
+    drawEars(view.ears.clear(), look, f.parts);
     for (const layer of [view.ears, view.head]) {
         layer.position.set(pose.head.x, pose.head.y);
         layer.rotation = pose.headTilt + (f.headBob ?? 0);

@@ -10,6 +10,7 @@ import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob } from './fighterMotion';
 import { DustBudget } from './fighterDust';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
+import { PartMotion, localVelocity } from './parts/partMotion';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
 const STRIDE_CYCLE_PX = 4 * 11 * RIG_SCALE; // ground covered by one full step cycle
@@ -28,6 +29,7 @@ interface AnimMemory {
     lastCos: number;          // cos(phase) on the previous frame, to catch the foot plant
     motion: FighterMotion;    // landing squash and hit flash
     dust: DustBudget;
+    parts: PartMotion;        // springs for tail, ears, lamp and wings
 }
 
 export const heldWeaponKey = (type: string) => `held_${type.toLowerCase()}`;
@@ -76,6 +78,10 @@ export class FighterAnimator {
         const grip = gripPoints(p.weapon.type, weapon ? weapon.height / weapon.width : FALLBACK_ASPECT);
         const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip });
 
+        // Tail, ears and wings answer to the speed along the facing, in px/s, not to the world direction
+        const localVel = localVelocity({ x: p.vel.x * VEL_TO_PX_PER_S, y: p.vel.y * VEL_TO_PX_PER_S }, facing);
+        const parts = m.parts.update(dt, localVel, state, since);
+
         const motion = m.motion.observe(p.pos.y, p.health, now);
         if (motion.landed) m.dust.spawnLanding(game, p.pos.x, p.pos.y);
         if (footPlanted) {
@@ -88,7 +94,7 @@ export class FighterAnimator {
             look: lookFromEntity(p),
             flame: state === 'fly',
             flicker: Math.random(),
-            tailSwing: Math.sin(m.phase),
+            parts,
             muzzleFlash: hasMuzzleFlash(p.weapon.type) ? flashStrength(since) : 0,
             squash: motion.squash,
             headBob: headBob(state, m.phase),
@@ -105,7 +111,7 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(),
+                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), parts: new PartMotion(),
             };
             this.memory.set(id, m);
         }
