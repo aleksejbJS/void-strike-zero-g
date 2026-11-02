@@ -15,6 +15,7 @@ const EMBER_COOL = 0xdc2626;       // red as it dies
 const BRASS = 0xd9a520;
 const BRASS_SHINE = 0xfff0b0;
 const DUST_COLOR = 0xbeb4a0;
+const DEBRIS_TAIL = 2.6;           // debris streaks are longer than sparks: they read as flung chunks
 
 export const isSpriteKind = (kind: ParticleKind | undefined): kind is SpriteKind =>
     kind === 'flash' || kind === 'fireball';
@@ -50,6 +51,13 @@ const DRAWERS: Record<GraphicKind, GraphicDrawer> = {
     fire: (g, p) => { g.circle(0, 0, 2).fill({ color: p.color, alpha: p.life }); },
     smoke: smoke(0.35),
     puff: smoke(0.25),
+    soot: softCircle(p => p.size * (1 + (1 - p.life) * 1.3), p => p.color, p => 0.7 * Math.min(1, p.life * 1.5)),
+    debris: (g, p) => {
+        // A glowing chunk that cools from ember orange to its own dark colour over the first half of its life
+        const color = mix(Number.parseInt(p.color.slice(1), 16), EMBER_HOT, (p.life - 0.5) * 2);
+        g.moveTo(0, 0).lineTo(-p.vel.x * DEBRIS_TAIL, -p.vel.y * DEBRIS_TAIL).stroke({ width: p.size * 0.7, color, alpha: p.life, cap: 'round' });
+        g.circle(0, 0, p.size * 0.6).fill({ color, alpha: p.life });
+    },
     blood: softCircle(p => p.size, p => p.color, () => 1),
     dust: softCircle(p => p.size * (1 + (1 - p.life) * 0.5), () => DUST_COLOR, p => 0.45 * p.life),
     shell: (g, p) => {

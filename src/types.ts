@@ -122,7 +122,7 @@ export interface Projectile {
   life?: number; // Ticks left before the projectile expires (grenades explode)
 }
 
-export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff';
+export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff' | 'debris' | 'soot';
 
 export interface Particle {
   id: string;

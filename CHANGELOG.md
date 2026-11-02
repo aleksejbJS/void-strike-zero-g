@@ -1,5 +1,14 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.9 (2026-11-02)
+
+### 💥 Explosions
+- New blast composition (`systems/explosionFx.ts`, spec: `docs/plans/2026-11-02-match-feel-spec.md`, part 3): a bigger flash, a core fireball plus 3 offset billows (lumpy, not a disc), the ring, 10 hot debris chunks flung mostly upward that cool from ember orange to dark and drop smoke puffs behind them (trails), 10 embers, a 7-puff smoke cloud that lives ~1.5 s, 3 light smoke puffs
+- New particle kinds `debris` and `soot`; soot is warm grey rather than black so it reads on the dark maps, and it counts against the particle budget
+- The `EFFECT` event carries an optional `size`: the blast radius / 150, × 0.85 for a grenade (cosmetic only; damage and radius unchanged)
+- Camera shake for the local player (`render/screenShake.ts`): up to 14 world units at the blast, falling off with distance to nothing at 900; a new blast never weakens a running shake. The renderer already jittered the world by `shakeIntensity`, which nothing fed until now
+- 3 volleys of 10 blasts keep 120 fps at 1512 × 700
+
 ## Version 0.4.8 (2026-11-02)
 
 ### 🚩 Objective Banners

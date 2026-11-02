@@ -51,8 +51,17 @@ describe('simulation announces effects instead of drawing them', () => {
         createExplosion(state, { x: 5, y: 6 }, 's', 150, WeaponType.ROCKET_LAUNCHER);
         fireWeapon(state, shooter, { x: 100, y: 0 });
 
-        expect(events.some(e => e.type === 'EFFECT' && e.effect === 'explosion' && e.x === 5)).toBe(true);
+        expect(events.some(e => e.type === 'EFFECT' && e.effect === 'explosion' && e.x === 5 && e.size === 1)).toBe(true);
         expect(events.some(e => e.type === 'EFFECT' && e.effect === 'shell')).toBe(true);
+    });
+});
+
+describe('explosion size', () => {
+    it('a grenade blast is drawn a bit smaller than a rocket blast', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        createExplosion(state, { x: 0, y: 0 }, 's', 150, WeaponType.GRENADE_LAUNCHER);
+        const blast = events.find(e => e.type === 'EFFECT' && e.effect === 'explosion');
+        expect(blast?.type === 'EFFECT' && blast.size).toBeCloseTo(0.85);
     });
 });
 
@@ -99,29 +108,45 @@ describe('compositions', () => {
         return all;
     };
 
-    it('an explosion is a flash, a fireball, a ring, embers and smoke', () => {
+    it('an explosion is a flash, a lumpy fireball, a ring, debris, embers, soot and smoke', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         applyEffectEvent(state, { type: 'EFFECT', effect: 'explosion', x: 10, y: 20 });
-        expect(count(state.particles)).toEqual({ flash: 1, fireball: 1, ring: 1, ember: 14, smoke: 6 });
-        expect(state.particles.every(p => p.pos.x === 10 && p.pos.y === 20)).toBe(true);
-        expect(ofKind(state.particles, 'flash')[0].size).toBe(40);
-        expect(ofKind(state.particles, 'fireball')[0].size).toBe(12);
-        expect(ofKind(state.particles, 'ring')[0].size).toBe(10);
+        expect(count(state.particles)).toEqual({ flash: 1, fireball: 4, ring: 1, debris: 10, ember: 10, soot: 7, smoke: 3 });
+        expect(ofKind(state.particles, 'flash')[0].size).toBe(52);
+        expect(ofKind(state.particles, 'fireball')[0].size).toBe(16);
+        expect(ofKind(state.particles, 'ring')[0].size).toBe(12);
+        // Billows and soot sit around the blast, everything else starts on it
+        const billows = ofKind(state.particles, 'fireball').slice(1);
+        expect(billows.every(p => inRange(p.pos.x, -14, 34) && inRange(p.pos.y, 0, 28))).toBe(true);
+        expect(ofKind(state.particles, 'debris').every(p => p.pos.x === 10 && p.pos.y === 20)).toBe(true);
+    });
+
+    it('a bigger blast draws everything bigger', () => {
+        const small = createMockState(GameMode.DEATHMATCH);
+        const big = createMockState(GameMode.DEATHMATCH);
+        applyEffectEvent(small, { type: 'EFFECT', effect: 'explosion', x: 0, y: 0, size: 0.85 });
+        applyEffectEvent(big, { type: 'EFFECT', effect: 'explosion', x: 0, y: 0, size: 1 });
+        expect(ofKind(small.particles, 'flash')[0].size).toBeLessThan(ofKind(big.particles, 'flash')[0].size);
+        expect(ofKind(small.particles, 'fireball')[0].size).toBeLessThan(ofKind(big.particles, 'fireball')[0].size);
     });
 
     it('the explosion flash, fireball and ring stay put', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         applyEffectEvent(state, { type: 'EFFECT', effect: 'explosion', x: 0, y: 0 });
         for (const kind of ['flash', 'fireball', 'ring'] as const) {
-            expect(ofKind(state.particles, kind)[0].vel).toEqual({ x: 0, y: 0 });
+            expect(ofKind(state.particles, kind).every(p => p.vel.x === 0 && p.vel.y === 0)).toBe(true);
         }
     });
 
-    it('explosion embers fly up and out, smoke drifts slowly up', () => {
+    it('explosion debris flies fast and mostly up, embers fly out, soot and smoke drift slowly up', () => {
         const all = gather({ type: 'EFFECT', effect: 'explosion', x: 0, y: 0 });
+        const debris = ofKind(all, 'debris');
+        expect(debris.every(p => inRange(Math.hypot(p.vel.x, p.vel.y), 5, 9.5))).toBe(true);
+        expect(debris.filter(p => p.vel.y < 0).length).toBeGreaterThan(debris.length * 0.6); // ~3 in 4 go up
+        expect(ofKind(all, 'soot').every(p => inRange(p.vel.y, -0.7, -0.2))).toBe(true);
         const embers = ofKind(all, 'ember');
         const smoke = ofKind(all, 'smoke');
-        expect(embers.every(p => inRange(p.vel.x, -5, 5) && inRange(p.vel.y, -6, 1))).toBe(true);
+        expect(embers.every(p => inRange(p.vel.x, -6, 6) && inRange(p.vel.y, -7, 1))).toBe(true);
         // Embers differ from each other (not one shared vector)
         expect(new Set(embers.map(p => p.vel.x)).size).toBeGreaterThan(1);
         expect(smoke.every(p => inRange(p.vel.x, -0.6, 0.6) && inRange(p.vel.y, -0.9, -0.3))).toBe(true);
@@ -134,7 +159,8 @@ describe('compositions', () => {
         for (let i = 0; i < 501; i++) applyEffectEvent(state, { type: 'EFFECT', effect: 'shell', x: 0, y: 0 });
         applyEffectEvent(state, { type: 'EFFECT', effect: 'explosion', x: 0, y: 0 });
         expect(count(state.particles).smoke).toBeUndefined();
-        expect(count(state.particles).fireball).toBe(1);
+        expect(count(state.particles).soot).toBeUndefined();
+        expect(count(state.particles).fireball).toBe(4);
     });
 
     it('a wall spark is a coloured flash and streaks', () => {

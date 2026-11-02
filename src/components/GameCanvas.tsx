@@ -38,6 +38,7 @@ import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
+import { addShake, explosionShake } from '../game/render/screenShake';
 import { spawnPointFor } from '../game/net/roomSetup';
 import { currentBuild } from '../game/build/currentBuild';
 import { useMatchRewards } from './hud/useMatchRewards';
@@ -483,6 +484,10 @@ export default function GameCanvas() {
                 } else {
                     // Blood, explosions, damage numbers… (offline from the simulation, online from the server)
                     applyEffectEvent(gameState.current, event);
+                    if (event.type === 'EFFECT' && event.effect === 'explosion') {
+                        const me = gameState.current.players.find(p => p.id === localIdRef.current && !p.dead);
+                        shakeIntensity.current = addShake(shakeIntensity.current, explosionShake(event, me?.pos, event.size));
+                    }
                 }
             });
 
