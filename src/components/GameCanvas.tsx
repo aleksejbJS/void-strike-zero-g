@@ -8,6 +8,8 @@ import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
 import { drawBotPaths } from '../game/render/botPathOverlay';
 import { ParticleView } from '../game/render/effects/particleView';
+import { drawMarks } from '../game/render/effects/marksView';
+import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
@@ -433,6 +435,7 @@ export default function GameCanvas() {
             const platformLayer = new Graphics();
             const gameLayer = new Container();
             const botPathLayer = new Graphics(); // F3: bots' routes
+            const marksLayer = new Graphics(); // scorch marks, above the platform art and below the fighters
             const uiLayer = new Container();
 
             worldContainer.addChild(backgroundLayer);
@@ -447,6 +450,7 @@ export default function GameCanvas() {
             ads = adsLayer;
             const look = createMapLook({ stage: app.stage, world: worldContainer }, worldContainer, { platformLayer, backgroundLayer, cache: visualCache.current }, scene => adsLayer?.attach(scene));
             mapLook = look;
+            worldContainer.addChildAt(marksLayer, worldContainer.getChildIndex(gameLayer));
 
             // Subscribe to game events (kill feed, sounds)
             const unsubEvents = gameEvents.on((event) => {
@@ -487,6 +491,8 @@ export default function GameCanvas() {
                 gameLayer.removeChildren().forEach(c => c.destroy({ children: true }));
                 platformLayer.clear();
                 zoneLayer.clear();
+                clearMarks();
+                marksLayer.clear();
 
                 gameState.current = makeInitialState();
                 initLevel();
@@ -640,6 +646,7 @@ export default function GameCanvas() {
                 }
 
                 drawBotPaths(botPathLayer, gameState.current, debugVisibleRef.current);
+                drawMarks(marksLayer, now);
 
                 // Zone overlay
                 if (liveMode === GameMode.HUNGER_GAMES) {
@@ -916,6 +923,7 @@ export default function GameCanvas() {
             // Keep textures: they are shared via the generateAssets() cache and reused next game
             if (pixiApp.current) pixiApp.current.destroy(true, { children: true, texture: false });
             gameState.current = makeInitialState();
+            clearMarks();
             // Clear visual cache to prevent reusing dead sprites
             visualCache.current.players.clear();
             visualCache.current.projectileView?.clear();
