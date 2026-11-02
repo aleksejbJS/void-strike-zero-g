@@ -103,6 +103,8 @@ describe('pushCorpses', () => {
         run(near, 480);
         run(far, 480);
         const farBefore = JSON.stringify(far.points);
+        // Lying still before the blast, so the speed afterwards is the blast's doing
+        expect(speedOf(near)).toBeLessThan(0.1);
         pushCorpses([near, far], near.points.hip.x + 30, near.points.hip.y);
         expect(speedOf(near)).toBeGreaterThan(1);
         // 400 units away: not touched at all
@@ -117,6 +119,8 @@ describe('corpse list', () => {
         for (let i = 0; i <= MAX_CORPSES; i++) addCorpse(state, death({ x: i * 100 }));
         const first = state.corpses[0];
         expect(first.fadeAt).toBeLessThanOrEqual(first.age);
+        // It still fades for its usual 1 s (120 ticks), not for the rest of its lifetime
+        expect(first.removeAt - first.fadeAt).toBe(120);
         expect(state.corpses.slice(1).every(c => c.fadeAt > c.age)).toBe(true);
     });
 
@@ -125,6 +129,14 @@ describe('corpse list', () => {
         const e = death() as Partial<DeathEvent>;
         delete e.vel;
         expect(addCorpse(state, e as DeathEvent).kind).toBe('fall');
+    });
+
+    it('an unknown kind from the host falls (a newer or hostile host must not throw)', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const e = { ...death(), kind: 'burn' } as unknown as DeathEvent;
+        const c = addCorpse(state, e);
+        expect(c.kind).toBe('fall');
+        expect([c.fadeAt, c.removeAt]).toEqual([420, 540]);
     });
 
     it('corpse with nothing under it is removed on time', () => {

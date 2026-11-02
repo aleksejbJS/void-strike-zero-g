@@ -3,6 +3,7 @@
 
 import { GameState } from '../../../types';
 import type { DeathEvent } from '../events';
+import { isDeathKind } from '../deathKind';
 import { Corpse, createCorpse } from './corpseBody';
 import { stepCorpse } from './corpseStep';
 import { launchCorpse } from './corpseLaunch';
@@ -20,12 +21,15 @@ const fadeNow = (c: Corpse) => {
     c.removeAt = Math.min(c.removeAt, c.age + fade);
 };
 
-/** A corpse for a DEATH event, launched by its kind (older hosts send no kind: fall; no vel: still). */
+/**
+ * A corpse for a DEATH event, launched by its kind. Older hosts send no kind and no vel, a newer or
+ * hostile host may send a kind we do not know: those fall, still.
+ */
 export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
     // Only corpses that are not fading yet count toward the cap
     const lying = state.corpses.filter(c => c.fadeAt > c.age);
     if (lying.length >= MAX_CORPSES) fadeNow(lying[0]);
-    const corpse = createCorpse({ ...e, kind: e.kind ?? 'fall' });
+    const corpse = createCorpse({ ...e, kind: isDeathKind(e.kind) ? e.kind : 'fall' });
     launchCorpse(corpse, e.from, e.vel ?? STILL);
     state.corpses.push(corpse);
     return corpse;

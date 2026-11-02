@@ -6,6 +6,11 @@ import { Vector2, WeaponType } from '../../types';
 /** fall: slumps where it stands; thrown: flung away from the blast; gib: torn into pieces; cut: sliced in half. */
 export type DeathKind = 'fall' | 'thrown' | 'gib' | 'cut';
 
+const DEATH_KINDS: ReadonlySet<unknown> = new Set<DeathKind>(['fall', 'thrown', 'gib', 'cut']);
+
+/** True for one of the four kinds; a kind from the network may be anything (a newer or hostile host). */
+export const isDeathKind = (kind: unknown): kind is DeathKind => DEATH_KINDS.has(kind);
+
 export interface DamageSource {
     weapon?: WeaponType;
     /** The projectile itself hit the victim (not its blast). */
