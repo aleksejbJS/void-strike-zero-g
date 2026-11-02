@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.5 (unreleased)
+
+### 🎬 Menu Mode Previews
+- The six mode previews are drawn live by the match renderer instead of HTML/CSS schematics (spec: `docs/plans/2026-11-02-mode-previews-spec.md`): station / mine / arena backdrop and platform art without ads, real fighters ("You" in the player's own build), flags, intel, projectiles, railgun beams, blasts, ragdolls and the Hunger Games zone
+- A director plays a per-mode script (keyframes, aims, shots, deaths, weapon switches, carried flags, props, zone) into a `GameState` at the physics tick rate; loops are 5–8 s and seamless
+- Texts (scores, bases, extraction, Gun Game ladder, "You") stay translatable; one Pixi app serves every preview for the page life and pauses off-screen or in a hidden tab; reduced motion gets a still frame; no WebGL → the old schematic scene
+- Baked scene textures are now owned per scene (`bakeScene`), so the preview and the match can never free each other's art; `createThemedScene` can skip ad places; the preview leaves no scorch marks for the next match
+
 ## Version 0.4.4 (2026-11-02)
 
 ### 🐛 Fixes
