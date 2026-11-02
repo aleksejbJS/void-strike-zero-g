@@ -27,10 +27,15 @@ export interface PatchNote {
 const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
-const FLAG = shots('flag');
+const FLAG = shots('flag'), CAMERA = shots('camera');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.4', date: null, groups: [
+            { title: 'Camera', comparisons: [{ caption: 'The same 2560 × 1440 window', ...CAMERA }], points: [
+                'Every screen now shows the same part of the map: fighters, flags and effects are bigger on large monitors, and a big monitor no longer sees further than a small one',
+            ] },
+        ] },
         { version: '0.4.3', date: 'Nov 2, 2026', points: [
             'Build your fighter from parts: helmet, visor, ears, tail, jetpack, flame, torso pattern and shoulder badge; the old skins are now ready-made builds to start from, and your saved look stays',
             'New parts open one per level: every match you finish gives XP, a win gives more, and the end screen shows which part opened',
@@ -110,6 +115,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.4', date: null, groups: [
+            { title: 'Камера', comparisons: [{ caption: 'Одно и то же окно 2560 × 1440', ...CAMERA }], points: [
+                'Любой экран теперь показывает одинаковый кусок карты: на больших мониторах бойцы, флаги и эффекты крупнее, а большой монитор больше не видит дальше маленького',
+            ] },
+        ] },
         { version: '0.4.3', date: '02.11.2026', points: [
             'Соберите бойца из деталей: шлем, визор, уши, хвост, джетпак, пламя, узор на торсе и знак на плече; старые скины стали готовыми сборками, а ваш сохранённый облик остался',
             'Новые детали открываются по одной за уровень: за каждый доигранный матч даётся опыт, за победу — больше, а на экране итогов видно, какая деталь открылась',

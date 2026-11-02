@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.4 (unreleased)
+
+### 🎥 Camera
+- The camera shows a fixed slice of the world, about 1600 × 900 units, scaled to fill the window (spec: `docs/plans/2026-11-02-match-feel-spec.md`, part 1); before, the world was drawn 1:1 and a bigger window saw more of the map
+- A window that is not 16:9 shows the extra width or height instead of cutting the picture; on phones the zoom never drops below 0.6, so fighters stay readable
+- Backdrop, world and post effects sit in one scaled container (`render/viewport.ts`); the cursor stays in window pixels; mouse and touch aim are converted through the same viewport offline and online
+- Real ad banners (DOM overlay) are scaled with the canvas and stay on their posters
+
 ## Version 0.4.3 (2026-11-02)
 
 ### 🧩 Fighter Builder
