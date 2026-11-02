@@ -45,6 +45,20 @@ export interface HudKeys {
     'hud.mobileButtons': string;
     'hud.jump': string;
     'hud.hook': string;
+    // Objective banner: {0} is a flag adjective (flagOf*) or a team name (team*)
+    'hud.flagOfRed': string;
+    'hud.flagOfBlue': string;
+    'hud.teamRed': string;
+    'hud.teamBlue': string;
+    'hud.flagGrabbed': string;
+    'hud.flagLost': string;
+    'hud.flagReturned': string;
+    'hud.flagCaptured': string;
+    'hud.holdGrabbed': string;
+    'hud.holdLost': string;
+    'hud.intelGrabbed': string;
+    'hud.intelLost': string;
+    'hud.intelCaptured': string;
 }
 
 export const hudStrings: Record<Language, HudKeys> = {
@@ -91,6 +105,19 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.mobileButtons': 'Buttons: jetpack and hook',
         'hud.jump': 'Jetpack',
         'hud.hook': 'Grappling hook',
+        'hud.flagOfRed': 'Red',
+        'hud.flagOfBlue': 'Blue',
+        'hud.teamRed': 'Red',
+        'hud.teamBlue': 'Blue',
+        'hud.flagGrabbed': '{0} flag grabbed',
+        'hud.flagLost': '{0} flag lost',
+        'hud.flagReturned': '{0} flag returned',
+        'hud.flagCaptured': '{0} captured the flag',
+        'hud.holdGrabbed': '{0} has the flag',
+        'hud.holdLost': '{0} lost the flag',
+        'hud.intelGrabbed': 'Intel grabbed',
+        'hud.intelLost': 'Intel dropped',
+        'hud.intelCaptured': 'Intel extracted',
     },
     ru: {
         'hud.scoreboard': 'Счёт',
@@ -135,5 +162,18 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.mobileButtons': 'Кнопки: джетпак и крюк',
         'hud.jump': 'Джетпак',
         'hud.hook': 'Крюк',
+        'hud.flagOfRed': 'Красный',
+        'hud.flagOfBlue': 'Синий',
+        'hud.teamRed': 'Красные',
+        'hud.teamBlue': 'Синие',
+        'hud.flagGrabbed': '{0} флаг взят',
+        'hud.flagLost': '{0} флаг потерян',
+        'hud.flagReturned': '{0} флаг возвращён',
+        'hud.flagCaptured': '{0} захватили флаг',
+        'hud.holdGrabbed': '{0} взяли флаг',
+        'hud.holdLost': '{0} потеряли флаг',
+        'hud.intelGrabbed': 'Разведданные взяты',
+        'hud.intelLost': 'Разведданные потеряны',
+        'hud.intelCaptured': 'Разведданные вывезены',
     },
 };

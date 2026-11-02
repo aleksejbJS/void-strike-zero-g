@@ -22,6 +22,7 @@ const base = (over: Partial<GameHudProps> = {}): GameHudProps => ({
     muted: false,
     onToggleMute: vi.fn(),
     objective: null,
+    flagBanner: null,
     match: null,
     onLeave: vi.fn(),
     connection: { visible: false, error: null },

@@ -9,6 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry, segmentInterse
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
+import { emitFlag } from './flagEvents';
 import { hungerShieldLeft } from './hungerRound';
 
 // --- Teams ---
@@ -111,6 +112,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     respawnTime: 0,
                     value: 0
                 });
+                emitFlag('hold', 'lost', target.team);
             } else if (state.mode === GameMode.INFILTRATION && target.hasFlag === Team.RED) {
                 state.pickups.push({
                     id: nextId('intel_drop_'),
@@ -121,8 +123,11 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     respawnTime: -1,
                     value: 1000
                 });
+                emitFlag('intel', 'lost');
             } else {
+                // CTF: a flag goes home the moment its carrier dies
                 resetFlagToBase(state, target.hasFlag);
+                emitFlag('ctf', 'lost', target.hasFlag);
             }
             target.hasFlag = Team.NONE;
         }

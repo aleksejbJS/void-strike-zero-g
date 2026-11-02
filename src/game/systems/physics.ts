@@ -9,6 +9,7 @@ import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
 import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
 import { emitEffect, emitText, projectileTrail } from './effects';
+import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { followCamera, pickCameraTarget } from './camera';
@@ -164,6 +165,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     value: 0
                 });
                 p.hasFlag = Team.NONE;
+                emitFlag('hold', 'lost', p.team);
             }
         } else {
             // Bots press the same controls a player has
@@ -232,6 +234,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         item.respawnTime = -1;
                         emitText(p.pos.x, p.pos.y - 30, 'GRABBED', '#facc15');
                         gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
+                        emitFlag('intel', 'grabbed');
                     }
                 }
                 else if (item.type === ItemType.FLAG) {
@@ -244,6 +247,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                             item.active = false;
                             item.respawnTime = 0;
                             state.lastHTFScore = now;
+                            emitFlag('hold', 'grabbed', p.team);
                         }
                     } else {
                         if (item.team !== p.team && item.active) {
@@ -251,12 +255,14 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                             item.respawnTime = 0;
                             p.hasFlag = item.team!;
                             gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
+                            emitFlag('ctf', 'grabbed', item.team!);
                         } else if (p.hasFlag !== Team.NONE) {
                             // Захват: приносим в свою базу
                             state.scores[p.team]++;
                             resetFlagToBase(state, p.hasFlag);
                             p.hasFlag = Team.NONE;
                             gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
+                            emitFlag('ctf', 'captured', p.team);
 
                             // Track achievement for flag capture
                             trackFlagCapture();
@@ -265,6 +271,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                         } else if (Math.abs(item.pos.x - (item.team === Team.BLUE ? -350 : 2350)) > 100) {
                             resetFlagToBase(state, item.team!);
                             gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
+                            emitFlag('ctf', 'returned', item.team!);
                         }
                     }
                 }
@@ -367,6 +374,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     intel.active = false;
                 }
                 emitText(carrier.pos.x, carrier.pos.y - 40, 'EXTRACTED', '#facc15');
+                emitFlag('intel', 'captured');
                 state.infiltrationEndTime = now + INFILTRATION_TIMER;
                 state.pickups = state.pickups.filter(p => p.type !== ItemType.INTEL);
                 state.pickups.push({

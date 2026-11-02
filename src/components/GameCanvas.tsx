@@ -22,6 +22,7 @@ import { useUIStore } from '../store/uiStore';
 import { GameHud } from './hud/GameHud';
 import { objectiveFor, Objective } from './hud/objective';
 import { buildMatchHud, MatchHud } from './hud/matchHud';
+import type { FlagBannerEvent } from './hud/flagBannerText';
 import { formatClock } from './hud/format';
 import { isMatchOver } from '../game/systems/matchRound';
 import { ClientSession } from '../game/net/clientSession';
@@ -156,6 +157,7 @@ export default function GameCanvas() {
 
     // Team-mode hint under the score ("Bring the flag to your base")
     const [objective, setObjective] = React.useState<Objective | null>(null);
+    const [flagBanner, setFlagBanner] = React.useState<FlagBannerEvent | null>(null);
     const objectiveKeyRef = useRef('');
     const closeAchievements = React.useCallback(() => setShowAchievements(false), []);
 
@@ -476,6 +478,8 @@ export default function GameCanvas() {
                     }]);
                 } else if (event.type === 'SOUND') {
                     playSound(event.sound as any, event.subtype as any, isMutedRef.current);
+                } else if (event.type === 'FLAG') {
+                    setFlagBanner({ id: nextId('fb_'), kind: event.kind, action: event.action, team: event.team });
                 } else {
                     // Blood, explosions, damage numbers… (offline from the simulation, online from the server)
                     applyEffectEvent(gameState.current, event);
@@ -998,6 +1002,7 @@ export default function GameCanvas() {
                 muted={state.isMuted}
                 onToggleMute={actions.toggleMute}
                 objective={objectiveText}
+                flagBanner={flagBanner}
                 match={matchHud}
                 onLeave={leaveGame}
                 connection={{ visible: (state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || !!netError, error: netError }}

@@ -1,5 +1,12 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.8 (2026-11-02)
+
+### 🚩 Objective Banners
+- Team modes show a big team-coloured banner under the score when an objective changes hands (spec: `docs/plans/2026-11-02-match-feel-spec.md`, part 2): CTF flag grabbed / lost (carrier died, the flag goes home) / returned / captured, Hold the Flag taken / lost (holder died or threw it), Infiltration intel grabbed / dropped / extracted; EN and RU
+- The simulation emits a new `FLAG` game event (`systems/flagEvents.ts`) where a flag changes hands, so online clients get it with the other events and no protocol change
+- The banner (`hud/FlagBanner.tsx`, text in `hud/flagBannerText.ts`) drops in, holds and fades in 2.6 s (CSS `hb-banner`, fade only with reduced motion); a newer event replaces it at once
+
 ## Version 0.4.7 (2026-11-02)
 
 ### 🛠️ Setup Screen

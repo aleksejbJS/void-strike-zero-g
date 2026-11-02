@@ -1,13 +1,13 @@
 # Match Feel — Camera Size, Flag Banners, Explosions
 
-Status: approved 2026-11-02 ("давай", open questions left at their defaults); part 1 implemented
+Status: approved 2026-11-02 ("давай", open questions left at their defaults); parts 1 (0.4.6) and 2 (0.4.8) implemented
 
 Reference: the user's screenshot of a 2D team shooter (fighters ~1/22 of the screen width,
 a big team-coloured "RED FLAG GRABBED" line at the top, dirty explosions with dark debris).
 Decided in chat 2026-11-02: **fixed view width**, **all four flag banners**,
 **explosions from improved particles** (no sprite sheets).
 
-Three independent parts, three branches and PRs, released one by one (0.4.4, 0.4.5, 0.4.6):
+Three independent parts, three branches and PRs, released one by one (shipped as 0.4.6 and 0.4.8; the numbers moved because other releases landed in between):
 
 | # | Part | Branch |
 |---|------|--------|
