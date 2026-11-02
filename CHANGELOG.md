@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.7 (2026-11-02)
+
+### 🛠️ Setup Screen
+- From 1024 px wide the character screen fits the window: the page no longer scrolls, the part tiles scroll inside their panel and Back / Start stay at the bottom (a 14" MacBook window is ~860 px tall; the page was ~1226 px)
+- In a desktop window up to 960 px tall (new Tailwind screen `short`) the title, gaps, name field, tile pictures and buttons are a bit smaller
+- The tile panel opens each tab at its first slot and ignores scroll anchoring, so pictures that load late do not shift it
+- Phones keep the old layout with one page scroll
+
 ## Version 0.4.6 (2026-11-02)
 
 ### 🎥 Camera

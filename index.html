@@ -14,6 +14,8 @@
     tailwind.config = {
       theme: {
         extend: {
+          // Desktop layout in a laptop-height window (a 14" MacBook shows ~860 px): setup tightens up
+          screens: { short: { raw: '(min-width: 1024px) and (max-height: 960px)' } },
           colors: {
             bay: {
               ink: '#1A1D21', panel: '#22262C', steel: '#2B3038', plate: '#3C434D', edge: '#4A525E',

@@ -47,7 +47,7 @@ export const PartTiles: React.FC<Props> = ({ slot, value, level, thumbs, onPick 
                     return (
                         <button key={id} type="button" aria-pressed={picked} disabled={locked} onClick={() => onPick(id)}
                             title={locked ? t('cs.lockedHint', opensAt) : undefined} className={tileClass(picked, locked)}>
-                            {thumbs?.[id] && <img src={thumbs[id]} alt="" draggable={false} className="aspect-square w-full max-w-16 object-contain" />}
+                            {thumbs?.[id] && <img src={thumbs[id]} alt="" draggable={false} className="aspect-square w-full max-w-16 object-contain short:max-w-12" />}
                             <span className="break-words [hyphens:auto]">{t(`cs.part.${slot}.${id}` as keyof TranslationKeys)}</span>
                             {locked && (
                                 <span className="flex items-center gap-1 text-[11px] font-semibold text-bay-dust">
