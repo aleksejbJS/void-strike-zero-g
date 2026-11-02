@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.5 (unreleased)
+## Version 0.4.5 (2026-11-02)
 
 ### 🎬 Menu Mode Previews
 - The six mode previews are drawn live by the match renderer instead of HTML/CSS schematics (spec: `docs/plans/2026-11-02-mode-previews-spec.md`): station / mine / arena backdrop and platform art without ads, real fighters ("You" in the player's own build), flags, intel, projectiles, railgun beams, blasts, ragdolls and the Hunger Games zone

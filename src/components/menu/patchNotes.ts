@@ -32,7 +32,7 @@ const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.5', date: null, groups: [
+        { version: '0.4.5', date: 'Nov 2, 2026', groups: [
             { title: 'Menu', comparisons: [{ caption: 'Deathmatch preview', ...PREVIEWS }], points: [
                 'Mode previews in the menu are drawn by the game itself: real fighters in your own look, flags, rockets, ragdolls and the station, mine or arena behind them',
                 'Each mode plays its own short scene: a flag run, the Gun Game ladder, the intel escape, the closing Hunger Games zone',
@@ -120,7 +120,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.5', date: null, groups: [
+        { version: '0.4.5', date: '02.11.2026', groups: [
             { title: 'Меню', comparisons: [{ caption: 'Превью «Боя насмерть»', ...PREVIEWS }], points: [
                 'Превью режимов в меню рисует сама игра: настоящие бойцы в вашем образе, флаги, ракеты, тряпичные куклы и станция, шахта или арена на фоне',
                 'Каждый режим показывает свою короткую сцену: вынос флага, лестницу оружия, побег с разведданными, сужение зоны в «Голодных играх»',
