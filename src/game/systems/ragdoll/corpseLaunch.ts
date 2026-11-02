@@ -2,10 +2,10 @@
 // Values come from the approved mockup scenes (docs/plans/2026-11-02-death-ragdoll-mockup.html):
 // mockup velocity × S, mockup distances × MOCKUP_SCALE. Pure math on the corpse data.
 
-import { GRAVITY, PHYSICS_TICK_RATE } from '../../../constants';
+import { PHYSICS_TICK_RATE } from '../../../constants';
 import { Vector2 } from '../../../types';
 import { Corpse, CorpsePoint, CorpsePointId } from './corpseBody';
-import { MAX_SPEED } from './corpseStep';
+import { CORPSE_GRAVITY, MAX_SPEED } from './corpseStep';
 
 /** Mockup lengths (136 px fighter) → game units (72-unit fighter). */
 const MOCKUP_SCALE = 0.53;
@@ -13,18 +13,18 @@ const MOCKUP_SCALE = 0.53;
 const MOCKUP_GRAVITY = 0.42;
 /**
  * Mockup velocities (px per 60 Hz frame) → units per tick, keeping every throw's arc and spin in fighter
- * heights: corpse gravity is ~6.5× the mockup's in game units, so velocities scale by √6.5 more than
- * MOCKUP_SCALE / 2 and the throws play out ~2.5× faster than in the mockup.
+ * heights: corpse gravity is ~3.2× the mockup's in game units, so velocities scale by √3.2 more than
+ * MOCKUP_SCALE / 2 and the throws play out ~1.8× faster than in the mockup.
  */
-const S = MOCKUP_SCALE / 2 * Math.sqrt(GRAVITY / (MOCKUP_GRAVITY * MOCKUP_SCALE / 4));
+const S = MOCKUP_SCALE / 2 * Math.sqrt(CORPSE_GRAVITY / (MOCKUP_GRAVITY * MOCKUP_SCALE / 4));
 /** Entity velocity is per 60 Hz frame (Matter's base step); corpse velocity is per tick. */
 const ENTITY_VEL_PER_TICK = 60 / PHYSICS_TICK_RATE;
 
 /** Fall: the hip slips toward the shooter and the knees straighten (backwards from the way the body faces). */
 const FALL_HIP = 1;
 const FALL_KNEE = 1;
-/** Thrown: the mockup's rocket blast (power 15, reach 260); the side nearest the blast gets the most. */
-const THROW_POWER = 15 * S;
+/** Thrown: the mockup's rocket blast (power 15, reach 260), 12 here: its power faded with the distance to the blast, ours only across the body. */
+const THROW_POWER = 12 * S;
 const THROW_REACH = 260 * MOCKUP_SCALE;
 /** A shot: the mockup's shotgun (about 7 back and 3 up per frame). Closer than SHOT_RANGE to the body, `from` is a shot. */
 const SHOT_POWER = 7 * S;
@@ -33,20 +33,17 @@ const SHOT_RANGE = 40;
 const LIFT = 0.45;
 /** No point of a thrown body gets less than this share of the power. */
 const THROW_FLOOR = 0.5;
-/** Gib: the mockup's close blast (power 12, kept at 0.8) and its random scatter... */
-const GIB_POWER = 12 * 0.8 * S;
+/** Gib: the mockup's close blast (12 × 0.8; 8 here for the same reason as THROW_POWER) and its random scatter... */
+const GIB_POWER = 8 * S;
 /** ...plus pieces flying apart from the body's middle: this much speed per unit of distance from it. */
-const GIB_SPREAD = 0.07;
+const GIB_SPREAD = 0.05;
 /** Blast centre when the host sent none: this far in front of the hip (mockup: 40 px for a throw, 26 for a gib). */
 const DEFAULT_THROW_FROM = 40 * MOCKUP_SCALE;
 const DEFAULT_GIB_FROM = 26 * MOCKUP_SCALE;
 /** An explosion pushes corpse points within this radius × its size, fading to nothing at the edge. */
 const PUSH_RADIUS = 150;
 const PUSH_POWER = 13 * S;
-/**
- * Upward share of a later blast's push, more than a fresh throw's LIFT: a lying body has the floor
- * under it, so a blast beside it mostly shoves it along the floor; with this it hops up as well.
- */
+/** Upward share of a later blast's push, more than LIFT: a lying body on the floor hops instead of only sliding. */
 const PUSH_LIFT = 1;
 /** Closer than this to a blast centre a point has no direction: it is pushed straight up. */
 const MIN_DIST = 0.001;
@@ -119,14 +116,14 @@ const fall = (c: Corpse, from: Vector2 | undefined) => {
 const frontOfHip = (c: Corpse, ahead: number): Vector2 => ({ x: c.points.hip.x + c.facing * ahead, y: c.points.hip.y });
 
 /**
- * Shotgun point blank or a rocket nearby: the whole body is flung away. A centre right at the body is
- * a shot (the pellets' last position): a shove of the mockup's shotgun strength. From SHOT_RANGE away
- * on it is a blast of the mockup's rocket strength; in between the two blend.
+ * Shotgun point blank or a rocket nearby: the whole body is flung away. A `splash` kill throws it at
+ * the mockup's rocket strength, a shot shoves it at the mockup's shotgun strength. Older hosts do not
+ * say: a centre within SHOT_RANGE of the body counts as a shot, farther as a blast, in between both blend.
  */
-const thrown = (c: Corpse, from: Vector2 | undefined) => {
+const thrown = (c: Corpse, from: Vector2 | undefined, splash?: boolean) => {
     const at = from ?? frontOfHip(c, DEFAULT_THROW_FROM);
     const near = Math.min(...BODY.map(id => Math.hypot(c.points[id].x - at.x, c.points[id].y - at.y)));
-    const w = Math.min(1, near / SHOT_RANGE);
+    const w = splash === undefined ? Math.min(1, near / SHOT_RANGE) : splash ? 1 : 0;
     blast(c, at, SHOT_POWER + (THROW_POWER - SHOT_POWER) * w, THROW_REACH, THROW_FLOOR, w);
 };
 
@@ -172,10 +169,10 @@ const fitSpeedCap = (c: Corpse) => {
     for (const p of points) { p.px = p.x - (p.x - p.px) * k; p.py = p.y - (p.y - p.py) * k; }
 };
 
-/** Start a fresh corpse moving by its kind of death; `vel` = the victim's velocity (entity units). */
-export const launchCorpse = (c: Corpse, from: Vector2 | undefined, vel: Vector2): void => {
+/** Start a fresh corpse moving by its kind of death; `vel`: the victim's velocity (entity units); `blast`: a splash kill. */
+export const launchCorpse = (c: Corpse, from: Vector2 | undefined, vel: Vector2, blast?: boolean): void => {
     tossGun(c);
-    LAUNCH[c.kind](c, from);
+    LAUNCH[c.kind](c, from, blast);
     const vx = vel.x * ENTITY_VEL_PER_TICK, vy = vel.y * ENTITY_VEL_PER_TICK;
     for (const p of Object.values(c.points)) kick(p, vx, vy);
     fitSpeedCap(c);
@@ -185,13 +182,16 @@ export const launchCorpse = (c: Corpse, from: Vector2 | undefined, vel: Vector2)
 export const pushCorpses = (corpses: Corpse[], x: number, y: number, size = 1): void => {
     const radius = PUSH_RADIUS * size;
     for (const c of corpses) {
+        let touched = false;
         for (const p of Object.values(c.points)) {
             const dx = p.x - x, dy = p.y - y;
             const d = Math.hypot(dx, dy);
             if (d >= radius) continue;
             const f = PUSH_POWER * size * (1 - d / radius);
+            touched = true;
             if (d < MIN_DIST) { kick(p, 0, -f); continue; }
             kick(p, dx / d * f, dy / d * f - f * PUSH_LIFT);
         }
+        if (touched) fitSpeedCap(c);
     }
 };

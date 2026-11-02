@@ -3,8 +3,8 @@ import { GameMode, Platform } from '../../../types';
 import { createMockState } from '../../../test/mocks';
 import type { DeathEvent } from '../events';
 import { Corpse, CorpsePointId, createCorpse } from './corpseBody';
-import { MAX_SPEED, speedOf, stepCorpse } from './corpseStep';
-import { launchCorpse, pushCorpses } from './corpseLaunch';
+import { MAX_SPEED, stepCorpse } from './corpseStep';
+import { launchCorpse } from './corpseLaunch';
 import { addCorpse, MAX_CORPSES, updateCorpses } from './corpses';
 
 const TOP = 500;
@@ -65,6 +65,19 @@ describe('launchCorpse', () => {
         }
     });
 
+    it('a splash right beside the body throws it at least as hard as one farther off', () => {
+        const meanSpeed = (dx: number) => {
+            let sum = 0;
+            for (let i = 0; i < REPEAT; i++) {
+                const c = createCorpse(death({ kind: 'thrown' }));
+                launchCorpse(c, { x: c.points.hip.x + dx, y: TOP - 2 }, { x: 0, y: 0 }, true);
+                sum += Math.hypot(c.points.hip.x - c.points.hip.px, c.points.hip.y - c.points.hip.py);
+            }
+            return sum / REPEAT;
+        };
+        expect(meanSpeed(10)).toBeGreaterThanOrEqual(meanSpeed(60));
+    });
+
     it('a fast victim is slowed as a whole to the speed cap, not point by point', () => {
         const c = createCorpse(death({ kind: 'thrown' }));
         launchCorpse(c, { x: c.points.hip.x + 40, y: c.points.hip.y }, { x: -40, y: 0 });
@@ -110,29 +123,6 @@ describe('launchCorpse', () => {
         launchCorpse(moving, undefined, { x: 4, y: 0 });
         const vx = (c: Corpse) => c.points.hip.x - c.points.hip.px;
         expect(vx(moving)).toBeGreaterThan(vx(still) + 1);
-    });
-});
-
-describe('pushCorpses', () => {
-    it('an explosion pushes a lying body', () => {
-        const near = launched('fall');
-        const far = createCorpse(death({ x: 430 }));
-        launchCorpse(far, undefined, { x: 0, y: 0 });
-        run(near, 480);
-        run(far, 480);
-        const farBefore = JSON.stringify(far.points);
-        // Lying still before the blast, so the speed afterwards is the blast's doing
-        expect(speedOf(near)).toBeLessThan(0.1);
-        pushCorpses([near, far], near.points.hip.x + 30, near.points.hip.y);
-        expect(speedOf(near)).toBeGreaterThan(1);
-        // 400 units away: not touched at all
-        expect(Math.abs(far.points.hip.x - near.points.hip.x - 30)).toBeGreaterThan(300);
-        expect(JSON.stringify(far.points)).toBe(farBefore);
-        // It hops off the floor, not only slides along it
-        const top = near.points.hip.y;
-        let highest = top;
-        run(near, 60, [FLOOR], () => { highest = Math.min(highest, near.points.hip.y); });
-        expect(top - highest).toBeGreaterThan(15);
     });
 });
 

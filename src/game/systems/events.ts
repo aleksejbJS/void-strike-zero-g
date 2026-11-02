@@ -19,9 +19,10 @@ export type GameEvent =
     | { type: 'EFFECT'; effect: EffectKind; x: number; y: number; color?: string; count?: number; size?: number }
     | { type: 'DAMAGE'; x: number; y: number; amount: number }
     // How the fighter died, for the corpse each client simulates: `kind` (missing from older hosts: fall),
-    // `from` = blast centre / muzzle / beam origin, `vel` = victim velocity, `weapon` = the gun it held.
+    // `from` = blast centre / muzzle / beam origin, `vel` = victim velocity, `weapon` = the gun it held,
+    // `blast` = killed by an explosion's splash, not a shot (missing from older hosts).
     | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors;
-        kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType }
+        kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType; blast?: boolean }
     // An objective changed hands (HUD banner). `team`: the flag's team for CTF grabbed/lost/returned,
     // the scoring team for CTF captured, the holder's team in Hold the Flag, NONE for intel.
     | { type: 'FLAG'; kind: FlagKind; action: FlagAction; team: Team };

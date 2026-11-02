@@ -27,12 +27,17 @@ export const emitEffect = (effect: EffectKind, x: number, y: number, color?: str
 export const emitDamage = (x: number, y: number, amount: number) =>
     gameEvents.emit({ type: 'DAMAGE', x, y, amount: Math.round(amount) });
 
-export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2) => gameEvents.emit(deathEvent(e, kind, from));
+export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false) =>
+    gameEvents.emit(deathEvent(e, kind, from, blast));
 
-/** The DEATH event for an entity: where it fell, how it died, how it moved and the colours of its corpse. */
-export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2): DeathEvent => ({
+/**
+ * The DEATH event for an entity: where it fell, how it died, how it moved and the colours of its corpse.
+ * `blast`: an explosion's splash killed it (sent only when true).
+ */
+export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false): DeathEvent => ({
     type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
     kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type,
+    ...(blast ? { blast: true } : {}),
     parts: {
         head: e.headColor || e.color,
         torso: e.torsoColor || e.color,

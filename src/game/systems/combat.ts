@@ -9,7 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry, segmentInterse
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
-import { deathKind, DamageSource } from './deathKind';
+import { deathKind, DamageSource, isSplash } from './deathKind';
 import { emitFlag } from './flagEvents';
 import { hungerShieldLeft } from './hungerRound';
 
@@ -91,7 +91,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
         // Blood, decal and ragdoll: the kind says how the body falls
-        emitDeath(target, deathKind(source, overkill), source.from);
+        emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {

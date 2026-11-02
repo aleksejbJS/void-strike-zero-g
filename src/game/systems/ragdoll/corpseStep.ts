@@ -1,10 +1,15 @@
 // One physics tick of a corpse: verlet motion, link relaxation with joint limits, platform collision.
 // Pure math on the corpse data; runs on the client only, at the fixed 120 ticks/s.
 
-import { GRAVITY } from '../../../constants';
+import { GRAVITY, PHYSICS_TICK_RATE } from '../../../constants';
 import { Platform, Vector2 } from '../../../types';
 import { Corpse, CorpseLink, CorpsePoint } from './corpseBody';
 
+/**
+ * Corpse gravity in units per tick²: the rate living fighters really fall at. GRAVITY is added each tick
+ * to an entity velocity that is per 60 Hz frame (Matter's base step), so it moves them by half of it.
+ */
+export const CORPSE_GRAVITY = GRAVITY * 60 / PHYSICS_TICK_RATE;
 /** Share of the velocity kept per tick in the air. */
 const DAMPING = 0.995;
 /** Relaxation passes per tick: more passes = stiffer links. */
@@ -25,7 +30,7 @@ const MIN_DIST = 0.001;
 const CREEP = 1;
 /**
  * Fastest a point may move per tick: under half the thinnest map platform (20 units), a safety net
- * so a falling corpse (terminal speed would be about 72) never skips through a platform in one tick.
+ * so a falling corpse (terminal speed would be about 36) never skips through a platform in one tick.
  */
 export const MAX_SPEED = 9;
 
@@ -102,7 +107,7 @@ const collide = (p: CorpsePoint, from: Vector2, r: Platform): TopContact => {
  */
 const settle = (p: CorpsePoint): void => {
     const vy = p.y - p.py;
-    if (vy < 0 && vy > -GRAVITY) p.py = p.y;
+    if (vy < 0 && vy > -CORPSE_GRAVITY) p.py = p.y;
 };
 
 /** Move an embedded point toward the nearest side, its previous position along, so it gains no speed. */
@@ -146,7 +151,7 @@ export const stepCorpse = (c: Corpse, platforms: Platform[]): void => {
         const speed = Math.hypot(vx, vy);
         if (speed > MAX_SPEED) { vx *= MAX_SPEED / speed; vy *= MAX_SPEED / speed; }
         p.px = p.x; p.py = p.y;
-        p.x += vx; p.y += vy + GRAVITY;
+        p.x += vx; p.y += vy + CORPSE_GRAVITY;
         const embedded = stuck[i];
         if (embedded) creepOut(p, embedded);
     });

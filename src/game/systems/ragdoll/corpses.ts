@@ -30,7 +30,8 @@ export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
     const lying = state.corpses.filter(c => c.fadeAt > c.age);
     if (lying.length >= MAX_CORPSES) fadeNow(lying[0]);
     const corpse = createCorpse({ ...e, kind: isDeathKind(e.kind) ? e.kind : 'fall' });
-    launchCorpse(corpse, e.from, e.vel ?? STILL);
+    // A host may send anything: only a real boolean says shot or splash
+    launchCorpse(corpse, e.from, e.vel ?? STILL, typeof e.blast === 'boolean' ? e.blast : undefined);
     state.corpses.push(corpse);
     return corpse;
 };

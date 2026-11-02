@@ -48,6 +48,15 @@ describe('the cause of death travels with the DEATH event', () => {
         const death = onlyDeath();
         expect(death.kind).toBe('thrown');
         expect(death.from).toEqual({ x: 0, y: 0 });
+        expect(death.blast).toBe(true); // a splash: thrown by the blast, not shoved like a shot
+    });
+
+    it('shots and direct hits are not splashes', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const hits = [{ weapon: WeaponType.SHOTGUN, direct: true, shooterDist: 50 }, { weapon: WeaponType.ROCKET_LAUNCHER, direct: true }];
+        hits.forEach((source, i) => applyDamage(state, victim(`v${i}`, 5), 's', 65, { x: 1, y: 0 }, 1, source));
+        expect(deaths()).toHaveLength(2);
+        expect(deaths().every(d => !d.blast)).toBe(true);
     });
 
     it('a near blast on a low fighter sends gib', () => {

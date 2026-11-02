@@ -26,6 +26,10 @@ export const GIB_OVERKILL = 30;
 /** A shotgun blast from this close (world units) throws the victim. */
 export const SHOTGUN_POINT_BLANK = 120;
 
+/** An explosion's splash (rocket or grenade blast that did not hit the victim itself), not a shot. */
+export const isSplash = (source: DamageSource): boolean =>
+    (source.weapon === WeaponType.ROCKET_LAUNCHER || source.weapon === WeaponType.GRENADE_LAUNCHER) && !source.direct;
+
 /** `overkill` = the killing hit's damage after armor minus the victim's health right before it. */
 export const deathKind = (source: DamageSource, overkill: number): DeathKind => {
     switch (source.weapon) {
