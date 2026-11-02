@@ -4,6 +4,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Application, Container, Texture } from 'pixi.js';
 import { generateAssets } from '../../game/systems/assets';
+import { destroyApp } from '../../game/render/pixiApp';
 import { buildCharacter, CharacterArt, CharacterLook } from './characterArt';
 
 const CANVAS_W = 420;
@@ -45,7 +46,7 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
                 created.init({ width: CANVAS_W, height: CANVAS_H, backgroundAlpha: 0, antialias: true }),
             ]);
             if (cancelled) {
-                created.destroy(true, { children: true, texture: false });
+                destroyApp(created);
                 return;
             }
             textures.current = loaded;
@@ -58,7 +59,7 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
         setup().catch(err => console.error('Character preview failed to start:', err));
         return () => {
             cancelled = true;
-            app.current?.destroy(true, { children: true, texture: false });
+            if (app.current) destroyApp(app.current);
             app.current = null;
         };
     }, []);

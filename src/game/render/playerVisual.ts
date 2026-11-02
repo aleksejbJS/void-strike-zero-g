@@ -58,5 +58,5 @@ export const updatePlayerVisual = (
 
     const toWorld = (pt: Vector2) => ({ x: pt.x * frame.facing * RIG_SCALE, y: pt.y * RIG_SCALE });
     drawGrappleRope(c, p, toWorld(frame.pose.shoulderFront), now);
-    drawCarriedFlag(c, p, frame.facing, toWorld(upperPoint(frame.pose, -9, -16)), now);
+    drawCarriedFlag(c, p, frame.facing, toWorld(upperPoint(frame.pose, -9, -16)), now, game.mode);
 };

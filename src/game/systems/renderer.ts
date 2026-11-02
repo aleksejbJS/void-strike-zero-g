@@ -10,16 +10,16 @@ import { ProjectileView } from '../render/projectiles/projectileView';
 import { BeamView } from '../render/projectiles/beamView';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
 import { createParticles } from './effectSpawn';
+import { createGroundFlagVisual, updateGroundFlagVisual } from '../render/flag/groundFlagView';
 
 // Desired visual sizes (largest dimension) for pickup sprites
 const PICKUP_DISPLAY_SIZE: Partial<Record<ItemType, number>> = {
-    // Unified size for standard pickups (except flags)
+    // Unified size for standard pickups (flags are drawn by render/flag/)
     [ItemType.HEALTH]: 54,
     [ItemType.ARMOR]: 54,
     [ItemType.AMMO]: 54,
     [ItemType.FUEL]: 54,
     [ItemType.WEAPON]: 54,
-    [ItemType.FLAG]: 170, // flag remains larger
     [ItemType.INTEL]: 64
 };
 
@@ -29,8 +29,6 @@ const BENEFICIAL_ITEMS = new Set<ItemType>([
     ItemType.AMMO,
     ItemType.FUEL
 ]);
-
-const getTeamColor = (team: Team) => team === Team.BLUE ? 0x3b82f6 : team === Team.RED ? 0xef4444 : 0xf59e0b;
 
 export const getPickupSpriteScale = (type: ItemType, texture: Texture) => {
     const targetSize = PICKUP_DISPLAY_SIZE[type] ?? 32;
@@ -218,6 +216,7 @@ const getWeaponTexture = (item: Pickup, cache: any, fallback?: Texture) => {
 };
 
 const createPickupVisual = (item: Pickup, cache: any) => {
+    if (item.type === ItemType.FLAG) return createGroundFlagVisual(item);
     const c = new Container();
     const halo = new Graphics(); halo.label = 'halo'; c.addChild(halo);
     const texture = item.type === ItemType.WEAPON ? getWeaponTexture(item, cache) : cache.textures[item.type];
@@ -228,21 +227,11 @@ const createPickupVisual = (item: Pickup, cache: any) => {
             : item.type === ItemType.WEAPON && item.subtype === WeaponType.CHAINSAW
                 ? baseScale * 1.25
                 : baseScale;
-        if (item.type === ItemType.FLAG) {
-            const teamKey = item.team === Team.BLUE ? 'flag_blue' : item.team === Team.RED ? 'flag_red' : undefined;
-            const flagTex = (teamKey && cache.textures[teamKey]) || cache.textures[ItemType.FLAG] || texture;
-            const sprite = new Sprite(flagTex);
-            sprite.anchor.set(0.5);
-            sprite.scale.set(scale);
-            sprite.label = 'sprite';
-            c.addChild(sprite);
-        } else {
-            const sprite = new Sprite(texture);
-            sprite.anchor.set(0.5);
-            sprite.scale.set(scale);
-            sprite.label = 'sprite';
-            c.addChild(sprite);
-        }
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(0.5);
+        sprite.scale.set(scale);
+        sprite.label = 'sprite';
+        c.addChild(sprite);
     } else { const g = new Graphics(); g.label = 'g'; c.addChild(g); }
     return c;
 };
@@ -260,15 +249,7 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
     const halo = c.getChildByLabel('halo') as Graphics;
     if (halo) {
         halo.clear();
-        if (item.type === ItemType.FLAG) {
-            const color = getTeamColor(item.team ?? Team.NONE);
-            const pulse = 1 + Math.sin(Date.now() * 0.006) * 0.08;
-            const baseSize = (PICKUP_DISPLAY_SIZE[item.type] ?? 64) * 0.6; // slightly smaller halo
-            const r = (baseSize * pulse) / 2;
-            halo.visible = true;
-            halo.circle(0, 0, r + 4).stroke({ width: 2, color, alpha: 0.35 });
-            halo.circle(0, 0, r).fill({ color, alpha: 0.15 });
-        } else if (item.type === ItemType.INTEL) {
+        if (item.type === ItemType.INTEL) {
             const pulse = 1 + Math.sin(Date.now() * 0.006) * 0.12;
             const baseSize = (PICKUP_DISPLAY_SIZE[item.type] ?? 48) * 0.8;
             const r = (baseSize * pulse) / 2;
@@ -310,12 +291,7 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
     const sprite = c.getChildByLabel('sprite') as Sprite;
     if (sprite) {
         sprite.visible = true;
-        if (item.type === ItemType.FLAG) {
-            const teamKey = item.team === Team.BLUE ? 'flag_blue' : item.team === Team.RED ? 'flag_red' : undefined;
-            const tex = (teamKey && (cache as any).textures[teamKey]) || (cache as any).textures[ItemType.FLAG];
-            if (tex && sprite.texture !== tex) sprite.texture = tex;
-            sprite.tint = item.team === Team.NONE ? 0xfbbf24 : 0xffffff;
-        } else if (item.type === ItemType.WEAPON) {
+        if (item.type === ItemType.WEAPON) {
             sprite.tint = 0xffffff;
         }
         return;
@@ -323,15 +299,7 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
     const g = c.getChildByLabel('g') as Graphics; if (!g) return;
     g.clear();
 
-    if (item.type === ItemType.FLAG) {
-        const color = item.team === Team.BLUE ? 0x3b82f6 : item.team === Team.RED ? 0xef4444 : 0xf59e0b;
-        // Flag with better visibility
-        g.rect(-2, -25, 4, 50).fill(0x94a3b8);
-        g.poly([0, -25, 25, -18, 20, -5, 25, 5, 0, 0]).fill(color);
-        // Add glow for flags
-        const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.2;
-        g.circle(0, -10, 35 * pulse).fill({ color, alpha: 0.15 });
-    } else if (item.type === ItemType.WEAPON && item.subtype) {
+    if (item.type === ItemType.WEAPON && item.subtype) {
         const weaponData = WEAPONS_DATA[item.subtype];
         const color = weaponData.color;
 
@@ -462,11 +430,13 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
     });
 
     // Pickups
-    for (const [id, obj] of cache.pickups.entries()) { if (!state.pickups.find(p => p.id === id)) { gameLayer.removeChild(obj); obj.destroy(); cache.pickups.delete(id); } }
+    for (const [id, obj] of cache.pickups.entries()) { if (!state.pickups.find(p => p.id === id)) { gameLayer.removeChild(obj); obj.destroy({ children: true, context: true }); cache.pickups.delete(id); } }
+    const now = Date.now();
     state.pickups.forEach(p => {
         let obj = cache.pickups.get(p.id);
         if (!obj) { obj = createPickupVisual(p, cache); gameLayer.addChild(obj); cache.pickups.set(p.id, obj); }
-        updatePickupVisual(obj, p, cache);
+        if (p.type === ItemType.FLAG) updateGroundFlagVisual(obj, p, state.platforms, now);
+        else updatePickupVisual(obj, p, cache);
     });
 
     // Players
