@@ -90,7 +90,7 @@ tail → opaque bright head), drawn as a sprite rotated along the velocity, blen
 | Machine gun | strip 24 × 3, yellow → white head; glow r 9 at the head |
 | Shotgun | 6 strips 10 × 2.2, orange → white; one grey muzzle puff (r 5 → 13, 0.35 s) on the shot |
 | Plasma | white core r 4, blue glow r 14 pulsing ±15 % at ~4.5 Hz; three ghost orbs at remembered positions (every 2nd of the last 7), fading |
-| Rocket | drawn body: grey capsule 15 × 5, red nose cone, two grey fins, a highlight line; exhaust cone 10–16 px flickering (white → orange → transparent) with a glow r 14; the existing smoke puffs keep their rate but get the new puff look (§3) |
+| Rocket | drawn body: grey capsule 15 × 5, red nose cone, two grey fins, a highlight line; exhaust strip 10–16 px flickering (a soft rectangle, not a cone; white → orange → transparent) with a glow r 14; the existing smoke puffs keep their rate but get the new puff look (§3) |
 | Grenade | dark-green ball r 4.5, lime band, highlight; spins 0.125 rad per tick from first-seen; sim gravity unchanged |
 | Railgun | beam from `state.beams`: white core 2.5 px, light-blue 7 px, blue glow 18 px (`add`), all fading with the beam's life; impact burst as in §2 in the rail colour plus white |
 | Chainsaw | no projectile; its `spark` events become streak sparks (§2) |
@@ -113,7 +113,10 @@ tail → opaque bright head), drawn as a sprite rotated along the velocity, blen
 - **Explosion** (`explosion` event): white flash disc r 40 for 80 ms; fireball (glow
   sprite, orange, r 12 → 46 over 0.55 s, fading); shockwave ring (stroke, r 10 → 80 over
   0.5 s, alpha 0.6 → 0); 14 embers (streak sparks with gravity, 0.5–0.8 s); 6 smoke puffs
-  rising and growing (0.9 s); scorch decal r 18. Screen shake stays as it is.
+  rising and growing (0.9 s); scorch decal r 18 — implemented as a mark on the same marks
+  layer, placed on the nearest platform surface within 18 px of the impact point (the impact
+  is `prevPos`, outside the wall); a grenade that times out in mid-air leaves none. Screen
+  shake stays as it is.
 - **Death**: ragdoll unchanged; its blood burst uses droplets.
 
 ### 3. Particles (replacing the squares)

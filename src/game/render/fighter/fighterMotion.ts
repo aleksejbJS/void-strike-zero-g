@@ -40,7 +40,7 @@ export class FighterMotion {
         this.lastHealth = health;
         return {
             landed,
-            squash: Math.max(0, 1 - (nowMs - this.landedAt) / SQUASH_MS),
+            squash: Math.min(1, Math.max(0, 1 - (nowMs - this.landedAt) / SQUASH_MS)), // clamped: a clock stepping back must not flip the fighter
             hitFlash: nowMs - this.hitAt < FLASH_MS ? 1 : 0,
         };
     }

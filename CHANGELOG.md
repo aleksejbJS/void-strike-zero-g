@@ -23,7 +23,7 @@
 ### 🎇 Shots, Hits and Fighter Polish
 - Every weapon's shot has its own look: machine-gun and shotgun tracers with a glow, a pulsing plasma orb with a fading ghost trail, a drawn rocket with a flickering exhaust and smoke behind it, a spinning grenade, a three-layer rail beam
 - Impacts: a flash and falling sparks where a shot meets a wall, plus a scorch mark on walls and floors that fades in about 4 seconds
-- Explosions: flash, fireball, shockwave ring, embers and rising smoke
+- Explosions: flash, fireball, shockwave ring, embers, rising smoke and a scorch mark on a wall or floor close to the blast
 - Fighters that get hit: blood droplets and a brief brightening of the fighter
 - Muzzle flash: a star with a warm light on the fighter's hands, fading over about 120 ms (it used to be visible for about 20 ms)
 - Fighter volume: highlights on limbs, torso and head, a visor reflection, a strap, a pouch, knee and elbow pads, a glow behind the jetpack flame

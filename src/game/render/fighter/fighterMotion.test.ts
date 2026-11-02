@@ -87,6 +87,14 @@ describe('FighterMotion squash', () => {
         expect(m.observe(8, 100, t0 + 400).squash).toBe(0);
     });
 
+    it('never exceeds 1 when the clock steps back after the landing', () => {
+        const m = new FighterMotion();
+        const ys = [0, 4, 8, 8];
+        const t0 = (ys.length - 1) * FRAME_MS;
+        ys.forEach((y, i) => m.observe(y, 100, i * FRAME_MS));
+        expect(m.observe(8, 100, t0 - 500).squash).toBeLessThanOrEqual(1);
+    });
+
     it('stays 0 without a landing', () => {
         const m = new FighterMotion();
         expect(m.observe(0, 100, 0).squash).toBe(0);

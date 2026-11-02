@@ -15,10 +15,11 @@ const MAX_RADIUS = 3.5;
 // Oldest first. Module-level on purpose: marks are cosmetic, not game state.
 let marks: Mark[] = [];
 
-// Inclusive on purpose: a railgun hit is computed on the platform boundary, so a
-// strict test would lose or keep it depending on floating-point rounding.
+// Inclusive, with a tiny tolerance: a railgun hit is computed on the platform boundary and
+// can land one ulp outside it (about 0.8 % of hits), which would leave no mark.
+const EDGE_EPS = 1e-6;
 const contains = (p: Platform, x: number, y: number) =>
-    x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h;
+    x >= p.x - EDGE_EPS && x <= p.x + p.w + EDGE_EPS && y >= p.y - EDGE_EPS && y <= p.y + p.h + EDGE_EPS;
 
 /** Snap a point inside a platform onto its nearest edge, keeping the other coordinate. */
 const projectToNearestEdge = (p: Platform, x: number, y: number): Vector2 => {

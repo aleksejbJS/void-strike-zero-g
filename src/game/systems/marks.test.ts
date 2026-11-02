@@ -29,6 +29,14 @@ describe('placeMark', () => {
         expect(placeMark([floor], 200, 150)).toEqual({ x: 200, y: 150 }); // a corner
     });
 
+    it('tolerates a point one rounding error outside the boundary', () => {
+        const wall: Platform = { id: 'w', x: 100, y: 0, w: 40, h: 300, color: '' };
+        expect(placeMark([wall], wall.x - 1e-9, 150)).not.toBeNull();
+        expect(placeMark([wall], wall.x + wall.w + 1e-9, 150)).not.toBeNull();
+        expect(placeMark([wall], 120, -1e-9)).not.toBeNull();
+        expect(placeMark([wall], 120, wall.h + 1e-9)).not.toBeNull();
+    });
+
     it('still makes no mark just outside the boundary', () => {
         expect(placeMark([floor], 50, 99.999)).toBeNull();
         expect(placeMark([floor], -0.001, 120)).toBeNull();
