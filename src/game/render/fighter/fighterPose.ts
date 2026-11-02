@@ -4,6 +4,7 @@
 import { Vector2 } from '../../../types';
 import { solveLimb, Limb } from './ik';
 import { GripPoints } from './weaponGrips';
+import { BOOT, HEAD_R, TORSO_W } from './fighterStyle';
 
 export const RIG_SCALE = 1.12;
 export const THIGH = 14.5;
@@ -74,7 +75,7 @@ const lowerBody = (input: PoseInput) => {
             };
         }
         case 'crouch':
-            return { hip: { x: -1, y: -13 }, lean: 0.48, feet: [{ x: 8, y: ANKLE_Y }, { x: -7, y: ANKLE_Y }], lift: 0 };
+            return { hip: { x: -3, y: -12 }, lean: 0.4, feet: [{ x: 8, y: ANKLE_Y }, { x: -7, y: ANKLE_Y }], lift: 0 };
         default:
             return {
                 hip: { x: 0, y: -30.5 + breath * 0.25 },
@@ -123,4 +124,23 @@ export const solvePose = (input: PoseInput): FighterPose => {
         gunTopLeft: onGun(0, 0),
         gunAngle,
     };
+};
+
+/**
+ * How far the body reaches from the feet line and the centre line, in rig units.
+ * `left` and `top` are negative. The weapon is left out on purpose: it may leave the hitbox.
+ */
+export const bodyExtents = (pose: FighterPose): { left: number; right: number; top: number } => {
+    const shoulderReach = 7.6 * TORSO_W;
+    const jetpack = [upperPoint(pose, -12.5, -17), upperPoint(pose, -12.5, -3)];
+    const boots = [pose.frontLeg.end, pose.backLeg.end];
+    const xs = [
+        pose.head.x - HEAD_R, pose.head.x + HEAD_R,
+        pose.shoulderFront.x - shoulderReach, pose.shoulderFront.x + shoulderReach,
+        pose.shoulderBack.x - shoulderReach, pose.shoulderBack.x + shoulderReach,
+        ...boots.flatMap(b => [b.x - BOOT.heel, b.x + BOOT.w - BOOT.heel]),
+        ...jetpack.map(p => p.x),
+    ];
+    const ys = [pose.head.y - HEAD_R, pose.shoulderFront.y, pose.shoulderBack.y, ...jetpack.map(p => p.y)];
+    return { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys) };
 };

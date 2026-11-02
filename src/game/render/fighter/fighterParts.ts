@@ -4,6 +4,7 @@ import { Graphics } from 'pixi.js';
 import { Vector2 } from '../../../types';
 import { FighterPose, upperPoint } from './fighterPose';
 import { FighterLook, shade } from './fighterLook';
+import { BOOT, HEAD_K, HEAD_R, ROBOT_HEAD_K, TORSO_W } from './fighterStyle';
 
 export const OUTLINE = 0x07090c;
 const OUTLINE_W = 2.2;
@@ -35,8 +36,9 @@ export const dot = (g: Graphics, p: Vector2, r: number, color: number) => {
 export const hand = (g: Graphics, p: Vector2) => dot(g, p, 2.3, GLOVE);
 
 export const boot = (g: Graphics, ankle: Vector2, color: number) => {
-    g.roundRect(ankle.x - 2.8, ankle.y - 1.6, 8, 4, 1.6).stroke({ width: OUTLINE_W, color: OUTLINE });
-    g.roundRect(ankle.x - 2.8, ankle.y - 1.6, 8, 4, 1.6).fill(color);
+    const x = ankle.x - BOOT.heel, y = ankle.y - 2.4; // the sole ends on the feet line
+    g.roundRect(x, y, BOOT.w, BOOT.h, 2).stroke({ width: OUTLINE_W, color: OUTLINE });
+    g.roundRect(x, y, BOOT.w, BOOT.h, 2).fill(color);
 };
 
 export const drawFlame = (g: Graphics, pose: FighterPose, flicker: number) => {
@@ -55,7 +57,7 @@ export const drawJetpack = (g: Graphics, pose: FighterPose, look: FighterLook) =
 };
 
 export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => {
-    const U = (x: number, y: number) => upperPoint(pose, x, y);
+    const U = (x: number, y: number) => upperPoint(pose, x * TORSO_W, y); // torso points get the body width
     plate(g, [U(-6.2, 0.5), U(6.2, 0.5), U(7.6, -19.5), U(-6.6, -20)], look.torso);
     g.poly(flat([U(-6.2, 0.5), U(-1.5, 0.5), U(-2.4, -20), U(-6.6, -20)])).fill(shade(look.torso, 0.78));
     const a = U(1.5, -17.5), b = U(6, -17.8);
@@ -63,6 +65,9 @@ export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => 
     if (look.style === 'robot') plate(g, [U(-6.4, -12), U(7, -12.2), U(7.1, -9), U(-6.3, -8.8)], look.accent);
     plate(g, [U(-6.4, -1.8), U(6.4, -1.8), U(6.3, 1.6), U(-6.3, 1.6)], BELT);
     plate(g, [U(2, -1.2), U(4.6, -1.2), U(4.6, 1), U(2, 1)], HAZARD);
+    // Shoulder pad on the front shoulder, under the front arm
+    const P = (x: number, y: number) => upperPoint(pose, x, y);
+    plate(g, [P(0.5, -21), P(8.5, -21.3), P(9, -15.5), P(1, -15.5)], shade(look.torso, 0.9));
 };
 
 /** Beasts and aliens have a tail that swings with the run cycle. */
@@ -76,11 +81,12 @@ export const drawTail = (g: Graphics, pose: FighterPose, look: FighterLook, swin
 /** Head drawn around its own origin; the view positions and tilts it. */
 export const drawHead = (g: Graphics, look: FighterLook) => {
     if (look.style === 'robot') {
-        g.moveTo(1, -6.5).lineTo(1, -10.5).stroke({ width: 1.6 + OUTLINE_W, color: OUTLINE, cap: 'round' });
-        g.moveTo(1, -6.5).lineTo(1, -10.5).stroke({ width: 1.6, color: look.accent, cap: 'round' });
-        g.roundRect(-6, -6.5, 13, 12, 2.5).stroke({ width: OUTLINE_W, color: OUTLINE });
-        g.roundRect(-6, -6.5, 13, 12, 2.5).fill(look.head);
-        g.roundRect(-1, -3, 8, 4.5, 1.5).fill(look.accent);
+        const k = ROBOT_HEAD_K;
+        g.moveTo(1 * k, -6.5 * k).lineTo(1 * k, -10.5 * k).stroke({ width: 1.6 + OUTLINE_W, color: OUTLINE, cap: 'round' });
+        g.moveTo(1 * k, -6.5 * k).lineTo(1 * k, -10.5 * k).stroke({ width: 1.6, color: look.accent, cap: 'round' });
+        g.roundRect(-6 * k, -6.5 * k, 13 * k, 12 * k, 2.5 * k).stroke({ width: OUTLINE_W, color: OUTLINE });
+        g.roundRect(-6 * k, -6.5 * k, 13 * k, 12 * k, 2.5 * k).fill(look.head);
+        g.roundRect(-1 * k, -3 * k, 8 * k, 4.5 * k, 1.5 * k).fill(look.accent);
         return;
     }
     if (look.style === 'beast') {
@@ -93,9 +99,15 @@ export const drawHead = (g: Graphics, look: FighterLook) => {
         dot(g, { x: -4, y: -12 }, 1.6, look.accent);
         dot(g, { x: 4, y: -12.5 }, 1.6, look.accent);
     }
-    dot(g, { x: 0, y: 0 }, 7, look.head);
-    g.moveTo(0, 0).arc(0, 0, 7, Math.PI * 0.55, Math.PI * 1.25).closePath().fill(shade(look.head, 0.75));
-    g.roundRect(1, -3, 7.4, 5.4, 2.4).fill(VISOR);
+    const k = HEAD_K;
+    dot(g, { x: 0, y: 0 }, HEAD_R, look.head);
+    g.moveTo(0, 0).arc(0, 0, HEAD_R, Math.PI * 0.55, Math.PI * 1.25).closePath().fill(shade(look.head, 0.75));
+    if (look.style === 'human') {
+        // Helmet ridge over the top of the head
+        const r = HEAD_R - 2.2, from = Math.PI * 1.15, to = Math.PI * 1.75;
+        g.moveTo(r * Math.cos(from), r * Math.sin(from)).arc(0, 0, r, from, to).stroke({ width: 1.2, color: OUTLINE, cap: 'round' });
+    }
+    g.roundRect(1 * k, -3 * k, 7.4 * k, 5.4 * k, 2.4 * k).fill(VISOR);
     const glint = look.style === 'human' ? VISOR_GLINT : look.accent;
-    g.moveTo(2.6, -1.8).lineTo(7, -1.8).stroke({ width: 1, color: glint, cap: 'round' });
+    g.moveTo(2.6 * k, -1.8 * k).lineTo(7 * k, -1.8 * k).stroke({ width: 1, color: glint, cap: 'round' });
 };

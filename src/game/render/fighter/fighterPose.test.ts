@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { solveLimb } from './ik';
-import { FighterState, RIG_SCALE, solvePose, upperPoint } from './fighterPose';
+import { bodyExtents, FighterState, RIG_SCALE, solvePose, upperPoint } from './fighterPose';
+import { HITBOX } from './fighterStyle';
 import { gripPoints } from './weaponGrips';
 import { faceAim } from './fighterAnimator';
 import { WeaponType } from '../../../types';
@@ -83,6 +84,19 @@ describe('solvePose', () => {
         const p = pose('crouch');
         const top = upperPoint(p, 0, -20);
         expect(top.x).toBeGreaterThan(p.hip.x); // leaning forward
+    });
+});
+
+describe('stays inside the hitbox', () => {
+    it.each(['idle', 'run', 'fly', 'fall', 'crouch'] as FighterState[])('%s pose stays within 6 px of the hitbox', state => {
+        const phases = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+        for (const phase of phases) {
+            const e = bodyExtents(pose(state, { phase }));
+            const height = state === 'crouch' ? HITBOX.crouched : HITBOX.standing;
+            expect(e.right * RIG_SCALE).toBeLessThanOrEqual(HITBOX.halfW + HITBOX.margin);
+            expect(-e.left * RIG_SCALE).toBeLessThanOrEqual(HITBOX.halfW + HITBOX.margin);
+            expect(-e.top * RIG_SCALE).toBeLessThanOrEqual(height + HITBOX.margin);
+        }
     });
 });
 

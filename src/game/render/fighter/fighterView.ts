@@ -4,6 +4,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { FighterPose, RIG_SCALE } from './fighterPose';
 import { FighterLook, shade } from './fighterLook';
 import { boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, hand, limb } from './fighterParts';
+import { LIMB_W } from './fighterStyle';
 import { GripPoints } from './weaponGrips';
 
 export interface FighterView {
@@ -48,15 +49,15 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     drawTail(b, pose, look, f.tailSwing);
     drawJetpack(b, pose, look);
     const legDark = shade(look.leg, 0.72);
-    limb(b, pose.hip, pose.backLeg.joint, 6.2, legDark);
-    limb(b, pose.backLeg.joint, pose.backLeg.end, 5.4, legDark);
+    limb(b, pose.hip, pose.backLeg.joint, 6.2 * LIMB_W, legDark);
+    limb(b, pose.backLeg.joint, pose.backLeg.end, 5.4 * LIMB_W, legDark);
     boot(b, pose.backLeg.end, 0x1b1f25);
     const armDark = shade(look.arm, 0.72);
-    limb(b, pose.shoulderBack, pose.backArm.joint, 4.6, armDark);
-    limb(b, pose.backArm.joint, pose.backArm.end, 4.2, armDark);
+    limb(b, pose.shoulderBack, pose.backArm.joint, 4.6 * LIMB_W, armDark);
+    limb(b, pose.backArm.joint, pose.backArm.end, 4.2 * LIMB_W, armDark);
     drawTorso(b, pose, look);
-    limb(b, pose.hip, pose.frontLeg.joint, 6.4, look.leg);
-    limb(b, pose.frontLeg.joint, pose.frontLeg.end, 5.6, shade(look.leg, 0.9));
+    limb(b, pose.hip, pose.frontLeg.joint, 6.4 * LIMB_W, look.leg);
+    limb(b, pose.frontLeg.joint, pose.frontLeg.end, 5.6 * LIMB_W, shade(look.leg, 0.9));
     boot(b, pose.frontLeg.end, 0x252a32);
 
     const headKey = `${look.style}:${look.head}:${look.accent}`;
@@ -85,8 +86,8 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
         fr.circle(mx, my, 3.5 * f.muzzleFlash).fill({ color: 0xffd65a, alpha: 0.95 });
     }
     hand(fr, pose.backArm.end);
-    limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8, look.arm);
-    limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4, shade(look.arm, 0.92));
+    limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8 * LIMB_W, look.arm);
+    limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4 * LIMB_W, shade(look.arm, 0.92));
     hand(fr, pose.frontArm.end);
 };
 
