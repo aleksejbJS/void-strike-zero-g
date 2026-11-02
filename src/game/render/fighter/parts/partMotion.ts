@@ -14,7 +14,7 @@ const FULL_SPEED = 300;          // px/s, about the soft speed cap: the tail is 
 const FULL_FALL = 600;           // px/s of vertical speed that lifts the tail all the way
 const VERTICAL_DEADZONE = 60;    // px/s, ignores the small bounce of a fighter standing on the ground
 const MAX_LIFT = 0.8;
-const FLY_LIFT = -0.6;           // the tail trails low behind a jetpack
+const FLY_LIFT = 0.8;            // the jet blast lifts the tail up and back, clear of the flame
 const IDLE_WAVE = 2;             // rad/s, the slow wriggle of a fighter standing still
 const RUN_WAVE = 8;              // rad/s, the wriggle at full speed
 const LAMP_MS = 120;             // the lamp lights up this long after a shot
@@ -63,7 +63,8 @@ export class PartMotion {
         const flying = state === 'fly';
         const fall = clamp(beyond(localVel.y, VERTICAL_DEADZONE) / FULL_FALL, -1, 1);
 
-        this.bend.step(forward, dt);
+        // Flying backwards would tuck the tail down into the flame: the blast keeps it swept back instead
+        this.bend.step(flying ? Math.max(forward, 0) : forward, dt);
         this.lift.step(flying ? FLY_LIFT : fall * MAX_LIFT, dt);
         // Air blows floppy ears back when moving forward or falling; backing up never throws them forward
         this.flop.step(clamp(Math.max(forward, 0) + Math.max(fall, 0), 0, 1), dt);

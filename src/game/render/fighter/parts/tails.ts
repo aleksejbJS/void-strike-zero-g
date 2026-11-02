@@ -1,5 +1,5 @@
-// Tails: cat, tentacle, lizard and mechanical. Drawn on the body layer behind the jetpack, so the root tucks
-// under the pack; the shape bends with the part motion springs (see tailChain.ts).
+// Tails: cat, tentacle, lizard and mechanical. Drawn on the body layer behind the flame and the jetpack, so the
+// root tucks under the pack; the shape bends with the part motion springs (see tailChain.ts).
 
 import { Graphics } from 'pixi.js';
 import { Vector2 } from '../../../../types';
@@ -14,7 +14,7 @@ import { lineLight, outlinedLine, sideLine, smoothLine, strokeLine, upperNormal 
 
 export { tailPoints } from './tailChain';
 
-const ROOT = { x: -6, y: -1 };  // in the upper-body frame, just under the jetpack
+export const TAIL_ROOT = { x: -6, y: -1 };  // in the upper-body frame, just under the jetpack
 const CAT_W = 2.8;
 const CAT_TIP = 0.82;           // the cat tail's pale tip starts here along the line
 const TENTACLE_W = 2;
@@ -92,7 +92,7 @@ const drawMech = (g: Graphics, pts: Vector2[], look: FighterLook) => {
 export const drawTail = (g: Graphics, pose: FighterPose, look: FighterLook, m: PartMotionFrame) => {
     const tail = look.build.tail;
     if (tail === 'none') return;
-    const pts = tailPoints(tail, upperPoint(pose, ROOT.x, ROOT.y), m);
+    const pts = tailPoints(tail, upperPoint(pose, TAIL_ROOT.x, TAIL_ROOT.y), m);
     switch (tail) {
         case 'cat': drawCat(g, smoothLine(pts), look.pattern); return;
         case 'tentacle': drawTentacle(g, smoothLine(pts), look); return;

@@ -58,10 +58,14 @@ describe('PartMotion tail', () => {
         expect(left.tailBend).toBeGreaterThan(0.3);
     });
 
-    it('falling lifts the tail, jetpack flight lowers it', () => {
+    it('falling lifts the tail, and so does the jetpack blast in flight', () => {
         expect(run(new PartMotion(), 120, { x: 0, y: 400 }, 'fall').tailLift).toBeGreaterThan(0.1);
-        expect(run(new PartMotion(), 120, { x: 0, y: 0 }, 'fly').tailLift).toBeLessThan(-0.1);
-        expect(run(new PartMotion(), 120, { x: 0, y: -200 }, 'fly').tailLift).toBeLessThan(-0.1);
+        expect(run(new PartMotion(), 120, { x: 0, y: 0 }, 'fly').tailLift).toBeGreaterThan(0.5);
+        expect(run(new PartMotion(), 120, { x: 0, y: -200 }, 'fly').tailLift).toBeGreaterThan(0.5);
+    });
+
+    it('flying backwards does not tuck the tail forward', () => {
+        expect(run(new PartMotion(), 120, { x: -300, y: 0 }, 'fly').tailBend).toBeGreaterThan(-0.02);
     });
 
     it('wriggles faster while running', () => {

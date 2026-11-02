@@ -45,18 +45,30 @@ export const flameMiddles = (pose: FighterPose, jetpack: JetpackId, flicker: num
         return { x: base.x - pose.lean * len * 0.5, y: base.y + len * 0.5 };
     });
 
+/** One tongue of a flame in drawing space: left base corner, tip, right base corner. */
+const tongue = (pose: FighterPose, n: Nozzle, flicker: number, half: number, reach: number): Vector2[] => {
+    const base = upperPoint(pose, n.at.x, n.at.y);
+    const len = flameLength(flickerOf(n, flicker)) * n.length;
+    return [
+        { x: base.x - half * n.width, y: base.y },
+        { x: base.x - pose.lean * len * reach, y: base.y + len * reach },
+        { x: base.x + half * n.width, y: base.y },
+    ];
+};
+
+const TONGUES = [{ half: 3, reach: 1 }, { half: 1.6, reach: 0.6 }, { half: 0.8, reach: 0.3 }] as const;
+
+/** The outer tongue of every flame (the inner ones lie inside it): the area a flame covers. */
+export const flameOutlines = (pose: FighterPose, jetpack: JetpackId, flicker: number): Vector2[][] =>
+    nozzlesOf(jetpack).map(n => tongue(pose, n, flicker, TONGUES[0].half, TONGUES[0].reach));
+
 /** Every flame of the build's jetpack: three tongues (outer, middle, core) in the build's flame colours. */
 export const drawFlame = (g: Graphics, pose: FighterPose, look: FighterLook, flicker: number) => {
     const c = flameColors(look.build.flame);
+    const colors = [c.outer, c.mid, c.core];
     for (const n of nozzlesOf(look.build.jetpack)) {
-        const base = upperPoint(pose, n.at.x, n.at.y);
-        const len = flameLength(flickerOf(n, flicker)) * n.length;
-        const tongue = (half: number, reach: number, color: number) =>
-            g.poly([base.x - half * n.width, base.y, base.x - pose.lean * len * reach, base.y + len * reach,
-                base.x + half * n.width, base.y]).fill(color);
-        tongue(3, 1, c.outer);
-        tongue(1.6, 0.6, c.mid);
-        tongue(0.8, 0.3, c.core);
+        TONGUES.forEach(({ half, reach }, i) =>
+            g.poly(tongue(pose, n, flicker, half, reach).flatMap(p => [p.x, p.y])).fill(colors[i]));
     }
 };
 

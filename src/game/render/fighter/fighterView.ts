@@ -87,8 +87,9 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     if (f.flame) placeFlameGlow(view.flameGlow, pose, look, f.flicker);
 
     const b = view.body.clear();
-    if (f.flame) drawFlame(b, pose, look, f.flicker);
+    // The flame goes over the tail (a tail just taking off still swings through it) and under the jetpack
     drawTail(b, pose, look, f.parts);
+    if (f.flame) drawFlame(b, pose, look, f.flicker);
     drawJetpack(b, pose, look, f.flame, f.parts);
     const legDark = shade(look.leg, 0.72);
     jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
