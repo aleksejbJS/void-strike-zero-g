@@ -118,7 +118,8 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
 
     const fr = view.front.clear();
     if (!f.weapon) drawFallbackGun(fr, f);
-    drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
+    if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
+    else view.light.visible = false;
     hand(fr, pose.backArm.end);
     limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8 * LIMB_W, look.arm);
     limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4 * LIMB_W, shade(look.arm, 0.92));

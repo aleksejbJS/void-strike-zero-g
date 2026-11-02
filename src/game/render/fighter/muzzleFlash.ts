@@ -1,13 +1,12 @@
 // Muzzle flash: a 4-point star with a white core on the front layer and a warm light sprite on the body.
-// The flash is brightest on the shot and is gone MUZZLE_FLASH_MS later. Everything is in rig units.
+// The flash is brightest on the shot and fades out (strength comes from muzzleEnvelope). Everything is in rig units.
 
 import { Graphics, Sprite } from 'pixi.js';
 import { Vector2, WeaponType } from '../../../types';
 import { glowTexture } from '../effects/glowTextures';
 import { FighterPose, RIG_SCALE } from './fighterPose';
 import { GripPoints } from './weaponGrips';
-
-const MUZZLE_FLASH_MS = 120;
+import { isBigFlash } from './muzzleEnvelope';
 
 const STAR_COLOR = 0xffecaa;
 const CORE_COLOR = 0xffffff;
@@ -22,12 +21,8 @@ const LIGHT_RADIUS = 22;    // screen pixels: the light does not grow with the r
 const LIGHT_ALPHA = 0.5;
 const BIG_FLASH = 1.6;      // heavy weapons: longer star and core
 const BIG_LIGHT = 1.5;      // ...and a wider light (33 px at most)
-const BIG_WEAPONS: ReadonlySet<WeaponType> = new Set([WeaponType.SHOTGUN, WeaponType.ROCKET_LAUNCHER, WeaponType.RAILGUN]);
+const LIGHT_BACK = 10;      // the light is centred this far behind the muzzle, so it also lights the hands and forearm
 const BARREL_GAP = 2;       // the flash starts just past the end of the weapon picture
-
-/** Flash strength (0..1) this long after a shot: full on the shot, fading out linearly, gone after 120 ms. */
-export const flashStrength = (sinceMs: number): number =>
-    sinceMs >= 0 && sinceMs < MUZZLE_FLASH_MS ? 1 - sinceMs / MUZZLE_FLASH_MS : 0;
 
 /** Where the barrel ends, in rig units. */
 export const muzzlePoint = (pose: FighterPose, grip: GripPoints): Vector2 => {
@@ -76,14 +71,14 @@ const ellipsePoints = (at: Vector2, angle: number, rx: number, ry: number): numb
 export const drawMuzzle = (front: Graphics, light: Sprite, muzzle: Vector2, angle: number, k: number, weapon: WeaponType) => {
     light.visible = k > 0;
     if (k <= 0) return;
-    const big = BIG_WEAPONS.has(weapon);
+    const big = isBigFlash(weapon);
     const size = k * (big ? BIG_FLASH : 1);
 
     front.poly(starPoints(muzzle, angle, STAR_LENGTH * size, STAR_INNER * k)).fill({ color: STAR_COLOR, alpha: k });
     const core = { x: muzzle.x + Math.cos(angle) * CORE_AHEAD, y: muzzle.y + Math.sin(angle) * CORE_AHEAD };
     front.poly(ellipsePoints(core, angle, CORE_LENGTH * size, CORE_WIDTH * k)).fill({ color: CORE_COLOR, alpha: k });
 
-    light.position.set(muzzle.x, muzzle.y);
+    light.position.set(muzzle.x - Math.cos(angle) * LIGHT_BACK, muzzle.y - Math.sin(angle) * LIGHT_BACK);
     light.width = light.height = (2 * LIGHT_RADIUS * (big ? BIG_LIGHT : 1)) / RIG_SCALE;
     light.alpha = LIGHT_ALPHA * k;
 };
