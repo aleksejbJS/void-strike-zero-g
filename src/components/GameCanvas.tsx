@@ -568,6 +568,7 @@ export default function GameCanvas() {
                         localIdRef.current
                     );
                     drawZoneOverlay(zoneLayer, gameState.current.hungerZone);
+                    drawMarks(marksLayer, now); // keep fading while the winner is shown
                     return;
                 }
 
