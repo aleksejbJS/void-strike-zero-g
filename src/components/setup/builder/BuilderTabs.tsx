@@ -1,6 +1,6 @@
 // Tabbed part picker of the setup screen: head, body and jetpack parts as tiles, then all colours.
 
-import React, { useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { FighterBuild, Slot } from '../../../game/build/buildParts';
 import { TranslationKeys } from '../../../i18n/locales';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -33,8 +33,14 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
     const { t, language } = useTranslation();
     const [tab, setTab] = useState<TabId>('head');
     const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const panelRef = useRef<HTMLDivElement>(null);
     const baseId = useId();
     const current = TABS.find(item => item.id === tab) ?? TABS[0];
+
+    // On desktop the panel scrolls on its own: a newly opened tab starts at its first slot
+    useEffect(() => {
+        if (panelRef.current) panelRef.current.scrollTop = 0;
+    }, [tab]);
 
     // Arrow keys move between tabs, as in a native tab strip
     const onTabKey = (e: React.KeyboardEvent, index: number) => {
@@ -55,7 +61,7 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
     const pick = (slot: Slot) => (id: string) => onBuild({ [slot]: id } as Partial<FighterBuild>);
 
     return (
-        <div className="flex flex-col gap-4 rounded bg-bay-panel p-3 sm:p-5">
+        <div className="flex flex-col gap-4 rounded bg-bay-panel p-3 sm:p-5 lg:min-h-0 lg:flex-1 short:gap-3 short:p-4">
             <div role="tablist" aria-label={t('cs.tabs')} className="grid grid-cols-4 gap-1.5">
                 {TABS.map((item, index) => {
                     const on = item.id === tab;
@@ -70,7 +76,9 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
                 })}
             </div>
 
-            <div role="tabpanel" id={`${baseId}-panel`} aria-labelledby={`${baseId}-tab-${tab}`} className="flex flex-col gap-4">
+            {/* No scroll anchoring: tile pictures arriving late must not push the panel off its first slot */}
+            <div ref={panelRef} role="tabpanel" id={`${baseId}-panel`} aria-labelledby={`${baseId}-tab-${tab}`}
+                className="flex flex-col gap-4 [overflow-anchor:none] lg:-m-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:p-1 lg:pr-2 short:gap-3">
                 {current.slots.map(slot => (
                     <SlotTiles key={slot} slot={slot} build={build} colors={colors} level={level} onPick={pick(slot)} />
                 ))}

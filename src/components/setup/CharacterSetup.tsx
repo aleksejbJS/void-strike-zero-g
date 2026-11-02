@@ -54,19 +54,20 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
 
     return (
         <div className="h-screen overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
-            <div className="mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-10 pt-8 sm:px-[72px] sm:pt-11">
+            {/* From lg up the page fits the window: only the part tiles scroll, Start stays in view */}
+            <div className="mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-10 pt-8 sm:px-[72px] sm:pt-11 lg:h-full short:gap-5 short:pb-6 short:pt-5">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-2.5">
                         <button type="button" onClick={onBack} className={`flex items-center gap-1.5 self-start text-[15px] font-semibold text-bay-hazard hover:text-bay-chalk ${focusRing}`}>
                             <Chevron dir="l" />{t('cs.backToMenu')}
                         </button>
-                        <h1 className="m-0 font-display text-[52px] font-black uppercase leading-[0.9] sm:text-[76px]">{t('cs.title')}</h1>
+                        <h1 className="m-0 font-display text-[52px] font-black uppercase leading-[0.9] sm:text-[76px] short:text-[56px]">{t('cs.title')}</h1>
                     </div>
                     <span className="self-start rounded bg-bay-steel px-3.5 py-2.5 text-[15px] text-bay-dust sm:self-auto">{next}</span>
                 </header>
                 <div aria-hidden="true" className="hazard-stripes -mx-4 -mt-3 h-3.5 sm:-mx-[72px]" />
 
-                <main className="grid flex-grow grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_560px] lg:items-start">
+                <main className="grid flex-grow grid-cols-1 gap-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_560px] lg:grid-rows-[minmax(0,1fr)] lg:items-start">
                     {/* Fixed-height preview that stays in view while the part tabs change height */}
                     <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-6">
                         <CharacterPreview look={{ build, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', draft.presetIndex + 1, SKINS.length)} />
@@ -84,19 +85,19 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
                         <XpBar xp={xp} />
                     </div>
 
-                    <div className="flex min-w-0 flex-col gap-5">
+                    <div className="flex min-w-0 flex-col gap-5 lg:h-full lg:min-h-0 short:gap-4">
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="setup-name" className="font-display text-2xl font-extrabold">{t('cs.name')}</label>
+                            <label htmlFor="setup-name" className="font-display text-2xl font-extrabold short:text-xl">{t('cs.name')}</label>
                             <input id="setup-name" value={name} maxLength={MAX_NAME} onChange={e => setName(e.target.value.slice(0, MAX_NAME))}
-                                className="h-[54px] rounded border-2 border-bay-edge bg-bay-panel px-4 text-xl font-semibold text-bay-chalk focus:border-bay-hazard focus:outline-none" />
+                                className="h-[54px] rounded border-2 border-bay-edge bg-bay-panel px-4 text-xl font-semibold text-bay-chalk focus:border-bay-hazard focus:outline-none short:h-[46px]" />
                             <span className="text-[13px] text-bay-dust">{t('cs.nameHint', name.length, MAX_NAME)}</span>
                         </div>
 
                         <BuilderTabs build={build} colors={colors} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
 
-                        <div className="mt-auto flex gap-3">
-                            <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel ${focusRing}`}>{t('cs.back')}</button>
-                            <button type="button" onClick={start} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] ${focusRing}`}>{startLabel}</button>
+                        <div className="mt-auto flex shrink-0 gap-3">
+                            <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel short:h-[60px] ${focusRing}`}>{t('cs.back')}</button>
+                            <button type="button" onClick={start} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] short:h-[60px] short:text-[28px] ${focusRing}`}>{startLabel}</button>
                         </div>
                     </div>
                 </main>
