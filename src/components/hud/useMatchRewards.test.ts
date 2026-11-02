@@ -64,18 +64,51 @@ describe('useMatchRewards', () => {
     });
 
     it('a win gives 50', () => {
-        const state = makeState({ matchEndsAt: 10_000, matchWinner: { playerId: 'me' } });
+        const state = makeState();
         const { result } = renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250); // play seen first
+        Object.assign(state.current, { matchEndsAt: 10_000, matchWinner: { playerId: 'me' } });
         run(250);
         expect(store.fighterXp).toBe('50');
         expect(result.current).toMatchObject({ gained: 50, levelBefore: 1, levelAfter: 2 });
         expect(result.current?.unlocked.map(u => `${u.slot}:${u.id}`)).toEqual(['ears:wolf']);
     });
 
+    it('does not pay a player who joins while the result is already on screen', () => {
+        // Online the hook mounts before the join: players is empty, then the joiner and the end arrive together.
+        const state = makeState({ players: [] });
+        const { result } = renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250);
+        Object.assign(state.current, { players: [{ id: 'me' }, { id: 'bot' }], matchEndsAt: 10_000 });
+        run(3000);
+        expect(store.fighterXp).toBeUndefined();
+        expect(result.current).toBeNull();
+
+        // The next match is played from the start, so its end pays.
+        state.current.matchEndsAt = undefined;
+        run(500);
+        state.current.matchEndsAt = 10_000;
+        run(1000);
+        expect(store.fighterXp).toBe('20');
+        expect(result.current?.gained).toBe(20);
+    });
+
+    it('does not pay on a finished Gun Game room that never resets its winner', () => {
+        const state = makeState({ players: [] });
+        renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250);
+        Object.assign(state.current, { players: [{ id: 'me' }], gunGameWinnerId: 'bot', matchStartedAt: 300 });
+        run(3000);
+        expect(store.fighterXp).toBeUndefined();
+    });
+
     it('stops polling when the screen is left', () => {
-        const state = makeState({ matchEndsAt: 10_000 });
+        const state = makeState();
         const { unmount } = renderHook(() => useMatchRewards(state, { current: 'me' }));
         run(250);
+        state.current.matchEndsAt = 10_000;
+        run(250);
+        expect(store.fighterXp).toBe('20');
         unmount();
         state.current.matchEndsAt = undefined;
         run(500);

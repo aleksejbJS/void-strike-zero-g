@@ -107,7 +107,7 @@ describe('GameHud', () => {
         render(<GameHud {...base({ reward, match: { timeLeftSec: null, goal: 'First to 20 kills', result } })} />);
         expect(screen.getByText('+50 XP')).toBeInTheDocument();
         expect(screen.getByText('Level 2!')).toBeInTheDocument();
-        expect(screen.getByText('New part: Wolf')).toBeInTheDocument();
+        expect(screen.getByText('New part — Ears & horns: Wolf')).toBeInTheDocument();
     });
 
     it('the results screen shows only the XP when no level was gained', () => {
@@ -128,7 +128,7 @@ describe('GameHud', () => {
             restartSec: 5, fightInSec: null, winnerId: 'me', localDead: false, alive: [], onBet: vi.fn(),
         } })} />);
         expect(screen.getByText('+50 XP')).toBeInTheDocument();
-        expect(screen.getByText('New part: Wolf')).toBeInTheDocument();
+        expect(screen.getByText('New part — Ears & horns: Wolf')).toBeInTheDocument();
     });
 
     it('Gun Game winner block shows the XP', () => {
