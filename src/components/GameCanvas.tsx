@@ -17,6 +17,7 @@ import { BeamView } from '../game/render/projectiles/beamView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
+import { ffaBotLooks } from '../game/build/botLooks';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { useUIStore } from '../store/uiStore';
 import { GameHud } from './hud/GameHud';
@@ -274,6 +275,8 @@ export default function GameCanvas() {
 
             // Create Bots
             const botCount = gameMode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE - 1 : (isTeamMode ? 6 : 3);
+            // Free-for-all bots each wear their own skin and parts instead of the team colour
+            const ffaLooks = isTeamMode ? [] : ffaBotLooks(botCount);
             for (let i = 0; i < botCount; i++) {
                 let team = Team.NONE;
                 if (isTeamMode) {
@@ -297,6 +300,7 @@ export default function GameCanvas() {
                     jetpackFuel: 100, maxFuel: 100, jetpackColor: '#64748b', dead: false, respawnTimer: 0, team,
                     facingRight: true, weapon: botWeapon, inventory: [botWeapon], lastFired: 0, skinId: 'classic',
                     name: `Bot ${i + 1} `, score: 0,
+                    ...ffaLooks[i],
                     gunLevel: gameMode === GameMode.GUN_GAME ? 0 : undefined,
                     gunProgress: gameMode === GameMode.GUN_GAME ? 0 : undefined,
                     grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE
