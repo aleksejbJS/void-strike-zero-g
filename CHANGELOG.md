@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.4 (unreleased)
+
+### 🐛 Fixes
+- Missing art after match → menu → match (and in any canvas that outlives another one): Pixi 8.14.3's `Batcher.destroy()` hands back to its page-wide batch pool every batch in its array, including the ones `begin()` had already returned on an earlier frame and that another live renderer may have taken since. Those batches end up in the pool twice, two batchers share one batch, and the live renderer draws with a dead renderer's geometry: `glDrawElements: Insufficient buffer size`, then `Cannot read properties of null (reading 'instanceCount')`, missing or black art until a reload. `src/game/render/batchPoolFix.ts` cuts the array to the batches the batcher still owns before Pixi's destroy runs (Pixi 8.22 does the same itself); `destroyApp()` installs it. Unit tests cover the patch
+
 ## Version 0.4.3 (2026-11-02)
 
 ### 🧩 Fighter Builder

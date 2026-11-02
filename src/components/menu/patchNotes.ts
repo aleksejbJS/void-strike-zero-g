@@ -31,6 +31,9 @@ const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.4', date: null, points: [
+            'Fixed missing art in the second match: after playing a match and going back to the menu, the next match could lose parts of the world and fighters (and the console filled with WebGL errors) until the page was reloaded',
+        ] },
         { version: '0.4.3', date: 'Nov 2, 2026', points: [
             'Build your fighter from parts: helmet, visor, ears, tail, jetpack, flame, torso pattern and shoulder badge; the old skins are now ready-made builds to start from, and your saved look stays',
             'New parts open one per level: every match you finish gives XP, a win gives more, and the end screen shows which part opened',
@@ -110,6 +113,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.4', date: null, points: [
+            'Исправлена пропадающая графика во втором матче: после матча и выхода в меню следующий матч мог терять часть мира и бойцов (а консоль — заполняться ошибками WebGL) до перезагрузки страницы',
+        ] },
         { version: '0.4.3', date: '02.11.2026', points: [
             'Соберите бойца из деталей: шлем, визор, уши, хвост, джетпак, пламя, узор на торсе и знак на плече; старые скины стали готовыми сборками, а ваш сохранённый облик остался',
             'Новые детали открываются по одной за уровень: за каждый доигранный матч даётся опыт, за победу — больше, а на экране итогов видно, какая деталь открылась',
