@@ -9,6 +9,8 @@ import { BELT, GLOVE, HAZARD, OUTLINE, OUTLINE_W, dot, flat, outlinedPoly } from
 import {
     drawChestLight, drawPouch, drawStrap, handGlint, limbHighlight, plateHighlight, soleLine, torsoPoint,
 } from './fighterDetails';
+import { TORSO_BACK, TORSO_BACK_SHADE, TORSO_QUAD, drawPattern } from './parts/patterns';
+import { drawBadge } from './parts/badges';
 
 /** A limb segment: rounded bar with an outline and a light line along its upper side. */
 export const limb = (g: Graphics, a: Vector2, b: Vector2, width: number, color: number) => {
@@ -55,17 +57,22 @@ export const boot = (g: Graphics, ankle: Vector2, color: number) => {
 export const shoulderPad = (g: Graphics, at: (x: number, y: number) => Vector2, torso: number) =>
     plate(g, [at(0.5, -21), at(8.5, -21.3), at(9, -15.5), at(1, -15.5)], shade(torso, 0.9));
 
-export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => {
+/** The torso with its pattern, gear and front shoulder pad. `facing` -1 means the fighter is drawn mirrored. */
+export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook, facing = 1) => {
     const U = (x: number, y: number) => torsoPoint(pose, x, y); // torso points get the body width
-    plate(g, [U(-6.2, 0.5), U(6.2, 0.5), U(7.6, -19.5), U(-6.6, -20)], look.torso);
-    g.poly(flat([U(-6.2, 0.5), U(-1.5, 0.5), U(-2.4, -20), U(-6.6, -20)])).fill(shade(look.torso, 0.78));
+    const map = (pts: Vector2[]) => pts.map(p => U(p.x, p.y));
+    plate(g, map(TORSO_QUAD), look.torso);
+    g.poly(flat(map(TORSO_BACK))).fill(shade(look.torso, TORSO_BACK_SHADE));
+    drawPattern(g, U, look, 'paint');
     drawChestLight(g, pose);
     drawStrap(g, pose);
     drawPouch(g, pose);
     const a = U(1.5, -17.5), b = U(6, -17.8);
     g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: 1.2, color: shade(look.torso, 1.35), cap: 'round' });
-    if (look.build.pattern === 'band') plate(g, [U(-6.4, -12), U(7, -12.2), U(7.1, -9), U(-6.3, -8.8)], look.pattern);
+    drawPattern(g, U, look, 'plate'); // the robot chest band lies over the strap
     plate(g, [U(-6.4, -1.8), U(6.4, -1.8), U(6.3, 1.6), U(-6.3, 1.6)], BELT, false);
     plate(g, [U(2, -1.2), U(4.6, -1.2), U(4.6, 1), U(2, 1)], HAZARD, false);
-    shoulderPad(g, (x, y) => upperPoint(pose, x, y), look.torso); // under the front arm
+    const pad = (x: number, y: number) => upperPoint(pose, x, y);
+    shoulderPad(g, pad, look.torso); // under the front arm
+    drawBadge(g, pad, look, facing < 0);
 };
