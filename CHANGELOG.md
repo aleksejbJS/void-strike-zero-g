@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.8 (unreleased)
+## Version 0.4.8 (2026-11-02)
 
 ### 🚩 Objective Banners
 - Team modes show a big team-coloured banner under the score when an objective changes hands (spec: `docs/plans/2026-11-02-match-feel-spec.md`, part 2): CTF flag grabbed / lost (carrier died, the flag goes home) / returned / captured, Hold the Flag taken / lost (holder died or threw it), Infiltration intel grabbed / dropped / extracted; EN and RU

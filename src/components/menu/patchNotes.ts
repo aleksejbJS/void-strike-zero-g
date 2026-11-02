@@ -32,7 +32,7 @@ const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.8', date: null, points: [
+        { version: '0.4.8', date: 'Nov 2, 2026', points: [
             'Big banners for the objective in team modes: "RED FLAG GRABBED", "BLUE CAPTURED THE FLAG", flag lost or returned, Hold the Flag taken or lost, intel grabbed, dropped or extracted',
         ] },
         { version: '0.4.7', date: 'Nov 2, 2026', points: [
@@ -131,7 +131,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.8', date: null, points: [
+        { version: '0.4.8', date: '02.11.2026', points: [
             'Большие надписи о цели в командных режимах: «КРАСНЫЙ ФЛАГ ВЗЯТ», «СИНИЕ ЗАХВАТИЛИ ФЛАГ», флаг потерян или возвращён, флаг в «Удержании» взят или потерян, разведданные взяты, потеряны или вывезены',
         ] },
         { version: '0.4.7', date: '02.11.2026', points: [
