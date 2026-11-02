@@ -4,7 +4,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { GameMode, GameState, MapId, Vector2 } from '../../../types';
 import { drawBackground, drawStaticMap } from '../../systems/renderer';
-import { createThemedScene, MapScene, SceneHosts } from './themedScene';
+import { createThemedScene, MapScene, SceneHosts, SceneOptions } from './themedScene';
 import { SceneTheme } from './sceneTheme';
 import { stationTheme } from './themes/stationTheme';
 import { mineTheme } from './themes/mineTheme';
@@ -36,6 +36,7 @@ export interface MapLook {
 export const createMapLook = (
     hosts: Omit<SceneHosts, 'platformHost'>, world: Container, legacy: LegacyLayers,
     onRedraw: (scene: MapScene | null) => void = () => {},
+    sceneOptions: SceneOptions = {},
 ): MapLook => {
     // Station platform art sits right above the old platform layer, behind the fighters
     const platformHost = new Container();
@@ -55,7 +56,7 @@ export const createMapLook = (
             legacy.platformLayer.clear();
             legacy.backgroundLayer.clear();
             try {
-                scene = createThemedScene({ ...hosts, platformHost }, state.platforms, THEMES[themeFor(state.mode, state.currentMap)]());
+                scene = createThemedScene({ ...hosts, platformHost }, state.platforms, THEMES[themeFor(state.mode, state.currentMap)](), sceneOptions);
                 scene.update(state.camera, Date.now(), w, h);
             } catch (err) {
                 // Never leave the player without a map: fall back to the plain look

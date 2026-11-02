@@ -7,7 +7,7 @@ import { Platform, Vector2 } from '../../../types';
 import { buildBeacons, buildLamps, buildPostFx, buildSpotlights, updateBeacons, updateLamps, updateSpotlights } from './stationLights';
 import { AdLayer, LAYER_DEPTH, Rect, tiledRectsIn } from './adPlaces';
 import { AdPlaceView, buildAdPlace, updateAdPlace } from './adFrames';
-import { bakedTexture, releaseBakedTextures } from './bakedTextures';
+import { bakedTexture, bakeScene } from './bakedTextures';
 import { SceneTheme } from './sceneTheme';
 
 const FAR_DEPTH = 0.08;
@@ -33,7 +33,23 @@ const tiling = (canvas: HTMLCanvasElement) => new TilingSprite({ texture: bakedT
 
 const deckRes = (p: Platform) => (p.h < 100 && p.w <= 1200 ? Math.min(window.devicePixelRatio || 1, 2) : 1);
 
-export const createThemedScene = (hosts: SceneHosts, platforms: Platform[], theme: SceneTheme): MapScene => {
+export interface SceneOptions {
+    /** Build the theme's in-world ad places (off for the menu's mode preview). */
+    ads?: boolean;
+}
+
+export const createThemedScene = (hosts: SceneHosts, platforms: Platform[], theme: SceneTheme, options: SceneOptions = {}): MapScene => {
+    const { result, textures } = bakeScene(() => buildThemedScene(hosts, platforms, theme, options.ads ?? true));
+    return {
+        ...result,
+        destroy() {
+            result.destroy();
+            textures.release();
+        },
+    };
+};
+
+const buildThemedScene = (hosts: SceneHosts, platforms: Platform[], theme: SceneTheme, withAds: boolean): MapScene => {
     // Backdrop, behind the camera-space world
     const backdrop = new Container();
     const far = tiling(theme.far());
@@ -53,7 +69,7 @@ export const createThemedScene = (hosts: SceneHosts, platforms: Platform[], them
     const beacons = buildBeacons(midDecor, theme.beacons ?? []);
     const spotlights = buildSpotlights(midDecor, theme.spotlights ?? []);
 
-    const adPlaces = theme.adPlaces.map(buildAdPlace);
+    const adPlaces = withAds ? theme.adPlaces.map(buildAdPlace) : [];
     adPlaces.forEach(v => (v.place.layer === 'wall' ? wallDecor : midDecor).addChild(v.root));
 
     // Platform art and lamps, in world space
@@ -104,7 +120,6 @@ export const createThemedScene = (hosts: SceneHosts, platforms: Platform[], them
         },
         destroy() {
             [backdrop, post.root, art, lampLayer].forEach(c => { c.parent?.removeChild(c); c.destroy({ children: true }); });
-            releaseBakedTextures();
         },
     };
 };

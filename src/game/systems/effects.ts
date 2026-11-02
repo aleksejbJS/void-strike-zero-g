@@ -20,17 +20,19 @@ export const emitEffect = (effect: EffectKind, x: number, y: number, color?: str
 export const emitDamage = (x: number, y: number, amount: number) =>
     gameEvents.emit({ type: 'DAMAGE', x, y, amount: Math.round(amount) });
 
-export const emitDeath = (e: Entity) =>
-    gameEvents.emit({
-        type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
-        parts: {
-            head: e.headColor || e.color,
-            torso: e.torsoColor || e.color,
-            arm: e.armColor || e.color,
-            leg: e.legColor || '#475569',
-            build: e.build ?? presetBuild(e.skinId),
-        },
-    });
+export const emitDeath = (e: Entity) => gameEvents.emit(deathEvent(e));
+
+/** The DEATH event for an entity: where it fell and the colours of its ragdoll. */
+export const deathEvent = (e: Entity): Extract<GameEvent, { type: 'DEATH' }> => ({
+    type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
+    parts: {
+        head: e.headColor || e.color,
+        torso: e.torsoColor || e.color,
+        arm: e.armColor || e.color,
+        leg: e.legColor || '#475569',
+        build: e.build ?? presetBuild(e.skinId),
+    },
+});
 
 export const emitText = (x: number, y: number, text: string, color: string) =>
     gameEvents.emit({ type: 'FLOAT_TEXT', x, y, text, color });
@@ -51,10 +53,15 @@ const STILL = { x: 0, y: 0 };
 
 const SCORCH_RADIUS = 18;
 
-// Flash, fireball and ring are stationary; the view grows them over their life
 const explosionAt = (state: GameState, x: number, y: number) => {
     // The impact point sits just outside the wall; a blast in mid-air leaves nothing
     addMarkAt(state.platforms, x, y, SCORCH_RADIUS, SCORCH_RADIUS);
+    explosionBurst(state, x, y);
+};
+
+/** The blast itself, without the scorch mark (marks are page-wide: the menu preview must not leave any). */
+// Flash, fireball and ring are stationary; the view grows them over their life
+export const explosionBurst = (state: GameState, x: number, y: number) => {
     createParticles(state, x, y, 1, '#ffffff', 'flash', { size: 40, vel: STILL });
     createParticles(state, x, y, 1, '#f97316', 'fireball', { size: 12, vel: STILL });
     createParticles(state, x, y, 1, '#fdba74', 'ring', { size: 10, vel: STILL });
