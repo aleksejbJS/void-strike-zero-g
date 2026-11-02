@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.0 - "Hazard Bay" (Unreleased)
+## Version 0.4.0 - "Hazard Bay" (2026-11-02)
 
 ### 🛰️ Map Looks: Station, Mine, Arena
 - The default map (Deathmatch, Gun Game, CTF, Hold the Flag, Infiltration) is drawn as a space station: stars and a planet through hull windows, girders and pipes, cargo containers, hanging lamps, rotating beacons

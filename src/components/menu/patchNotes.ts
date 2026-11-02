@@ -1,13 +1,8 @@
 // Release history shown in the menu's "What's new" panel. Newest first.
+// A big release is split into groups (maps, fighter, …), each with its pictures and
+// its few headline points; the full detail lives in CHANGELOG.md.
 
 import { Language } from '../../types';
-
-export interface PatchNote {
-    version: string;
-    date: string | null; // null = the upcoming release (shown as "This update")
-    points: string[];
-    comparisons?: BeforeAfter[];
-}
 
 /** A pair of screenshots showing what a change looks like. */
 export interface BeforeAfter {
@@ -16,48 +11,65 @@ export interface BeforeAfter {
     after: string;
 }
 
+export interface PatchGroup {
+    title: string;
+    points: string[];
+    comparisons?: BeforeAfter[];
+}
+
+export interface PatchNote {
+    version: string;
+    date: string | null; // null = the upcoming release (shown as "This update")
+    groups?: PatchGroup[]; // big releases
+    points?: string[];     // small releases: one flat list
+}
+
 const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
-const STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
+const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.0', date: null, comparisons: [
-            { caption: 'The new fighter', ...FIGHTER },
-            { caption: 'Shots and hits', ...shots('shots') },
-            { caption: 'Standard map: a space station', ...STATION },
-            { caption: 'Tunnels: an asteroid mine', ...MINE },
-            { caption: 'Hunger Games: a show arena', ...ARENA },
-        ], points: [
-            'The standard map is now a space station: windows onto a planet, lamps and beacons, cargo, posters and screens, worn metal decks',
-            'Tunnels became an asteroid mine (timber supports, strings of bulbs, ore carts, glowing veins) and Hunger Games got a show arena with stands, spotlights and big screens',
-            'New fighter: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, recoil, a helmet that looks where you aim',
-            'Body parts fly apart in their own colors after a death',
-            'Shots and hits look the part: glowing bullet trails, a plasma orb, a rocket with smoke, a spinning grenade, sparks and scorch marks on walls and floors, blood and a flash on a fighter that gets hit',
-            "Brighter, fuller explosions with a fireball, shockwave, embers and smoke; a warm flash of light on the fighter's hands when firing",
-            'A sturdier fighter: larger head, chest and boots, thicker arms and legs, a shiny visor, pads and a strap, dust under the feet when running and landing',
-            'New look for the menu, character setup and HUD',
-            'Pick a mode and see how it plays, with its key rules',
-            'Infiltration preview shows the whole raid: grab the intel, bring it to extraction',
-            'Matches end on score or after 10 minutes, then a results screen and the next match',
-            'Create a game in your browser and invite friends with a link',
-            "Join a friend's server by its address; smoother movement online",
-            'Blood, explosions and damage numbers show up online',
-            'Hunger Games online, with 5-minute rounds',
-            'Hunger Games: fighters start spread over the arena with 3 seconds of protection; the zone always keeps its floor, also closes in every 30 seconds and stops when the round is decided',
-            'Team modes tell you what to do: "Bring the flag to your base"',
-            'Custom color for every body part',
-            'Running is twice as fast',
-            'Smarter bots: they fight in Gun Game, go after enemies they can see and shoot back while retreating',
-            'Fairer bots: they need a moment to react to a new enemy, and miss more at long range and at moving targets',
-            'Bots know the map: they reach every floor, no longer get stuck under platforms, and use the grapple hook to climb ledges the jetpack cannot',
-            'Bots move in a fight: strafe, hop when hit, escape when nearly dead; in CTF they carry the flag straight home and escort the carrier',
-            'CTF: teams respawn on the floor behind their base, not on their own flag, so a flag carrier has a real chance to get home',
-            'Tunnels: the rocket launcher, chainsaw and armor no longer sit inside the solid central block, where nobody could pick them up',
-            'Same game speed on 60, 120 and 144 Hz screens',
-            'Railgun and explosions no longer go through walls; bullets no longer pierce players',
-            'Fighters no longer slide along the floor with frozen legs: the game now always knows when they stand on the ground',
-            'No more free point for the smaller team in CTF, keys no longer get stuck, and many more fixes',
+        { version: '0.4.0', date: 'Nov 2, 2026', groups: [
+            { title: 'Maps', comparisons: [
+                { caption: 'Standard map: a space station', ...STATION },
+                { caption: 'Tunnels: an asteroid mine', ...MINE },
+                { caption: 'Hunger Games: a show arena', ...ARENA },
+            ], points: [
+                'The standard map is a space station: windows onto a planet, lamps and beacons, cargo, posters and screens, worn metal decks',
+                'Tunnels is an asteroid mine with timber supports, strings of bulbs and ore carts; Hunger Games is a show arena with stands, spotlights and big screens',
+                'Tunnels: the rocket launcher, chainsaw and armor no longer sit inside the solid central block',
+            ] },
+            { title: 'Fighter', comparisons: [{ caption: 'The new fighter', ...FIGHTER }], points: [
+                'A jointed body: shoulders, knees and elbows, both hands on the weapon, steps in time with the run, a helmet that looks where you aim',
+                'Sturdier and shinier: larger head, chest and boots, thicker arms and legs, a visor glint, pads and a strap, dust under the feet when running and landing',
+                'Body parts fly apart in their own colors after a death; a custom color for every body part',
+            ] },
+            { title: 'Shots and hits', comparisons: [{ caption: 'Shots and hits', ...SHOTS }], points: [
+                'Glowing bullet trails, a plasma orb, a rocket with smoke, a spinning grenade; sparks and scorch marks on walls and floors, blood and a flash on a fighter that gets hit',
+                "Brighter, fuller explosions with a fireball, shockwave, embers and smoke; a warm flash of light on the fighter's hands when firing",
+                'Railgun and explosions no longer go through walls; bullets no longer pierce players',
+            ] },
+            { title: 'Bots', points: [
+                'Bots know the map: they reach every floor, no longer get stuck under platforms, and use the grapple hook to climb ledges the jetpack cannot',
+                'Bots move in a fight: strafe, hop when hit, escape when nearly dead; in CTF they carry the flag straight home and escort the carrier',
+                'Fairer and smarter: a moment to react to a new enemy, more misses at long range and at moving targets, and they fight in Gun Game',
+            ] },
+            { title: 'Modes and multiplayer', points: [
+                'Matches end on score or after 10 minutes, then a results screen and the next match',
+                "Create a game in your browser and invite friends with a link, or join a friend's server by its address; smoother movement and all effects online",
+                'Hunger Games online with 5-minute rounds: fighters start spread over the arena with 3 seconds of protection; the zone keeps its floor, closes in every 30 seconds and stops when the round is decided',
+                'CTF: teams respawn on the floor behind their base, so a flag carrier has a real chance to get home; team modes tell you what to do',
+            ] },
+            { title: 'Interface', points: [
+                'New look for the menu, character setup and HUD',
+                'Pick a mode and watch how it plays, with its key rules; the Infiltration preview shows the whole raid',
+            ] },
+            { title: 'Fixes', points: [
+                'Running is twice as fast; the same game speed on 60, 120 and 144 Hz screens',
+                'Fighters no longer slide along the floor with frozen legs',
+                'No more free point for the smaller team in CTF, keys no longer get stuck, and many more fixes',
+            ] },
         ] },
         { version: '0.3.1', date: 'Nov 28, 2025', points: [
             'Gun Game: weapon ladder, no pickups, win with the last weapon',
@@ -80,42 +92,46 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.0', date: null, comparisons: [
-            { caption: 'Новый боец', ...FIGHTER },
-            { caption: 'Выстрелы и попадания', ...shots('shots') },
-            { caption: 'Стандартная карта: космическая станция', ...STATION },
-            { caption: 'Тоннели: шахта на астероиде', ...MINE },
-            { caption: 'Голодные игры: шоу-арена', ...ARENA },
-        ], points: [
-            'Стандартная карта стала космической станцией: окна с видом на планету, лампы и маячки, контейнеры, плакаты и экраны, потёртые металлические настилы',
-            'Тоннели стали шахтой на астероиде (деревянная крепь, гирлянды лампочек, вагонетки, светящаяся руда), а Голодные игры — шоу-ареной с трибунами, прожекторами и большими экранами',
-            'Новый боец: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, отдача, шлем смотрит туда, куда целитесь',
-            'После смерти части тела разлетаются в своих цветах',
-            'Выстрелы и попадания выглядят как надо: светящиеся следы пуль, плазменный шар, ракета с дымом, вращающаяся граната, искры и подпалины на стенах и полу, кровь и вспышка на бойце, в которого попали',
-            'Взрывы стали ярче и объёмнее: огненный шар, ударная волна, угли и дым; при стрельбе на руках бойца вспыхивает тёплый свет',
-            'Боец стал плотнее: крупнее голова, грудь и ботинки, толще руки и ноги, блик на визоре, наколенники, налокотники и ремень, пыль под ногами при беге и приземлении',
-            'Новый вид меню, экрана персонажа и интерфейса в бою',
-            'Выберите режим и посмотрите, как он играется, с главными правилами',
-            'Превью «Проникновения» показывает весь рейд: схватить данные и донести до эвакуации',
-            'Матч заканчивается по очкам или через 10 минут, потом итоги и следующий матч',
-            'Создайте игру прямо в браузере и пригласите друзей ссылкой',
-            'Вход на сервер друга по адресу; движение в онлайне стало плавнее',
-            'Кровь, взрывы и цифры урона видны и в онлайне',
-            'Голодные игры онлайн, раунды по 5 минут',
-            'Голодные игры: бойцы появляются по всей арене и 3 секунды неуязвимы; у зоны всегда есть пол, она сужается ещё и каждые 30 секунд и замирает, когда раунд решён',
-            'В командных режимах подсказка, что делать: «Несите флаг на свою базу»',
-            'Свой цвет для каждой части тела',
-            'Бег стал вдвое быстрее',
-            'Боты умнее: дерутся в Гонке вооружений, идут на видимых врагов и отстреливаются при отступлении',
-            'Боты честнее: им нужно время, чтобы среагировать на нового врага, и они чаще промахиваются издалека и по движущимся целям',
-            'Боты знают карту: добираются до любого этажа, больше не застревают под платформами и забираются крюком туда, куда не долетает джетпак',
-            'Боты двигаются в бою: уходят вбок, подпрыгивают после попадания, спасаются почти без здоровья; в CTF несут флаг прямо домой и прикрывают несущего',
-            'CTF: команды возрождаются на полу за своей базой, а не прямо на своём флаге, — у несущего флаг появился шанс добежать',
-            'Тоннели: ракетница, бензопила и броня больше не лежат внутри сплошного центрального блока, где их никто не мог взять',
-            'Одинаковая скорость игры на мониторах 60, 120 и 144 Гц',
-            'Рельсотрон и взрывы больше не проходят сквозь стены, пули не прошивают игроков',
-            'Бойцы больше не скользят по полу с застывшими ногами: игра всегда знает, что они стоят на земле',
-            'В CTF меньшая команда больше не получает бесплатных очков, клавиши не залипают, и много других исправлений',
+        { version: '0.4.0', date: '02.11.2026', groups: [
+            { title: 'Карты', comparisons: [
+                { caption: 'Стандартная карта: космическая станция', ...STATION },
+                { caption: 'Тоннели: шахта на астероиде', ...MINE },
+                { caption: 'Голодные игры: шоу-арена', ...ARENA },
+            ], points: [
+                'Стандартная карта — космическая станция: окна с видом на планету, лампы и маячки, контейнеры, плакаты и экраны, потёртые металлические настилы',
+                'Тоннели — шахта на астероиде с деревянной крепью, гирляндами лампочек и вагонетками; Голодные игры — шоу-арена с трибунами, прожекторами и большими экранами',
+                'Тоннели: ракетница, бензопила и броня больше не лежат внутри сплошного центрального блока',
+            ] },
+            { title: 'Боец', comparisons: [{ caption: 'Новый боец', ...FIGHTER }], points: [
+                'Тело с суставами: плечи, колени и локти, оружие в обеих руках, шаг в такт бегу, шлем смотрит туда, куда целитесь',
+                'Плотнее и ярче: крупнее голова, грудь и ботинки, толще руки и ноги, блик на визоре, наколенники и ремень, пыль под ногами при беге и приземлении',
+                'После смерти части тела разлетаются в своих цветах; свой цвет для каждой части тела',
+            ] },
+            { title: 'Выстрелы и попадания', comparisons: [{ caption: 'Выстрелы и попадания', ...SHOTS }], points: [
+                'Светящиеся следы пуль, плазменный шар, ракета с дымом, вращающаяся граната; искры и подпалины на стенах и полу, кровь и вспышка на бойце, в которого попали',
+                'Взрывы стали ярче и объёмнее: огненный шар, ударная волна, угли и дым; при стрельбе на руках бойца вспыхивает тёплый свет',
+                'Рельсотрон и взрывы больше не проходят сквозь стены, пули не прошивают игроков',
+            ] },
+            { title: 'Боты', points: [
+                'Боты знают карту: добираются до любого этажа, не застревают под платформами и забираются крюком туда, куда не долетает джетпак',
+                'Боты двигаются в бою: уходят вбок, подпрыгивают после попадания, спасаются почти без здоровья; в CTF несут флаг прямо домой и прикрывают несущего',
+                'Честнее и умнее: им нужно время среагировать на нового врага, они чаще промахиваются издалека и по движущимся целям, и дерутся в Гонке вооружений',
+            ] },
+            { title: 'Режимы и сеть', points: [
+                'Матч заканчивается по очкам или через 10 минут, потом итоги и следующий матч',
+                'Создайте игру прямо в браузере и пригласите друзей ссылкой или войдите на сервер друга по адресу; движение в онлайне плавнее, все эффекты видны',
+                'Голодные игры онлайн, раунды по 5 минут: бойцы появляются по всей арене и 3 секунды неуязвимы; у зоны всегда есть пол, она сужается каждые 30 секунд и замирает, когда раунд решён',
+                'CTF: команды возрождаются на полу за своей базой — у несущего флаг появился шанс добежать; в командных режимах подсказка, что делать',
+            ] },
+            { title: 'Интерфейс', points: [
+                'Новый вид меню, экрана персонажа и интерфейса в бою',
+                'Выберите режим и посмотрите, как он играется, с главными правилами; превью «Проникновения» показывает весь рейд',
+            ] },
+            { title: 'Исправления', points: [
+                'Бег стал вдвое быстрее; одинаковая скорость игры на мониторах 60, 120 и 144 Гц',
+                'Бойцы больше не скользят по полу с застывшими ногами',
+                'В CTF меньшая команда больше не получает бесплатных очков, клавиши не залипают, и много других исправлений',
+            ] },
         ] },
         { version: '0.3.1', date: '28.11.2025', points: [
             'Гонка вооружений: прогрессия оружия, без пикапов, победа после финального оружия',

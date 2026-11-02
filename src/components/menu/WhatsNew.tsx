@@ -10,9 +10,10 @@ interface Props {
     onClose: () => void;
 }
 
-const Comparison: React.FC<{ t: Translate; shots: BeforeAfter }> = ({ t, shots }) => (
+const Comparison: React.FC<{ t: Translate; shots: BeforeAfter; captioned: boolean }> = ({ t, shots, captioned }) => (
     <figure className="m-0 flex flex-col gap-2">
-        <figcaption className="text-sm font-semibold text-bay-chalk">{shots.caption}</figcaption>
+        {/* A group with a single pair is captioned by its own title */}
+        <figcaption className={captioned ? 'text-sm font-semibold text-bay-chalk' : 'sr-only'}>{shots.caption}</figcaption>
         <div className="grid grid-cols-2 gap-2">
             {([['hb.before', shots.before], ['hb.after', shots.after]] as const).map(([label, src]) => (
                 <div key={label} className="flex flex-col gap-1">
@@ -22,6 +23,12 @@ const Comparison: React.FC<{ t: Translate; shots: BeforeAfter }> = ({ t, shots }
             ))}
         </div>
     </figure>
+);
+
+const Points: React.FC<{ points: string[]; dim: boolean }> = ({ points, dim }) => (
+    <ul className={`m-0 flex list-disc flex-col gap-1.5 pl-[18px] marker:text-bay-hazard text-[15px] leading-snug ${dim ? 'text-[#D6D2CA]' : ''}`}>
+        {points.map(point => <li key={point}>{point}</li>)}
+    </ul>
 );
 
 export const WhatsNew: React.FC<Props> = ({ t, notes, onClose }) => {
@@ -54,10 +61,14 @@ export const WhatsNew: React.FC<Props> = ({ t, notes, onClose }) => {
                                 <h3 className={`m-0 font-display text-[28px] font-black ${i === 0 ? 'text-bay-hazard' : ''}`}>{note.version}</h3>
                                 <span className="text-sm text-bay-dust">{note.date ?? t('hb.thisUpdate')}</span>
                             </div>
-                            {note.comparisons?.map(shots => <Comparison key={shots.caption} t={t} shots={shots} />)}
-                            <ul className={`m-0 flex list-disc flex-col gap-1.5 pl-[18px] marker:text-bay-hazard text-[15px] leading-snug ${i === 0 ? '' : 'text-[#D6D2CA]'}`}>
-                                {note.points.map(point => <li key={point}>{point}</li>)}
-                            </ul>
+                            {note.groups?.map(group => (
+                                <div key={group.title} className="flex flex-col gap-2 pt-1">
+                                    <h4 className="m-0 font-display text-[20px] font-black uppercase tracking-wide">{group.title}</h4>
+                                    {group.comparisons?.map(shots => <Comparison key={shots.caption} t={t} shots={shots} captioned={group.comparisons!.length > 1} />)}
+                                    <Points points={group.points} dim={i !== 0} />
+                                </div>
+                            ))}
+                            {note.points && <Points points={note.points} dim={i !== 0} />}
                         </section>
                     ))}
                 </div>
