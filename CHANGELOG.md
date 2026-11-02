@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.11 (unreleased)
+
+### 🤖 Bots
+- Free-for-all bots (Deathmatch, Gun Game, Hunger Games) each wear a different skin preset, shuffled per match with no repeats until all 11 are used, plus a random flame, torso pattern and shoulder badge (`build/botLooks.ts`, spec: `docs/plans/2026-11-03-ffa-bot-looks-spec.md`). They used to be identical blue Marines. Team-mode bots stay red/blue
+
 ## Version 0.4.10 (2026-11-02)
 
 ### 🐛 Fixes
