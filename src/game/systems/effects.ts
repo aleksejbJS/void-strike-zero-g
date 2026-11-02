@@ -7,7 +7,7 @@ import { Entity, GameState, Projectile, WeaponType } from '../../types';
 import { gameEvents, GameEvent, EffectKind } from './events';
 import { nextId } from '../utils/id';
 import { createParticles, createRagdoll } from './effectSpawn';
-import { addMark } from './marks';
+import { addMark, addMarkAt } from './marks';
 
 // --- Emitters (called by the simulation) ---
 
@@ -45,8 +45,12 @@ const each = (n: number, spawn: () => void) => { for (let i = 0; i < n; i++) spa
 
 const STILL = { x: 0, y: 0 };
 
+const SCORCH_RADIUS = 18;
+
 // Flash, fireball and ring are stationary; the view grows them over their life
 const explosionAt = (state: GameState, x: number, y: number) => {
+    // The impact point sits just outside the wall; a blast in mid-air leaves nothing
+    addMarkAt(state.platforms, x, y, SCORCH_RADIUS, SCORCH_RADIUS);
     createParticles(state, x, y, 1, '#ffffff', 'flash', { size: 40, vel: STILL });
     createParticles(state, x, y, 1, '#f97316', 'fireball', { size: 12, vel: STILL });
     createParticles(state, x, y, 1, '#fdba74', 'ring', { size: 10, vel: STILL });

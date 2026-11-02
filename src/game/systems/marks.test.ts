@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GameMode, Platform } from '../../types';
 import { createMockState } from '../../test/mocks';
 import { applyEffectEvent } from './effects';
-import { addMark, clearMarks, liveMarks, placeMark, MARK_CAP, MARK_LIFE_MS } from './marks';
+import { addMark, addMarkAt, clearMarks, liveMarks, placeMark, placeMarkNear, MARK_CAP, MARK_LIFE_MS } from './marks';
 
 const floor: Platform = { id: 'f', x: 0, y: 100, w: 200, h: 50, color: '' };
 
@@ -107,6 +107,57 @@ describe('spark events leave scorch marks', () => {
         state.platforms.push(floor);
 
         expect(() => applyEffectEvent(state, { type: 'EFFECT', effect: 'spark', x: 50, y: 50 })).not.toThrow();
+        expect(liveMarks(Date.now())).toEqual([]);
+    });
+});
+
+describe('placeMarkNear', () => {
+    it('finds the floor top for a point 5 px above it', () => {
+        expect(placeMarkNear([floor], 50, 95, 18)).toEqual({ x: 50, y: 100 });
+    });
+
+    it('finds nothing when the nearest surface is farther than maxDist', () => {
+        expect(placeMarkNear([floor], 50, 70, 18)).toBeNull();
+    });
+
+    it('picks the closest of several platforms', () => {
+        const wall: Platform = { id: 'w', x: 300, y: 0, w: 40, h: 300, color: '' };
+        expect(placeMarkNear([floor, wall], 296, 120, 18)).toEqual({ x: 300, y: 120 });
+    });
+
+    it('projects a point inside a platform onto its nearest edge', () => {
+        expect(placeMarkNear([floor], 50, 104, 18)).toEqual({ x: 50, y: 100 });
+    });
+});
+
+describe('explosions leave a big scorch mark', () => {
+    it('addMarkAt places a mark of the given radius', () => {
+        addMarkAt([floor], 50, 95, 18, 18, 700);
+        expect(liveMarks(700)).toEqual([{ x: 50, y: 100, r: 18, bornAt: 700 }]);
+    });
+
+    it('addMarkAt adds nothing in mid-air', () => {
+        addMarkAt([floor], 50, 70, 18, 18, 0);
+        expect(liveMarks(0)).toEqual([]);
+    });
+
+    it('an explosion next to a wall makes one mark of radius 18 on its face', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        state.platforms.push({ id: 'w', x: 100, y: 0, w: 40, h: 300, color: '' });
+
+        applyEffectEvent(state, { type: 'EFFECT', effect: 'explosion', x: 92, y: 150 });
+
+        const marks = liveMarks(Date.now());
+        expect(marks).toHaveLength(1);
+        expect(marks[0]).toMatchObject({ x: 100, y: 150, r: 18 });
+    });
+
+    it('an explosion in mid-air leaves no mark', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        state.platforms.push(floor);
+
+        applyEffectEvent(state, { type: 'EFFECT', effect: 'explosion', x: 50, y: 40 });
+
         expect(liveMarks(Date.now())).toEqual([]);
     });
 });
