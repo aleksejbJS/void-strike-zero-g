@@ -36,3 +36,16 @@
 @media (prefers-reduced-motion: reduce) {
     .hb-anim { animation: none !important; }
 }
+
+/* In-match objective banner ("RED FLAG GRABBED"): drops in, holds, fades; a new banner restarts it */
+@keyframes hb-banner {
+    0% { opacity: 0; transform: translateY(-14px) scale(1.06) }
+    7% { opacity: 1; transform: none }
+    82% { opacity: 1; transform: none }
+    100% { opacity: 0; transform: none }
+}
+@keyframes hb-banner-fade { 0%, 82% { opacity: 1 } 100% { opacity: 0 } }
+.hb-banner { animation: hb-banner 2.6s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+    .hb-banner { animation-name: hb-banner-fade; }
+}

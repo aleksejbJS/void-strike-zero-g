@@ -1,8 +1,13 @@
 // Game Event Bus — decouples physics from UI (sound, kill feed, etc.)
 
 import type { FighterBuild } from '../build/buildParts';
+import type { Team } from '../../types';
 
 export type EffectKind = 'blood' | 'spark' | 'explosion' | 'shell' | 'respawn';
+
+/** Which objective changed hands: a CTF team flag, the Hold the Flag neutral flag, the Infiltration intel. */
+export type FlagKind = 'ctf' | 'hold' | 'intel';
+export type FlagAction = 'grabbed' | 'lost' | 'returned' | 'captured';
 
 export type GameEvent =
     | { type: 'KILL'; killer: string; killerColor: string; weapon: string; victim: string; victimColor: string }
@@ -11,7 +16,10 @@ export type GameEvent =
     // Cosmetic effects at a position — see effects.ts
     | { type: 'EFFECT'; effect: EffectKind; x: number; y: number; color?: string; count?: number }
     | { type: 'DAMAGE'; x: number; y: number; amount: number }
-    | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors };
+    | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors }
+    // An objective changed hands (HUD banner). `team`: the flag's team for CTF grabbed/lost/returned,
+    // the scoring team for CTF captured, the holder's team in Hold the Flag, NONE for intel.
+    | { type: 'FLAG'; kind: FlagKind; action: FlagAction; team: Team };
 
 /** Colors of the body parts that fly apart on death, and the build whose parts they keep (none: the default build). */
 export interface RagdollColors { head: string; torso: string; arm: string; leg: string; build?: FighterBuild }

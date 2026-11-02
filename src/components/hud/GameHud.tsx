@@ -15,6 +15,8 @@ import { DeathOverlay, ConnectionOverlay, InviteBanner, DebugStats } from './Ove
 import { MobileControls, Joystick } from './MobileControls';
 import { formatClock } from './format';
 import { MatchResult } from './MatchResult';
+import { FlagBanner } from './FlagBanner';
+import type { FlagBannerEvent } from './flagBannerText';
 import type { MatchHud } from './matchHud';
 import type { Translate } from '../menu/types';
 
@@ -30,6 +32,7 @@ export interface GameHudProps {
     muted: boolean;
     onToggleMute: () => void;
     objective: string | null;
+    flagBanner: FlagBannerEvent | null; // last objective change, shown as a fading banner
     match: MatchHud | null;
     onLeave: () => void;
     connection: { visible: boolean; error: string | null };
@@ -59,6 +62,7 @@ export const GameHud: React.FC<GameHudProps> = p => {
                     gunLadder={mode === GameMode.GUN_GAME ? { total: GUN_GAME_LADDER.length, perLevel: GUN_GAME_KILLS_PER_LEVEL } : undefined} />
             )}
             {isTeamMode(mode) && <TeamScore t={t} blue={p.scores.blue} red={p.scores.red} objective={p.objective} timer={clock} goal={p.match?.goal} />}
+            {isTeamMode(mode) && <FlagBanner t={t} banner={p.flagBanner} />}
             {mode === GameMode.HUNGER_GAMES && p.hunger && <HungerHud t={t} s={p.hunger} ranking={p.playerScores} reward={p.reward} />}
             {mode === GameMode.GUN_GAME && p.gunGame && <GunGameHud t={t} status={p.gunGame.status} winner={p.gunGame.winner} reward={p.reward} />}
 
