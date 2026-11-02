@@ -1,6 +1,6 @@
 # Death Ragdolls — How a Fighter Dies Depends on What Killed Them
 
-Status: draft 2026-11-02, written from the brainstorm with the user, builder-checked; waiting for approval
+Status: implemented 2026-11-03 (0.4.12); draft 2026-11-02, written from the brainstorm with the user, builder-checked
 
 Mockup (open in a browser, it plays itself): `docs/plans/2026-11-02-death-ragdoll-mockup.html`.
 The user said of it: «да, выглядит уже круче».

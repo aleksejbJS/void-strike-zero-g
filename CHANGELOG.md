@@ -1,5 +1,14 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.12 (unreleased)
+
+### 💀 Deaths
+- A death is a jointed ragdoll now (verlet points, links and joint limits; `systems/ragdoll/*`, spec: `docs/plans/2026-11-02-death-ragdoll-spec.md`) drawn with the fighter's own build (`render/ragdoll/*`), instead of 6 loose pieces. It lands, slides and slips off platforms; a body lies 3.5 s and fades 1 s, gib pieces 2 s + 1 s; at most 12 corpses
+- The kind of death follows the killing hit (`systems/deathKind.ts`): machine gun, plasma, zone and falls → falls; shotgun within 120 units → thrown; rocket or grenade direct hit or overkill ≥ 30 → torn apart, otherwise thrown; railgun → cut in two; chainsaw → torn apart. The `DEATH` event carries the kind, the hit origin, the victim velocity, facing and weapon; older hosts fall back to a fall
+- Later explosions push lying corpses (and make them hop); the dropped gun falls on its own
+- Tuning in the game against the approved mockup: launch speeds scale by √(game gravity / mockup gravity) so arcs and spin match the mockup in fighter heights; a shot close to the body shoves the whole body (falls onto its back), a blast farther off throws each point away from it; a launch faster than the step's cap is slowed as a whole; the machine-gun fall straightens the knees so the body ends flat on its back; cut legs bend at the knees when drawn (no boots through the floor)
+- Each client simulates its own corpses from the event, the server never does; 8 deaths at once keep 120 fps at 1512 × 700
+
 ## Version 0.4.11 (2026-11-03)
 
 ### 🤖 Bots
