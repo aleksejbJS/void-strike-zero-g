@@ -1,15 +1,18 @@
-// Character setup ("Hazard Bay" design): skin, name and colors before a match.
+// Character setup ("Hazard Bay" design): preset, name, parts and colors before a match.
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { SKINS } from '../../constants';
 import { MapId, NetworkMode } from '../../types';
-import { presetBuild } from '../../game/build/buildPresets';
+import { saveBuild } from '../../game/build/buildStorage';
+import { loadXp } from '../../game/build/progress';
+import { levelForXp } from '../../game/build/unlocks';
 import { useUIStore } from '../../store/uiStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { MODE_INFO } from '../menu/modeInfo';
 import { CharacterPreview } from './CharacterPreview';
-import { ColorRow } from './ColorRow';
-import { BodyPart, presetsFor } from './colorPresets';
+import { BuilderTabs } from './builder/BuilderTabs';
+import { XpBar } from './builder/XpBar';
+import { useFighterDraft } from './builder/useFighterDraft';
 
 const MAX_NAME = 12;
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
@@ -23,32 +26,19 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
     const { state, actions } = useUIStore();
     const { t, language } = useTranslation();
     const [name, setName] = useState(state.playerName);
-    const [skinIndex, setSkinIndex] = useState(() => Math.max(0, SKINS.findIndex(s => s.id === state.selectedSkin)));
-    const [colors, setColors] = useState<Record<BodyPart, string>>({
+    const [xp] = useState(loadXp);
+    const draft = useFighterDraft(state.selectedSkin, {
         torso: state.torsoColor || state.playerColor,
         head: state.headColor || state.playerColor,
         arms: state.armColor || state.playerColor,
         legs: state.legColor || '#475569',
         jetpack: state.jetpackColor || '#ef4444',
     });
-    const skin = SKINS[skinIndex];
-    const build = useMemo(() => presetBuild(skin.id), [skin.id]); // the skin's starting build until the builder screen exists
-
-    // Functional update: rapid clicks each count
-    const changeSkin = (step: number) => setSkinIndex(i => (i + step + SKINS.length) % SKINS.length);
-
-    // A newly picked skin brings its own palette (not on mount: keep the saved colors)
-    const shownSkin = useRef(skinIndex);
-    useEffect(() => {
-        if (shownSkin.current === skinIndex) return;
-        shownSkin.current = skinIndex;
-        const { palette } = SKINS[skinIndex];
-        setColors({ torso: palette.torso, head: palette.head, arms: palette.arms, legs: palette.legs, jetpack: palette.jetpack });
-    }, [skinIndex]);
-    const setColor = (part: BodyPart) => (color: string) => setColors(c => ({ ...c, [part]: color }));
+    const { preset, build, colors } = draft;
 
     const start = () => {
-        actions.selectSkin(skin.id);
+        saveBuild(build); // the match reads the saved build when it starts
+        actions.selectSkin(preset.id);
         actions.setPlayerCustomization(name.trim() || 'Anonymous', colors);
         actions.startGame(state.selectedMode);
         onContinue();
@@ -59,8 +49,8 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
     const next = state.networkMode === NetworkMode.CLIENT ? t('cs.nextJoin')
         : t(state.networkMode === NetworkMode.HOST ? 'cs.nextHost' : 'cs.nextOffline', mode, mapLabel);
     const startLabel = t(state.networkMode === NetworkMode.CLIENT ? 'cs.startJoin' : state.networkMode === NetworkMode.HOST ? 'cs.startHost' : 'cs.startOffline');
-    const parts: BodyPart[] = ['torso', 'head', 'arms', 'legs', 'jetpack'];
-    const styleName = t(`cs.style.${skin.style}` as 'cs.style.human');
+    const styleName = t(`cs.style.${preset.style}` as 'cs.style.human');
+    const arrowClass = `flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate ${focusRing}`;
 
     return (
         <div className="h-screen overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
@@ -78,18 +68,22 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
 
                 <main className="grid flex-grow grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_560px]">
                     <div className="flex min-w-0 flex-col gap-4">
-                        <CharacterPreview look={{ build, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', skinIndex + 1, SKINS.length)} />
+                        <CharacterPreview look={{ build, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', draft.presetIndex + 1, SKINS.length)} />
                         <div className="flex items-center gap-4">
-                            <button type="button" onClick={() => changeSkin(-1)} aria-label={t('cs.prevSkin')} className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate ${focusRing}`}><Chevron dir="l" /></button>
-                            <div className="flex flex-grow flex-col items-center gap-0.5 text-center">
-                                <span className="font-display text-4xl font-black leading-none">{skin.name}</span>
+                            <button type="button" onClick={() => draft.stepPreset(-1)} aria-label={t('cs.prevSkin')} className={arrowClass}><Chevron dir="l" /></button>
+                            <div className="flex min-w-0 flex-grow flex-col items-center gap-0.5 text-center">
+                                <span className="flex flex-wrap items-baseline justify-center gap-x-2">
+                                    <span className="font-display text-4xl font-black leading-none">{preset.name}</span>
+                                    {draft.changed && <span className="text-[15px] font-semibold text-bay-hazard">{t('cs.changed')}</span>}
+                                </span>
                                 <span className="text-sm text-bay-dust">{t('cs.skinHint', styleName)}</span>
                             </div>
-                            <button type="button" onClick={() => changeSkin(1)} aria-label={t('cs.nextSkin')} className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate ${focusRing}`}><Chevron dir="r" /></button>
+                            <button type="button" onClick={() => draft.stepPreset(1)} aria-label={t('cs.nextSkin')} className={arrowClass}><Chevron dir="r" /></button>
                         </div>
+                        <XpBar xp={xp} />
                     </div>
 
-                    <div className="flex flex-col gap-5">
+                    <div className="flex min-w-0 flex-col gap-5">
                         <div className="flex flex-col gap-2">
                             <label htmlFor="setup-name" className="font-display text-2xl font-extrabold">{t('cs.name')}</label>
                             <input id="setup-name" value={name} maxLength={MAX_NAME} onChange={e => setName(e.target.value.slice(0, MAX_NAME))}
@@ -97,12 +91,7 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
                             <span className="text-[13px] text-bay-dust">{t('cs.nameHint', name.length, MAX_NAME)}</span>
                         </div>
 
-                        <div className="flex flex-col rounded bg-bay-panel px-5 py-1.5">
-                            {parts.map(part => (
-                                <ColorRow key={part} label={t(`cs.${part}` as 'cs.torso')} groupLabel={t('cs.colorOf', t(`cs.${part}` as 'cs.torso'))}
-                                    customLabel={t('cs.custom')} presets={presetsFor(part, language)} value={colors[part]} onChange={setColor(part)} />
-                            ))}
-                        </div>
+                        <BuilderTabs build={build} colors={colors} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
 
                         <div className="mt-auto flex gap-3">
                             <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel ${focusRing}`}>{t('cs.back')}</button>
