@@ -31,7 +31,7 @@ const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.4', date: null, points: [
+        { version: '0.4.4', date: 'Nov 2, 2026', points: [
             'Fixed missing art in the second match: after playing a match and going back to the menu, the next match could lose parts of the world and fighters (and the console filled with WebGL errors) until the page was reloaded',
         ] },
         { version: '0.4.3', date: 'Nov 2, 2026', points: [
@@ -113,7 +113,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.4', date: null, points: [
+        { version: '0.4.4', date: '02.11.2026', points: [
             'Исправлена пропадающая графика во втором матче: после матча и выхода в меню следующий матч мог терять часть мира и бойцов (а консоль — заполняться ошибками WebGL) до перезагрузки страницы',
         ] },
         { version: '0.4.3', date: '02.11.2026', points: [
