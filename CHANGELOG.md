@@ -1,5 +1,17 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.2 (unreleased)
+
+### 🚩 Flags
+- All flags are drawn by code in one "station standard" design (spec: `docs/plans/2026-11-02-flag-look-spec.md`): steel pole with brass collars and a glowing crystal, segmented cloth with shaded folds, a dark hem with rivets, chevrons and a swallowtail end
+- CTF bases get a plinth with hazard tape, a pulsing team light strip and a floor glow; the plinth snaps to the platform under the flag
+- The Hold the Flag flag stands upright on its pedestal; a dropped one is planted at a lean with a pulsing ring around it; a flag with no floor below bobs in mid-air
+- A carried flag trails against the carrier's motion (level when running, down when flying up, hanging when still); Hold the Flag carriers keep their fire, now at the crystal
+- The 1152 × 896 flag pictures (shrunk ~7× without mipmaps, so they shimmered) are removed
+
+### 🐛 Fixes
+- CTF: a blue fighter carrying the red flag showed a yellow (intel) flag; the carried colour now depends on the game mode
+
 ## Version 0.4.1 (2026-11-02)
 
 ### 🐛 Fixes
