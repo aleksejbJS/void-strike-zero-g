@@ -107,4 +107,26 @@ describe('stepCorpse', () => {
         for (const p of Object.values(c.points)) expect(inside(p, wall)).toBe(false);
         expect(speedOf(c)).toBeLessThan(8);
     });
+
+    it.each([
+        [20, 400], [20, 650], [10, 400], [10, 650],
+    ])('a corpse dropped onto a %i-thick platform from %i units lands on top', (h, drop) => {
+        const thin: Platform = { id: 'thin', x: 0, y: TOP, w: 1000, h, color: '#000' };
+        const c = createCorpse(death(500, TOP - drop));
+        for (let t = 0; t < 400; t++) stepCorpse(c, [thin]);
+        for (const p of Object.values(c.points)) expect(p.y).toBeLessThanOrEqual(TOP + h);
+        expect(c.points.hip.y).toBeLessThanOrEqual(TOP);
+        expect(c.points.hip.y).toBeGreaterThan(TOP - 40);
+    });
+
+    it('a corpse thrown sideways into a thin wall stays on the near side', () => {
+        // Like the map walls, it goes down through the floor instead of standing on its top
+        const wall: Platform = { id: 'wall', x: 400, y: 300, w: 20, h: 240, color: '#000' };
+        const c = createCorpse(death(300, TOP));
+        launch(c, 9, 0);
+        for (let t = 0; t < 240; t++) {
+            stepCorpse(c, [floor(), wall]);
+            for (const p of Object.values(c.points)) expect(p.x).toBeLessThanOrEqual(wall.x);
+        }
+    });
 });
