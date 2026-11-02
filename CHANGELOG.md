@@ -1,12 +1,33 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.5 (unreleased)
+## Version 0.4.7 (2026-11-02)
 
 ### 🛠️ Setup Screen
 - From 1024 px wide the character screen fits the window: the page no longer scrolls, the part tiles scroll inside their panel and Back / Start stay at the bottom (a 14" MacBook window is ~860 px tall; the page was ~1226 px)
 - In a desktop window up to 960 px tall (new Tailwind screen `short`) the title, gaps, name field, tile pictures and buttons are a bit smaller
 - The tile panel opens each tab at its first slot and ignores scroll anchoring, so pictures that load late do not shift it
 - Phones keep the old layout with one page scroll
+
+## Version 0.4.6 (2026-11-02)
+
+### 🎥 Camera
+- The camera shows a fixed slice of the world, about 1600 × 900 units, scaled to fill the window (spec: `docs/plans/2026-11-02-match-feel-spec.md`, part 1); before, the world was drawn 1:1 and a bigger window saw more of the map
+- A window that is not 16:9 shows the extra width or height instead of cutting the picture; on phones the zoom never drops below 0.6, so fighters stay readable
+- Backdrop, world and post effects sit in one scaled container (`render/viewport.ts`); the cursor stays in window pixels; mouse and touch aim are converted through the same viewport offline and online
+- Real ad banners (DOM overlay) are scaled with the canvas and stay on their posters
+
+## Version 0.4.5 (2026-11-02)
+
+### 🎬 Menu Mode Previews
+- The six mode previews are drawn live by the match renderer instead of HTML/CSS schematics (spec: `docs/plans/2026-11-02-mode-previews-spec.md`): station / mine / arena backdrop and platform art without ads, real fighters ("You" in the player's own build), flags, intel, projectiles, railgun beams, blasts, ragdolls and the Hunger Games zone
+- A director plays a per-mode script (keyframes, aims, shots, deaths, weapon switches, carried flags, props, zone) into a `GameState` at the physics tick rate; loops are 5–8 s and seamless
+- Texts (scores, bases, extraction, Gun Game ladder, "You") stay translatable; one Pixi app serves every preview for the page life and pauses off-screen or in a hidden tab; reduced motion gets a still frame; no WebGL → the old schematic scene
+- Baked scene textures are now owned per scene (`bakeScene`), so the preview and the match can never free each other's art; `createThemedScene` can skip ad places; the preview leaves no scorch marks for the next match
+
+## Version 0.4.4 (2026-11-02)
+
+### 🐛 Fixes
+- Missing art after match → menu → match (and in any canvas that outlives another one): Pixi 8.14.3's `Batcher.destroy()` hands back to its page-wide batch pool every batch in its array, including the ones `begin()` had already returned on an earlier frame and that another live renderer may have taken since. Those batches end up in the pool twice, two batchers share one batch, and the live renderer draws with a dead renderer's geometry: `glDrawElements: Insufficient buffer size`, then `Cannot read properties of null (reading 'instanceCount')`, missing or black art until a reload. `src/game/render/batchPoolFix.ts` cuts the array to the batches the batcher still owns before Pixi's destroy runs (Pixi 8.22 does the same itself); `destroyApp()` installs it. Unit tests cover the patch
 
 ## Version 0.4.3 (2026-11-02)
 

@@ -16,8 +16,8 @@ export const COLORS = {
     hazard: '#FFC21A',
 };
 
-/** Fixed-size scene, scaled down to fit narrower columns (e.g. on phones). */
-export const Stage: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
+/** Fixed-size scene, scaled down to fit narrower columns (e.g. on phones). The live preview draws its own platforms. */
+export const Stage: React.FC<{ label: string; schematic?: boolean; children: React.ReactNode }> = ({ label, schematic = true, children }) => {
     const outer = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
 
@@ -35,7 +35,7 @@ export const Stage: React.FC<{ label: string; children: React.ReactNode }> = ({ 
             style={{ height: STAGE_H * scale }}>
             <div aria-hidden="true" className="absolute left-0 top-0 origin-top-left"
                 style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
-                <Platforms />
+                {schematic && <Platforms />}
                 {children}
             </div>
         </div>

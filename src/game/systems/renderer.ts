@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Sprite, Text, Texture, BlurFilter, Filter, GlProgram, Matrix } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture, BlurFilter, Filter, GlProgram, Matrix } from 'pixi.js';
 // Bloom filter replaced with BlurFilter for glow effect
 import { GameState, Platform, Entity, WeaponType, ItemType, Pickup, Team, MapId } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
@@ -11,6 +11,7 @@ import { BeamView } from '../render/projectiles/beamView';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
 import { createParticles } from './effectSpawn';
 import { createGroundFlagVisual, updateGroundFlagVisual } from '../render/flag/groundFlagView';
+import { toView, Viewport } from '../render/viewport';
 
 // Desired visual sizes (largest dimension) for pickup sprites
 const PICKUP_DISPLAY_SIZE: Partial<Record<ItemType, number>> = {
@@ -399,15 +400,16 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
     }
 };
 
-export const syncVisuals = (app: Application, world: Container, gameLayer: Container, decalLayer: Container, uiLayer: Container, state: GameState, cache: any, shakeRef: any, mouse: { x: number, y: number }, setStats: any, setPlayerInventory: any, setActiveWeaponType: any, setScores: any, setPlayerScores?: any, localPlayerId = 'player') => {
+/** `view` is the virtual screen the world is drawn on; `mouse` is in window pixels. */
+export const syncVisuals = (view: Viewport, world: Container, gameLayer: Container, decalLayer: Container, uiLayer: Container, state: GameState, cache: any, shakeRef: any, mouse: { x: number, y: number }, setStats: any, setPlayerInventory: any, setActiveWeaponType: any, setScores: any, setPlayerScores?: any, localPlayerId = 'player') => {
     let shakeX = (Math.random() - 0.5) * shakeRef.current;
     let shakeY = (Math.random() - 0.5) * shakeRef.current;
     // Apply filters
     world.filters = null;
     shakeRef.current *= 0.9;
 
-    const cx = app.screen.width / 2;
-    const cy = app.screen.height / 2;
+    const cx = view.w / 2;
+    const cy = view.h / 2;
     world.position.set(cx - state.camera.x + shakeX, cy - state.camera.y + shakeY);
 
     // Decals
@@ -448,7 +450,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true, context: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
         let visual = cache.players.get(p.id);
         if (!visual) { visual = createPlayerVisual(p); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
-        updatePlayerVisual(visual, p, state.camera, mouse, app.screen.width, app.screen.height, cache.textures, p.id === localPlayerId, state);
+        updatePlayerVisual(visual, p, state.camera, toView(mouse, view), view.w, view.h, cache.textures, p.id === localPlayerId, state);
     });
 
     // Projectiles: pooled sprites per live id; each shotgun shot leaves one muzzle puff where it was first seen
@@ -480,7 +482,7 @@ export const syncVisuals = (app: Application, world: Container, gameLayer: Conta
         cursor.circle(0, 0, 4).fill(0x22c55e);
         uiLayer.addChild(cursor);
     }
-    cursor.position.set(mouse.x, mouse.y);
+    cursor.position.set(mouse.x, mouse.y); // uiLayer is not zoomed: window pixels
 
     // Ragdoll Parts
     if (!cache.ragdollParts) cache.ragdollParts = new Map();

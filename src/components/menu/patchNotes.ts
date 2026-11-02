@@ -27,12 +27,26 @@ export interface PatchNote {
 const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
-const FLAG = shots('flag');
+const FLAG = shots('flag'), CAMERA = shots('camera');
+const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.5', date: null, points: [
+        { version: '0.4.7', date: 'Nov 2, 2026', points: [
             'The character screen fits a laptop screen: the Start button is always in view and the part tiles scroll in their own panel',
+        { version: '0.4.6', date: 'Nov 2, 2026', groups: [
+            { title: 'Camera', comparisons: [{ caption: 'The same 2560 × 1440 window', ...CAMERA }], points: [
+                'Every screen now shows the same part of the map: fighters, flags and effects are bigger on large monitors, and a big monitor no longer sees further than a small one',
+            ] },
+        ] },
+        { version: '0.4.5', date: 'Nov 2, 2026', groups: [
+            { title: 'Menu', comparisons: [{ caption: 'Deathmatch preview', ...PREVIEWS }], points: [
+                'Mode previews in the menu are drawn by the game itself: real fighters in your own look, flags, rockets, ragdolls and the station, mine or arena behind them',
+                'Each mode plays its own short scene: a flag run, the Gun Game ladder, the intel escape, the closing Hunger Games zone',
+            ] },
+        ] },
+        { version: '0.4.4', date: 'Nov 2, 2026', points: [
+            'Fixed missing art in the second match: after playing a match and going back to the menu, the next match could lose parts of the world and fighters (and the console filled with WebGL errors) until the page was reloaded',
         ] },
         { version: '0.4.3', date: 'Nov 2, 2026', points: [
             'Build your fighter from parts: helmet, visor, ears, tail, jetpack, flame, torso pattern and shoulder badge; the old skins are now ready-made builds to start from, and your saved look stays',
@@ -113,8 +127,21 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.5', date: null, points: [
+        { version: '0.4.7', date: '02.11.2026', points: [
             'Экран персонажа помещается на экран ноутбука: кнопка «Начать матч» всегда на виду, а плитки деталей прокручиваются в своей панели',
+        { version: '0.4.6', date: '02.11.2026', groups: [
+            { title: 'Камера', comparisons: [{ caption: 'Одно и то же окно 2560 × 1440', ...CAMERA }], points: [
+                'Любой экран теперь показывает одинаковый кусок карты: на больших мониторах бойцы, флаги и эффекты крупнее, а большой монитор больше не видит дальше маленького',
+            ] },
+        ] },
+        { version: '0.4.5', date: '02.11.2026', groups: [
+            { title: 'Меню', comparisons: [{ caption: 'Превью «Боя насмерть»', ...PREVIEWS }], points: [
+                'Превью режимов в меню рисует сама игра: настоящие бойцы в вашем образе, флаги, ракеты, тряпичные куклы и станция, шахта или арена на фоне',
+                'Каждый режим показывает свою короткую сцену: вынос флага, лестницу оружия, побег с разведданными, сужение зоны в «Голодных играх»',
+            ] },
+        ] },
+        { version: '0.4.4', date: '02.11.2026', points: [
+            'Исправлена пропадающая графика во втором матче: после матча и выхода в меню следующий матч мог терять часть мира и бойцов (а консоль — заполняться ошибками WebGL) до перезагрузки страницы',
         ] },
         { version: '0.4.3', date: '02.11.2026', points: [
             'Соберите бойца из деталей: шлем, визор, уши, хвост, джетпак, пламя, узор на торсе и знак на плече; старые скины стали готовыми сборками, а ваш сохранённый облик остался',

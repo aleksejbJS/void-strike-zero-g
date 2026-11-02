@@ -6,12 +6,17 @@
 // ("Cannot read properties of null (reading 'clear')") and the pool stays poisoned
 // until the page reloads. The character preview and the match canvas overlap for a
 // moment at match start, so that is exactly our situation.
+//
+// Destroying a renderer also needs the batch pool fix (batchPoolFix.ts): without it a destroyed
+// renderer hands batches back twice and the renderers still alive draw with broken geometry.
 
 import type { Application } from 'pixi.js';
+import { installBatchPoolFix } from './batchPoolFix';
 
 type DestroyableApp = Pick<Application, 'destroy'>;
 
 /** Removes the canvas from the page and frees the display tree; shared textures stay. */
 export const destroyApp = (app: DestroyableApp): void => {
+    installBatchPoolFix();
     app.destroy({ removeView: true }, { children: true, texture: false });
 };

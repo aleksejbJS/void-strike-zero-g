@@ -10,6 +10,7 @@ import { drawBotPaths } from '../game/render/botPathOverlay';
 import { ParticleView } from '../game/render/effects/particleView';
 import { drawMarks } from '../game/render/effects/marksView';
 import { destroyApp } from '../game/render/pixiApp';
+import { screenToWorld, toView, viewportOf } from '../game/render/viewport';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
@@ -431,9 +432,14 @@ export default function GameCanvas() {
             if (containerRef.current) containerRef.current.appendChild(app.canvas);
             pixiApp.current = app;
 
-            // Layers
+            // Layers. viewRoot holds everything drawn from the camera (backdrop, world, post
+            // effects) and is scaled so every window shows the same slice of the map; the
+            // cursor layer stays in window pixels.
+            const viewRoot = new Container();
+            app.stage.addChild(viewRoot);
+            const viewNow = () => viewportOf(app.screen.width, app.screen.height);
             const worldContainer = new Container();
-            app.stage.addChild(worldContainer);
+            viewRoot.addChild(worldContainer);
             const backgroundLayer = new Graphics();
             const decalLayer = new Container();
             const zoneLayer = new Graphics();
@@ -453,7 +459,7 @@ export default function GameCanvas() {
             // In-world ad places get real TrafficStars banners from ads.json (house posters otherwise)
             const adsLayer = containerRef.current ? createAdsController(containerRef.current, new URL('ads.json', document.baseURI).href) : null;
             ads = adsLayer;
-            const look = createMapLook({ stage: app.stage, world: worldContainer }, worldContainer, { platformLayer, backgroundLayer, cache: visualCache.current }, scene => adsLayer?.attach(scene));
+            const look = createMapLook({ stage: viewRoot, world: worldContainer }, worldContainer, { platformLayer, backgroundLayer, cache: visualCache.current }, scene => adsLayer?.attach(scene));
             mapLook = look;
             worldContainer.addChildAt(marksLayer, worldContainer.getChildIndex(gameLayer));
 
@@ -501,7 +507,8 @@ export default function GameCanvas() {
 
                 gameState.current = makeInitialState();
                 initLevel();
-                look.redraw(gameState.current, app.screen.width, app.screen.height);
+                const view = viewNow();
+                look.redraw(gameState.current, view.w, view.h);
             };
 
             // Hunger Games HUD from the shared round state (same for offline and online)
@@ -541,6 +548,8 @@ export default function GameCanvas() {
             app.ticker.add(() => {
                 const now = Date.now();
                 const liveMode = gameState.current.mode;
+                const view = viewNow();
+                viewRoot.scale.set(view.zoom);
                 const offline = !isOnline;
                 // Offline a finished Hunger Games round restarts here; online the server does it
                 if (offline && ((liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) || isMatchOver(gameState.current, now))) {
@@ -556,7 +565,7 @@ export default function GameCanvas() {
                     updateHungerHud(now);
                     // Keep rendering positions but skip input/physics
                     syncVisuals(
-                        app,
+                        view,
                         worldContainer,
                         gameLayer,
                         decalLayer,
@@ -583,7 +592,7 @@ export default function GameCanvas() {
                         const camera = gameState.current.camera;
                         sessionRef.current?.tick(gameState.current, {
                             keys: { ...keys.current },
-                            aim: { x: mouse.current.x - app.screen.width / 2 + camera.x, y: mouse.current.y - app.screen.height / 2 + camera.y },
+                            aim: screenToWorld(mouse.current, camera, view),
                             mousePressed: mousePressed.current,
                             hookPressed: hookPressed.current,
                         }, performance.now());
@@ -600,11 +609,11 @@ export default function GameCanvas() {
                         updatePhysics(
                             gameState.current,
                             keys.current,
-                            mouse.current,
+                            toView(mouse.current, view),
                             hookPressed.current,
                             mousePressed.current,
-                            app.screen.width,
-                            app.screen.height,
+                            view.w,
+                            view.h,
                             getSpawnPoint,
                             'player'
                         );
@@ -677,7 +686,7 @@ export default function GameCanvas() {
                         setMatchHud(nextMatch);
                     }
                     syncVisuals(
-                        app,
+                        view,
                         worldContainer,
                         gameLayer,
                         decalLayer,
@@ -697,7 +706,7 @@ export default function GameCanvas() {
                 } else {
                     // Still sync visuals (positions etc) but DONT update React state
                     syncVisuals(
-                        app,
+                        view,
                         worldContainer,
                         gameLayer,
                         decalLayer,
@@ -717,13 +726,17 @@ export default function GameCanvas() {
             });
 
             // Draw static elements
-            redrawMap = () => look.redraw(gameState.current, app.screen.width, app.screen.height);
+            redrawMap = () => {
+                const view = viewNow();
+                look.redraw(gameState.current, view.w, view.h);
+            };
             redrawMap();
             // Map look follows the camera after the frame's simulation and rendering
             app.ticker.add(() => {
                 const now = Date.now();
-                look.update(gameState.current.camera, now, app.screen.width, app.screen.height);
-                adsLayer?.update(gameState.current, now, app.screen.width, app.screen.height);
+                const view = viewNow();
+                look.update(gameState.current.camera, now, view.w, view.h);
+                adsLayer?.update(gameState.current, now, view.w, view.h, view.zoom);
             });
 
             // Load assets async
