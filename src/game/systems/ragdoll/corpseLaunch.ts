@@ -1,6 +1,6 @@
 // How a fresh corpse starts moving, by kind of death, and how later blasts push corpses.
 // Values come from the approved mockup scenes (docs/plans/2026-11-02-death-ragdoll-mockup.html):
-// mockup velocity × S, mockup distances × MOCKUP_SCALE. Pure math on the corpse data.
+// mockup velocity × S, mockup distances × MOCKUP_SCALE. Pure math on the corpse data. Later blasts: corpsePush.ts.
 
 import { PHYSICS_TICK_RATE } from '../../../constants';
 import { Vector2 } from '../../../types';
@@ -16,7 +16,8 @@ const MOCKUP_GRAVITY = 0.42;
  * heights: corpse gravity is ~3.2× the mockup's in game units, so velocities scale by √3.2 more than
  * MOCKUP_SCALE / 2 and the throws play out ~1.8× faster than in the mockup.
  */
-const S = MOCKUP_SCALE / 2 * Math.sqrt(CORPSE_GRAVITY / (MOCKUP_GRAVITY * MOCKUP_SCALE / 4));
+export const MOCKUP_VELOCITY = MOCKUP_SCALE / 2 * Math.sqrt(CORPSE_GRAVITY / (MOCKUP_GRAVITY * MOCKUP_SCALE / 4));
+const S = MOCKUP_VELOCITY;
 /** Entity velocity is per 60 Hz frame (Matter's base step); corpse velocity is per tick. */
 const ENTITY_VEL_PER_TICK = 60 / PHYSICS_TICK_RATE;
 
@@ -40,12 +41,7 @@ const GIB_SPREAD = 0.05;
 /** Blast centre when the host sent none: this far in front of the hip (mockup: 40 px for a throw, 26 for a gib). */
 const DEFAULT_THROW_FROM = 40 * MOCKUP_SCALE;
 const DEFAULT_GIB_FROM = 26 * MOCKUP_SCALE;
-/** An explosion pushes corpse points within this radius × its size, fading to nothing at the edge. */
-const PUSH_RADIUS = 150;
-const PUSH_POWER = 13 * S;
-/** Upward share of a later blast's push, more than LIFT: a lying body on the floor hops instead of only sliding. */
-const PUSH_LIFT = 1;
-/** Closer than this to a blast centre a point has no direction: it is pushed straight up. */
+/** Closer than this to a blast centre a point has no direction. */
 const MIN_DIST = 0.001;
 
 /** The halves a railgun cut separates: these points, and the rest (hip and legs). */
@@ -59,7 +55,7 @@ const LOWER_BODY: CorpsePointId[] = ['hip', 'knF', 'knB'];
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 
 /** Add a velocity (units per tick) to a verlet point. */
-const kick = (p: CorpsePoint, vx: number, vy: number) => { p.px -= vx; p.py -= vy; };
+export const kick = (p: CorpsePoint, vx: number, vy: number) => { p.px -= vx; p.py -= vy; };
 
 /** -1 or 1: the horizontal way from `from` to the hip; without `from`, backwards. */
 const awayX = (c: Corpse, from: Vector2 | undefined): 1 | -1 => {
@@ -161,7 +157,7 @@ const LAUNCH = { fall, thrown, gib, cut } as const;
  * Slow the whole body down together to the step's speed cap, so the cap does not clip only the fastest
  * points (a rocket kill adds the victim's knockback) and the throw keeps its spin and shape.
  */
-const fitSpeedCap = (c: Corpse) => {
+export const fitSpeedCap = (c: Corpse): void => {
     const points = Object.values(c.points);
     const fastest = Math.max(...points.map(p => Math.hypot(p.x - p.px, p.y - p.py)));
     if (fastest <= MAX_SPEED) return;
@@ -169,29 +165,14 @@ const fitSpeedCap = (c: Corpse) => {
     for (const p of points) { p.px = p.x - (p.x - p.px) * k; p.py = p.y - (p.y - p.py) * k; }
 };
 
-/** Start a fresh corpse moving by its kind of death; `vel`: the victim's velocity (entity units); `blast`: a splash kill. */
+/**
+ * Start a fresh corpse moving by its kind of death; `vel`: the victim's velocity (entity units).
+ * `blast`: true for a splash kill, false for a shot or any other cause; undefined only from older hosts.
+ */
 export const launchCorpse = (c: Corpse, from: Vector2 | undefined, vel: Vector2, blast?: boolean): void => {
     tossGun(c);
     LAUNCH[c.kind](c, from, blast);
     const vx = vel.x * ENTITY_VEL_PER_TICK, vy = vel.y * ENTITY_VEL_PER_TICK;
     for (const p of Object.values(c.points)) kick(p, vx, vy);
     fitSpeedCap(c);
-};
-
-/** A later explosion at (x, y) pushes every corpse point within its reach; lying bodies are thrown again. */
-export const pushCorpses = (corpses: Corpse[], x: number, y: number, size = 1): void => {
-    const radius = PUSH_RADIUS * size;
-    for (const c of corpses) {
-        let touched = false;
-        for (const p of Object.values(c.points)) {
-            const dx = p.x - x, dy = p.y - y;
-            const d = Math.hypot(dx, dy);
-            if (d >= radius) continue;
-            const f = PUSH_POWER * size * (1 - d / radius);
-            touched = true;
-            if (d < MIN_DIST) { kick(p, 0, -f); continue; }
-            kick(p, dx / d * f, dy / d * f - f * PUSH_LIFT);
-        }
-        if (touched) fitSpeedCap(c);
-    }
 };

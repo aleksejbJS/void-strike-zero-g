@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Platform } from '../../../types';
 import type { DeathEvent } from '../events';
 import { Corpse, CorpsePointId, createCorpse } from './corpseBody';
-import { speedOf, stepCorpse } from './corpseStep';
+import { speedOf, stepCorpse, stepCorpseAmong } from './corpseStep';
+import { launchCorpse } from './corpseLaunch';
 
 const TOP = 500;
 const floor = (x = 0, w = 1000): Platform => ({ id: 'floor', x, y: TOP, w, h: 40, color: '#000' });
@@ -128,5 +129,37 @@ describe('stepCorpse', () => {
             stepCorpse(c, [floor(), wall]);
             for (const p of Object.values(c.points)) expect(p.x).toBeLessThanOrEqual(wall.x);
         }
+    });
+});
+
+describe('broad phase', () => {
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it('colliding with the nearby platforms only moves corpses exactly as colliding with all of them', () => {
+        // A field of 600 ledges and walls, most of them far from any one corpse
+        const field: Platform[] = [floor(-3000, 6000)];
+        for (let i = 0; i < 600; i++) {
+            const wall = i % 3 === 0;
+            field.push({ id: `p${i}`, x: -3000 + (i % 30) * 200, y: TOP - 100 - Math.floor(i / 30) * 90, w: wall ? 20 : 120, h: wall ? 160 : 20, color: '#000' });
+        }
+        let seed = 3;
+        vi.spyOn(Math, 'random').mockImplementation(() => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; });
+        const kinds = ['fall', 'thrown', 'gib', 'cut'] as const;
+        const pairs = Array.from({ length: 16 }, (_, i) => {
+            const c = createCorpse(death(-1500 + i * 190, TOP - 100 - (i % 5) * 300, { kind: kinds[i % 4], facing: i % 2 ? 1 : -1 }));
+            launchCorpse(c, { x: c.points.hip.x + 20, y: c.points.hip.y + 5 }, { x: (i % 7) - 3, y: -(i % 4) * 3 }, i % 2 === 0);
+            return [c, structuredClone(c)] as const;
+        });
+        let touched = 0;
+        for (let t = 0; t < 600; t++) {
+            for (const [near, all] of pairs) {
+                stepCorpse(near, field);
+                stepCorpseAmong(all, field);
+                expect(near.points).toEqual(all.points);
+                if (field.slice(1).some(r => Object.values(near.points).some(p => inside(p, r) || (p.y === r.y && p.x > r.x && p.x < r.x + r.w)))) touched++;
+            }
+        }
+        // The corpses really did meet the field's platforms, not only the floor
+        expect(touched).toBeGreaterThan(100);
     });
 });

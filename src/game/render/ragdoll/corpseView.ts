@@ -21,7 +21,8 @@ export interface CorpseView {
     pieces?: Graphics[];   // a torn body (gib, cut), in the order of piecesOf
     gun: Sprite;
     head?: HeadRoll;       // a torn-off head (gib): it turns on its own, not with the neck it left
-    legsLook?: FighterLook; // cut legs: redrawn every frame, bending at the knees with their points
+    legsLook?: FighterLook; // cut legs: redrawn when they move, bending at the knees with their points
+    drawnAt?: number[];     // the points (x, y, x, y...) the body or cut legs were last drawn at
 }
 
 /** How far a torn-off head has turned, and where its point was when the turn was last updated. */
@@ -33,6 +34,18 @@ type Textures = Record<string, Texture | undefined>;
 const GUN_ASPECT = 0.23;
 /** A torn-off head rolls like a ball of the head's size: one radian per this many world units moved sideways. */
 const HEAD_ROLL_RADIUS = HEAD_R * RIG_SCALE;
+
+/** A body whose every point is within this (world units) of where it was last drawn is not drawn again. */
+const STILL = 0.05;
+
+/** True when a point moved since the last draw (then the new positions are remembered as drawn). */
+const movedSinceDrawn = (v: CorpseView, c: Corpse): boolean => {
+    const points = Object.values(c.points);
+    const last = v.drawnAt;
+    if (last && points.every((p, i) => Math.abs(p.x - last[2 * i]) < STILL && Math.abs(p.y - last[2 * i + 1]) < STILL)) return false;
+    v.drawnAt = points.flatMap(p => [p.x, p.y]);
+    return true;
+};
 
 /** 1 while the corpse lies, then linear to 0 from fadeAt to removeAt. */
 const alphaOf = (c: Corpse) => {
@@ -73,16 +86,17 @@ const rollHead = (head: HeadRoll, c: Corpse) => {
     return head.turn;
 };
 
-/** Move the view to the corpse's points and set its fade. */
+/** Move the view to the corpse's points and set its fade; a body lying still is not redrawn. */
 export const updateCorpseView = (v: CorpseView, c: Corpse): void => {
     v.root.alpha = alphaOf(c);
-    if (v.fighter) drawBody(v.fighter, c);
+    const redraw = movedSinceDrawn(v, c);
+    if (v.fighter && redraw) drawBody(v.fighter, c);
     if (v.pieces) {
         const pieces = v.pieces;
         piecesOf(c).forEach((p, i) => {
             pieces[i].position.set(p.at.x, p.at.y);
             pieces[i].rotation = p.part === 'head' && v.head ? rollHead(v.head, c) : p.rotation;
-            if (p.part === 'legs' && v.legsLook) drawLegsHalf(pieces[i].clear(), v.legsLook, cutLegsOf(c));
+            if (p.part === 'legs' && v.legsLook && redraw) drawLegsHalf(pieces[i].clear(), v.legsLook, cutLegsOf(c));
         });
     }
     placeGun(v.gun, c);

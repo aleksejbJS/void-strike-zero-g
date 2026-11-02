@@ -302,6 +302,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         let hit = false;
         let hitFighter = false;
         let impact = proj.pos;
+        let target: Entity | null = null;
         const wall = state.platforms.find(plat => checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat));
         if (wall) {
             hit = true;
@@ -309,7 +310,6 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         } else {
             // Only the first player along this tick's path is hit (no piercing)
             const owner = state.players.find(o => o.id === proj.ownerId);
-            let target: Entity | null = null;
             let nearest = Infinity;
             for (const p of state.players) {
                 if (p.id === proj.ownerId || p.dead || (owner && isTeammate(owner, p))) continue;
@@ -331,7 +331,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             proj.active = false;
             const explosive = proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER;
             if (explosive) {
-                createExplosion(state, impact, proj.ownerId, 150, proj.type);
+                // A rocket that hit a full-health fighter finishes them with its blast: still a direct hit
+                createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id);
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }

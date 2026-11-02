@@ -9,7 +9,7 @@ import type { DeathKind } from './deathKind';
 import { nextId } from '../utils/id';
 import { createParticles } from './effectSpawn';
 import { addCorpse } from './ragdoll/corpses';
-import { pushCorpses } from './ragdoll/corpseLaunch';
+import { pushCorpses } from './ragdoll/corpsePush';
 import { explosionBurst } from './explosionFx';
 import { addMark, addMarkAt } from './marks';
 import { flameColors } from '../render/fighter/parts/flamePalette';
@@ -32,12 +32,12 @@ export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, b
 
 /**
  * The DEATH event for an entity: where it fell, how it died, how it moved and the colours of its corpse.
- * `blast`: an explosion's splash killed it (sent only when true).
+ * `blast`: an explosion's splash killed it; always sent, false for a shot and every other cause
+ * (only events from older hosts lack it).
  */
 export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false): DeathEvent => ({
     type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
-    kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type,
-    ...(blast ? { blast: true } : {}),
+    kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type, blast,
     parts: {
         head: e.headColor || e.color,
         torso: e.torsoColor || e.color,

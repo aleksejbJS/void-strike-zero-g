@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { GameMode, Platform } from '../../../types';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { GameMode, Platform, WeaponType } from '../../../types';
 import { createMockState } from '../../../test/mocks';
 import type { DeathEvent } from '../events';
 import { Corpse, CorpsePointId, createCorpse } from './corpseBody';
@@ -35,6 +35,13 @@ const launched = (kind: DeathEvent['kind'], from?: { dx: number; dy: number }) =
 // Random scatter: check each launch several times
 const REPEAT = 25;
 
+/** Replace Math.random with a fixed pseudo-random sequence (restored after each test). */
+const seedRandom = (seed: number) => {
+    let s = seed;
+    vi.spyOn(Math, 'random').mockImplementation(() => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; });
+};
+afterEach(() => { vi.restoreAllMocks(); });
+
 describe('launchCorpse', () => {
     it('fall ends lying down', () => {
         for (let i = 0; i < REPEAT; i++) {
@@ -66,6 +73,7 @@ describe('launchCorpse', () => {
     });
 
     it('a splash right beside the body throws it at least as hard as one farther off', () => {
+        seedRandom(7); // the scatter is random: a fixed sequence keeps the comparison from ever flaking
         const meanSpeed = (dx: number) => {
             let sum = 0;
             for (let i = 0; i < REPEAT; i++) {
@@ -150,6 +158,15 @@ describe('corpse list', () => {
         const c = addCorpse(state, e);
         expect(c.kind).toBe('fall');
         expect([c.fadeAt, c.removeAt]).toEqual([420, 540]);
+    });
+
+    it('a weapon that is not a weapon type is dropped (a hostile host must not break drawing)', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const bad = addCorpse(state, { ...death(), weapon: 42 } as unknown as DeathEvent);
+        expect(bad.weapon).toBeUndefined();
+        const odd = addCorpse(state, { ...death(), weapon: 'constructor' } as unknown as DeathEvent);
+        expect(odd.weapon).toBeUndefined();
+        expect(addCorpse(state, death({ weapon: WeaponType.SHOTGUN })).weapon).toBe(WeaponType.SHOTGUN);
     });
 
     it('corpse with nothing under it is removed on time', () => {

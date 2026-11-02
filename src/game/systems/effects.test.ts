@@ -6,6 +6,7 @@ import { applyEffectEvent } from './effects';
 import { applyDamage, createExplosion, fireWeapon } from './combat';
 import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
 import { speedOf } from './ragdoll/corpseStep';
+import { updateCorpses } from './ragdoll/corpses';
 
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
@@ -109,6 +110,7 @@ describe('applyEffectEvent', () => {
     it('an explosion pushes the corpses near it', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         applyEffectEvent(state, { type: 'DEATH', x: 10, y: 20, color: '#ff0000', height: 72, vel: { x: 0, y: 0 }, facing: 1 });
+        updateCorpses(state); // lying since an earlier tick: a corpse born this tick is not pushed
         const corpse = state.corpses[0];
         const before = speedOf(corpse);
         applyEffectEvent(state, { type: 'EFFECT', effect: 'explosion', x: corpse.points.hip.x + 30, y: corpse.points.hip.y });

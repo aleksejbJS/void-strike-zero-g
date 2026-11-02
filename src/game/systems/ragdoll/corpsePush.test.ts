@@ -3,7 +3,8 @@ import { Platform } from '../../../types';
 import type { DeathEvent } from '../events';
 import { Corpse, createCorpse } from './corpseBody';
 import { MAX_SPEED, speedOf, stepCorpse } from './corpseStep';
-import { launchCorpse, pushCorpses } from './corpseLaunch';
+import { launchCorpse } from './corpseLaunch';
+import { pushCorpses } from './corpsePush';
 
 const TOP = 500;
 const FLOOR: Platform = { id: 'floor', x: -2000, y: TOP, w: 4000, h: 40, color: '#000' };
@@ -58,5 +59,18 @@ describe('pushCorpses', () => {
         let highest = top;
         run(near, 60, [FLOOR], () => { highest = Math.min(highest, near.points.hip.y); });
         expect(top - highest).toBeGreaterThan(15);
+    });
+
+    it('a corpse born this tick is not pushed (a direct hit\'s own blast must not launch its gib twice)', () => {
+        const fresh = createCorpse(death({ kind: 'gib' }));
+        launchCorpse(fresh, { x: fresh.points.hip.x + 14, y: fresh.points.hip.y }, { x: 0, y: 0 });
+        const launched = JSON.stringify(fresh.points);
+        pushCorpses([fresh], fresh.points.hip.x + 14, fresh.points.hip.y);
+        expect(JSON.stringify(fresh.points)).toBe(launched);
+        // One tick later it is an ordinary corpse: blasts push it
+        stepCorpse(fresh, [FLOOR]);
+        const stepped = JSON.stringify(fresh.points);
+        pushCorpses([fresh], fresh.points.hip.x + 14, fresh.points.hip.y);
+        expect(JSON.stringify(fresh.points)).not.toBe(stepped);
     });
 });

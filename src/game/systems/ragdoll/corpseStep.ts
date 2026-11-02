@@ -140,8 +140,26 @@ const relax = (c: Corpse, link: CorpseLink, braced: ReadonlySet<CorpsePoint>): v
     b.x -= dx * k * 0.5; b.y -= dy * k * (1 - shareA);
 };
 
-/** One 120 Hz tick. */
-export const stepCorpse = (c: Corpse, platforms: Platform[]): void => {
+// Broad phase: no point gets farther than this beyond the corpse's box in a tick (a capped move plus
+// a tick of gravity, then creeping out of a wall and being pulled by its links, with room to spare)
+const REACH = MAX_SPEED + CORPSE_GRAVITY + 40;
+
+/** The platforms this corpse can touch this tick, in their original order (so `find` picks the same one). */
+const nearPlatforms = (points: CorpsePoint[], platforms: Platform[]): Platform[] => {
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    for (const p of points) {
+        left = Math.min(left, p.x); right = Math.max(right, p.x);
+        top = Math.min(top, p.y); bottom = Math.max(bottom, p.y);
+    }
+    return platforms.filter(r => r.x < right + REACH && r.x + r.w > left - REACH && r.y < bottom + REACH && r.y + r.h > top - REACH);
+};
+
+/** One 120 Hz tick, colliding only with the platforms near the corpse. */
+export const stepCorpse = (c: Corpse, platforms: Platform[]): void =>
+    stepCorpseAmong(c, nearPlatforms(Object.values(c.points), platforms));
+
+/** One 120 Hz tick against every platform in `platforms` (no broad phase: stepCorpse picks them). */
+export const stepCorpseAmong = (c: Corpse, platforms: Platform[]): void => {
     const points = Object.values(c.points);
     // The platform each point is stuck in since an earlier tick (it creeps out of that one)
     const stuck = points.map(p => platforms.find(r => nearestSide(p, r) !== null));

@@ -168,7 +168,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 
 // --- Explosions ---
 
-export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType) => {
+/** `directId`: the fighter the projectile itself hit; its blast is part of that direct hit, not a splash. */
+export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType, directId?: string) => {
     // Looks follow the blast radius; a grenade is drawn a bit smaller than a rocket (cosmetic only)
     const size = (radius / 150) * (weaponType === WeaponType.GRENADE_LAUNCHER ? 0.85 : 1);
     gameEvents.emit({ type: 'EFFECT', effect: 'explosion', x: pos.x, y: pos.y, size });
@@ -188,7 +189,7 @@ export const createExplosion = (state: GameState, pos: Vector2, ownerId: string,
         if (dist < radius) {
             const dmg = (wepData?.damage ?? 100) * (1 - dist / radius);
             const kbDir = { x: p.pos.x - pos.x, y: p.pos.y - pos.y };
-            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos });
+            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId });
         }
     });
 };
