@@ -4,7 +4,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { boot, drawTorso, hand, jointedLimb } from './fighterParts';
+import { boot, drawShoulderBadge, drawTorso, hand, jointedLimb } from './fighterParts';
 import { drawFlame, drawJetpack, flameMiddles } from './parts/jetpacks';
 import { FLAME_PALETTE } from './parts/flamePalette';
 import { drawHead, headKeyOf } from './parts/helmets';
@@ -95,7 +95,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     boot(b, pose.backLeg.end, 0x1b1f25);
     const armDark = shade(look.arm, 0.72);
     jointedLimb(b, pose.shoulderBack, pose.backArm.joint, pose.backArm.end, { widths: [4.6 * LIMB_W, 4.2 * LIMB_W], colors: [armDark, armDark] });
-    drawTorso(b, pose, look, f.facing);
+    drawTorso(b, pose, look);
     jointedLimb(b, pose.hip, pose.frontLeg.joint, pose.frontLeg.end, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [look.leg, shade(look.leg, 0.9)] });
     boot(b, pose.frontLeg.end, 0x252a32);
 
@@ -124,6 +124,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     else view.light.visible = false;
     hand(fr, pose.backArm.end);
     jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });
+    drawShoulderBadge(fr, pose, look, f.facing); // over the arm, under the hand
     hand(fr, pose.frontArm.end);
 };
 

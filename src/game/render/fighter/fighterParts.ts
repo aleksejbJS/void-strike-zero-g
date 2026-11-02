@@ -57,8 +57,8 @@ export const boot = (g: Graphics, ankle: Vector2, color: number) => {
 export const shoulderPad = (g: Graphics, at: (x: number, y: number) => Vector2, torso: number) =>
     plate(g, [at(0.5, -21), at(8.5, -21.3), at(9, -15.5), at(1, -15.5)], shade(torso, 0.9));
 
-/** The torso with its pattern, gear and front shoulder pad. `facing` -1 means the fighter is drawn mirrored. */
-export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook, facing = 1) => {
+/** The torso with its pattern, gear and (without a badge) the front shoulder pad. */
+export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook) => {
     const U = (x: number, y: number) => torsoPoint(pose, x, y); // torso points get the body width
     const map = (pts: Vector2[]) => pts.map(p => U(p.x, p.y));
     plate(g, map(TORSO_QUAD), look.torso);
@@ -72,7 +72,17 @@ export const drawTorso = (g: Graphics, pose: FighterPose, look: FighterLook, fac
     drawPattern(g, U, look, 'plate'); // the robot chest band lies over the strap
     plate(g, [U(-6.4, -1.8), U(6.4, -1.8), U(6.3, 1.6), U(-6.3, 1.6)], BELT, false);
     plate(g, [U(2, -1.2), U(4.6, -1.2), U(4.6, 1), U(2, 1)], HAZARD, false);
+    // A plain pad sits under the front arm; a pad with a badge goes over it (drawShoulderBadge) so the badge shows
+    if (look.build.badge === 'none') shoulderPad(g, (x, y) => upperPoint(pose, x, y), look.torso);
+};
+
+/**
+ * The front shoulder pad with its badge, drawn over the front arm like a pauldron (nothing when there is no badge).
+ * `facing` -1 means the fighter is drawn mirrored; the badge flips back so a number reads the right way round.
+ */
+export const drawShoulderBadge = (g: Graphics, pose: FighterPose, look: FighterLook, facing = 1) => {
+    if (look.build.badge === 'none') return;
     const pad = (x: number, y: number) => upperPoint(pose, x, y);
-    shoulderPad(g, pad, look.torso); // under the front arm
+    shoulderPad(g, pad, look.torso);
     drawBadge(g, pad, look, facing < 0);
 };
