@@ -32,7 +32,7 @@ const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.11', date: null, points: [
+        { version: '0.4.11', date: 'Nov 3, 2026', points: [
             'In Deathmatch, Gun Game and Hunger Games every bot now has its own look: a different skin with its own flame, pattern and shoulder badge',
         ] },
         { version: '0.4.10', date: 'Nov 2, 2026', points: [
@@ -144,7 +144,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.11', date: null, points: [
+        { version: '0.4.11', date: '03.11.2026', points: [
             'В Deathmatch, Gun Game и Hunger Games у каждого бота теперь свой облик: другой скин, своё пламя, узор и нашивка',
         ] },
         { version: '0.4.10', date: '02.11.2026', points: [
