@@ -2,9 +2,11 @@
 
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
-import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
+import { FighterPose, RIG_SCALE } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { FLAME_BASE, boot, drawFlame, drawJetpack, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
+import { boot, drawTorso, hand, jointedLimb } from './fighterParts';
+import { drawFlame, drawJetpack, flameMiddles } from './parts/jetpacks';
+import { FLAME_PALETTE } from './parts/flamePalette';
 import { drawHead, headKeyOf } from './parts/helmets';
 import { drawEars } from './parts/ears';
 import { drawTail } from './parts/tails';
@@ -16,7 +18,7 @@ import { createMuzzleLight, drawMuzzle, muzzlePoint } from './muzzleFlash';
 
 export interface FighterView {
     root: Container;
-    flameGlow: Sprite; // soft orange light behind the body, shown while the flame burns
+    flameGlow: Sprite; // soft light in the flame colour behind the body, shown while the flame burns
     body: Graphics;    // jetpack, legs, back arm, torso
     ears: Graphics;    // ears, horns and antennae behind the head, redrawn every frame
     head: Graphics;
@@ -43,7 +45,6 @@ export interface FighterFrame {
 }
 
 const FALLBACK_GUN = 0x1e293b;
-const FLAME_GLOW_TINT = 0xff9a3c;
 const FLAME_GLOW_ALPHA = 0.7;
 const FLAME_GLOW_RADIUS = { min: 16, max: 20 };
 const SQUASH_WIDEN = 0.18;  // a full squash is 18% wider and 16% lower, pivoting on the feet
@@ -54,7 +55,6 @@ export const createFighterView = (): FighterView => {
     const flameGlow = new Sprite(glowTexture()); flameGlow.label = 'fighterFlameGlow';
     flameGlow.anchor.set(0.5);
     flameGlow.blendMode = 'add';
-    flameGlow.tint = FLAME_GLOW_TINT;
     flameGlow.visible = false;
     const body = new Graphics(); body.label = 'fighterBody';
     const ears = new Graphics(); ears.label = 'fighterEars';
@@ -66,11 +66,12 @@ export const createFighterView = (): FighterView => {
     return { root, flameGlow, body, ears, head, weapon, light, front, headKey: '' };
 };
 
-/** Place and size the glow at the middle of the flame; it follows the flicker. */
-const placeFlameGlow = (glow: Sprite, pose: FighterPose, flicker: number) => {
-    const base = upperPoint(pose, FLAME_BASE.x, FLAME_BASE.y);
-    const len = flameLength(flicker);
-    glow.position.set(base.x - pose.lean * len * 0.5, base.y + len * 0.5);
+/** Place, size and tint the glow at the middle of the flames (their average with two nozzles); it follows the flicker. */
+const placeFlameGlow = (glow: Sprite, pose: FighterPose, look: FighterLook, flicker: number) => {
+    const middles = flameMiddles(pose, look.build.jetpack, flicker);
+    const avg = (pick: (p: { x: number; y: number }) => number) => middles.reduce((sum, p) => sum + pick(p), 0) / middles.length;
+    glow.position.set(avg(p => p.x), avg(p => p.y));
+    glow.tint = FLAME_PALETTE[look.build.flame].glow;
     glow.width = glow.height = 2 * (FLAME_GLOW_RADIUS.min + flicker * (FLAME_GLOW_RADIUS.max - FLAME_GLOW_RADIUS.min));
     glow.alpha = FLAME_GLOW_ALPHA;
 };
@@ -83,12 +84,12 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     view.root.scale.set(f.facing * RIG_SCALE * (1 + SQUASH_WIDEN * squash), RIG_SCALE * (1 - SQUASH_FLATTEN * squash));
 
     view.flameGlow.visible = f.flame;
-    if (f.flame) placeFlameGlow(view.flameGlow, pose, f.flicker);
+    if (f.flame) placeFlameGlow(view.flameGlow, pose, look, f.flicker);
 
     const b = view.body.clear();
-    if (f.flame) drawFlame(b, pose, f.flicker);
+    if (f.flame) drawFlame(b, pose, look, f.flicker);
     drawTail(b, pose, look, f.parts);
-    drawJetpack(b, pose, look, f.flame);
+    drawJetpack(b, pose, look, f.flame, f.parts);
     const legDark = shade(look.leg, 0.72);
     jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
     boot(b, pose.backLeg.end, 0x1b1f25);

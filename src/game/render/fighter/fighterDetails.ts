@@ -1,4 +1,4 @@
-// Volume details of the fighter: highlights, strap, pouch, visor sheen, specular, nozzle.
+// Volume details of the fighter: highlights, strap, pouch, visor sheen, specular.
 // Pure drawing on top of the plain shapes in fighterParts; nothing here moves a joint.
 
 import { Graphics } from 'pixi.js';
@@ -76,12 +76,6 @@ export const handGlint = (g: Graphics, p: Vector2) =>
 /** Light sole line across the bottom of a boot whose top-left corner is (x, y). */
 export const soleLine = (g: Graphics, x: number, y: number) =>
     g.rect(x + 0.5, y + BOOT.h - 1.2, BOOT.w - 1, 1).fill({ color: 0x9aa4b2, alpha: 0.5 });
-
-/** Orange nozzle dot under the jetpack: bright while the flame burns. */
-export const drawNozzle = (g: Graphics, pose: FighterPose, lit: boolean) => {
-    const p = upperPoint(pose, -8.75, -1.2);
-    g.circle(p.x, p.y, 1.6).fill({ color: 0xffb347, alpha: lit ? 0.9 : 0.25 });
-};
 
 /** Ellipse as a polygon (Graphics ellipses cannot be rotated). */
 export const ellipsePoints = (cx: number, cy: number, rx: number, ry: number, rot: number, steps = 16): Vector2[] =>

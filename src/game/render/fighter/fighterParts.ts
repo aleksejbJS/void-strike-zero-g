@@ -5,9 +5,9 @@ import { Vector2 } from '../../../types';
 import { FighterPose, upperPoint } from './fighterPose';
 import { FighterLook, shade } from './fighterLook';
 import { BOOT } from './fighterStyle';
-import { BELT, GLOVE, HAZARD, OUTLINE, OUTLINE_W, WHITE, dot, flat, outlinedPoly } from './fighterPaint';
+import { BELT, GLOVE, HAZARD, OUTLINE, OUTLINE_W, dot, flat, outlinedPoly } from './fighterPaint';
 import {
-    drawChestLight, drawNozzle, drawPouch, drawStrap, handGlint, limbHighlight, plateHighlight, soleLine, torsoPoint,
+    drawChestLight, drawPouch, drawStrap, handGlint, limbHighlight, plateHighlight, soleLine, torsoPoint,
 } from './fighterDetails';
 
 /** A limb segment: rounded bar with an outline and a light line along its upper side. */
@@ -49,26 +49,6 @@ export const boot = (g: Graphics, ankle: Vector2, color: number) => {
     g.roundRect(x, y, BOOT.w, BOOT.h, 2).stroke({ width: OUTLINE_W, color: OUTLINE });
     g.roundRect(x, y, BOOT.w, BOOT.h, 2).fill(color);
     soleLine(g, x, y);
-};
-
-export const FLAME_BASE = { x: -8.75, y: -1 };   // in the upper-body frame
-export const flameLength = (flicker: number) => 10 + flicker * 5;
-
-export const drawFlame = (g: Graphics, pose: FighterPose, flicker: number) => {
-    const base = upperPoint(pose, FLAME_BASE.x, FLAME_BASE.y);
-    const len = flameLength(flicker);
-    const tipX = base.x - pose.lean * len;
-    g.poly([base.x - 3, base.y, tipX, base.y + len, base.x + 3, base.y]).fill(0xff8a1e);
-    g.poly([base.x - 1.6, base.y, base.x - pose.lean * len * 0.6, base.y + len * 0.6, base.x + 1.6, base.y]).fill(0xffe27a);
-    g.poly([base.x - 0.8, base.y, base.x - pose.lean * len * 0.3, base.y + len * 0.3, base.x + 0.8, base.y]).fill(WHITE);
-};
-
-export const drawJetpack = (g: Graphics, pose: FighterPose, look: FighterLook, flame: boolean) => {
-    const U = (x: number, y: number) => upperPoint(pose, x, y);
-    plate(g, [U(-12.5, -17), U(-5, -18), U(-5, -3), U(-12.5, -3)], look.jet);
-    plate(g, [U(-11.5, -3), U(-6, -3), U(-6.5, -0.5), U(-11, -0.5)], GLOVE, false);
-    plate(g, [U(-12.5, -12), U(-5, -12.5), U(-5, -10), U(-12.5, -9.5)], HAZARD, false);
-    drawNozzle(g, pose, flame);
 };
 
 /** Pad on the front shoulder. `at` maps torso-frame points (feet-up rig units) to the drawing space. */
