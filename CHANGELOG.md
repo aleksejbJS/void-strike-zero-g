@@ -1,5 +1,11 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.10 (unreleased)
+
+### 🐛 Fixes
+- House posters lay out their texts with `textRow` (`render/scene/textRow.ts`): each text starts after the measured end of the previous one and the row shrinks to fit. The fixed x positions overlapped because Big Shoulders has no Cyrillic and the Fira fallback is wider ("ПОЧИНИМ ЗА ЧАС" ran over "ДОК 4 · КРУГЛОСУТОЧНО")
+- Character preview on phones: the 360 px canvas stood 74 px above the bottom of a 300 px panel, so its top (the helmet) was cut. The canvas is now 290 px (the tallest build plus a little air) and shrinks to the room above the platform; at ≥ 1080 px tall it is drawn exactly as before
+
 ## Version 0.4.9 (2026-11-02)
 
 ### 💥 Explosions

@@ -32,6 +32,10 @@ const PREVIEWS = shots('previews');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.10', date: null, points: [
+            'Fixed: on the "Jetpack repair" poster the small line ran over the big one',
+            'Fixed: on phones the top of the helmet was cut off in the character preview',
+        ] },
         { version: '0.4.9', date: 'Nov 2, 2026', groups: [
             { title: 'Explosions', comparisons: [{ caption: 'A rocket blast', ...EXPLOSION }], points: [
                 'Bigger, dirtier explosions: a lumpy fireball, hot debris flying out on smoke trails and a cloud of smoke that hangs for a moment; a grenade blast is a bit smaller than a rocket',
@@ -137,6 +141,10 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.10', date: null, points: [
+            'Исправлено: на постере «Джетпак починим за час» мелкая строка наезжала на крупную',
+            'Исправлено: на телефоне в превью персонажа обрезался верх шлема',
+        ] },
         { version: '0.4.9', date: '02.11.2026', groups: [
             { title: 'Взрывы', comparisons: [{ caption: 'Взрыв ракеты', ...EXPLOSION }], points: [
                 'Взрывы крупнее и «грязнее»: комковатый огненный шар, раскалённые осколки разлетаются с дымными шлейфами, облако дыма висит ещё мгновение; взрыв гранаты чуть меньше ракетного',
