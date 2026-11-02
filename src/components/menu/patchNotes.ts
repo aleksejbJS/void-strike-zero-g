@@ -27,9 +27,17 @@ export interface PatchNote {
 const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
+const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.2', date: null, groups: [
+            { title: 'Flags', comparisons: [{ caption: 'Capture the Flag base', ...FLAG }], points: [
+                'Flags are redrawn: a steel pole with a glowing crystal, cloth with folds that waves in the wind, and a heavy base with hazard tape',
+                'A carried flag streams behind a running fighter and hangs down when they stop',
+                'Fixed: in Capture the Flag the enemy flag on a carrier\'s back was yellow instead of its team colour',
+            ] },
+        ] },
         { version: '0.4.1', date: 'Nov 2, 2026', points: [
             'Fixed the black world at match start: starting a match quickly from the character screen could stop the world from drawing, leaving only the HUD until the page was reloaded',
         ] },
@@ -95,6 +103,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.2', date: null, groups: [
+            { title: 'Флаги', comparisons: [{ caption: 'База в «Захвате флага»', ...FLAG }], points: [
+                'Флаги нарисованы заново: стальное древко со светящимся кристаллом, ткань со складками, которая колышется на ветру, и тяжёлая база с жёлто-чёрной полосой',
+                'Флаг за спиной развевается позади бегущего бойца и обвисает, когда он останавливается',
+                'Исправлено: в «Захвате флага» вражеский флаг за спиной носителя был жёлтым, а не цвета своей команды',
+            ] },
+        ] },
         { version: '0.4.1', date: '02.11.2026', points: [
             'Исправлен чёрный мир в начале матча: быстрый старт матча с экрана персонажа мог остановить отрисовку мира — до перезагрузки страницы оставался виден только интерфейс',
         ] },

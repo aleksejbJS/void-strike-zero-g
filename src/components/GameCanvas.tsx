@@ -738,10 +738,7 @@ export default function GameCanvas() {
                 const hasSprite = container.getChildByLabel('sprite');
                 const baseTex = texture;
                 let tex: Texture | undefined = baseTex;
-                if (pickup.type === ItemType.FLAG) {
-                    const teamKey = pickup.team === Team.BLUE ? 'flag_blue' : pickup.team === Team.RED ? 'flag_red' : undefined;
-                    tex = (teamKey && (textures as any)[teamKey]) || textures[pickup.type] || baseTex;
-                } else if (pickup.type === ItemType.WEAPON && pickup.subtype) {
+                if (pickup.type === ItemType.WEAPON && pickup.subtype) {
                     const key = `weapon_${pickup.subtype.toLowerCase?.() ?? String(pickup.subtype).toLowerCase()}`;
                     tex = (textures as any)[key] || baseTex;
                 }
