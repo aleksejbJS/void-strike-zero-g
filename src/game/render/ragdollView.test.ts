@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { Graphics } from 'pixi.js';
-import { RagdollPart } from '../../types';
 import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
-import { drawRagdollShape } from './ragdollView';
+import { drawRagdollShape, RagdollPart } from './ragdollView';
 
 const TYPES: RagdollPart['type'][] = ['head', 'torso', 'arm-left', 'arm-right', 'leg-left', 'leg-right'];
 
-const partOf = (type: RagdollPart['type'], build?: FighterBuild): RagdollPart => ({
-    id: 'rag_1', type, pos: { x: 0, y: 0 }, vel: { x: 0, y: 0 }, rotation: 0, angularVel: 0,
-    color: '#3366aa', life: 5, isGrounded: false, build,
-});
+const partOf = (type: RagdollPart['type'], build?: FighterBuild): RagdollPart => ({ type, color: '#3366aa', build });
 
 /** The recorded drawing as text (fill textures and path ids left out), to compare two drawings. */
 const drawing = (part: RagdollPart) => {

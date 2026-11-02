@@ -1,8 +1,7 @@
 // Body parts flying apart after a death, drawn in the same style as the fighter.
 
 import { Graphics } from 'pixi.js';
-import { RagdollPart } from '../../types';
-import { DEFAULT_BUILD } from '../build/buildParts';
+import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
 import { RIG_SCALE } from './fighter/fighterPose';
 import { FighterLook, lookFromSetup, shade } from './fighter/fighterLook';
 import { boot, jointedLimb, plate, shoulderPad } from './fighter/fighterParts';
@@ -17,19 +16,19 @@ import { LIMB_W, TORSO_W } from './fighter/fighterStyle';
 // Fighter torso points are relative to the hip, which sits 9.5 units below the middle of the ragdoll torso.
 const HIP_BELOW_CENTER = 9.5;
 
+/** One body part to draw: which part, its colour and the build it was cut from. Task 5 replaces this view. */
+export interface RagdollPart {
+    type: 'head' | 'torso' | 'arm-left' | 'arm-right' | 'leg-left' | 'leg-right';
+    color: string;
+    build?: FighterBuild;
+}
+
 const toNumber = (color: string) => /^#[0-9a-f]{6}$/i.test(color) ? parseInt(color.slice(1), 16) : 0xffffff;
 
 /** The part's colour on every slot, with the build it was cut from (the default build when it has none). */
 const lookOf = (part: RagdollPart): FighterLook => {
     const c = part.color;
     return lookFromSetup({ head: c, torso: c, arms: c, legs: c, jetpack: c }, part.build ?? DEFAULT_BUILD);
-};
-
-/** Move, turn and fade a part each frame. */
-export const placeRagdollPart = (g: Graphics, part: RagdollPart) => {
-    g.position.set(part.pos.x, part.pos.y);
-    g.rotation = part.rotation;
-    g.alpha = Math.min(1, part.life / 2); // fade out in the last 2 seconds
 };
 
 /** Draw a part once, around its own center (rig units, scaled like a living fighter). */

@@ -12,7 +12,7 @@ beforeEach(() => { events = []; unsubscribe = gameEvents.on(e => events.push(e))
 afterEach(() => unsubscribe());
 
 describe('DEATH builds', () => {
-    it('a DEATH event with unknown part ids yields sanitized ragdoll builds', () => {
+    it('a DEATH event with unknown part ids yields a sanitized corpse build', () => {
         const hostile = { ...DEFAULT_BUILD, helmet: 'x', visor: 'laser', tail: 'x', pattern: 'camo' };
         const death = {
             type: 'DEATH', x: 0, y: 0, color: '#fff', height: 40,
@@ -22,10 +22,8 @@ describe('DEATH builds', () => {
 
         applyEffectEvent(display, death);
 
-        expect(display.ragdollParts).toHaveLength(6);
-        for (const part of display.ragdollParts) {
-            expect(part.build).toEqual({ ...DEFAULT_BUILD, pattern: 'camo' });
-        }
+        expect(display.corpses).toHaveLength(1);
+        expect(display.corpses[0].colors?.build).toEqual({ ...DEFAULT_BUILD, pattern: 'camo' });
     });
 
     it('an entity without a build dies with its skin preset', () => {

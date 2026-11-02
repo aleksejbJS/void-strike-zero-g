@@ -16,7 +16,7 @@ export const makeState = (): GameState => ({
   camera: { x: 0, y: 0, zoom: 1 },
   lastHTFScore: 0,
   infiltrationEndTime: undefined,
-  ragdollParts: [],
+  corpses: [],
   currentMap: MapId.DEFAULT,
   beams: [],
 });

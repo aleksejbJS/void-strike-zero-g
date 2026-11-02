@@ -10,7 +10,8 @@ import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './ga
 import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
-import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
+import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
+import { updateCorpses } from './ragdoll/corpses';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
@@ -34,7 +35,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, now);
-        updateRagdolls(state);
+        updateCorpses(state);
         followCamera(state, pickCameraTarget(state, localPlayerId));
         return;
     }
@@ -411,7 +412,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     updateParticles(state);
     updateFloatingTexts(state);
     updateDecals(state, now);
-    updateRagdolls(state);
+    updateCorpses(state);
 
     if (state.mode === GameMode.HUNGER_GAMES) updateHungerRound(state, now);
     updateMatch(state, now);

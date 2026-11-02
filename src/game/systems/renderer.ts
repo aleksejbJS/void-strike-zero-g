@@ -3,7 +3,6 @@ import { Container, Graphics, Sprite, Text, Texture, BlurFilter, Filter, GlProgr
 import { GameState, Platform, Entity, WeaponType, ItemType, Pickup, Team, MapId } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
 import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../render/playerVisual';
-import { drawRagdollShape, placeRagdollPart } from '../render/ragdollView';
 import { nextHungerZone } from './gamemodes';
 import { ParticleView } from '../render/effects/particleView';
 import { ProjectileView } from '../render/projectiles/projectileView';
@@ -483,28 +482,6 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
         uiLayer.addChild(cursor);
     }
     cursor.position.set(mouse.x, mouse.y); // uiLayer is not zoomed: window pixels
-
-    // Ragdoll Parts
-    if (!cache.ragdollParts) cache.ragdollParts = new Map();
-    const activeRagdollIds = new Set(state.ragdollParts.map(r => r.id));
-    for (const [id, gfx] of cache.ragdollParts.entries()) {
-        if (!activeRagdollIds.has(id)) {
-            gameLayer.removeChild(gfx);
-            gfx.destroy();
-            cache.ragdollParts.delete(id);
-        }
-    }
-
-    state.ragdollParts.forEach(part => {
-        let gfx = cache.ragdollParts.get(part.id);
-        if (!gfx) {
-            gfx = new Graphics();
-            drawRagdollShape(gfx, part);
-            gameLayer.addChild(gfx);
-            cache.ragdollParts.set(part.id, gfx);
-        }
-        placeRagdollPart(gfx, part);
-    });
 
     // HUD shows the player this browser controls
     const p = state.players.find(pl => pl.id === localPlayerId);

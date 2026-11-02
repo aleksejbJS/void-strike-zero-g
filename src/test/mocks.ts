@@ -15,7 +15,7 @@ export const createMockState = (mode: GameMode): GameState => ({
     floatingTexts: [],
     camera: { x: 0, y: 0, zoom: 1 },
     beams: [],
-    ragdollParts: [],
+    corpses: [],
     currentMap: 'default' as any,
 });
 

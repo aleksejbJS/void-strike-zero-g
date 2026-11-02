@@ -28,10 +28,10 @@ describe('preview director', () => {
         expect(d.state.projectiles.some(p => p.ownerId === actorEntityId('you'))).toBe(true);
     });
 
-    it('kills the red bot into a ragdoll with a +1 over you', () => {
+    it('kills the red bot into a corpse with a +1 over you', () => {
         const d = runUntil(2.0);
         expect(red(d).dead).toBe(true);
-        expect(d.state.ragdollParts.length).toBeGreaterThan(0);
+        expect(d.state.corpses.length).toBeGreaterThan(0);
         expect(d.state.floatingTexts.some(t => t.text === '+1')).toBe(true);
     });
 

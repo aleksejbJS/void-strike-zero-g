@@ -1,5 +1,6 @@
 
 import type { FighterBuild } from './game/build/buildParts';
+import type { Corpse } from './game/systems/ragdoll/corpseBody';
 
 export type Vector2 = { x: number; y: number };
 
@@ -180,20 +181,6 @@ export interface Camera {
   zoom: number;
 }
 
-export interface RagdollPart {
-  id: string;
-  type: 'head' | 'torso' | 'arm-left' | 'arm-right' | 'leg-left' | 'leg-right';
-  pos: Vector2;
-  vel: Vector2;
-  rotation: number;
-  angularVel: number;
-  color: string;
-  build?: FighterBuild; // The build of the dead fighter, so the part keeps its ears, patterns and badge; missing = default build
-  life: number;
-  isGrounded: boolean;
-  hungerOutTimer?: number;
-}
-
 export interface Beam {
   id: string;
   start: Vector2;
@@ -214,7 +201,7 @@ export interface GameState {
   platforms: Platform[];
   pickups: Pickup[];
   camera: Camera;
-  ragdollParts: RagdollPart[];
+  corpses: Corpse[]; // client-only cosmetics: dead fighters as jointed bodies
   lastHTFScore?: number;
   infiltrationEndTime?: number;
   currentMap: MapId;

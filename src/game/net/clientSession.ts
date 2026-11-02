@@ -9,7 +9,8 @@ import { readControls, updateAim, updateGrapple, applyPlayerMovement } from '../
 import { moveProjectile } from '../systems/physics';
 import { followCamera, pickCameraTarget } from '../systems/camera';
 import { jetpackTrail, projectileTrail } from '../systems/effects';
-import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from '../systems/particles';
+import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/particles';
+import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
@@ -125,7 +126,7 @@ export class ClientSession {
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, Date.now());
-        updateRagdolls(state);
+        updateCorpses(state);
         followCamera(state, pickCameraTarget(state, this.localId));
     }
 

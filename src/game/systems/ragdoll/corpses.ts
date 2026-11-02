@@ -1,0 +1,38 @@
+// The corpses lying in the world: adding one per death, stepping them, and the cap on how many.
+// Display side only: each client builds its own corpses from DEATH events, the server never does.
+
+import { GameState } from '../../../types';
+import type { DeathEvent } from '../events';
+import { Corpse, createCorpse } from './corpseBody';
+import { stepCorpse } from './corpseStep';
+import { launchCorpse } from './corpseLaunch';
+
+/** At most this many corpses lie before the oldest one starts fading. */
+export const MAX_CORPSES = 12;
+
+const STILL = { x: 0, y: 0 };
+
+/** Start the corpse's fade now (it keeps its usual fade length); one already fading is left alone. */
+const fadeNow = (c: Corpse) => {
+    if (c.fadeAt <= c.age) return;
+    const fade = c.removeAt - c.fadeAt;
+    c.fadeAt = c.age;
+    c.removeAt = Math.min(c.removeAt, c.age + fade);
+};
+
+/** A corpse for a DEATH event, launched by its kind (older hosts send no kind: fall; no vel: still). */
+export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
+    // Only corpses that are not fading yet count toward the cap
+    const lying = state.corpses.filter(c => c.fadeAt > c.age);
+    if (lying.length >= MAX_CORPSES) fadeNow(lying[0]);
+    const corpse = createCorpse({ ...e, kind: e.kind ?? 'fall' });
+    launchCorpse(corpse, e.from, e.vel ?? STILL);
+    state.corpses.push(corpse);
+    return corpse;
+};
+
+/** One physics tick for every corpse; corpses whose time is up are removed. */
+export const updateCorpses = (state: GameState): void => {
+    for (const c of state.corpses) stepCorpse(c, state.platforms);
+    state.corpses = state.corpses.filter(c => c.age < c.removeAt);
+};
