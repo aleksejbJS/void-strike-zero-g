@@ -4,6 +4,7 @@ import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../type
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
+import { ffaBotLooks } from '../build/botLooks';
 import { JoinRequest } from './protocol';
 
 export const isTeamMode = (mode: GameMode) =>
@@ -68,18 +69,23 @@ const baseEntity = (mode: GameMode, team: Team) => {
     };
 };
 
+/** Team bots wear their team colour; free-for-all bots each get their own look. */
 export const createBots = (mode: GameMode): Entity[] => {
     const count = mode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE : isTeamMode(mode) ? 6 : 3;
+    const ffaLooks = isTeamMode(mode) ? [] : ffaBotLooks(count);
     return Array.from({ length: count }, (_, i) => {
         let team = Team.NONE;
         if (mode === GameMode.INFILTRATION) team = i < 2 ? Team.BLUE : Team.RED;
         else if (isTeamMode(mode)) team = i % 2 === 0 ? Team.RED : Team.BLUE;
         const color = team === Team.RED ? '#ef4444' : '#3b82f6';
+        const look = ffaLooks[i] ?? {
+            color, headColor: color, torsoColor: color, armColor: color, legColor: '#475569',
+            jetpackColor: '#64748b', skinId: 'classic',
+        };
         return {
             ...baseEntity(mode, team),
             id: `bot_${i}`, type: 'bot' as const, name: `Bot ${i + 1}`,
-            color, headColor: color, torsoColor: color, armColor: color, legColor: '#475569',
-            jetpackColor: '#64748b', skinId: 'classic',
+            ...look,
         };
     });
 };

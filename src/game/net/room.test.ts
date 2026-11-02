@@ -28,7 +28,8 @@ describe('GameRoom', () => {
         room.join('s1', { ...join, build });
         const sent = room.snapshot(1).players.find(p => p.id === 's1');
         expect(sent?.build).toEqual(build);
-        expect(room.snapshot(1).players.filter(p => p.type === 'bot').every(b => b.build === undefined)).toBe(true);
+        // Deathmatch bots wear their own builds, and those travel in the snapshot too.
+        expect(room.snapshot(1).players.filter(p => p.type === 'bot').every(b => b.build !== undefined)).toBe(true);
     });
 
     it('rejects a second join from the same socket', () => {
