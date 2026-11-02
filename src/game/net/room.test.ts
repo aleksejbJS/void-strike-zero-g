@@ -2,8 +2,9 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { GameMode, MapId, Team } from '../../types';
 import { GameRoom } from './room';
 import { HUNGER_ROUND_SIZE } from '../systems/hungerRound';
+import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
 
-const join = { name: 'Alex', color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic' };
+const join = { name: 'Alex', color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic', build: DEFAULT_BUILD };
 const rooms: GameRoom[] = [];
 const makeRoom = (mode = GameMode.DEATHMATCH, maxPlayers = 8) => {
     const room = new GameRoom({ mode, map: MapId.DEFAULT, maxPlayers });
@@ -19,6 +20,15 @@ describe('GameRoom', () => {
         expect(room.join('s1', join)).toEqual({ ok: true });
         expect(room.state.players.length).toBe(before);
         expect(room.state.players.filter(p => p.type === 'player').map(p => p.id)).toEqual(['s1']);
+    });
+
+    it('a joined player carries the build into the snapshot', () => {
+        const room = makeRoom();
+        const build: FighterBuild = { ...DEFAULT_BUILD, ears: 'bunny', tail: 'mech', flame: 'purple', badge: 'emblem', emblem: 'bolt' };
+        room.join('s1', { ...join, build });
+        const sent = room.snapshot(1).players.find(p => p.id === 's1');
+        expect(sent?.build).toEqual(build);
+        expect(room.snapshot(1).players.filter(p => p.type === 'bot').every(b => b.build === undefined)).toBe(true);
     });
 
     it('rejects a second join from the same socket', () => {

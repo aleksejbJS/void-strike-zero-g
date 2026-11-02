@@ -188,6 +188,7 @@ export interface RagdollPart {
   rotation: number;
   angularVel: number;
   color: string;
+  build?: FighterBuild; // The build of the dead fighter, so the part keeps its ears, patterns and badge; missing = default build
   life: number;
   isGrounded: boolean;
   hungerOutTimer?: number;

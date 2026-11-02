@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { validateJoin, validateInput } from './validation';
 import { MAX_NAME_LENGTH } from './protocol';
+import { DEFAULT_BUILD, EARS, HELMETS, TAILS } from '../build/buildParts';
 
-const goodJoin = { name: 'Alex', color: '#ff0000', headColor: '#00ff00', torsoColor: '#0000ff', armColor: '#111111', legColor: '#222222', jetpackColor: '#333333', skinId: 'classic' };
+const goodBuild = { ...DEFAULT_BUILD, helmet: 'dome', ears: 'horns', tail: 'lizard', badge: 'number', badgeNumber: 42 } as const;
+const goodJoin = { name: 'Alex', color: '#ff0000', headColor: '#00ff00', torsoColor: '#0000ff', armColor: '#111111', legColor: '#222222', jetpackColor: '#333333', skinId: 'classic', build: goodBuild };
 const goodInput = { keys: { KeyA: true }, mouse: { x: 10, y: 20 }, mousePressed: false, hookPressed: true, sequence: 5, timestamp: 1 };
 
 describe('validateJoin', () => {
@@ -23,6 +25,37 @@ describe('validateJoin', () => {
         const res = validateJoin({ ...goodJoin, color: 'red; background:url(x)', skinId: '../../etc' })!;
         expect(res.color).toMatch(/^#[0-9a-f]{6}$/i);
         expect(res.skinId).toBe('classic');
+    });
+
+    it('keeps a valid build', () => {
+        expect(validateJoin(goodJoin)!.build).toEqual(goodBuild);
+    });
+
+    it('an old client without build gets its skin preset', () => {
+        const { build: _build, ...oldClient } = goodJoin;
+        const res = validateJoin({ ...oldClient, skinId: 'wolf' })!;
+        expect(res.build.tail).toBe('cat');
+        expect(res.build.ears).toBe('cat');
+    });
+
+    it('cleans a hostile build', () => {
+        const hostile = { ...goodBuild, helmet: 'laser', ears: 42, tail: { evil: true }, badgeNumber: 1e9, visorColor: 'red; background:url(x)', emblem: '../x' };
+        const { build } = validateJoin({ ...goodJoin, build: hostile })!;
+        expect(HELMETS).toContain(build.helmet);
+        expect(EARS).toContain(build.ears);
+        expect(TAILS).toContain(build.tail);
+        expect(build.helmet).toBe('round'); // unknown ids fall back to the skin preset
+        expect(build.badgeNumber).toBe(99);
+        expect(build.visorColor).toMatch(/^#[0-9a-f]{6}$/i);
+        expect(build.emblem).toBe('skull');
+        expect(build.tail).toBe('none');
+        expect(build.badge).toBe('number'); // the good fields stay
+    });
+
+    it('survives a build that is not an object', () => {
+        for (const build of [null, 7, 'dome', []]) {
+            expect(validateJoin({ ...goodJoin, build })!.build).toEqual(DEFAULT_BUILD);
+        }
     });
 });
 

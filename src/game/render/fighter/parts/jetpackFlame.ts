@@ -6,7 +6,7 @@ import { Vector2 } from '../../../../types';
 import { JetpackId } from '../../../build/buildParts';
 import { FighterPose, upperPoint } from '../fighterPose';
 import { FighterLook } from '../fighterLook';
-import { FLAME_PALETTE } from './flamePalette';
+import { flameColors } from './flamePalette';
 
 interface Nozzle {
     at: Vector2;     // where the flame starts
@@ -44,7 +44,7 @@ export const flameMiddles = (pose: FighterPose, jetpack: JetpackId, flicker: num
 
 /** Every flame of the build's jetpack: three tongues (outer, middle, core) in the build's flame colours. */
 export const drawFlame = (g: Graphics, pose: FighterPose, look: FighterLook, flicker: number) => {
-    const c = FLAME_PALETTE[look.build.flame];
+    const c = flameColors(look.build.flame);
     for (const n of NOZZLES[look.build.jetpack]) {
         const base = upperPoint(pose, n.at.x, n.at.y);
         const len = flameLength(flickerOf(n, flicker)) * n.length;
@@ -59,7 +59,7 @@ export const drawFlame = (g: Graphics, pose: FighterPose, look: FighterLook, fli
 
 /** Nozzle dots under the jetpack: bright in the flame colour while it burns, dim otherwise. */
 export const drawNozzles = (g: Graphics, pose: FighterPose, look: FighterLook, lit: boolean) => {
-    const color = FLAME_PALETTE[look.build.flame].nozzle;
+    const color = flameColors(look.build.flame).nozzle;
     for (const n of NOZZLES[look.build.jetpack]) {
         const p = upperPoint(pose, n.at.x, n.at.y - NOZZLE_DOT.lift);
         g.circle(p.x, p.y, NOZZLE_DOT.r * Math.min(1, n.width)).fill({ color, alpha: lit ? NOZZLE_DOT.lit : NOZZLE_DOT.unlit });

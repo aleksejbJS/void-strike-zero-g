@@ -4,6 +4,7 @@ import { createMockState, createMockPlayer } from '../../test/mocks';
 import { gameEvents, GameEvent } from './events';
 import { applyEffectEvent } from './effects';
 import { applyDamage, createExplosion, fireWeapon } from './combat';
+import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
 
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
@@ -27,6 +28,19 @@ describe('simulation announces effects instead of drawing them', () => {
         expect(state.particles).toHaveLength(0);
         expect(state.floatingTexts).toHaveLength(0);
         expect(state.ragdollParts).toHaveLength(0);
+    });
+
+    it('DEATH carries the build to every ragdoll part', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const build: FighterBuild = { ...DEFAULT_BUILD, helmet: 'dome', ears: 'ram', pattern: 'camo', badge: 'number', badgeNumber: 13 };
+        const p = Object.assign(createMockPlayer('p1', Team.NONE), { build });
+        state.players.push(p);
+        applyDamage(state, p, '', 500, { x: 1, y: 0 });
+        const death = events.find(e => e.type === 'DEATH')!;
+        expect(death.type === 'DEATH' && death.parts?.build).toEqual(build);
+        const display = createMockState(GameMode.DEATHMATCH);
+        applyEffectEvent(display, death);
+        expect(display.ragdollParts.map(part => part.build)).toEqual(Array(6).fill(build));
     });
 
     it('explosions and shots announce their effects', () => {

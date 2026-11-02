@@ -6,7 +6,7 @@ import { FighterPose, RIG_SCALE } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
 import { boot, drawShoulderBadge, drawTorso, hand, jointedLimb } from './fighterParts';
 import { drawFlame, drawJetpack, flameMiddles } from './parts/jetpacks';
-import { FLAME_PALETTE } from './parts/flamePalette';
+import { flameColors } from './parts/flamePalette';
 import { drawHead, headKeyOf } from './parts/helmets';
 import { drawEars } from './parts/ears';
 import { drawTail } from './parts/tails';
@@ -71,7 +71,7 @@ const placeFlameGlow = (glow: Sprite, pose: FighterPose, look: FighterLook, flic
     const middles = flameMiddles(pose, look.build.jetpack, flicker);
     const avg = (pick: (p: { x: number; y: number }) => number) => middles.reduce((sum, p) => sum + pick(p), 0) / middles.length;
     glow.position.set(avg(p => p.x), avg(p => p.y));
-    glow.tint = FLAME_PALETTE[look.build.flame].glow;
+    glow.tint = flameColors(look.build.flame).glow;
     glow.width = glow.height = 2 * (FLAME_GLOW_RADIUS.min + flicker * (FLAME_GLOW_RADIUS.max - FLAME_GLOW_RADIUS.min));
     glow.alpha = FLAME_GLOW_ALPHA;
 };

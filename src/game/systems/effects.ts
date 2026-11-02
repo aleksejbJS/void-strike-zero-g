@@ -8,7 +8,7 @@ import { gameEvents, GameEvent, EffectKind } from './events';
 import { nextId } from '../utils/id';
 import { createParticles, createRagdoll } from './effectSpawn';
 import { addMark, addMarkAt } from './marks';
-import { FLAME_PALETTE } from '../render/fighter/parts/flamePalette';
+import { flameColors } from '../render/fighter/parts/flamePalette';
 
 // --- Emitters (called by the simulation) ---
 
@@ -26,6 +26,7 @@ export const emitDeath = (e: Entity) =>
             torso: e.torsoColor || e.color,
             arm: e.armColor || e.color,
             leg: e.legColor || '#475569',
+            build: e.build,
         },
     });
 
@@ -124,7 +125,7 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
 /** Jetpack flame behind a flying entity. `thrustX` tilts it opposite to sideways thrust. */
 export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense = false) => {
     if (Math.random() >= 0.5) return;
-    const color = FLAME_PALETTE[p.build?.flame ?? 'fire'].particle;
+    const color = flameColors(p.build?.flame ?? 'fire').particle;
     createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, color, 'fire');
 };
 

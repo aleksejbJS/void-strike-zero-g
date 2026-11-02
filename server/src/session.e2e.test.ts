@@ -9,10 +9,11 @@ import { ClientSession, TickControls } from '../../src/game/net/clientSession';
 import { createRoomState } from '../../src/game/net/roomSetup';
 import { MatterPhysicsEngine } from '../../src/game/physics/MatterEngine';
 import { GameMode, GameState, MapId } from '../../src/types';
+import { DEFAULT_BUILD } from '../../src/game/build/buildParts';
 import { startGameServer } from './gameServer';
 import { io as connect } from 'socket.io-client';
 
-const join = (name: string) => ({ name, color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic' });
+const join = (name: string) => ({ name, color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic', build: DEFAULT_BUILD });
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 interface TestClient { session: ClientSession; state: GameState; joined: Promise<void> }

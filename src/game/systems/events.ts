@@ -1,5 +1,7 @@
 // Game Event Bus — decouples physics from UI (sound, kill feed, etc.)
 
+import type { FighterBuild } from '../build/buildParts';
+
 export type EffectKind = 'blood' | 'spark' | 'explosion' | 'shell' | 'respawn';
 
 export type GameEvent =
@@ -11,8 +13,8 @@ export type GameEvent =
     | { type: 'DAMAGE'; x: number; y: number; amount: number }
     | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors };
 
-/** Colors of the body parts that fly apart on death. */
-export interface RagdollColors { head: string; torso: string; arm: string; leg: string }
+/** Colors of the body parts that fly apart on death, and the build whose parts they keep (none: the default build). */
+export interface RagdollColors { head: string; torso: string; arm: string; leg: string; build?: FighterBuild }
 
 type Listener = (event: GameEvent) => void;
 
