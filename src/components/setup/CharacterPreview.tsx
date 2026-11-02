@@ -8,7 +8,7 @@ import { destroyApp } from '../../game/render/pixiApp';
 import { buildCharacter, CharacterArt, CharacterLook } from './characterArt';
 
 const CANVAS_W = 420;
-const CANVAS_H = 360;
+const CANVAS_H = 290; // the tallest build (ears, antenna, dome) plus a little air; no empty band above
 const SCALE = 3.1;
 
 const prefersReducedMotion = () =>
@@ -70,7 +70,8 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
     return (
         <div role="img" aria-label={label} className="relative h-[300px] shrink-0 overflow-hidden rounded bg-bay-panel lg:h-[clamp(320px,50vh,520px)]">
             <span className="absolute left-5 top-4 text-sm text-bay-dust">{badge}</span>
-            <div ref={host} aria-hidden="true" className="absolute bottom-[74px] left-1/2 -translate-x-1/2" />
+            {/* The canvas sits on the platform and shrinks to the room above it, so a short panel (phones) never cuts the helmet */}
+            <div ref={host} aria-hidden="true" className="absolute bottom-[74px] left-1/2 top-2 flex -translate-x-1/2 items-end [&>canvas]:h-auto [&>canvas]:max-h-full [&>canvas]:w-auto" />
             <div aria-hidden="true" className="absolute inset-x-0 bottom-10 h-[34px] border-t-4 border-bay-edge bg-bay-steel" />
             <div aria-hidden="true" className="hazard-stripes-sm absolute inset-x-0 bottom-7 h-3" />
         </div>
