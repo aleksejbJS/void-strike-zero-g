@@ -1,14 +1,18 @@
-// A fighter on screen: Pixi layers (body, head, weapon, front arm) redrawn from a pose each frame.
+// A fighter on screen: Pixi layers (flame glow, body, head, weapon, front arm) redrawn from a pose each frame.
 
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
-import { FighterPose, RIG_SCALE } from './fighterPose';
+import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { FighterLook, shade } from './fighterLook';
-import { boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, hand, limb } from './fighterParts';
+import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, limb } from './fighterParts';
+import { drawPad } from './fighterDetails';
+import { GLOVE } from './fighterPaint';
 import { LIMB_W } from './fighterStyle';
+import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
 
 export interface FighterView {
     root: Container;
+    flameGlow: Sprite; // soft orange light behind the body, shown while the flame burns
     body: Graphics;    // jetpack, legs, back arm, torso
     head: Graphics;
     weapon: Sprite;
@@ -28,29 +32,51 @@ export interface FighterFrame {
     muzzleFlash: number; // 0..1
 }
 
+const FALLBACK_GUN = 0x1e293b;
+const FLAME_GLOW_TINT = 0xff9a3c;
+const FLAME_GLOW_ALPHA = 0.7;
+const FLAME_GLOW_RADIUS = { min: 16, max: 20 };
+const BACK_KNEE_PAD = shade(GLOVE, 0.8);
+
 export const createFighterView = (): FighterView => {
     const root = new Container();
+    const flameGlow = new Sprite(glowTexture()); flameGlow.label = 'fighterFlameGlow';
+    flameGlow.anchor.set(0.5);
+    flameGlow.blendMode = 'add';
+    flameGlow.tint = FLAME_GLOW_TINT;
+    flameGlow.visible = false;
     const body = new Graphics(); body.label = 'fighterBody';
     const head = new Graphics(); head.label = 'fighterHead';
     const weapon = new Sprite(); weapon.label = 'fighterWeapon';
     const front = new Graphics(); front.label = 'fighterFront';
-    root.addChild(body, head, weapon, front);
-    return { root, body, head, weapon, front, headKey: '' };
+    root.addChild(flameGlow, body, head, weapon, front);
+    return { root, flameGlow, body, head, weapon, front, headKey: '' };
 };
 
-const FALLBACK_GUN = 0x1e293b;
+/** Place and size the glow at the middle of the flame; it follows the flicker. */
+const placeFlameGlow = (glow: Sprite, pose: FighterPose, flicker: number) => {
+    const base = upperPoint(pose, FLAME_BASE.x, FLAME_BASE.y);
+    const len = flameLength(flicker);
+    glow.position.set(base.x - pose.lean * len * 0.5, base.y + len * 0.5);
+    glow.width = glow.height = 2 * (FLAME_GLOW_RADIUS.min + flicker * (FLAME_GLOW_RADIUS.max - FLAME_GLOW_RADIUS.min));
+    glow.alpha = FLAME_GLOW_ALPHA;
+};
 
 export const drawFighter = (view: FighterView, f: FighterFrame) => {
     const { pose, look, grip } = f;
     view.root.scale.set(f.facing * RIG_SCALE, RIG_SCALE);
 
+    view.flameGlow.visible = f.flame;
+    if (f.flame) placeFlameGlow(view.flameGlow, pose, f.flicker);
+
     const b = view.body.clear();
     if (f.flame) drawFlame(b, pose, f.flicker);
     drawTail(b, pose, look, f.tailSwing);
-    drawJetpack(b, pose, look);
+    drawJetpack(b, pose, look, f.flame);
     const legDark = shade(look.leg, 0.72);
     limb(b, pose.hip, pose.backLeg.joint, 6.2 * LIMB_W, legDark);
     limb(b, pose.backLeg.joint, pose.backLeg.end, 5.4 * LIMB_W, legDark);
+    drawPad(b, pose.backLeg.joint, 2.4, BACK_KNEE_PAD);
     boot(b, pose.backLeg.end, 0x1b1f25);
     const armDark = shade(look.arm, 0.72);
     limb(b, pose.shoulderBack, pose.backArm.joint, 4.6 * LIMB_W, armDark);
@@ -58,6 +84,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     drawTorso(b, pose, look);
     limb(b, pose.hip, pose.frontLeg.joint, 6.4 * LIMB_W, look.leg);
     limb(b, pose.frontLeg.joint, pose.frontLeg.end, 5.6 * LIMB_W, shade(look.leg, 0.9));
+    drawPad(b, pose.frontLeg.joint, 2.6);
     boot(b, pose.frontLeg.end, 0x252a32);
 
     const headKey = `${look.style}:${look.head}:${look.accent}`;
@@ -88,6 +115,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     hand(fr, pose.backArm.end);
     limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8 * LIMB_W, look.arm);
     limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4 * LIMB_W, shade(look.arm, 0.92));
+    drawPad(fr, pose.frontArm.joint, 2);
     hand(fr, pose.frontArm.end);
 };
 

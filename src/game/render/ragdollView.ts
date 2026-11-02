@@ -4,8 +4,10 @@ import { Graphics } from 'pixi.js';
 import { RagdollPart } from '../../types';
 import { RIG_SCALE } from './fighter/fighterPose';
 import { shade } from './fighter/fighterLook';
-import { boot, dot, helmetRidge, limb, plate, shoulderPad } from './fighter/fighterParts';
-import { HEAD_K, HEAD_R, LIMB_W, TORSO_W } from './fighter/fighterStyle';
+import { boot, helmetRidge, limb, plate, shoulderPad } from './fighter/fighterParts';
+import { drawPad, drawSpecular, drawVisor } from './fighter/fighterDetails';
+import { dot } from './fighter/fighterPaint';
+import { HEAD_R, LIMB_W, TORSO_W } from './fighter/fighterStyle';
 
 // Fighter torso points are relative to the hip, which sits 9.5 units below the middle of the ragdoll torso.
 const HIP_BELOW_CENTER = 9.5;
@@ -23,13 +25,13 @@ export const placeRagdollPart = (g: Graphics, part: RagdollPart) => {
 export const drawRagdollShape = (g: Graphics, part: RagdollPart) => {
     g.scale.set(RIG_SCALE);
     const color = toNumber(part.color);
-    const k = HEAD_K;
     const T = (x: number, y: number) => ({ x: x * TORSO_W, y });
     switch (part.type) {
         case 'head':
             dot(g, { x: 0, y: 0 }, HEAD_R, color);
+            drawSpecular(g, HEAD_R);
             helmetRidge(g);
-            g.roundRect(1 * k, -3 * k, 7.4 * k, 5.4 * k, 2.4 * k).fill(0x0e1116);
+            drawVisor(g, HEAD_R);
             break;
         case 'torso':
             plate(g, [T(-6.2, 10), T(6.2, 10), T(7.6, -10), T(-6.6, -10)], color);
@@ -40,12 +42,14 @@ export const drawRagdollShape = (g: Graphics, part: RagdollPart) => {
         case 'arm-right':
             limb(g, { x: 0, y: -10 }, { x: 0, y: 0 }, 4.8 * LIMB_W, color);
             limb(g, { x: 0, y: 0 }, { x: 3, y: 9 }, 4.4 * LIMB_W, shade(color, 0.92));
+            drawPad(g, { x: 0, y: 0 }, 2);
             dot(g, { x: 3, y: 9 }, 2.3, 0x2b3038);
             break;
         case 'leg-left':
         case 'leg-right':
             limb(g, { x: 0, y: -14 }, { x: 0, y: 0 }, 6.4 * LIMB_W, color);
             limb(g, { x: 0, y: 0 }, { x: 0, y: 12 }, 5.6 * LIMB_W, shade(color, 0.9));
+            drawPad(g, { x: 0, y: 0 }, 2.6);
             boot(g, { x: 0, y: 12 }, 0x252a32);
             break;
     }
