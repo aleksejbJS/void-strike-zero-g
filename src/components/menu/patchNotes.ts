@@ -31,7 +31,7 @@ const FLAG = shots('flag');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.3', date: null, points: [
+        { version: '0.4.3', date: 'Nov 2, 2026', points: [
             'Build your fighter from parts: helmet, visor, ears, tail, jetpack, flame, torso pattern and shoulder badge; the old skins are now ready-made builds to start from, and your saved look stays',
             'New parts open one per level: every match you finish gives XP, a win gives more, and the end screen shows which part opened',
             'New parts include wolf and bunny ears, horns, lizard and mechanical tails and a glass dome; wings and rocket jetpacks; blue, toxic, purple and white flames; a camo pattern and number badges',
@@ -110,7 +110,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.3', date: null, points: [
+        { version: '0.4.3', date: '02.11.2026', points: [
             'Соберите бойца из деталей: шлем, визор, уши, хвост, джетпак, пламя, узор на торсе и знак на плече; старые скины стали готовыми сборками, а ваш сохранённый облик остался',
             'Новые детали открываются по одной за уровень: за каждый доигранный матч даётся опыт, за победу — больше, а на экране итогов видно, какая деталь открылась',
             'Среди новых деталей — волчьи и заячьи уши, рожки, хвост ящера и механический хвост, стеклянный купол; джетпаки «Крылышки» и «Ракета»; синее, ядовитое, фиолетовое и белое пламя; камуфляж и знак с номером',

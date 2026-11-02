@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.3 (unreleased)
+## Version 0.4.3 (2026-11-02)
 
 ### 🧩 Fighter Builder
 - The fighter is built from parts (spec: `docs/plans/2026-11-02-fighter-builder-spec.md`); any part combines with any other:
