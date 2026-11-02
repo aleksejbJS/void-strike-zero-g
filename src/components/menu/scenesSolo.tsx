@@ -13,13 +13,18 @@ export const DeathmatchScene: React.FC<{ t: Translate }> = ({ t }) => (
         <Figure x={300} y={100} body={COLORS.blue} flame animation="hb-fly-b 4.4s ease-in-out infinite" />
         <Figure x={520} y={266} body={COLORS.green} />
         <Pop x={150} y={150} text="+1" duration="2.4s" />
-        <Badge pos={{ right: 12, top: 12 }}>
-            {fill(t('pv.killLine'), [<b className="text-bay-hazard">{t('pv.you')}</b>, <b className="text-[#FF8F78]">Bot 2</b>])}
-        </Badge>
+        <DeathmatchOverlay t={t} />
     </>
 );
 
-const LADDER_KEYS = ['weapon.machineGun', 'weapon.shotgun', 'weapon.grenadeLauncher', 'weapon.rocketLauncher', 'weapon.plasmaGun', 'weapon.railgun'] as const;
+/** Texts over the Deathmatch preview, shared by the schematic and the live scene. */
+export const DeathmatchOverlay: React.FC<{ t: Translate }> = ({ t }) => (
+    <Badge pos={{ right: 12, top: 12 }}>
+        {fill(t('pv.killLine'), [<b className="text-bay-hazard">{t('pv.you')}</b>, <b className="text-[#FF8F78]">Bot 2</b>])}
+    </Badge>
+);
+
+export const LADDER_KEYS = ['weapon.machineGun', 'weapon.shotgun', 'weapon.grenadeLauncher', 'weapon.rocketLauncher', 'weapon.plasmaGun', 'weapon.railgun'] as const;
 
 const prefersReducedMotion = () =>
     typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

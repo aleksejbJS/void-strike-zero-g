@@ -4,8 +4,10 @@ import React from 'react';
 import { Badge, BaseFlag, COLORS, Figure, Pop, Tracer } from './previewParts';
 import type { Translate } from './types';
 
-const TeamScore: React.FC<{ left: [string, number, string]; right: [number, string, string] }> = ({ left, right }) => (
-    <Badge pos={{ left: '50%', top: 12, transform: 'translateX(-50%)' }}>
+const TOP_CENTER: React.CSSProperties = { left: '50%', top: 12, transform: 'translateX(-50%)' };
+
+export const TeamScore: React.FC<{ left: [string, number, string]; right: [number, string, string]; pos?: React.CSSProperties }> = ({ left, right, pos = TOP_CENTER }) => (
+    <Badge pos={pos}>
         <span className="font-display text-xl font-extrabold">
             <span style={{ color: left[2] }}>{left[0]} {left[1]}</span>
             <span className="mx-2 text-bay-dust">:</span>
