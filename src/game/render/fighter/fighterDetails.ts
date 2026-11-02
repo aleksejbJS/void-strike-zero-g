@@ -1,11 +1,11 @@
-// Volume details of the fighter: highlights, strap, pouch, pads, visor sheen, specular, nozzle.
+// Volume details of the fighter: highlights, strap, pouch, visor sheen, specular, nozzle.
 // Pure drawing on top of the plain shapes in fighterParts; nothing here moves a joint.
 
 import { Graphics } from 'pixi.js';
 import { Vector2 } from '../../../types';
 import { FighterPose, upperPoint } from './fighterPose';
 import { BOOT, TORSO_W } from './fighterStyle';
-import { BELT, GLOVE, POUCH, VISOR, VISOR_GLINT, WHITE, dot, flat, outlinedPoly } from './fighterPaint';
+import { BELT, POUCH, VISOR, VISOR_GLINT, WHITE, flat, outlinedPoly } from './fighterPaint';
 
 const DESIGN_HEAD_R = 7;   // the visor and specular numbers below were drawn for a head of this radius
 const LIMB_LIGHT = { alpha: 0.22, width: 0.3, inset: 0.15, side: 0.28 };
@@ -68,9 +68,6 @@ export const drawPouch = (g: Graphics, pose: FighterPose) => {
     const U = (x: number, y: number) => torsoPoint(pose, x, y);
     outlinedPoly(g, [U(-3.5, -9), U(1, -9), U(1, -4.5), U(-3.5, -4.5)], POUCH);
 };
-
-/** Knee or elbow pad. */
-export const drawPad = (g: Graphics, p: Vector2, r: number, color = GLOVE) => dot(g, p, r, color);
 
 /** Small light dot on a glove. */
 export const handGlint = (g: Graphics, p: Vector2) =>

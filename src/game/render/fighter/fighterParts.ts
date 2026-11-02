@@ -18,6 +18,22 @@ export const limb = (g: Graphics, a: Vector2, b: Vector2, width: number, color: 
     limbHighlight(g, a, b, width);
 };
 
+/** Upper and lower segment of an arm or leg: [upper, lower]. */
+export interface LimbLook { widths: [number, number]; colors: [number, number] }
+
+/**
+ * A bent arm or leg drawn as one piece: both outlines, then both fills, then the highlights.
+ * Drawing the segments one by one would lay the lower outline across the upper fill at the joint.
+ */
+export const jointedLimb = (g: Graphics, root: Vector2, joint: Vector2, end: Vector2, look: LimbLook) => {
+    const segments: [Vector2, Vector2][] = [[root, joint], [joint, end]];
+    segments.forEach(([a, b], i) =>
+        g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: look.widths[i] + OUTLINE_W, color: OUTLINE, cap: 'round' }));
+    segments.forEach(([a, b], i) =>
+        g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: look.widths[i], color: look.colors[i], cap: 'round' }));
+    segments.forEach(([a, b], i) => limbHighlight(g, a, b, look.widths[i]));
+};
+
 /** A filled outlined polygon with a light line along its top edge (`lit` false for belts and straps). */
 export const plate = (g: Graphics, points: Vector2[], color: number, lit = true) => {
     outlinedPoly(g, points, color);

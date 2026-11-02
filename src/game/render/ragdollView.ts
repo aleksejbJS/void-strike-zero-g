@@ -4,8 +4,8 @@ import { Graphics } from 'pixi.js';
 import { RagdollPart } from '../../types';
 import { RIG_SCALE } from './fighter/fighterPose';
 import { shade } from './fighter/fighterLook';
-import { boot, helmetRidge, limb, plate, shoulderPad } from './fighter/fighterParts';
-import { drawPad, drawSpecular, drawVisor } from './fighter/fighterDetails';
+import { boot, helmetRidge, jointedLimb, plate, shoulderPad } from './fighter/fighterParts';
+import { drawSpecular, drawVisor } from './fighter/fighterDetails';
 import { dot } from './fighter/fighterPaint';
 import { HEAD_R, LIMB_W, TORSO_W } from './fighter/fighterStyle';
 
@@ -40,16 +40,12 @@ export const drawRagdollShape = (g: Graphics, part: RagdollPart) => {
             break;
         case 'arm-left':
         case 'arm-right':
-            limb(g, { x: 0, y: -10 }, { x: 0, y: 0 }, 4.8 * LIMB_W, color);
-            limb(g, { x: 0, y: 0 }, { x: 3, y: 9 }, 4.4 * LIMB_W, shade(color, 0.92));
-            drawPad(g, { x: 0, y: 0 }, 2);
+            jointedLimb(g, { x: 0, y: -10 }, { x: 0, y: 0 }, { x: 3, y: 9 }, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [color, shade(color, 0.92)] });
             dot(g, { x: 3, y: 9 }, 2.3, 0x2b3038);
             break;
         case 'leg-left':
         case 'leg-right':
-            limb(g, { x: 0, y: -14 }, { x: 0, y: 0 }, 6.4 * LIMB_W, color);
-            limb(g, { x: 0, y: 0 }, { x: 0, y: 12 }, 5.6 * LIMB_W, shade(color, 0.9));
-            drawPad(g, { x: 0, y: 0 }, 2.6);
+            jointedLimb(g, { x: 0, y: -14 }, { x: 0, y: 0 }, { x: 0, y: 12 }, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [color, shade(color, 0.9)] });
             boot(g, { x: 0, y: 12 }, 0x252a32);
             break;
     }

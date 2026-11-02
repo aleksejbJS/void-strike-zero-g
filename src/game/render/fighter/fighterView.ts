@@ -4,9 +4,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, limb } from './fighterParts';
-import { drawPad } from './fighterDetails';
-import { GLOVE } from './fighterPaint';
+import { FLAME_BASE, boot, drawFlame, drawHead, drawJetpack, drawTail, drawTorso, flameLength, hand, jointedLimb } from './fighterParts';
 import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
@@ -43,7 +41,6 @@ const FALLBACK_GUN = 0x1e293b;
 const FLAME_GLOW_TINT = 0xff9a3c;
 const FLAME_GLOW_ALPHA = 0.7;
 const FLAME_GLOW_RADIUS = { min: 16, max: 20 };
-const BACK_KNEE_PAD = shade(GLOVE, 0.8);
 const SQUASH_WIDEN = 0.18;  // a full squash is 18% wider and 16% lower, pivoting on the feet
 const SQUASH_FLATTEN = 0.16;
 
@@ -87,17 +84,12 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     drawTail(b, pose, look, f.tailSwing);
     drawJetpack(b, pose, look, f.flame);
     const legDark = shade(look.leg, 0.72);
-    limb(b, pose.hip, pose.backLeg.joint, 6.2 * LIMB_W, legDark);
-    limb(b, pose.backLeg.joint, pose.backLeg.end, 5.4 * LIMB_W, legDark);
-    drawPad(b, pose.backLeg.joint, 2.4, BACK_KNEE_PAD);
+    jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
     boot(b, pose.backLeg.end, 0x1b1f25);
     const armDark = shade(look.arm, 0.72);
-    limb(b, pose.shoulderBack, pose.backArm.joint, 4.6 * LIMB_W, armDark);
-    limb(b, pose.backArm.joint, pose.backArm.end, 4.2 * LIMB_W, armDark);
+    jointedLimb(b, pose.shoulderBack, pose.backArm.joint, pose.backArm.end, { widths: [4.6 * LIMB_W, 4.2 * LIMB_W], colors: [armDark, armDark] });
     drawTorso(b, pose, look);
-    limb(b, pose.hip, pose.frontLeg.joint, 6.4 * LIMB_W, look.leg);
-    limb(b, pose.frontLeg.joint, pose.frontLeg.end, 5.6 * LIMB_W, shade(look.leg, 0.9));
-    drawPad(b, pose.frontLeg.joint, 2.6);
+    jointedLimb(b, pose.hip, pose.frontLeg.joint, pose.frontLeg.end, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [look.leg, shade(look.leg, 0.9)] });
     boot(b, pose.frontLeg.end, 0x252a32);
 
     const headKey = `${look.style}:${look.head}:${look.accent}`;
@@ -121,9 +113,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     else view.light.visible = false;
     hand(fr, pose.backArm.end);
-    limb(fr, pose.shoulderFront, pose.frontArm.joint, 4.8 * LIMB_W, look.arm);
-    limb(fr, pose.frontArm.joint, pose.frontArm.end, 4.4 * LIMB_W, shade(look.arm, 0.92));
-    drawPad(fr, pose.frontArm.joint, 2);
+    jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });
     hand(fr, pose.frontArm.end);
 };
 
