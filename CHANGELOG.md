@@ -20,6 +20,19 @@
 - Bodies break into parts in their own colors (any custom color, not only the four team colors)
 - Before/after pictures in the menu's "What's new" panel
 
+### 🎇 Shots, Hits and Fighter Polish
+- Every weapon's shot has its own look: machine-gun and shotgun tracers with a glow, a pulsing plasma orb with a fading ghost trail, a drawn rocket with a flickering exhaust and smoke behind it, a spinning grenade, a three-layer rail beam
+- Impacts: a flash and falling sparks where a shot meets a wall, plus a scorch mark on walls and floors that fades in about 4 seconds
+- Explosions: flash, fireball, shockwave ring, embers and rising smoke
+- Fighters that get hit: blood droplets and a white flash
+- Muzzle flash: a star with a warm light on the fighter's hands, fading over about 120 ms (it used to be visible for about 20 ms)
+- Fighter volume: highlights on limbs, torso and head, a visor reflection, a strap, a pouch, knee and elbow pads, a glow behind the jetpack flame
+- Fighter silhouette: bigger head, chest and boots, thicker limbs, a shoulder pad and a helmet ridge; the drawing stays within 6 px of the hitbox in every pose, checked by a test
+- Fighter liveliness: landing squash with dust, dust under the feet while running, head bob; ragdoll parts match the new proportions
+- The simulation now announces `blood` for a fighter hit and `spark` for a wall hit (it announced `spark` for both); same event channel, no gameplay or protocol change, so online players see the same effects
+- Particles have their own motion per kind (streak sparks, droplets, soft smoke, shells, dust) and a budget of 500 live ones: above it, smoke and dust are not spawned
+- Before/after pair "Shots and explosions" in "What's new"; the fighter picture is retaken
+
 ### 🎨 New Interface
 - **Main menu** redesigned: pick a mode and watch a short animated preview of how it plays, with its three key rules (Infiltration shows the whole raid: grab the intel, bring it to extraction)
 - **What's new** panel with the full release history
