@@ -48,6 +48,9 @@ describe('online session end-to-end', () => {
         http = createServer();
         io = new Server(http);
         room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 4 });
+        // The room starts with bots that hunt the players: one that shot Alice while she ran made this test
+        // fail about once in 150 runs (spawns are random too), and it is about movement, not combat
+        room.state.players.filter(p => p.type === 'bot').forEach(bot => room.leave(bot.id));
         stop = startGameServer(io, room);
         await new Promise<void>(r => http.listen(0, r));
         url = `http://localhost:${(http.address() as AddressInfo).port}`;
