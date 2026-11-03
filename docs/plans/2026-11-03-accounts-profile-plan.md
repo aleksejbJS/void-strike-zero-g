@@ -66,9 +66,9 @@
   - `export type AchievementCategory = 'combat' | 'movement' | 'modes' | 'collecting' | 'special'`; `Achievement.category: AchievementCategory`. Mapping: combat = first_blood, killer, slayer, executioner, chainsaw_master, sniper, demolition_expert; modes = flag_capturer, king_of_hill, survivor; movement = acrobatic, hook_master, speed_demon; collecting = collector, hoarder; special = perfectionist, veteran.
   - `AchievementManager.exportProgress(): AchievementProgress` (deep copy)
   - `AchievementManager.replaceProgress(p: AchievementProgress): void` (saves, no unlock toasts)
-  - `AchievementManager.onProgressChange(listener: () => void): () => void` (fires after every save caused by `updateProgress`; not by `replaceProgress`)
+  - (Pushes are triggered by the existing `onAchievementUnlocked` listener plus match end — no per-tick progress listener is added.)
 
-- [ ] **Step 1: Failing tests**: every achievement has one of the 5 categories and the mapping above; `replaceProgress({ killer: { progress: 10, unlocked: true } })` then `getAchievements()` shows killer unlocked and no unlock listener fired; `updateProgress('first_blood')` fires `onProgressChange` once; `exportProgress()` mutation does not affect the manager.
+- [ ] **Step 1: Failing tests**: every achievement has one of the 5 categories and the mapping above; `replaceProgress({ killer: { progress: 10, unlocked: true } })` then `getAchievements()` shows killer unlocked and no unlock listener fired; `exportProgress()` mutation does not affect the manager.
 - [ ] **Step 2:** `npx vitest run src/game/systems/achievements.test.ts` → new tests FAIL.
 - [ ] **Step 3: Implement** the split and the three methods.
 - [ ] **Step 4:** `npx vitest run` (whole suite — imports of `ACHIEVEMENTS` elsewhere must still resolve) → PASS.
@@ -108,14 +108,14 @@
 
 **Interfaces:**
 - Produces:
-  - SQL: `profiles(id uuid primary key references auth.users on delete cascade, nickname text not null, nickname_key text not null unique, created_at timestamptz default now())` with RLS select-all, insert/update `auth.uid() = id`; `player_progress(user_id uuid primary key references auth.users on delete cascade, data jsonb not null, updated_at timestamptz default now())` RLS all-ops `auth.uid() = user_id`; `create function nickname_taken(nick_key text) returns boolean security definer` (select exists on `profiles.nickname_key`), granted to `anon, authenticated`.
+  - SQL: `profiles(id uuid primary key references auth.users on delete cascade, nickname text not null, nickname_key text not null unique, created_at timestamptz default now())` with RLS select-all, no client insert/update (rows are created only by a `security definer` trigger `after insert on auth.users` from `new.raw_user_meta_data->>'nickname'` / `'nickname_key'`, so an auth user can never exist without its profile row); `player_progress(user_id uuid primary key references auth.users on delete cascade, data jsonb not null, updated_at timestamptz default now())` RLS all-ops `auth.uid() = user_id`; `create function nickname_taken(nick_key text) returns boolean security definer` (select exists on `profiles.nickname_key`), granted to `anon, authenticated`.
   - `export function getSupabase(): SupabaseClient | null` (null when env missing; one shared client).
   - `export type AccountErrorCode = 'taken' | 'bad_credentials' | 'invalid_nickname' | 'network'`; `export class AccountError extends Error { code: AccountErrorCode }`
   - `export interface AccountUser { id: string; nickname: string }`
   - `export interface AccountApi { signUp(nick: string, password: string): Promise<AccountUser>; logIn(nick: string, password: string): Promise<AccountUser>; logOut(): Promise<void>; currentUser(): Promise<AccountUser | null>; isNicknameTaken(nick: string): Promise<boolean>; fetchSnapshot(userId: string): Promise<PlayerSnapshot | null>; saveSnapshot(userId: string, s: PlayerSnapshot): Promise<void> }`
-  - `export function createAccountApi(client: SupabaseClient): AccountApi` — uses `nicknameToEmail`; `signUp` validates first (`invalid_nickname`), maps Supabase "already registered" → `taken`, "invalid login credentials" → `bad_credentials`, fetch/timeout failures → `network`; inserts the `profiles` row after sign-up; `fetchSnapshot` runs `sanitizeSnapshot` on `data`.
+  - `export function createAccountApi(client: SupabaseClient): AccountApi` — uses `nicknameToEmail`; `signUp` validates first (`invalid_nickname`), passes `options.data = { nickname, nickname_key }` (normalized nickname + `nicknameKey`) for the trigger, maps Supabase "already registered" → `taken`, "invalid login credentials" → `bad_credentials`, fetch/timeout failures → `network`; a sign-up that returns no session (email confirmation left on) is an `AccountError('network')` with a console.error naming the Supabase setting; `logIn` reads the display nickname from `profiles`; `isNicknameTaken` returns `false` without a request for names that fail `validateNickname`; `fetchSnapshot` runs `sanitizeSnapshot` on `data`.
 
-- [ ] **Step 1: Failing tests** with a hand-rolled fake client (only the methods used): sign-up of `'Alex'` calls `auth.signUp` with `nicknameToEmail('Alex')` and inserts `{ nickname: 'Alex', nickname_key: 'alex' }`; "User already registered" → `AccountError('taken')`; `'Аlex'` → `invalid_nickname` without calling the client; a thrown `TypeError('Failed to fetch')` → `network`; `fetchSnapshot` with garbage `data` → sanitized; `currentUser` with no session → `null`.
+- [ ] **Step 1: Failing tests** with a hand-rolled fake client (only the methods used): sign-up of `' Alex '` calls `auth.signUp` with `nicknameToEmail('Alex')` and `options.data` `{ nickname: 'Alex', nickname_key: 'alex' }`; `isNicknameTaken('Alex!')` → false with no rpc call; "User already registered" → `AccountError('taken')`; `'Аlex'` → `invalid_nickname` without calling the client; a thrown `TypeError('Failed to fetch')` → `network`; `fetchSnapshot` with garbage `data` → sanitized; `currentUser` with no session → `null`.
 - [ ] **Step 2:** `npx vitest run src/account/accountApi.test.ts` → FAIL.
 - [ ] **Step 3: Implement**; `npm i @supabase/supabase-js@^2`.
 - [ ] **Step 4:** keep-alive workflow: `schedule: cron '0 6 */3 * *'` + `workflow_dispatch`, one `curl` POST to `${{ vars.SUPABASE_URL }}/rest/v1/rpc/nickname_taken` with the anon key headers and `{"nick_key":"keepalive"}`, `--fail`.
@@ -161,14 +161,14 @@
 - Test: `src/account/AccountProvider.test.tsx`
 
 **Interfaces:**
-- Consumes: Tasks 3–6, `achievementManager.onProgressChange`, `actions.reloadPlayer`.
+- Consumes: Tasks 3–6, `achievementManager.onAchievementUnlocked` (existing), `actions.reloadPlayer`.
 - Produces:
   - `export type AccountStatus = 'disabled' | 'loading' | 'guest' | 'loggedIn'`
   - `export interface AccountState { status: AccountStatus; nickname: string | null; signUp(nick: string, pw: string): Promise<void>; logIn(nick: string, pw: string): Promise<void>; logOut(): Promise<void>; isNicknameTaken(nick: string): Promise<boolean> }` (methods reject with `AccountError`)
   - `export function useAccount(): AccountState`
   - `export function notifyProgressChanged(): void` (module-level event the provider listens to)
   - `AccountProvider` accepts optional `api?: AccountApi | null` prop for tests (default `getSupabase()` → `createAccountApi`, null → `'disabled'`).
-- Flows: start → `currentUser()` (error → `'guest'`, warn) → if user: `takePending` merge into local, `pull`, `reloadPlayer`. `signUp`/`logIn` → merge pending + local → `pull` → write `playerName` = account nickname → `reloadPlayer`. `logOut` → `flush`; if false → `savePending(userId, readLocalSnapshot())`; then `api.logOut()`, `clearLocalSnapshot()`, `reloadPlayer` → `'guest'`. While logged in: `onProgressChange`, `notifyProgressChanged` → `requestPush`.
+- Flows: start → `currentUser()` (error → `'guest'`, warn) → if user: `takePending` merge into local, `pull`, `reloadPlayer`. `signUp`/`logIn` → merge pending + local → `pull` → write `playerName` = account nickname → `reloadPlayer`. `logOut` → `flush`; if false → `savePending(userId, readLocalSnapshot())`; then `api.logOut()`, `clearLocalSnapshot()`, `reloadPlayer` → `'guest'`. While logged in: `onAchievementUnlocked`, `notifyProgressChanged` → `requestPush`.
 
 - [ ] **Step 1: Failing tests** (fake api): no api → `'disabled'`; `currentUser` rejects → `'guest'`; `logIn` success → status `'loggedIn'`, nickname `'Alex'`, `playerName` written `'Alex'`; logout with failing flush → pending saved for that id, local cleared; logging in again as the same id → pending merged and pushed; unlock after login → one `saveSnapshot` after debounce.
 - [ ] **Step 2–4:** FAIL → implement → PASS.
@@ -184,7 +184,7 @@
 **Interfaces:**
 - Consumes: `useAccount` (Task 7), `validateNickname`, `GUEST_DEFAULT_NAME` (Task 1).
 - Produces: `useTakenCheck(): (name: string) => Promise<boolean>` — false for `'Anonymous'`/empty, for `status` ≠ `'guest'`, and on timeout (3000 ms) or error (warn).
-- UI per mockup A: guest → `🔒 Protect nickname with a password · Log in`; modal tabs New account / Log in, nickname prefilled, password field, the "cannot be recovered" warning on New account, inline errors for each `AccountErrorCode` and `NicknameError`; logged in → plate `<nick> 🔒 account` + `Profile →` (calls a new `onOpenProfile` prop); status `'disabled'` → nothing new rendered.
+- UI per mockup A: guest → `🔒 Protect nickname with a password · Log in`; modal tabs New account / Log in, nickname prefilled, password field, the "cannot be recovered" warning on New account, inline errors for each `AccountErrorCode` and `NicknameError`; logged in → plate `<nick> 🔒 account` + `Profile →` (calls a new optional `onOpenProfile?: () => void` prop on `CharacterSetup`; link hidden when absent — App wires it in Task 9); `AccountModal` exported as `AccountModal: React.FC<{ initialTab: 'signup' | 'login'; initialNickname: string; onClose: () => void }>` for reuse by Task 9; status `'disabled'` → nothing new rendered.
 
 - [ ] **Step 1: Failing tests**: guest sees both links; clicking Log in opens the modal on the Log in tab; `taken` error shows the taken message; logged-in renders the plate and no input; guest with name `Alex` and `isNicknameTaken` → true: Start does not call `onContinue` and the modal opens on Log in with `Alex`; `isNicknameTaken` never resolving → Start continues after 3000 ms (fake timers); `'disabled'` renders the old screen unchanged.
 - [ ] **Step 2–4:** FAIL → implement → PASS; `CharacterSetup.tsx` stays ≤ 200 lines.
