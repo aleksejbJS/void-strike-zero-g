@@ -39,6 +39,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Tap a weapon above the right stick to switch to it; the hook button sits next to the stick',
                 'The menu and the character screen fit on a phone held sideways, no more scrolling through a long page',
                 'On Android a match goes full screen, so the browser bar no longer takes space; a button on the top bar switches it off and on',
+                'Fixed: on phones the Start match button could hide under the browser bar',
             ] },
         ] },
         { version: '0.4.12', date: 'Nov 3, 2026', groups: [
@@ -167,6 +168,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Оружие меняется касанием по значку над правым стиком; кнопка крюка рядом со стиком',
                 'Меню и экран персонажа помещаются на повёрнутом телефоне целиком, без прокрутки длинной страницы',
                 'На Android матч открывается на весь экран, строка браузера больше не мешает; кнопка в верхней полосе выключает и включает этот режим',
+                'Исправлено: на телефоне кнопка «Начать матч» могла прятаться под строкой браузера',
             ] },
         ] },
         { version: '0.4.12', date: '03.11.2026', groups: [

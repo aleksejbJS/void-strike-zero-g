@@ -49,7 +49,7 @@ const MainMenu: React.FC<{ onCustomize: () => void }> = ({ onCustomize }) => {
     };
 
     return (
-        <div className="h-screen overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
+        <div className="h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
             <div className="relative mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-9 pt-8 sm:px-[72px] sm:pt-12 phone:h-full phone:gap-2 phone:px-4 phone:pb-2 phone:pt-2">
                 {/* A phone held sideways (phone: = up to 500 px tall): one screen, three columns, no page scroll */}
                 <div aria-hidden="true" className="hazard-stripes absolute -left-10 top-[150px] h-[22px] w-[700px] max-w-[110vw] -rotate-2 sm:top-[148px] phone:hidden" />

@@ -1,5 +1,13 @@
 /* Hazard Bay UI: shared stripes and the menu's mode-preview animations */
 
+/* Full-window screens (menu, setup). 100vh on a phone is the height with the browser bar hidden,
+   so the bottom of the screen (Start, Play) sat under the bar and could not be scrolled to;
+   100dvh is the height you can see. Browsers without dvh keep 100vh. */
+.h-viewport {
+    height: 100vh;
+    height: 100dvh;
+}
+
 .hazard-stripes {
     background: repeating-linear-gradient(-45deg, #FFC21A 0 16px, #1A1D21 16px 32px);
 }

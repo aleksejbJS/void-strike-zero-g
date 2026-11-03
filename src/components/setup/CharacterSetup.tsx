@@ -55,7 +55,7 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
     const arrowClass = `flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate phone:h-9 phone:w-9 ${focusRing}`;
 
     return (
-        <div className="h-screen overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
+        <div className="h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
             {/* From lg up, and on a phone held sideways, the page fits the window: only the part tiles scroll, Start stays in view */}
             <div className="mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-10 pt-8 sm:px-[72px] sm:pt-11 lg:h-full short:gap-5 short:pb-6 short:pt-5 phone:h-full phone:gap-2 phone:px-3 phone:pb-2 phone:pt-2">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between phone:flex-row phone:items-center">
