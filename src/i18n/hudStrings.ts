@@ -6,6 +6,7 @@ export interface HudKeys {
     'hud.scoreboard': string;
     'hud.you': string;
     'hud.health': string;
+    'hud.bleeding': string;
     'hud.armor': string;
     'hud.fuel': string;
     'hud.youDied': string;
@@ -69,6 +70,7 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.scoreboard': 'Scoreboard',
         'hud.you': '(you)',
         'hud.health': 'Health',
+        'hud.bleeding': 'Bleeding',
         'hud.armor': 'Armor',
         'hud.fuel': 'Jetpack fuel',
         'hud.youDied': 'You died',
@@ -129,6 +131,7 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.scoreboard': 'Счёт',
         'hud.you': '(вы)',
         'hud.health': 'Здоровье',
+        'hud.bleeding': 'Кровотечение',
         'hud.armor': 'Броня',
         'hud.fuel': 'Топливо джетпака',
         'hud.youDied': 'Вы погибли',

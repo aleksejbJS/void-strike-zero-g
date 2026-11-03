@@ -490,7 +490,7 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     // HUD shows the player this browser controls
     const p = state.players.find(pl => pl.id === localPlayerId);
     if (p) {
-        if (setStats) setStats({ hp: Math.round(p.health), arm: p.armor, fuel: p.jetpackFuel, maxFuel: p.maxFuel, ammo: p.weapon.ammo, dead: p.dead, respawn: p.respawnTimer - Date.now() });
+        if (setStats) setStats({ hp: Math.round(p.health), arm: p.armor, fuel: p.jetpackFuel, maxFuel: p.maxFuel, ammo: p.weapon.ammo, dead: p.dead, respawn: p.respawnTimer - Date.now(), bleeding: !!p.wound });
         if (setPlayerInventory) setPlayerInventory([...p.inventory]);
         if (setActiveWeaponType) setActiveWeaponType(p.weapon.type);
         if (setScores) setScores({ red: state.scores[Team.RED], blue: state.scores[Team.BLUE] });

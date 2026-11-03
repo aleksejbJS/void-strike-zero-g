@@ -55,6 +55,15 @@ describe('GameHud', () => {
         expect(screen.getByText('994')).toBeInTheDocument();
     });
 
+    it('shows the bleeding drop only while bleeding', () => {
+        const { rerender } = render(<GameHud {...base()} />);
+        expect(screen.queryByRole('img', { name: 'Bleeding' })).not.toBeInTheDocument();
+        rerender(<GameHud {...base({ stats: { ...base().stats, bleeding: false } })} />);
+        expect(screen.queryByRole('img', { name: 'Bleeding' })).not.toBeInTheDocument();
+        rerender(<GameHud {...base({ stats: { ...base().stats, bleeding: true } })} />);
+        expect(screen.getByRole('img', { name: 'Bleeding' })).toBeInTheDocument();
+    });
+
     it('marks only the local player on the scoreboard', () => {
         render(<GameHud {...base()} />);
         expect(screen.getByText('Alex (you)')).toBeInTheDocument();
