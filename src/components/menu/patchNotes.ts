@@ -33,7 +33,7 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.21', date: 'Nov 3, 2026', groups: [
+        { version: '0.4.22', date: 'Nov 3, 2026', groups: [
             { title: 'Accounts & profile', points: [
                 'Protect your nickname with a password: nobody else can take it, and your achievements, fighter level and fighter look follow you to any device. You can also log in on the character screen',
                 'A new Profile screen shows your level and every achievement with its progress',
@@ -197,7 +197,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.21', date: '03.11.2026', groups: [
+        { version: '0.4.22', date: '03.11.2026', groups: [
             { title: 'Аккаунты и профиль', points: [
                 'Защитите ник паролем: никто другой его не займёт, а достижения, уровень бойца и его внешний вид перейдут с вами на любое устройство. Войти в аккаунт можно и на экране бойца',
                 'Новый экран «Профиль» показывает ваш уровень и все достижения с прогрессом',

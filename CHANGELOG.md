@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.21 (2026-11-03)
+## Version 0.4.22 (2026-11-03)
 
 ### 🔒 Accounts and Profile
 - Nickname + password accounts on Supabase (spec: `docs/plans/2026-11-03-accounts-profile-spec.md`, owner setup: `docs/supabase-setup.md`). A nickname is an account; no email and no password recovery (the sign-up form says so). Supabase email+password auth with "Confirm email" off: the nickname is turned into a never-mailed address (`nicknameToEmail`, lower-cased and hex-encoded at a reserved domain), so Supabase's unique email makes the nickname unique, case-insensitively. A database trigger repeats the nickname rules, so the public anon key alone cannot register a bad or look-alike name (`supabase/migrations/20261103000000_accounts.sql`, `src/account/nicknameEmailContract.test.ts` keeps the SQL and the browser rules in step)
@@ -14,6 +14,11 @@
 - Keep-alive: a free Supabase project pauses after 7 days without requests, which would stop log in, sync and the taken-name check (not the game). The scheduled workflow `.github/workflows/supabase-keepalive.yml` calls `nickname_taken` with the public key every 3 days and warns (without failing) when the variables are not set
 - Strings EN + RU in `src/i18n/accountStrings.ts`
 - **Owner setup needed before accounts appear**: create a free Supabase project, turn "Confirm email" off, run the SQL migration, and add the GitHub Actions **variables** `SUPABASE_URL` and `SUPABASE_ANON_KEY` (`deploy.yml` passes them to the build as `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`; locally use a git-ignored `.env.local`, see `.env.example`). Until both are set the released game shows no account UI. Step by step: `docs/supabase-setup.md`
+
+## Version 0.4.21 (2026-11-03)
+
+### 📜 Ad Settings Page Scrolls
+- The ad settings page (`#ads-admin`) could not be scrolled: the game turns page scrolling off (`body { overflow: hidden }` in `index.html`), so on a laptop only the first of the 11 ad places was reachable. The page's `<main>` is now its own scroll container (`h-screen overflow-y-auto`); the game itself is unchanged. Owner-only page, so no player patch note
 
 ## Version 0.4.20 (2026-11-03)
 
