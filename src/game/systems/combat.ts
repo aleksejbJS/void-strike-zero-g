@@ -59,7 +59,7 @@ export const resolveCollision = (p: Entity, plat: Platform) => {
 // --- Damage ---
 
 /** `source`: what hurt the target (weapon, direct hit, origin); zone and fall damage pass none. */
-export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, knockbackForce = 0, source: DamageSource = {}) => {
+export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, knockbackForce?: number, source: DamageSource = {}) => {
     if (target.dead) return;
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
@@ -82,7 +82,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     // Directional knockback using weapon's knockbackForce
     const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
     const airMult = target.isGrounded ? 1 : KNOCKBACK_AIR_MULT;
-    const force = (knockbackForce || amount / 10) * kbMult * airMult;
+    const force = (knockbackForce ?? amount / 10) * kbMult * airMult; // 0 is a real value: no push
     target.vel.x += (knockback.x / len) * force;
     target.vel.y += (knockback.y / len) * force;
 
@@ -279,7 +279,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             pos: { x: origin.x + dir.x * 20, y: origin.y + dir.y * 20 },
             vel: { x: Math.cos(a) * p.weapon.speed, y: Math.sin(a) * p.weapon.speed },
             type: p.weapon.type, radius: 4, active: true,
-            life: p.weapon.type === WeaponType.GRENADE_LAUNCHER ? 60 : PROJECTILE_MAX_LIFE
+            life: p.weapon.type === WeaponType.GRENADE_LAUNCHER || p.weapon.type === WeaponType.SMOKE_LAUNCHER ? 60 : PROJECTILE_MAX_LIFE
         });
     }
 

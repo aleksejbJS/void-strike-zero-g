@@ -2,7 +2,7 @@
 // (works on every map, no hand-placed waypoints).
 
 import { Entity, GameState, Vector2 } from '../../types';
-import { NavGraph } from './botNavGraph';
+import { NavGraph, NavNode } from './botNavGraph';
 import { findPath, nodeAt } from './botPathfinder';
 import { BotNav } from './botNavState';
 import { zoneFilter } from './botRoute';
@@ -11,15 +11,16 @@ const MIN_WIDTH = 60;
 const TRIES = 6;
 const PICK_EVERY_MS = 1000; // at most this often (a pick runs a few path searches)
 
-const centre = (graph: NavGraph, id: number): Vector2 => {
+export const centre = (graph: NavGraph, id: number): Vector2 => {
     const n = graph.nodes[id];
     return { x: (n.x0 + n.x1) / 2, y: n.y };
 };
 
-/** A random surface the bot can actually get to from where it stands (-1 if none found). */
-const pickRoamNode = (state: GameState, graph: NavGraph, here: number) => {
+/** A random surface the bot can actually get to from where it stands (-1 if none found),
+ *  optionally only among the surfaces `keep` accepts. */
+export const pickRoamNode = (state: GameState, graph: NavGraph, here: number, keep?: (n: NavNode) => boolean) => {
     const allowed = zoneFilter(state);
-    const options = graph.nodes.filter(n => n.id !== here && n.x1 - n.x0 >= MIN_WIDTH && (!allowed || allowed(n)));
+    const options = graph.nodes.filter(n => n.id !== here && n.x1 - n.x0 >= MIN_WIDTH && (!allowed || allowed(n)) && (!keep || keep(n)));
     for (let i = 0; i < TRIES && options.length; i++) {
         const n = options[Math.floor(Math.random() * options.length)];
         const path = findPath(graph, { from: here, goal: centre(graph, n.id), allowed });

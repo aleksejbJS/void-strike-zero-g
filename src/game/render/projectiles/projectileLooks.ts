@@ -24,7 +24,9 @@ const PLASMA_GHOST = 0x60a5fa;
 const EXHAUST_TINT = 0xffc070;     // the strip is white at its head, so the tint sets the flame colour
 const EXHAUST_GLOW = 0xfb923c;
 const HULL = 0x9aa4b2, HULL_LINE = 0x1f2630, NOSE = 0xef4444, FIN = 0x64748b;
-const GRENADE_SHELL = 0x365314, GRENADE_LINE = 0x1a2a0a, GRENADE_BAND = 0xa3e635;
+type ShellColors = { shell: number; line: number; band: number };
+const GRENADE: ShellColors = { shell: 0x365314, line: 0x1a2a0a, band: 0xa3e635 };
+const SMOKE_ROUND: ShellColors = { shell: 0x4b5563, line: 0x1f2937, band: 0x9ca3af }; // grey: the weapon colour
 
 const GHOST_INDEXES = [2, 4, 6];   // which remembered positions get a ghost orb
 const PLASMA_PULSE_HZ = 4.5;
@@ -105,12 +107,13 @@ const rocket = (v: ProjectileSprite, p: Projectile, age: number, nowMs: number) 
     placeGlow(v, -12 * cos, -12 * sin, 14, EXHAUST_GLOW, 0.55);
 };
 
-// Dark-green ball with a lime band and a highlight, spinning from the moment it was fired
-const grenade = (v: ProjectileSprite, age: number) => {
+// A ball with a band and a highlight, spinning from the moment it was fired: dark green with a
+// lime band for the grenade, dark grey with a light grey band for the smoke round
+const grenade = (v: ProjectileSprite, age: number, colors: ShellColors) => {
     const b = v.body;
     b.rotation = age * GRENADE_SPIN;
-    b.circle(0, 0, 4.5).fill(GRENADE_SHELL).stroke({ width: 1, color: GRENADE_LINE });
-    b.rect(-4.5, -1, 9, 2).fill(GRENADE_BAND);
+    b.circle(0, 0, 4.5).fill(colors.shell).stroke({ width: 1, color: colors.line });
+    b.rect(-4.5, -1, 9, 2).fill(colors.band);
     b.circle(-1.5, -1.8, 1.4).fill({ color: WHITE, alpha: 0.35 });
 };
 
@@ -127,7 +130,8 @@ export const drawProjectile = (v: ProjectileSprite, p: Projectile, trail: readon
         case WeaponType.SHOTGUN: return tracer(v, p, 10, 2.2, PELLET_TINT);
         case WeaponType.PLASMA_GUN: return plasma(v, p, trail, age);
         case WeaponType.ROCKET_LAUNCHER: return rocket(v, p, age, nowMs);
-        case WeaponType.GRENADE_LAUNCHER: return grenade(v, age);
+        case WeaponType.GRENADE_LAUNCHER: return grenade(v, age, GRENADE);
+        case WeaponType.SMOKE_LAUNCHER: return grenade(v, age, SMOKE_ROUND);
         // The railgun is a beam and the chainsaw melee, so these never fly; a tracer in the weapon colour if one ever does
         default: return tracer(v, p, 24, 3, WEAPONS_DATA[p.type]?.color ?? '#ffffff', { radius: 9, tint: MG_GLOW });
     }

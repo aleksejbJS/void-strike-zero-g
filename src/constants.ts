@@ -53,7 +53,6 @@ export const HOOK_PULL_FORCE = 0.03;
 
 export const CANVAS_WIDTH = 1280;
 export const CANVAS_HEIGHT = 720;
-
 export const GUN_GAME_KILLS_PER_LEVEL = 5;
 export const GUN_GAME_LADDER: WeaponType[] = [
   WeaponType.MACHINE_GUN,
@@ -69,16 +68,11 @@ export const WEAPON_RESPAWN_TIME = 15000;
 export const RESPAWN_DELAY = 3000;
 export const HTF_SCORE_INTERVAL = 4000; // 4s tick while holding
 export const INFILTRATION_TIMER = 180000; // 3 minutes
-// Simulation rate. All per-tick values (speeds, forces, lifetimes) were tuned at 120 ticks/s
-// on a 120 Hz display, so the fixed step keeps that feel on every monitor.
+// Simulation rate: per-tick values were tuned at 120 ticks/s on a 120 Hz display; the fixed step keeps that feel everywhere.
 export const PHYSICS_TICK_RATE = 120;
 export const PROJECTILE_MAX_LIFE = 3 * PHYSICS_TICK_RATE; // ticks (3s) before a stray projectile is removed
 export const ROCKET_MOTOR_TICKS = PHYSICS_TICK_RATE / 2; // ticks (0.5s) a rocket flies straight before it starts to drop
 export const DEFAULT_MAX_FUEL = 100;      // jetpack tank size without the fuel pickup bonus
-export const HUNGER_SHRINK_STEP = 250;    // zone shrink per edge, per pending death
-export const HUNGER_SHRINK_DELAY = 5000;  // ms between first death and the shrink
-export const HUNGER_MIN_ZONE = 1200;      // zone never shrinks below this size
-export const HUNGER_QUIET_SHRINK = 30000; // with no deaths, the zone still shrinks this often
 
 export const SKINS = [
   { id: 'classic', name: 'Marine', color: '#3b82f6', style: 'human', palette: { torso: '#3b82f6', head: '#f59e0b', arms: '#3b82f6', legs: '#475569', jetpack: '#ef4444' } },
@@ -154,6 +148,18 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     maxAmmo: 40,
     recoil: 3,
     knockbackForce: 3.5,
+  },
+  [WeaponType.SMOKE_LAUNCHER]: {
+    type: WeaponType.SMOKE_LAUNCHER,
+    name: 'Smoke Launcher',
+    damage: 1,
+    fireRate: 1500,
+    speed: 14,
+    color: '#9ca3af', // Grey
+    ammo: 4,
+    maxAmmo: 8,
+    recoil: 3,
+    knockbackForce: 0,
   },
   [WeaponType.RAILGUN]: {
     type: WeaponType.RAILGUN,

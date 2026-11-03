@@ -19,6 +19,7 @@ import { clampProneAim } from '../game/systems/stance';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
+import { SmokeView } from '../game/render/effects/smokeView';
 import type { CorpseView } from '../game/render/ragdoll/corpseView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
@@ -114,6 +115,7 @@ export default function GameCanvas() {
         decals: new Map(),
         floatingTexts: new Map(),
         beamView: null as BeamView | null,
+        smokeView: null as SmokeView | null,
         corpses: new Map<string, CorpseView>(),
         textures: {} as Record<string, Texture>,
     });
@@ -229,7 +231,8 @@ export default function GameCanvas() {
         hungerZone: undefined,
         hungerWinnerId: null,
         gunGameWinnerId: null,
-        beams: []
+        beams: [],
+        smokes: []
     });
 
     const initLevel = () => {
@@ -526,6 +529,8 @@ export default function GameCanvas() {
                 visualCache.current.particleView = null;
                 visualCache.current.beamView?.clear();
                 visualCache.current.beamView = null;
+                visualCache.current.smokeView?.clear();
+                visualCache.current.smokeView = null;
                 visualCache.current.pickups.clear();
                 visualCache.current.decals.clear();
                 visualCache.current.floatingTexts.clear();
@@ -901,6 +906,8 @@ export default function GameCanvas() {
             visualCache.current.particleView = null;
             visualCache.current.beamView?.clear();
             visualCache.current.beamView = null;
+            visualCache.current.smokeView?.clear();
+            visualCache.current.smokeView = null;
             visualCache.current.pickups.clear();
             visualCache.current.decals.clear();
             sessionRef.current?.dispose();

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { GameMode, Team } from '../../types';
-import { createBots } from './roomSetup';
+import { GameMode, MapId, Team } from '../../types';
+import { createBots, createRoomState, resetMatch } from './roomSetup';
+import { spawnSmoke } from '../systems/smoke';
 
 describe('createBots looks', () => {
     it.each([GameMode.DEATHMATCH, GameMode.GUN_GAME, GameMode.HUNGER_GAMES])(
@@ -18,4 +19,16 @@ describe('createBots looks', () => {
                 expect(bot.build).toBeUndefined();
             }
         });
+});
+
+describe('resetMatch', () => {
+    it('clears smoke clouds along with shots and beams', () => {
+        const state = createRoomState(GameMode.DEATHMATCH, MapId.DEFAULT);
+        expect(state.smokes).toEqual([]);
+        spawnSmoke(state, { x: 0, y: 0 }, Date.now());
+
+        resetMatch(state);
+
+        expect(state.smokes).toEqual([]);
+    });
 });

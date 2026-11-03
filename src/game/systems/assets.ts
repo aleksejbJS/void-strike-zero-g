@@ -29,6 +29,12 @@ export const generateAssets = async (): Promise<Record<string, Texture>> => {
     }
 };
 
+// The smoke launcher is "the same grenade launcher, only smoke": fighters hold the grenade launcher's picture
+export const withSharedPictures = (textures: Record<string, Texture>): Record<string, Texture> => {
+    if (!textures.held_smoke_launcher && textures.held_grenade_launcher) textures.held_smoke_launcher = textures.held_grenade_launcher;
+    return textures;
+};
+
 const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
     const getSVGDataURI = (svgContent: string) => {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">${svgContent}</svg>`;
@@ -100,7 +106,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         if (!textures.weapon_chainsaw) textures.weapon_chainsaw = Texture.from(chainsawFallback);
         if (!textures.weapon_plasma_gun) textures.weapon_plasma_gun = Texture.from(plasmaFallback);
         if (!textures.jetpack) textures.jetpack = Texture.from(jetpackFallback);
-        return textures;
+        return withSharedPictures(textures);
     } catch (e) {
         console.error("Failed to load assets, falling back for item sprites:", e);
 
@@ -123,7 +129,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         }
 
         try {
-            return await Assets.loadBundle(fallbackBundleName);
+            return withSharedPictures(await Assets.loadBundle(fallbackBundleName));
         } catch (err) {
             console.error("Failed to load fallback assets:", err);
             return {};

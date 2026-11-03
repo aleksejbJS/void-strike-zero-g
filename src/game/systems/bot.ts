@@ -8,6 +8,7 @@ import { BOT_UNSTICK_MS, detectStuck, getBotMemory } from './botMemory';
 import { senseTarget } from './botSenses';
 import { pickBestWeapon } from './botWeapons';
 import { chooseGoal } from './botGoals';
+import { forgetStale } from './botSearch';
 import { aimAndFire } from './botAim';
 import { buildNavGraph } from './botNavGraph';
 import { blockEdge, updateRoute } from './botRoute';
@@ -25,6 +26,7 @@ export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeap
     if (bot.dead) return IDLE;
     const mem = getBotMemory(bot);
     const graph = buildNavGraph(state.platforms);
+    forgetStale(state, mem, now);
 
     const sensed = senseTarget(state, bot, mem, now);
     pickBestWeapon(bot, sensed ? distance(bot.pos, sensed.pos) : 400);
@@ -46,8 +48,8 @@ export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeap
     }
     if (now < mem.unstickUntil && bot.jetpackFuel > 0 && !bot.grapple.active) controls = { ...controls, isFlying: true };
 
-    if (target) aimAndFire(state, bot, target, mem, now, fireWeaponCallback);
-    else {
+    // No target, or one hidden in smoke that the bot never saw: look where it is going
+    if (!target || !aimAndFire(state, bot, target, mem, now, fireWeaponCallback)) {
         bot.aim = undefined;
         if (controls.inputX !== 0) bot.facingRight = controls.inputX > 0;
     }

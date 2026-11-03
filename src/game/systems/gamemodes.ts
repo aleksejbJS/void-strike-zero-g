@@ -1,7 +1,8 @@
 // Game mode specific logic extracted from physics.ts
 
 import { GameState, Entity, WeaponType, ItemType, Team, GameMode } from '../../types';
-import { WEAPONS_DATA, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL, HUNGER_SHRINK_STEP, HUNGER_SHRINK_DELAY, HUNGER_MIN_ZONE, HUNGER_QUIET_SHRINK } from '../../constants';
+import { WEAPONS_DATA, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../../constants';
+import { HUNGER_SHRINK_STEP, HUNGER_SHRINK_DELAY, HUNGER_MIN_ZONE, HUNGER_QUIET_SHRINK } from '../../hungerConstants';
 import { emitText } from './effects';
 import { baseFlagPos } from '../data/level';
 

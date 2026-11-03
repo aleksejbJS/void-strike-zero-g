@@ -6,6 +6,12 @@ import { BotMoves, BotNav, newBotMoves, newBotNav } from './botNavState';
 
 export type BotState = 'hunt' | 'defend' | 'retreat' | 'flag-run' | 'roam';
 
+/** When a last-seen spot was recorded, and the fighter's `respawnTimer` then (it changes on every death). */
+export interface SeenStamp { at: number; life: number }
+
+/** Looking around a reached last-seen spot: points near `spot` until `until`. */
+export interface BotSearch { spot: Vector2; until: number; point: Vector2 | null; pickAt: number }
+
 export interface BotMemory {
     state: BotState;
     targetId: string | null;
@@ -17,6 +23,9 @@ export interface BotMemory {
     fireAllowedAt: number;  // reaction time: no shots at a freshly spotted target before this
     nav: BotNav;            // route on the navigation graph
     moves: BotMoves;        // strafe, dodge and escape timing
+    lastSeen: Map<string, Vector2>; // where each fighter was last seen out of smoke
+    seenAt: Map<string, SeenStamp>; // when (and in which life) each of those spots was seen
+    search: BotSearch | null;       // searching around a last-seen spot it has reached
 }
 
 // Progress is judged over a time window, not per tick: at 120 ticks/s a running
@@ -51,6 +60,9 @@ export const getBotMemory = (bot: Entity): BotMemory => {
             fireAllowedAt: 0,
             nav: newBotNav(),
             moves: newBotMoves(bot.health),
+            lastSeen: new Map(),
+            seenAt: new Map(),
+            search: null,
         };
         botMemory.set(bot.id, mem);
     }
