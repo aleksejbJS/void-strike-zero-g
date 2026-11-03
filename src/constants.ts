@@ -73,10 +73,6 @@ export const PHYSICS_TICK_RATE = 120;
 export const PROJECTILE_MAX_LIFE = 3 * PHYSICS_TICK_RATE; // ticks (3s) before a stray projectile is removed
 export const ROCKET_MOTOR_TICKS = PHYSICS_TICK_RATE / 2; // ticks (0.5s) a rocket flies straight before it starts to drop
 export const DEFAULT_MAX_FUEL = 100;      // jetpack tank size without the fuel pickup bonus
-export const HUNGER_SHRINK_STEP = 250;    // zone shrink per edge, per pending death
-export const HUNGER_SHRINK_DELAY = 5000;  // ms between first death and the shrink
-export const HUNGER_MIN_ZONE = 1200;      // zone never shrinks below this size
-export const HUNGER_QUIET_SHRINK = 30000; // with no deaths, the zone still shrinks this often
 
 export const SKINS = [
   { id: 'classic', name: 'Marine', color: '#3b82f6', style: 'human', palette: { torso: '#3b82f6', head: '#f59e0b', arms: '#3b82f6', legs: '#475569', jetpack: '#ef4444' } },

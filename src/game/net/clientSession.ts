@@ -12,6 +12,7 @@ import { jetpackTrail, projectileTrail } from '../systems/effects';
 import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/particles';
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
+import { toLocalClock } from './clock';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { ProjectileCatchUp } from './projectileCatchUp';
@@ -38,30 +39,6 @@ export interface TickControls {
 
 // Fields the client owns for its own player between snapshots (predicted locally)
 const PREDICTED_FIELDS = ['pos', 'vel', 'isGrounded', 'isCrouching', 'isProne', 'height', 'grapple', 'jetpackFuel', 'aim'] as const;
-
-// Timestamps at or above this mean "never" (e.g. no respawn in Hunger Games)
-const NEVER = Number.MAX_SAFE_INTEGER / 2;
-
-/**
- * Server timestamps → this machine's clock (machines' clocks differ), so countdowns
- * for respawn, zone shrink, round restart and Infiltration show the right time.
- */
-export const toLocalClock = (snap: Snapshot, offset: number) => {
-    const shift = (t: number | undefined) => (t === undefined || t >= NEVER || t <= 0 ? t : t + offset);
-    snap.hungerRoundEndsAt = shift(snap.hungerRoundEndsAt);
-    snap.hungerRoundStartedAt = shift(snap.hungerRoundStartedAt);
-    snap.matchStartedAt = shift(snap.matchStartedAt);
-    snap.matchEndsAt = shift(snap.matchEndsAt);
-    snap.infiltrationEndTime = shift(snap.infiltrationEndTime);
-    snap.lastHTFScore = shift(snap.lastHTFScore);
-    if (snap.hungerZone) {
-        snap.hungerZone.nextShrinkAt = shift(snap.hungerZone.nextShrinkAt);
-        snap.hungerZone.lastShrink = shift(snap.hungerZone.lastShrink);
-    }
-    for (const p of snap.players) p.respawnTimer = shift(p.respawnTimer) ?? 0;
-    // New objects: the host's own cloud list must keep its own clock
-    if (snap.smokes) snap.smokes = snap.smokes.map(c => ({ ...c, bornAt: c.bornAt + offset, endsAt: c.endsAt + offset }));
-};
 
 export class ClientSession {
     localId: string | null = null;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toLocalClock } from './clientSession';
+import { toLocalClock } from './clock';
 import { createMockPlayer } from '../../test/mocks';
 import { Team } from '../../types';
 
