@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { GameMode } from '../../types';
 import { createMockState } from '../../test/mocks';
-import { MAX_SMOKES, SMOKE_DURATION_MS, SMOKE_RADIUS } from '../../constants';
-import { insideSmoke, smokeHides, smokeRadiusAt, spawnSmoke, updateSmokes } from './smoke';
+import { MAX_SMOKES, SMOKE_DURATION_MS, SMOKE_RADIUS, insideSmoke, smokeHides, smokeRadiusAt, spawnSmoke, updateSmokes } from './smoke';
 
 const newState = () => createMockState(GameMode.DEATHMATCH);
 

@@ -2,8 +2,12 @@
 // Created and expired by the authoritative simulation; readers only ask the questions below.
 
 import { GameState, SmokeCloud, Vector2 } from '../../types';
-import { MAX_SMOKES, SMOKE_DURATION_MS, SMOKE_FADE_MS, SMOKE_RADIUS } from '../../constants';
 import { nextId } from '../utils/id';
+
+export const SMOKE_DURATION_MS = 10000;
+export const SMOKE_FADE_MS = 2000; // last part of the lifetime: the cloud shrinks to nothing
+export const SMOKE_RADIUS = 110;
+export const MAX_SMOKES = 12;
 
 /** Add a cloud at `pos`; the oldest one goes when the cap is reached. */
 export const spawnSmoke = (state: GameState, pos: Vector2, now: number): SmokeCloud => {
