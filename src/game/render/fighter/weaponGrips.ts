@@ -16,6 +16,7 @@ export const WEAPON_GRIPS: Record<WeaponType, WeaponGrip> = {
     [WeaponType.ROCKET_LAUNCHER]: { length: 50, grip: [0.33, 0.8], fore: [0.5, 0.72], axis: 0.32 },
     [WeaponType.RAILGUN]: { length: 50, grip: [0.29, 0.74], fore: [0.55, 0.52], axis: 0.45 },
     [WeaponType.GRENADE_LAUNCHER]: { length: 44, grip: [0.22, 0.62], fore: [0.62, 0.48], axis: 0.34 },
+    [WeaponType.SMOKE_LAUNCHER]: { length: 44, grip: [0.22, 0.62], fore: [0.62, 0.48], axis: 0.34 }, // same pose as the grenade launcher
     [WeaponType.PLASMA_GUN]: { length: 46, grip: [0.31, 0.75], fore: [0.62, 0.55], axis: 0.45 },
     [WeaponType.CHAINSAW]: { length: 46, grip: [0.1, 0.5], fore: [0.24, 0.14], axis: 0.5 },
 };

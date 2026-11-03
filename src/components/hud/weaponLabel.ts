@@ -12,6 +12,7 @@ const KEYS: Record<WeaponType, keyof TranslationKeys> = {
     [WeaponType.ROCKET_LAUNCHER]: 'weapon.rocketLauncher',
     [WeaponType.RAILGUN]: 'weapon.railgun',
     [WeaponType.GRENADE_LAUNCHER]: 'weapon.grenadeLauncher',
+    [WeaponType.SMOKE_LAUNCHER]: 'weapon.smokeLauncher',
     [WeaponType.CHAINSAW]: 'weapon.chainsaw',
 };
 

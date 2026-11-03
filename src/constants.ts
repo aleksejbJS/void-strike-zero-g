@@ -72,6 +72,11 @@ export const INFILTRATION_TIMER = 180000; // 3 minutes
 // Simulation rate. All per-tick values (speeds, forces, lifetimes) were tuned at 120 ticks/s
 // on a 120 Hz display, so the fixed step keeps that feel on every monitor.
 export const PHYSICS_TICK_RATE = 120;
+// Smoke clouds (see systems/smoke.ts)
+export const SMOKE_DURATION_MS = 10000;
+export const SMOKE_FADE_MS = 2000; // last part of the lifetime: the cloud shrinks to nothing
+export const SMOKE_RADIUS = 110;
+export const MAX_SMOKES = 12;
 export const PROJECTILE_MAX_LIFE = 3 * PHYSICS_TICK_RATE; // ticks (3s) before a stray projectile is removed
 export const DEFAULT_MAX_FUEL = 100;      // jetpack tank size without the fuel pickup bonus
 export const HUNGER_SHRINK_STEP = 250;    // zone shrink per edge, per pending death
@@ -153,6 +158,18 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     maxAmmo: 40,
     recoil: 3,
     knockbackForce: 3.5,
+  },
+  [WeaponType.SMOKE_LAUNCHER]: {
+    type: WeaponType.SMOKE_LAUNCHER,
+    name: 'Smoke Launcher',
+    damage: 1,
+    fireRate: 1500,
+    speed: 14,
+    color: '#9ca3af', // Grey
+    ammo: 4,
+    maxAmmo: 8,
+    recoil: 3,
+    knockbackForce: 0,
   },
   [WeaponType.RAILGUN]: {
     type: WeaponType.RAILGUN,
