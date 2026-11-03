@@ -54,7 +54,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
             <div role="dialog" aria-modal="true" aria-label={t('ac.dialog')}
                 className="max-h-full w-full max-w-[360px] overflow-y-auto rounded border-2 border-t-4 border-bay-edge border-t-bay-hazard bg-bay-panel p-4 text-bay-chalk phone:p-3">
                 {notice && <p role="status" className="m-0 mb-3 text-sm font-semibold leading-snug text-bay-signal phone:mb-2 phone:text-xs">{notice}</p>}
-                <div role="tablist"className="mb-3 flex border-b-2 border-bay-edge phone:mb-2">
+                <div role="tablist" className="mb-3 flex border-b-2 border-bay-edge phone:mb-2">
                     {(['signup', 'login'] as const).map(name => (
                         <button key={name} type="button" role="tab" aria-selected={tab === name} onClick={() => switchTab(name)}
                             className={`-mb-0.5 border-b-[3px] px-2.5 py-1 font-display text-xl font-black uppercase phone:text-base ${focusRing} ${tab === name ? 'border-bay-hazard text-bay-chalk' : 'border-transparent text-bay-dust hover:text-bay-chalk'}`}>

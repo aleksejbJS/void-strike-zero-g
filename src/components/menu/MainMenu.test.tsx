@@ -3,14 +3,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { UIProvider, useUIStore } from '../../store/uiStore';
 import { NetworkMode, MapId } from '../../types';
+import { AccountContext } from '../../account/useAccount';
+import { stubAccount } from '../../test/accountStub';
 import MainMenu from './MainMenu';
 
 // Exposes store state to assertions
 let store: ReturnType<typeof useUIStore>;
 const Spy: React.FC = () => { store = useUIStore(); return null; };
 
-const renderMenu = (onCustomize = vi.fn()) => {
-    render(<UIProvider><Spy /><MainMenu onCustomize={onCustomize} /></UIProvider>);
+const renderMenu = (onCustomize = vi.fn(), onOpenProfile = vi.fn(), account = stubAccount({ status: 'disabled' })) => {
+    render(
+        <UIProvider><Spy />
+            <AccountContext.Provider value={account}><MainMenu onCustomize={onCustomize} onOpenProfile={onOpenProfile} /></AccountContext.Provider>
+        </UIProvider>,
+    );
     return onCustomize;
 };
 
@@ -75,5 +81,34 @@ describe('MainMenu', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Switch language to Russian' }));
         expect(screen.getByRole('button', { name: /Играть с ботами/ })).toBeInTheDocument();
         expect(screen.getByRole('heading', { level: 2, name: 'Бой насмерть' })).toBeInTheDocument();
+    });
+
+    describe('Profile button', () => {
+        it('says "Profile" for a guest and opens the profile', () => {
+            const onOpenProfile = vi.fn();
+            renderMenu(vi.fn(), onOpenProfile, stubAccount({ status: 'guest' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+            expect(onOpenProfile).toHaveBeenCalledTimes(1);
+        });
+
+        it('is there while accounts are disabled', () => {
+            renderMenu();
+            expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument();
+        });
+
+        it('shows the nickname with a lock when logged in', () => {
+            const onOpenProfile = vi.fn();
+            renderMenu(vi.fn(), onOpenProfile, stubAccount({ status: 'loggedIn', nickname: 'Alex' }));
+            const button = screen.getByRole('button', { name: 'Profile: Alex' });
+            expect(button).toHaveTextContent('🔒Alex');
+            fireEvent.click(button);
+            expect(onOpenProfile).toHaveBeenCalledTimes(1);
+        });
+
+        it('follows the language switch', () => {
+            renderMenu();
+            fireEvent.click(screen.getByRole('button', { name: 'Switch language to Russian' }));
+            expect(screen.getByRole('button', { name: 'Профиль' })).toBeInTheDocument();
+        });
     });
 });

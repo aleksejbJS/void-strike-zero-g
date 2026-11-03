@@ -3,6 +3,7 @@ import React, { Suspense, lazy, useEffect, useState } from 'react';
 import GameCanvas from './components/GameCanvas';
 import MainMenu from './components/menu/MainMenu';
 import PlayerCustomization from './components/setup/CharacterSetup';
+import { ProfileScreen } from './components/profile/ProfileScreen';
 import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
 import { ADS_ADMIN_HASH, rememberAdminFlag } from './components/ads/adminAccess';
@@ -24,6 +25,7 @@ const useHash = () => {
 const App: React.FC = () => {
   const { state, actions } = useUIStore();
   const [showingCustomization, setShowingCustomization] = useState(false);
+  const [showingProfile, setShowingProfile] = useState(false);
   const hash = useHash();
 
   // A match may have gone full screen on a phone; the menu is shown with the browser bar again
@@ -54,16 +56,24 @@ const App: React.FC = () => {
     return <GameCanvas />;
   }
 
-  if (showingCustomization) {
-    return (
-      <PlayerCustomization
-        onContinue={() => setShowingCustomization(false)}
-        onBack={() => setShowingCustomization(false)}
-      />
-    );
-  }
+  const screen = showingCustomization ? (
+    <PlayerCustomization
+      onContinue={() => setShowingCustomization(false)}
+      onBack={() => setShowingCustomization(false)}
+      onOpenProfile={() => setShowingProfile(true)}
+    />
+  ) : (
+    <MainMenu onCustomize={() => setShowingCustomization(true)} onOpenProfile={() => setShowingProfile(true)} />
+  );
 
-  return <MainMenu onCustomize={() => setShowingCustomization(true)} />;
+  // The profile opens over the menu or the setup screen, which stay mounted underneath (hidden),
+  // so Back returns to that screen as it was left
+  return (
+    <>
+      <div className={showingProfile ? 'hidden' : undefined}>{screen}</div>
+      {showingProfile && <ProfileScreen onBack={() => setShowingProfile(false)} />}
+    </>
+  );
 };
 
 export default App;

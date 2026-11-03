@@ -1,4 +1,5 @@
-// UI strings for nickname + password accounts (setup screen line, plate and the sign-up / log-in window).
+// UI strings for nickname + password accounts (setup screen line, plate, the sign-up / log-in window)
+// and the profile screen with its menu button.
 // Merged into the main translation table in locales.ts.
 
 import { Language } from '../types';
@@ -33,6 +34,25 @@ export interface AccountKeys {
     'ac.nick.bad_chars': string;
     'ac.nick.mixed_scripts': string;
     'ac.nick.reserved': string;
+    'pf.menu': string;
+    'pf.menu.named': string;
+    'pf.cloud': string;
+    'pf.title': string;
+    'pf.stat.achievements': string;
+    'pf.stat.xp': string;
+    'pf.list': string;
+    'pf.filters': string;
+    'pf.filter.all': string;
+    'pf.filter.combat': string;
+    'pf.filter.movement': string;
+    'pf.filter.modes': string;
+    'pf.filter.collecting': string;
+    'pf.filter.special': string;
+    'pf.protect': string;
+    'pf.protect.hint': string;
+    'pf.logout': string;
+    'pf.logout.title': string;
+    'pf.logout.body': string;
 }
 
 export const accountStrings: Record<Language, AccountKeys> = {
@@ -66,6 +86,25 @@ export const accountStrings: Record<Language, AccountKeys> = {
         'ac.nick.bad_chars': 'Use only letters, digits, "_", "-" and single spaces.',
         'ac.nick.mixed_scripts': 'Do not mix Latin and Cyrillic letters in one nickname.',
         'ac.nick.reserved': 'This nickname is reserved. Pick another one.',
+        'pf.menu': 'Profile',
+        'pf.menu.named': 'Profile: {0}',
+        'pf.cloud': 'Saved in your account',
+        'pf.title': 'Title: {0}',
+        'pf.stat.achievements': 'Achievements',
+        'pf.stat.xp': 'Achievement XP',
+        'pf.list': 'Achievements',
+        'pf.filters': 'Achievement categories',
+        'pf.filter.all': 'All',
+        'pf.filter.combat': 'Combat',
+        'pf.filter.movement': 'Movement',
+        'pf.filter.modes': 'Modes',
+        'pf.filter.collecting': 'Collecting',
+        'pf.filter.special': 'Special',
+        'pf.protect': 'Protect your nickname',
+        'pf.protect.hint': 'Add a password: nobody else can take your name, and your progress is saved in the cloud.',
+        'pf.logout': 'Log out',
+        'pf.logout.title': 'Log out of this account?',
+        'pf.logout.body': 'Your progress stays saved in the account. This device becomes a guest again.',
     },
     ru: {
         'ac.line.protect': 'Защитить ник паролем',
@@ -97,5 +136,24 @@ export const accountStrings: Record<Language, AccountKeys> = {
         'ac.nick.bad_chars': 'Только буквы, цифры, «_», «-» и одиночные пробелы.',
         'ac.nick.mixed_scripts': 'Не смешивайте латинские и кириллические буквы в одном нике.',
         'ac.nick.reserved': 'Этот ник зарезервирован. Выберите другой.',
+        'pf.menu': 'Профиль',
+        'pf.menu.named': 'Профиль: {0}',
+        'pf.cloud': 'Сохранено в аккаунте',
+        'pf.title': 'Титул: {0}',
+        'pf.stat.achievements': 'Достижения',
+        'pf.stat.xp': 'XP достижений',
+        'pf.list': 'Достижения',
+        'pf.filters': 'Категории достижений',
+        'pf.filter.all': 'Все',
+        'pf.filter.combat': 'Бой',
+        'pf.filter.movement': 'Движение',
+        'pf.filter.modes': 'Режимы',
+        'pf.filter.collecting': 'Сбор',
+        'pf.filter.special': 'Особые',
+        'pf.protect': 'Защитить ник',
+        'pf.protect.hint': 'Добавьте пароль: ник никто не займёт, а прогресс сохранится в облаке.',
+        'pf.logout': 'Выйти',
+        'pf.logout.title': 'Выйти из аккаунта?',
+        'pf.logout.body': 'Прогресс останется в аккаунте. Это устройство снова станет гостевым.',
     },
 };

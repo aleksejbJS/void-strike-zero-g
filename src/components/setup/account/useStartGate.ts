@@ -12,7 +12,7 @@ import { needsTakenCheck, useTakenCheck } from './useTakenCheck';
 export interface ModalRequest { tab: AccountTab; nickname: string; notice?: string }
 
 /** "Anonymous" is the guest default, not a nickname worth putting into an account form. */
-const nicknameFor = (name: string): string =>
+export const nicknameFor = (name: string): string =>
     (nicknameKey(name) === GUEST_DEFAULT_NAME.toLowerCase() ? '' : name.trim());
 
 /**
