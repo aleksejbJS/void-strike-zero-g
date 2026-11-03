@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.14 (unreleased)
+
+### 🪖 Lying Down
+- Hold Z, or push the touch move stick down to its edge (≥ 85 % and mostly downward), to lie down on the ground (spec: `docs/plans/2026-11-03-prone-spec.md`). Ctrl was the first choice; Ctrl+W closes the tab and pages cannot block it
+- Lying: hitbox 26 px tall (crouch 45, standing 72), crawl speed `PRONE_SPEED` 0.18 (~60 px/s), shots leave 12 px above the feet and only forward: the aim is clamped to ±30° on the side it points to (`clampProneAim` / `clampProneAngle`, used by the simulation, client prediction, the drawn aim and the touch aim line). Jump / jetpack stands up first; never in the air; bots never lie down
+- `systems/stance.ts` owns stand / crouch / lie heights and the muzzle height for the simulation, the host and prediction; `Entity.isProne` is optional (older hosts never set it), the host accepts `KeyZ`
+- New `prone` pose (body along the ground, legs behind, head and gun forward, a small crawl cycle); the menu's key legend lists S (crouch) and Z (lie down)
+
 ## Version 0.4.13 (unreleased)
 
 ### 📱 Phone HUD and Touch Controls

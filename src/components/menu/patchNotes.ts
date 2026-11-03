@@ -32,6 +32,10 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.14', date: null, points: [
+            'Fighters can lie down: hold Z, or push the move stick down to the edge on a phone. Lying, you are hard to hit, crawl slowly and shoot only forward',
+            'A jump gets you back on your feet',
+        ] },
         { version: '0.4.13', date: null, groups: [
             { title: 'Fighters', points: [
                 'Fighters now walk as well as run: a slower pace with shorter steps, which everyone in the match sees',
@@ -164,6 +168,10 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.14', date: null, points: [
+            'Бойцы умеют ложиться: держите Z, а на телефоне тяните левый стик вниз до края. Лёжа в вас трудно попасть, вы медленно ползёте и стреляете только вперёд',
+            'Прыжок поднимает бойца на ноги',
+        ] },
         { version: '0.4.13', date: null, groups: [
             { title: 'Бойцы', points: [
                 'Бойцы теперь умеют ходить шагом, а не только бегать: медленнее и короткими шагами, и это видят все в матче',
