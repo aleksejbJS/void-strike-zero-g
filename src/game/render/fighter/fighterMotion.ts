@@ -2,7 +2,7 @@
 // Pure maths (no Pixi). Landings are found from the history of the feet height, not from isGrounded,
 // so remote fighters (drawn slightly in the past) and the predicted local fighter behave the same way.
 
-import { PHYSICS_TICK_RATE } from '../../../constants';
+import { HIT_MIN_HP, PHYSICS_TICK_RATE } from '../../../constants';
 import { FighterState } from './fighterPose';
 
 const FRAME_60_S = 1 / 60;           // fall speed is measured in px per 1/60 s
@@ -22,7 +22,7 @@ export const HOP_PX = 4;            // how high a one-legged fighter springs off
 export interface MotionFrame {
     landed: boolean;  // true for exactly one frame per landing
     squash: number;   // 1 at the landing, easing to 0
-    hitFlash: number; // 1 while the fighter is flashing after losing health
+    hitFlash: number; // 1 while the fighter is flashing after a hit
 }
 
 export class FighterMotion {
@@ -37,7 +37,8 @@ export class FighterMotion {
     observe(feetY: number, health: number, nowMs: number): MotionFrame {
         const landed = this.trackFeet(feetY, nowMs);
         if (landed) this.landedAt = nowMs;
-        if (this.lastHealth !== null && health < this.lastHealth) this.hitAt = nowMs;
+        // Bleeding lowers health on every look; only a real hit flashes
+        if (this.lastHealth !== null && this.lastHealth - health > HIT_MIN_HP) this.hitAt = nowMs;
         this.lastHealth = health;
         return {
             landed,
