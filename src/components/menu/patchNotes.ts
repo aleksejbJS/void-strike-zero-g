@@ -33,6 +33,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.19', date: 'Nov 3, 2026', points: [
+            'Smoke launcher: fire a smoke cloud anywhere and hide for 10 seconds — from players and bots',
+        ] },
         { version: '0.4.16', date: 'Nov 3, 2026', points: [
             'The invite link in a game you host can now be closed with ×; the new link button next to sound and achievements brings it back',
         ] },
@@ -175,6 +178,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.19', date: '03.11.2026', points: [
+            'Дымовой гранатомёт: выстрелите облаком дыма куда угодно и прячьтесь в нём 10 секунд — от игроков и от ботов',
+        ] },
         { version: '0.4.16', date: '03.11.2026', points: [
             'Плашку со ссылкой-приглашением в вашей игре теперь можно закрыть крестиком, а вернуть кнопкой-ссылкой рядом со звуком и достижениями',
         ] },
