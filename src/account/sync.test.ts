@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { installSyncHarness, USER } from '../test/syncHarness';
+import { installSyncHarness, snap, USER } from '../test/syncHarness';
+import type { PlayerSnapshot } from './snapshot';
 
 describe('sync: requestPush and dispose', () => {
     const h = installSyncHarness();
@@ -90,5 +91,43 @@ describe('sync: requestPush and dispose', () => {
 
         expect(h.saveSnapshot).toHaveBeenCalledTimes(1); // local may already belong to someone else
         expect(h.sync.hasPending(USER)).toBe(true); // the missed change stays marked
+    });
+
+    it('a flush whose fetch is still pending at dispose never reads local nor saves', async () => {
+        let answer!: (remote: null) => void;
+        h.fetchSnapshot.mockImplementationOnce(() => new Promise<null>(r => { answer = r; }));
+        h.sync.requestPush(USER);
+        const flushing = h.sync.flush(USER);
+        await vi.advanceTimersByTimeAsync(0); // the fetch hangs
+        h.sync.dispose(); // logout: local is cleared next and may then hold guest progress
+        answer(null);
+
+        await expect(flushing).resolves.toBe(false);
+        expect(h.saveSnapshot).not.toHaveBeenCalled();
+        expect(h.sync.hasPending(USER)).toBe(true); // left as it was, for the next session
+        expect(h.warn).not.toHaveBeenCalled(); // not a failure, just too late
+    });
+
+    it('a pull whose fetch is still pending at dispose leaves local storage alone', async () => {
+        let answer!: (remote: PlayerSnapshot) => void;
+        h.fetchSnapshot.mockImplementationOnce(() => new Promise<PlayerSnapshot>(r => { answer = r; }));
+        const pulling = h.sync.pull(USER);
+        await vi.advanceTimersByTimeAsync(0);
+        h.sync.dispose();
+        answer(snap(300));
+
+        await expect(pulling).resolves.toBeUndefined();
+        expect(h.store.fighterXp).toBeUndefined();
+        expect(h.saveSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('flush and pull on a disposed sync do nothing and call no api', async () => {
+        h.sync.requestPush(USER);
+        h.sync.dispose();
+        await expect(h.sync.flush(USER)).resolves.toBe(false);
+        await expect(h.sync.pull(USER)).resolves.toBeUndefined();
+        expect(h.fetchSnapshot).not.toHaveBeenCalled();
+        expect(h.saveSnapshot).not.toHaveBeenCalled();
+        expect(h.sync.hasPending(USER)).toBe(true);
     });
 });

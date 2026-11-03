@@ -16,7 +16,11 @@ export interface Sync {
     /** Merges with the cloud copy and saves it. Never rejects: false means it failed and stays pending. */
     flush(userId: string): Promise<boolean>;
     hasPending(userId: string): boolean;
-    /** Cancels scheduled and queued flushes. Unsaved progress stays marked, for the next session. */
+    /**
+     * Ends the session: cancels scheduled and queued flushes, and from now on flush resolves false and pull
+     * does nothing, without reading local storage (it may already be the guest's). A save already sent
+     * finishes. Unsaved progress stays marked, for the next session.
+     */
     dispose(): void;
 }
 
@@ -47,9 +51,13 @@ export function createSync(api: AccountApi, opts: { debounceMs?: number } = {}):
     const hasPending = (userId: string): boolean => readStored(dirtyKey(userId)) === DIRTY_VALUE;
 
     async function runFlush(userId: string): Promise<boolean> {
+        if (disposed) return false;
         const countAtStart = pushCount.get(userId) ?? 0;
         try {
             const remote = await api.fetchSnapshot(userId);
+            // Disposed while fetching (logout): local may already be cleared or hold guest progress, so it
+            // must not be read for this account. Not a failure: the dirty flag stays as it was.
+            if (disposed) return false;
             const local = readLocalSnapshot();
             await api.saveSnapshot(userId, remote ? mergeSnapshots(local, remote) : local);
             // A push requested while saving may not be in what was saved: its own flush will clear the flag.
@@ -75,6 +83,7 @@ export function createSync(api: AccountApi, opts: { debounceMs?: number } = {}):
     function flush(userId: string): Promise<boolean> {
         clearTimeout(timers.get(userId)); // this run covers whatever the pending debounce was waiting for
         timers.delete(userId);
+        if (disposed) return Promise.resolve(false); // the session is over: nothing more goes to this account
         const inFlight = running.get(userId);
         if (!inFlight) return startFlush(userId);
         // The flight under way may have read local before its latest change: wait for it, then run once more.
@@ -96,7 +105,9 @@ export function createSync(api: AccountApi, opts: { debounceMs?: number } = {}):
     }
 
     async function pull(userId: string): Promise<void> {
+        if (disposed) return; // the session is over: this account's data must not reach local storage
         const remote = await api.fetchSnapshot(userId); // a failure leaves local storage untouched
+        if (disposed) return; // ended while fetching: local may already belong to the guest
         const local = readLocalSnapshot();
         const merged = remote ? mergeSnapshots(local, remote) : local;
         writeLocalSnapshot(merged);
