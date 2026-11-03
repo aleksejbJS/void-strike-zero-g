@@ -42,6 +42,7 @@ export interface FighterFrame {
     squash?: number;   // 0..1, landing squash (default 0)
     headBob?: number;  // radians added to the head tilt (default 0)
     hitFlash?: number; // 0..1, brightens the colours after a hit (default 0)
+    weaponless?: boolean; // empty hands: no weapon picture and no fallback gun (a corpse drops its gun)
 }
 
 const FALLBACK_GUN = 0x1e293b;
@@ -113,14 +114,14 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
 
     const w = view.weapon;
     if (f.weapon && w.texture !== f.weapon) w.texture = f.weapon;
-    w.visible = !!f.weapon;
+    w.visible = !!f.weapon && !f.weaponless;
     w.width = grip.length;
     w.height = grip.height;
     w.position.set(pose.gunTopLeft.x, pose.gunTopLeft.y);
     w.rotation = pose.gunAngle;
 
     const fr = view.front.clear();
-    if (!f.weapon) drawFallbackGun(fr, f);
+    if (!f.weapon && !f.weaponless) drawFallbackGun(fr, f);
     if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     else view.light.visible = false;
     hand(fr, pose.backArm.end);

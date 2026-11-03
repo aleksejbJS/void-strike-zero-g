@@ -41,7 +41,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     platforms: getPlatforms(mode, map),
     pickups: getInitialPickups(mode, map),
     camera: { x: 0, y: 0, zoom: 1 },
-    ragdollParts: [],
+    corpses: [],
     lastHTFScore: 0,
     infiltrationEndTime: undefined,
     hungerZone: mode === GameMode.HUNGER_GAMES ? createHungerZone(Date.now()) : undefined,

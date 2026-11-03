@@ -1,4 +1,4 @@
-// Handling update logic for particles, decals, floating texts, and ragdoll parts
+// Handling update logic for particles, decals and floating texts (corpses: ragdoll/corpses.ts)
 // Extracted from physics.ts main loop
 
 import { GameState, Particle, ParticleKind } from '../../types';
@@ -109,50 +109,4 @@ export const updateDecals = (state: GameState, now: number) => {
     });
     // Limit total decals to prevent memory issues
     if (state.decals.length > 50) state.decals.shift();
-};
-
-export const updateRagdolls = (state: GameState) => {
-    state.ragdollParts.forEach(part => {
-        // Apply gravity
-        part.vel.y += GRAVITY;
-
-        // Apply velocity
-        part.pos.x += part.vel.x;
-        part.pos.y += part.vel.y;
-
-        // Apply rotation
-        part.rotation += part.angularVel;
-
-        // Ground collision
-        part.isGrounded = false;
-        state.platforms.forEach(plat => {
-            if (part.pos.y > plat.y && part.pos.y < plat.y + plat.h &&
-                part.pos.x > plat.x && part.pos.x < plat.x + plat.w) {
-                if (part.vel.y > 0) {
-                    part.pos.y = plat.y;
-                    part.vel.y *= -0.3; // Bounce
-                    part.vel.x *= 0.8; // Friction
-                    part.angularVel *= 0.7; // Slow rotation
-                    part.isGrounded = true;
-
-                    // Stop if moving too slow
-                    if (Math.abs(part.vel.y) < 0.5) part.vel.y = 0;
-                    if (Math.abs(part.vel.x) < 0.1) part.vel.x = 0;
-                    if (Math.abs(part.angularVel) < 0.02) part.angularVel = 0;
-                }
-            }
-        });
-
-        // Air resistance
-        if (!part.isGrounded) {
-            part.vel.x *= 0.98;
-            part.angularVel *= 0.98;
-        }
-
-        // Fade out
-        part.life -= 0.02;
-    });
-
-    // Remove dead ragdoll parts
-    state.ragdollParts = state.ragdollParts.filter(p => p.life > 0);
 };

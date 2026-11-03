@@ -9,6 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry, segmentInterse
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
+import { deathKind, DamageSource, isSplash } from './deathKind';
 import { emitFlag } from './flagEvents';
 import { hungerShieldLeft } from './hungerRound';
 
@@ -56,7 +57,8 @@ export const resolveCollision = (p: Entity, plat: Platform) => {
 
 // --- Damage ---
 
-export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, knockbackForce = 0) => {
+/** `source`: what hurt the target (weapon, direct hit, origin); zone and fall damage pass none. */
+export const applyDamage = (state: GameState, target: Entity, attackerId: string, amount: number, knockback: Vector2, knockbackForce = 0, source: DamageSource = {}) => {
     if (target.dead) return;
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
@@ -73,6 +75,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         target.armor -= absorb;
         dmg -= absorb;
     }
+    const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
     // Directional knockback using weapon's knockbackForce
@@ -87,8 +90,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     if (target.health <= 0) {
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
-        // Blood, decal and ragdoll
-        emitDeath(target);
+        // Blood, decal and ragdoll: the kind says how the body falls
+        emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {
@@ -165,7 +168,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 
 // --- Explosions ---
 
-export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType) => {
+/** `directId`: the fighter the projectile itself hit; its blast is part of that direct hit, not a splash. */
+export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType, directId?: string) => {
     // Looks follow the blast radius; a grenade is drawn a bit smaller than a rocket (cosmetic only)
     const size = (radius / 150) * (weaponType === WeaponType.GRENADE_LAUNCHER ? 0.85 : 1);
     gameEvents.emit({ type: 'EFFECT', effect: 'explosion', x: pos.x, y: pos.y, size });
@@ -185,7 +189,7 @@ export const createExplosion = (state: GameState, pos: Vector2, ownerId: string,
         if (dist < radius) {
             const dmg = (wepData?.damage ?? 100) * (1 - dist / radius);
             const kbDir = { x: p.pos.x - pos.x, y: p.pos.y - pos.y };
-            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce);
+            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId });
         }
     });
 };
@@ -228,7 +232,8 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
         const hitPos = { x: origin.x + dir.x * range * closestT, y: origin.y + dir.y * range * closestT };
 
         if (hitPlayer) {
-            applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, WEAPONS_DATA[WeaponType.RAILGUN].knockbackForce);
+            applyDamage(state, hitPlayer, p.id, WEAPONS_DATA[WeaponType.RAILGUN].damage, dir, WEAPONS_DATA[WeaponType.RAILGUN].knockbackForce,
+                { weapon: WeaponType.RAILGUN, from: origin });
         }
 
         // Blood where the beam enters a fighter, blue sparks where it stops at a wall
@@ -254,7 +259,8 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             if (tgt.id === p.id || tgt.dead || isTeammate(p, tgt)) return;
             const dist = distance(attackPos, tgt.pos);
             if (dist < 60) {
-                applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce);
+                applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce,
+                    { weapon: WeaponType.CHAINSAW, from: origin });
                 emitEffect('blood', tgt.pos.x, tgt.pos.y - 20, '#ef4444', 6);
             }
         });

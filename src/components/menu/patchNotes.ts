@@ -28,10 +28,17 @@ const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/pa
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
-const PREVIEWS = shots('previews');
+const PREVIEWS = shots('previews'), DEATH = shots('death');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.12', date: 'Nov 3, 2026', groups: [
+            { title: 'Deaths', comparisons: [{ caption: 'A machine-gun kill and a rocket kill', ...DEATH }], points: [
+                'A killed fighter no longer breaks into loose pieces: they go limp and fall as one body in their own look, tumble and land on the platforms',
+                'How they die depends on what killed them: a machine gun drops them, a point-blank shotgun or a nearby rocket throws them back, a direct rocket hit or a chainsaw tears them apart, a railgun cuts them in two',
+                'The gun falls out of their hands, and bodies lying around jump when something explodes next to them',
+            ] },
+        ] },
         { version: '0.4.11', date: 'Nov 3, 2026', points: [
             'In Deathmatch, Gun Game and Hunger Games every bot now has its own look: a different skin with its own flame, pattern and shoulder badge',
         ] },
@@ -144,6 +151,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.12', date: '03.11.2026', groups: [
+            { title: 'Гибель', comparisons: [{ caption: 'Убийство из пулемёта и ракетой', ...DEATH }], points: [
+                'Убитый боец больше не разваливается на отдельные куски: он обмякает и падает целым телом в своём облике, кувыркается и ложится на платформу',
+                'Как боец погибает, зависит от оружия: от пулемёта он просто падает, дробовик в упор или ракета рядом отбрасывают тело, прямое попадание ракеты или бензопила разрывают на части, рельсотрон разрезает пополам',
+                'Оружие выпадает из рук, а лежащие тела подбрасывает, если рядом что-то взрывается',
+            ] },
+        ] },
         { version: '0.4.11', date: '03.11.2026', points: [
             'В Deathmatch, Gun Game и Hunger Games у каждого бота теперь свой облик: другой скин, своё пламя, узор и нашивка',
         ] },

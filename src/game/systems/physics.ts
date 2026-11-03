@@ -3,14 +3,15 @@ import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
-import { checkPointInRect, checkRectOverlap, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
+import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
 import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
-import { updateParticles, updateFloatingTexts, updateDecals, updateRagdolls } from './particles';
+import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
+import { updateCorpses } from './ragdoll/corpses';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
@@ -34,7 +35,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, now);
-        updateRagdolls(state);
+        updateCorpses(state);
         followCamera(state, pickCameraTarget(state, localPlayerId));
         return;
     }
@@ -301,6 +302,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         let hit = false;
         let hitFighter = false;
         let impact = proj.pos;
+        let target: Entity | null = null;
         const wall = state.platforms.find(plat => checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat));
         if (wall) {
             hit = true;
@@ -308,7 +310,6 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         } else {
             // Only the first player along this tick's path is hit (no piercing)
             const owner = state.players.find(o => o.id === proj.ownerId);
-            let target: Entity | null = null;
             let nearest = Infinity;
             for (const p of state.players) {
                 if (p.id === proj.ownerId || p.dead || (owner && isTeammate(owner, p))) continue;
@@ -318,7 +319,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             if (target) {
                 hit = true;
                 hitFighter = true;
-                applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce);
+                const source = { weapon: proj.type, direct: true, from: prevPos, shooterDist: owner ? distance(owner.pos, target.pos) : undefined };
+                applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce, source);
             }
         }
         if (proj.type === WeaponType.GRENADE_LAUNCHER && proj.life <= 0) hit = true;
@@ -329,7 +331,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             proj.active = false;
             const explosive = proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER;
             if (explosive) {
-                createExplosion(state, impact, proj.ownerId, 150, proj.type);
+                // A rocket that hit a full-health fighter finishes them with its blast: still a direct hit
+                createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id);
             } else {
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
@@ -410,7 +413,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     updateParticles(state);
     updateFloatingTexts(state);
     updateDecals(state, now);
-    updateRagdolls(state);
+    updateCorpses(state);
 
     if (state.mode === GameMode.HUNGER_GAMES) updateHungerRound(state, now);
     updateMatch(state, now);

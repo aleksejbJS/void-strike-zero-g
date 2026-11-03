@@ -85,6 +85,6 @@ export const createPreviewState = (mode: GameMode, map: MapId): GameState => ({
     // The world is drawn scaled: the renderer centres the camera at screen centre in unscaled
     // px, so the camera is given pre-scaled (see PreviewCanvas)
     camera: { x: VIEW_CENTER.x * VIEW_SCALE, y: VIEW_CENTER.y * VIEW_SCALE, zoom: 1 },
-    ragdollParts: [],
+    corpses: [],
     beams: [],
 });

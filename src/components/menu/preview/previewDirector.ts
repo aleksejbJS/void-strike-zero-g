@@ -1,12 +1,13 @@
 // Plays a mode script into a GameState at the physics tick rate, so the game's own renderer
 // can draw it: actors follow their keys, switch weapons, carry flags, fire real projectiles,
-// bleed, die into ragdolls and respawn; props (flags, intel) lie on the map until picked up.
-// Particles, ragdolls and floating texts age exactly as in a match.
+// bleed, die into corpses and respawn; props (flags, intel) lie on the map until picked up.
+// Particles, corpses and floating texts age exactly as in a match.
 
 import { Entity, GameMode, GameState, MapId, Pickup, Vector2 } from '../../../types';
 import { PHYSICS_TICK_RATE, WEAPONS_DATA } from '../../../constants';
 import { applyEffectEvent, deathEvent, jetpackTrail } from '../../../game/systems/effects';
-import { updateFloatingTexts, updateParticles, updateRagdolls } from '../../../game/systems/particles';
+import { updateFloatingTexts, updateParticles } from '../../../game/systems/particles';
+import { updateCorpses } from '../../../game/systems/ragdoll/corpses';
 import {
     ActorScript, aimTargetAt, carriedAt, crossed, isDeadAt, isPropHidden, ModeScript, sampleActor, weaponAt, zoneAt,
 } from './previewScript';
@@ -96,7 +97,7 @@ export const createDirector = (script: ModeScript, mode: GameMode, map: MapId, y
             if (script.zone) state.hungerZone = zoneAt(script.zone, t, script.duration);
             shots.tick();
             updateParticles(state);
-            updateRagdolls(state);
+            updateCorpses(state);
             updateFloatingTexts(state);
         },
     };
