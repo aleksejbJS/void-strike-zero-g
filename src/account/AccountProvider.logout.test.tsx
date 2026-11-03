@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { act } from '@testing-library/react';
-import { ALEX, BO, installAccountHarness, networkError, snap } from '../test/accountHarness';
+import { achievementManager } from '../game/systems/achievements';
+import { ALEX, BO, deferred, installAccountHarness, networkError, snap } from '../test/accountHarness';
+import { notifyProgressChanged } from './progressEvents';
+import { DEFAULT_DEBOUNCE_MS } from './sync';
 
 const PENDING_ALEX = `accountPending:${ALEX.id}`;
 
@@ -44,6 +47,45 @@ describe('AccountProvider logOut', () => {
         expect(h.account()).toMatchObject({ status: 'guest', nickname: null });
         expect(h.store.fighterXp).toBeUndefined();
         expect(h.store.playerName).toBeUndefined();
+    });
+
+    it('keeps a change made during the last push as pending, even when that push succeeds', async () => {
+        await loggedInWithXp(70);
+        const save = deferred<void>();
+        h.api.saveSnapshot.mockReturnValueOnce(save.promise);
+        let pending!: Promise<void>;
+        await act(async () => { pending = h.account().logOut(); });
+        await h.settle();
+        expect(h.api.saveSnapshot).toHaveBeenLastCalledWith(ALEX.id, expect.objectContaining({ xp: 70 }));
+        h.store.fighterXp = '99'; // e.g. match XP paid while the push is on its way
+        notifyProgressChanged();
+        await act(async () => { save.resolve(); await pending; });
+        expect(JSON.parse(h.store[PENDING_ALEX]).xp).toBe(99);
+        expect(h.store.fighterXp).toBeUndefined();
+        expect(h.account().status).toBe('guest');
+    });
+
+    it('is a guest before the logout request ends: what is earned meanwhile stays as guest progress', async () => {
+        await loggedInWithXp(70);
+        const request = deferred<void>();
+        h.api.logOut.mockReturnValue(request.promise);
+        let pending!: Promise<void>;
+        await act(async () => { pending = h.account().logOut(); });
+        await h.settle();
+        expect(h.account()).toMatchObject({ status: 'guest', nickname: null });
+        expect(h.store.fighterXp).toBeUndefined();
+        const savesBefore = h.api.saveSnapshot.mock.calls.length;
+
+        h.store.fighterXp = '15';
+        achievementManager.updateProgress('first_blood');
+        notifyProgressChanged();
+        await act(async () => { request.resolve(); await pending; });
+        await h.advance(DEFAULT_DEBOUNCE_MS);
+
+        expect(h.store.fighterXp).toBe('15');
+        expect(JSON.parse(h.store.achievementProgress).first_blood.unlocked).toBe(true);
+        expect(h.api.saveSnapshot).toHaveBeenCalledTimes(savesBefore); // guest progress never goes to the account
+        expect(h.store[PENDING_ALEX]).toBeUndefined();
     });
 });
 

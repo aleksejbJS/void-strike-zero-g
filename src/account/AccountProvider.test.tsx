@@ -56,6 +56,18 @@ describe('AccountProvider start-up', () => {
         expect(h.ui().playerName).toBe('Alex');
         expect(h.api.fetchSnapshot).toHaveBeenCalledTimes(1); // StrictMode's discarded first run did not pull
     });
+
+    it('restores a session with progress left unsent at its last logout: merged and pushed', async () => {
+        h.store[`accountPending:${ALEX.id}`] = JSON.stringify(snap(70));
+        h.api.currentUser.mockResolvedValue(ALEX);
+        h.api.fetchSnapshot.mockResolvedValue(snap(10));
+        h.mount();
+        await h.settle();
+        expect(h.account().status).toBe('loggedIn');
+        expect(h.store.fighterXp).toBe('70');
+        expect(h.savedFor(ALEX.id).at(-1)?.xp).toBe(70);
+        expect(h.store[`accountPending:${ALEX.id}`]).toBeUndefined();
+    });
 });
 
 describe('AccountProvider logIn / signUp', () => {

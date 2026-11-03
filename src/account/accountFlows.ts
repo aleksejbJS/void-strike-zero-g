@@ -45,27 +45,32 @@ export interface LogOutSteps {
     sync: Sync;
     userId: string;
     reloadPlayer: () => void;
-    /** Called once the last push is settled and `sync` disposed: stop pushing for this user from here on. */
-    detach: () => void;
+    /**
+     * Called once the device is a clean guest (last push settled, `sync` disposed, local data cleared),
+     * before the session itself is ended: stop pushing for this user and show the guest.
+     */
+    becomeGuest: () => void;
 }
 
 /**
- * Tries one last push, keeps on the device whatever could not be sent (under the account's id), then
- * ends the session and leaves a clean guest. Never rejects, so logging out always completes locally.
+ * Tries one last push, keeps on the device whatever could not be sent (under the account's id), leaves a
+ * clean guest, then ends the session. The device is a guest before the (possibly slow) logout request:
+ * anything earned while it runs is ordinary guest progress, not lost account progress.
+ * Never rejects, so logging out always completes locally.
  */
-export async function logOutFlow({ api, sync, userId, reloadPlayer, detach }: LogOutSteps): Promise<void> {
+export async function logOutFlow({ api, sync, userId, reloadPlayer, becomeGuest }: LogOutSteps): Promise<void> {
     const ok = await sync.flush(userId);
     // hasPending also catches a change made while that push was in flight (it is not in what was saved).
     if (!ok || sync.hasPending(userId)) savePending(userId, readLocalSnapshot());
     sync.dispose();
-    detach();
+    clearLocalSnapshot();
+    reloadPlayer();
+    becomeGuest();
 
     try {
         await api.logOut();
     } catch (error) {
-        // The device still forgets the player: its progress is in the cloud or kept as pending above.
-        console.warn('[account] logout request failed, logging out on this device anyway:', error);
+        // The device already forgot the player: its progress is in the cloud or kept as pending above.
+        console.warn('[account] logout request failed, logged out on this device anyway:', error);
     }
-    clearLocalSnapshot();
-    reloadPlayer();
 }

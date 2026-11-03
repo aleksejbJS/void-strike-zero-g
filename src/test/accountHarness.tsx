@@ -20,6 +20,13 @@ export const BO: AccountUser = { id: 'user-2', nickname: 'Bo' };
 export const snap = (xp: number): PlayerSnapshot => ({ achievements: {}, xp, look: null });
 export const networkError = (): AccountError => new AccountError('network', 'offline');
 
+/** A promise the test settles by hand, to hold an api call in flight. */
+export function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>(r => { resolve = r; });
+    return { promise, resolve };
+}
+
 export type FakeApi = { [K in keyof AccountApi]: Mock };
 
 export interface AccountHarness {

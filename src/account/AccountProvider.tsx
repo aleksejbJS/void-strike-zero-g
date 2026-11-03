@@ -17,7 +17,10 @@ interface View { status: AccountStatus; nickname: string | null; userId: string 
 const view = (status: AccountStatus, user: AccountUser | null = null): View =>
     ({ status, nickname: user?.nickname ?? null, userId: user?.id ?? null });
 
-const unavailable = (): AccountError => new AccountError('network', 'accounts are not available');
+/** Accounts cannot be used right now (disabled, still starting up, or a logout still finishing). */
+const unavailable = (): AccountError => new AccountError('network', 'accounts are not available right now');
+/** A programming mistake: the UI offered an action the current state does not allow. */
+const misuse = (what: string): Error => new Error(`[account] ${what}`);
 
 export interface AccountProviderProps {
     children: React.ReactNode;
@@ -33,7 +36,7 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
     const apiRef = useRef<AccountApi | null>(null);
     const syncRef = useRef<Sync | null>(null);
     const activeUser = useRef<string | null>(null); // the only account pushes may go to
-    const busy = useRef(false); // a login or logout is running
+    const running = useRef<'login' | 'logout' | null>(null); // the flow in progress, if any
 
     const show = useCallback((next: View) => {
         viewRef.current = next;
@@ -84,11 +87,11 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
     const signIn = useCallback(async (call: (api: AccountApi) => Promise<AccountUser>): Promise<void> => {
         const api = apiRef.current;
         const sync = syncRef.current;
-        if (!api || !sync) throw unavailable();
-        if (busy.current || viewRef.current.status !== 'guest') {
-            throw new Error('[account] log in is only possible for a guest, one attempt at a time');
-        }
-        busy.current = true;
+        const { status } = viewRef.current;
+        if (status === 'loggedIn') throw misuse('log in while already logged in');
+        if (!api || !sync || status !== 'guest' || running.current === 'logout') throw unavailable();
+        if (running.current) throw misuse('log in while another login is running');
+        running.current = 'login';
         try {
             const user = await call(api); // rejects with AccountError: the player stays a guest
             await completeLogin(sync, user, reloadPlayer);
@@ -96,7 +99,7 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
             activeUser.current = user.id;
             show(view('loggedIn', user));
         } finally {
-            busy.current = false;
+            running.current = null;
         }
     }, [reloadPlayer, show]);
 
@@ -107,21 +110,23 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         const api = apiRef.current;
         const sync = syncRef.current;
         const userId = activeUser.current;
-        if (!api || !sync || !userId || busy.current) {
-            throw new Error('[account] log out is only possible while logged in, one attempt at a time');
-        }
-        busy.current = true;
+        const { status } = viewRef.current;
+        if (status === 'guest') throw misuse('log out while not logged in');
+        if (!api || !sync || status !== 'loggedIn') throw unavailable();
+        if (running.current || !userId) throw misuse('log out while another login or logout is running');
+        running.current = 'logout';
         try {
             await logOutFlow({
                 api, sync, userId, reloadPlayer,
-                detach: () => {
+                becomeGuest: () => {
                     activeUser.current = null;
-                    if (syncRef.current === sync) syncRef.current = createSync(api); // fresh one for the next login
+                    if (syncRef.current !== sync) return; // the provider was torn down meanwhile
+                    syncRef.current = createSync(api); // a fresh one for the next login
+                    show(view('guest'));
                 },
             });
-            if (apiRef.current === api) show(view('guest'));
         } finally {
-            busy.current = false;
+            running.current = null;
         }
     }, [reloadPlayer, show]);
 
