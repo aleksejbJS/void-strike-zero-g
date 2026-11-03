@@ -4,6 +4,7 @@
 import { PLAYER_KEYS, writeStored } from '../store/playerStorage';
 import type { AccountApi, AccountUser } from './accountApi';
 import { clearLocalSnapshot, readLocalSnapshot, writeLocalSnapshot } from './localSnapshot';
+import { cacheNickname } from './nicknameCache';
 import { savePending, takePending } from './pendingStore';
 import { mergeSnapshots } from './snapshot';
 import type { Sync } from './sync';
@@ -21,8 +22,10 @@ export async function completeLogin(sync: Sync, user: AccountUser, reloadPlayer:
         sync.requestPush(user.id);
     }
 
-    // 2. Logged in, the player's name is the account nickname.
+    // 2. Logged in, the player's name is the account nickname. Also remembered per account, so a later
+    //    start-up without the cloud can keep this session logged in under the right name.
     writeStored(PLAYER_KEYS.name, user.nickname);
+    cacheNickname(user.id, user.nickname);
 
     // 3. Cloud -> local (also pushes back whatever the cloud lacks, e.g. the guest's progress).
     try {
