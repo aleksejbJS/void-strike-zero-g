@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ITEM_ICON, PANEL } from './hudIcons';
+import { BleedingDrop } from './BleedingDrop';
 import type { Translate } from '../menu/types';
 
 const SEGMENTS = 10;
@@ -16,14 +17,6 @@ const SegmentBar: React.FC<{ percent: number; color: string; height: number }> =
         </div>
     );
 };
-
-/** Small red blood drop that pulses next to the HP number while the fighter bleeds. */
-const BleedingDrop: React.FC<{ label: string }> = ({ label }) => (
-    <svg role="img" aria-label={label} viewBox="0 0 24 24"
-        className="absolute -right-1 top-1 h-[18px] w-[18px] animate-pulse text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.7)] motion-reduce:animate-none">
-        <path fill="currentColor" d="M12 2C12 2 5 10.2 5 15a7 7 0 0 0 14 0C19 10.2 12 2 12 2Z" />
-    </svg>
-);
 
 interface Props {
     t: Translate;
@@ -56,10 +49,10 @@ export const Vitals: React.FC<Props> = ({ t, hp, armor, fuel, maxFuel, bleeding 
                 <span className="absolute -top-9 left-4 animate-[float_1.5s_ease-out_forwards] font-display text-3xl font-black text-green-400">+{gain}</span>
             )}
             <img src={ITEM_ICON.health} alt={t('hud.health')} className="h-9 w-9 justify-self-center object-contain" />
-            <div className={`relative font-display text-[52px] font-black leading-[0.9] ${low ? 'text-bay-signal' : ''}`}>
+            <span className={`font-display text-[52px] font-black leading-[0.9] ${low ? 'text-bay-signal' : ''}`}>
                 {Math.max(0, hp)}
-                {bleeding && <BleedingDrop label={t('hud.bleeding')} />}
-            </div>
+                {bleeding && <BleedingDrop label={t('hud.bleeding')} className="ml-1 mt-1 align-top" />}
+            </span>
             <SegmentBar percent={hp} color={low ? '#FF4D2E' : '#ECE9E2'} height={14} />
 
             <img src={ITEM_ICON.armor} alt={t('hud.armor')} className="h-9 w-9 justify-self-center object-contain" />

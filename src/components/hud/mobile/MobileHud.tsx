@@ -64,7 +64,7 @@ export const MobileHud: React.FC<Props> = p => {
     const fuelPercent = Math.round((stats.fuel / (stats.maxFuel || 100)) * 100);
     return (
         <>
-            <MobileTopBar t={t} hp={stats.hp} armor={stats.arm} fuelPercent={fuelPercent} clock={p.clock}
+            <MobileTopBar t={t} hp={stats.hp} armor={stats.arm} fuelPercent={fuelPercent} bleeding={stats.bleeding} clock={p.clock}
                 match={matchOf(p.teamMode, p.scores, p.playerScores)}
                 muted={p.muted} onToggleMute={p.onToggleMute} onOpenAchievements={p.onOpenAchievements} invite={p.invite} />
             {p.objective && (
