@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.20 (unreleased)
+## Version 0.4.20 (2026-11-03)
 
 ### 🦵 Railgun Wound
 - A railgun beam on a fighter with any armor (> 0) no longer kills (spec: `docs/plans/2026-11-03-railgun-wound-spec.md`): armor drops to 0, health becomes min(health, `WOUND_HEALTH` = 10) and the fighter loses the back leg (`Entity.wound = { by: shooterId }`, `systems/wound.ts`). A beam on an unarmored fighter still kills, including a wounded one (the wound burned the armor). A wounded fighter who picks up armor and is beamed again is wounded again: armor 0, health min(·, 10), the bleed credited to the newest shooter, no second leg thrown. Only the railgun wounds; the Hunger round-start shield still blocks the beam
