@@ -9,7 +9,7 @@ import { insideZone } from './hungerRound';
 import { NavGraph } from './botNavGraph';
 import { roamGoal } from './botRoam';
 import { preferredRange } from './botCombatMoves';
-import { chasePoint, knownPos } from './botSearch';
+import { chasePoint, knownPos, searchGoal } from './botSearch';
 
 export interface BotGoal {
     moveTarget: Vector2;
@@ -89,10 +89,11 @@ const ctfGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity |
 };
 
 const fightOrRoam = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, graph: NavGraph, now: number): BotGoal => {
-    // Smoke hides where the target is: search its last-seen spot, then roam (still aiming at it)
+    // Smoke hides where the target is: go to its last-seen spot, look around it, then roam (still aiming at it)
     const targetAt = target ? chasePoint(state, bot, mem, target, now) : null;
     if (target && targetAt) {
         mem.state = 'hunt';
+        mem.search = null;
         // An enemy behind a wall: go and find it instead of holding distance
         if (!mem.targetVisible) return { moveTarget: targetAt, target };
         // Close it to the weapon's range; within it hold the surface (combat moves strafe and back off)
@@ -100,7 +101,7 @@ const fightOrRoam = (state: GameState, bot: Entity, mem: BotMemory, target: Enti
         return { moveTarget: bot.pos, target };
     }
     mem.state = 'roam';
-    return { moveTarget: roamGoal(state, bot, mem.nav, graph, now), target };
+    return { moveTarget: searchGoal(state, bot, mem, graph, now) ?? roamGoal(state, bot, mem.nav, graph, now), target };
 };
 
 const OBJECTIVES: Partial<Record<GameMode, typeof ctfGoal>> = {
