@@ -50,8 +50,9 @@ export const AdsAdmin: React.FC = () => {
 
     const active = AD_PLACES.filter(p => config.places[p.id]?.enabled).length;
 
+    // The game turns off page scrolling (body overflow: hidden), so this page scrolls itself
     return (
-        <main className="min-h-screen bg-bay-ink font-body text-bay-chalk">
+        <main className="h-screen overflow-y-auto bg-bay-ink font-body text-bay-chalk">
             <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
                 <header className="flex flex-col gap-3">
                     <div aria-hidden="true" className="hazard-stripes h-3 w-64" />
