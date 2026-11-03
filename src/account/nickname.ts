@@ -12,6 +12,8 @@ const LATIN_LETTER = /^(?=\p{L})\p{Script=Latin}$/u;
 const CYRILLIC_LETTER = /^(?=\p{L})\p{Script=Cyrillic}$/u;
 const NEUTRAL_CHAR = /^[0-9_\- ]$/;
 const BOT_NAME = /^bot \d+$/;
+// What a lower-cased key may contain: nothing but letters, digits, '_', '-' and space.
+const KEY_CHARS = /^[\p{L}0-9_\- ]+$/u;
 
 // The email local part is 'n' + 2 hex chars per UTF-8 byte of the key and must fit 64 chars.
 const EMAIL_LOCAL_MAX = 64;
@@ -48,6 +50,10 @@ export function validateNickname(raw: string): NicknameError | null {
     // can push the lower-cased key past what the email local part holds.
     const key = nicknameKey(raw);
     if (utf8(key).length > KEY_MAX_BYTES) return 'bad_chars';
+
+    // A capital that lower-cases to letter + combining mark (İ -> i + U+0307) makes a key the database's
+    // own lower() cannot reproduce, so the sign-up trigger would refuse it.
+    if (!KEY_CHARS.test(key)) return 'bad_chars';
 
     if (key === GUEST_DEFAULT_NAME.toLowerCase() || BOT_NAME.test(key)) return 'reserved';
     return null;

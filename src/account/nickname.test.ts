@@ -65,6 +65,12 @@ describe('validateNickname', () => {
         expect(validateNickname('\u{10780}'.repeat(12))).toBe('bad_chars'); // 4-byte Latin letter
     });
 
+    it('rejects names whose lower-casing leaves a combining mark (JS and the database would disagree)', () => {
+        expect(validateNickname('İzmir')).toBe('bad_chars'); // İ lower-cases to i + U+0307
+        expect(validateNickname('Ёжик')).toBeNull();
+        expect(validateNickname('Alex_99')).toBeNull();
+    });
+
     it('allows the longest Cyrillic name and stops exactly past 31 key bytes', () => {
         expect(validateNickname('Ё'.repeat(12))).toBeNull(); // 24 bytes
         const at31 = 'Ａ'.repeat(10) + 'b'; // 10 x 3 + 1 = 31 bytes

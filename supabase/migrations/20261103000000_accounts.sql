@@ -2,12 +2,13 @@
 -- Paste this whole file into Supabase Dashboard -> SQL Editor -> New query -> Run.
 -- Safe to run more than once. Setup steps: docs/supabase-setup.md
 
--- Precondition. The sign-up trigger compares lower(nickname) with the key the browser computed,
--- which needs a database locale that lower-cases Cyrillic. Fail here rather than on a player's sign-up.
+-- Precondition. The sign-up trigger compares lower(nickname) with the key the browser computed and
+-- tests letters with [[:alnum:]]; both need a database locale that knows Cyrillic.
+-- Fail here rather than on a player's sign-up.
 do $$
 begin
-    if lower('Тест') <> 'тест' then
-        raise exception 'Database locale (%) cannot lower-case Cyrillic, so nickname checks would reject Cyrillic names. Ask the developer before going on.',
+    if lower('Тест') <> 'тест' or 'Тест' !~ '^[[:alnum:]]+$' then
+        raise exception 'Database locale (%) cannot handle Cyrillic letters, so nickname checks would reject Cyrillic names. Ask the developer before going on.',
             (select datctype from pg_database where datname = current_database());
     end if;
 end
@@ -49,11 +50,12 @@ security definer
 set search_path = public
 as $$
 declare
-    v_nickname text := btrim(coalesce(new.raw_user_meta_data ->> 'nickname', ''));
-    v_nickname_key text := btrim(coalesce(new.raw_user_meta_data ->> 'nickname_key', ''));
+    -- Not trimmed on purpose: the spacing rule below must see exactly what the client sent.
+    v_nickname text := coalesce(new.raw_user_meta_data ->> 'nickname', '');
+    v_nickname_key text := coalesce(new.raw_user_meta_data ->> 'nickname_key', '');
 begin
     -- Fail loudly: a rejected nickname aborts the whole sign-up instead of leaving a profile-less user.
-    if v_nickname = '' or v_nickname_key = '' then
+    if btrim(v_nickname) = '' or btrim(v_nickname_key) = '' then
         raise exception 'Sign-up needs "nickname" and "nickname_key" in the user metadata';
     end if;
 
@@ -65,6 +67,22 @@ begin
 
     if char_length(v_nickname) not between 3 and 12 then
         raise exception 'Nickname must be 3-12 characters';
+    end if;
+
+    -- No leading/trailing space and no double space ("Alex " must not pass for "Alex").
+    if v_nickname <> btrim(v_nickname) or v_nickname ~ '  ' then
+        raise exception 'Nickname must not start or end with a space or contain a double space';
+    end if;
+
+    -- Letters, digits, "_", "-" and single spaces only: no punctuation, emoji or control characters.
+    if v_nickname !~ '^[[:alnum:]_ -]+$' then
+        raise exception 'Nickname may only contain letters, digits, "_", "-" and spaces';
+    end if;
+
+    -- Latin and Cyrillic in one name is the look-alike trick ("Аlex" with a Cyrillic А). The ranges are wider
+    -- than A-Z / А-я on purpose: accented Latin, Ukrainian/Serbian Cyrillic and the like count as well.
+    if v_nickname ~ '[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]' and v_nickname ~ '[\u0400-\u052F]' then
+        raise exception 'Nickname must not mix Latin and Cyrillic letters';
     end if;
 
     if lower(v_nickname) <> v_nickname_key then

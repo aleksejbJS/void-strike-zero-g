@@ -32,6 +32,12 @@ describe('migration trigger guards', () => {
         expect(sql).toContain("'n' || encode(convert_to(v_nickname_key, 'UTF8'), 'hex') || '@players.invalid'");
     });
 
+    it('repeats the charset, spacing and look-alike rules', () => {
+        expect(sql).toContain("v_nickname !~ '^[[:alnum:]_ -]+$'");
+        expect(sql).toContain("v_nickname <> btrim(v_nickname) or v_nickname ~ '  '");
+        expect(sql).toMatch(/v_nickname ~ '\[A-Za-z[^']*\]' and v_nickname ~ '\[\\u0400-\\u052F\]'/);
+    });
+
     it('enforces the length, case and reserved-name rules', () => {
         expect(sql).toContain(`char_length(v_nickname) not between ${NICK_MIN} and ${NICK_MAX}`);
         expect(sql).toContain('lower(v_nickname) <> v_nickname_key');
