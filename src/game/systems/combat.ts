@@ -81,8 +81,9 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 
     // A railgun beam through armor wounds instead of killing: the target lives (no death, no kill feed line)
     if (shouldWound(target, source)) {
+        const hadLeg = !target.wound; // re-wounded through new armor: the leg is already gone
         const lost = inflictWound(target, attackerId);
-        emitLimb(target, source.from);
+        if (hadLeg) emitLimb(target, source.from);
         push();
         if (lost > 0) emitDamage(target.pos.x, target.pos.y - 40, lost);
         return;

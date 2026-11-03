@@ -121,6 +121,17 @@ describe('railgun wound', () => {
         expect(events.some(e => e.type === 'DEATH')).toBe(false);
     });
 
+    it('a wounded fighter beamed through new armor loses no second leg', () => {
+        const { state, shooter, target } = duel(100, 100);
+        beam(state, shooter);
+        target.armor = 50;
+        shooter.lastFired = 0;
+        beam(state, shooter);
+        expect(target.dead).toBe(false);
+        expect(target.armor).toBe(0);
+        expect(limbs()).toHaveLength(1);
+    });
+
     it('emits no LIMB when the beam kills', () => {
         const { state, shooter } = duel(100, 0);
         beam(state, shooter);
