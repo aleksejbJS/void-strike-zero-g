@@ -1,5 +1,6 @@
-// currentUser when the cloud cannot be reached: a stored session stays logged in under the nickname
-// last seen on this device (or the one in the session's metadata); no session is always a guest.
+// The session on this device when the cloud cannot be reached. currentUser: a stored session stays logged
+// in under the nickname last seen here (or the one in the session's metadata); no session is a guest.
+// logOut: when the request fails, the stored session is removed from the device anyway.
 
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { AuthRetryableFetchError } from '@supabase/supabase-js';
@@ -12,7 +13,7 @@ const offline = () => failed({ message: 'TypeError: Failed to fetch' });
 const session = (meta: Record<string, unknown> = {}) => ok({ session: { user: { id: 'u9', user_metadata: meta } } });
 const refreshFailed = () => failed(new AuthRetryableFetchError('Failed to fetch', 0));
 
-describe('currentUser without the cloud', () => {
+describe('the session without the cloud', () => {
     let store: Record<string, string>;
     let warn: Mock;
     let undoEnumerate: () => void;
@@ -66,5 +67,25 @@ describe('currentUser without the cloud', () => {
         cacheNickname('u9', 'Alex');
         const fake = makeFake({ getSession: async () => refreshFailed() });
         await expect(createAccountApi(fake.client).currentUser()).rejects.toMatchObject({ code: 'network' });
+    });
+
+    it('logOut removes the stored session from this device when the request fails, and warns', async () => {
+        store[AUTH_KEY] = storedSession('u9');
+        store['sb-testref-auth-token-code-verifier'] = 'v';
+        store.playerName = 'Alex';
+        const fake = makeFake({ signOut: async () => ({ error: refreshFailed().error }) });
+
+        await expect(createAccountApi(fake.client).logOut()).rejects.toMatchObject({ code: 'network' });
+
+        expect(store[AUTH_KEY]).toBeUndefined();
+        expect(store).toEqual({ 'sb-testref-auth-token-code-verifier': 'v', playerName: 'Alex' });
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('removed 1 stored session'), expect.anything());
+    });
+
+    it('logOut leaves storage to Supabase when the request succeeds', async () => {
+        store[AUTH_KEY] = storedSession('u9');
+        const fake = makeFake();
+        await createAccountApi(fake.client).logOut();
+        expect(store[AUTH_KEY]).toBeDefined(); // the fake signOut does not clear it; the real one does
     });
 });

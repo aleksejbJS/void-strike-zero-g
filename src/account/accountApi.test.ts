@@ -107,7 +107,9 @@ describe('logOut', () => {
     it('surfaces a sign-out failure', async () => {
         const fake = makeFake({ signOut: async () => ({ error: new Error('boom') }) });
         vi.spyOn(console, 'error').mockImplementation(() => {});
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         await expect(createAccountApi(fake.client).logOut()).rejects.toBeInstanceOf(AccountError);
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('logout request failed'), expect.anything());
     });
 });
 

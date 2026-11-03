@@ -34,3 +34,14 @@ export function readStoredAuthUser(): StoredAuthUser | null {
     }
 }
 
+/** Removes every stored Supabase session from this device; returns how many were removed. */
+export function removeStoredAuthSessions(): number {
+    try {
+        const keys = authTokenKeys();
+        for (const key of keys) localStorage.removeItem(key);
+        return keys.length;
+    } catch (error) {
+        console.warn('[account] could not remove the stored session:', error);
+        return 0;
+    }
+}

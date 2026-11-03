@@ -7,7 +7,7 @@ import { PASSWORD_MIN } from './passwordRules';
 import { nicknameKey, nicknameToEmail, normalizeNickname, validateNickname } from './nickname';
 import { isUsableNickname, readCachedNickname } from './nicknameCache';
 import { PlayerSnapshot, sanitizeSnapshot } from './snapshot';
-import { readStoredAuthUser, StoredAuthUser } from './storedAuth';
+import { readStoredAuthUser, removeStoredAuthSessions, StoredAuthUser } from './storedAuth';
 
 export { AccountError } from './accountError';
 export type { AccountErrorCode } from './accountError';
@@ -101,11 +101,18 @@ export function createAccountApi(client: SupabaseClient): AccountApi {
         },
 
         async logOut() {
-            // "local" ends the session on this device without needing the network.
-            return guarded('logOut', async () => {
+            // Not offline-safe: signOut first loads the session (refreshing an expired token over the network)
+            // and then tells the server. When it fails, the session can stay stored and would come back on the
+            // next start-up, so it is removed from this device by hand. Still rejects: the caller decides.
+            try {
                 const { error } = await client.auth.signOut({ scope: 'local' });
                 if (error) throw error;
-            });
+            } catch (error) {
+                const failure = toAccountError(error, 'logOut');
+                const removed = removeStoredAuthSessions();
+                console.warn(`[account] logout request failed; removed ${removed} stored session(s) from this device instead:`, failure);
+                throw failure;
+            }
         },
 
         async currentUser() {
