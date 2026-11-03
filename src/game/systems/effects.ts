@@ -4,7 +4,7 @@
 // so offline play and every online client look the same.
 
 import { Entity, GameState, Projectile, Vector2, WeaponType } from '../../types';
-import { gameEvents, GameEvent, DeathEvent, EffectKind } from './events';
+import { gameEvents, GameEvent, DeathEvent, EffectKind, LimbEvent, RagdollColors } from './events';
 import type { DeathKind } from './deathKind';
 import { nextId } from '../utils/id';
 import { createParticles } from './effectSpawn';
@@ -38,15 +38,25 @@ export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, b
 export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false): DeathEvent => ({
     type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
     kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type, blast,
-    parts: {
-        head: e.headColor || e.color,
-        torso: e.torsoColor || e.color,
-        arm: e.armColor || e.color,
-        leg: e.legColor || '#475569',
-        jet: e.jetpackColor,
-        build: e.build ?? presetBuild(e.skinId),
-    },
+    parts: ragdollColors(e),
 });
+
+/** The colours (and build) of the body parts that fly off a fighter: its corpse and its torn-off leg. */
+export const ragdollColors = (e: Entity): RagdollColors => ({
+    head: e.headColor || e.color,
+    torso: e.torsoColor || e.color,
+    arm: e.armColor || e.color,
+    leg: e.legColor || '#475569',
+    jet: e.jetpackColor,
+    build: e.build ?? presetBuild(e.skinId),
+});
+
+/** A fighter survived a railgun beam but lost a leg: the leg flies off (see LimbEvent). */
+export const emitLimb = (e: Entity, from?: Vector2) =>
+    gameEvents.emit({
+        type: 'LIMB', x: e.pos.x, y: e.pos.y, facing: e.facingRight ? 1 : -1, vel: { ...e.vel },
+        from: from && { ...from }, parts: ragdollColors(e),
+    });
 
 export const emitText = (x: number, y: number, text: string, color: string) =>
     gameEvents.emit({ type: 'FLOAT_TEXT', x, y, text, color });

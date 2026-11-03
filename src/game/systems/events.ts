@@ -23,11 +23,15 @@ export type GameEvent =
     // `blast` = killed by an explosion's splash, not a shot (missing from older hosts).
     | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors;
         kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType; blast?: boolean }
+    // A railgun beam tore a leg off a fighter who survived (a wound): where it stood, which way it faced,
+    // `vel` = its velocity, `from` = beam origin, `parts` = its colours for the flying leg.
+    | { type: 'LIMB'; x: number; y: number; facing: 1 | -1; vel: Vector2; from?: Vector2; parts?: RagdollColors }
     // An objective changed hands (HUD banner). `team`: the flag's team for CTF grabbed/lost/returned,
     // the scoring team for CTF captured, the holder's team in Hold the Flag, NONE for intel.
     | { type: 'FLAG'; kind: FlagKind; action: FlagAction; team: Team };
 
 export type DeathEvent = Extract<GameEvent, { type: 'DEATH' }>;
+export type LimbEvent = Extract<GameEvent, { type: 'LIMB' }>;
 
 /** Colors of the body parts that fly apart on death, and the build whose parts they keep (none: the default build). `jet`: the jetpack. */
 export interface RagdollColors { head: string; torso: string; arm: string; leg: string; jet?: string; build?: FighterBuild }

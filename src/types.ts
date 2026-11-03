@@ -65,6 +65,9 @@ export interface Pickup {
   value: number;
 }
 
+/** A leg lost to a railgun beam through armor; `by` is the shooter who gets the frag if it bleeds out. */
+export interface Wound { by: string }
+
 export interface Entity {
   id: string;
   pos: Vector2;
@@ -111,6 +114,7 @@ export interface Entity {
   aim?: number; // Aim angle in radians (lets other clients render where this player points)
   jetpackOn?: boolean; // Jetpack thrusting this tick (lets other clients draw the flame)
   hungerOutTimer?: number;
+  wound?: Wound; // lost a leg to a railgun through armor (missing from older hosts: whole)
 }
 
 export interface Projectile {

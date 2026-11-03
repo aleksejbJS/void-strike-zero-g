@@ -19,6 +19,8 @@ export interface DamageSource {
     from?: Vector2;
     /** World units from the shooter to the victim. */
     shooterDist?: number;
+    /** Bleeding from a wound, not a hit: never wounds again, no knockback. */
+    bleed?: boolean;
 }
 
 /** Damage beyond the victim's remaining health that turns an explosion into gibs. */

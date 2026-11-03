@@ -8,8 +8,9 @@ import { nextId } from '../utils/id';
 import { distance, normalize, checkPointInRect, segmentRectEntry, segmentIntersectsRect } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
-import { emitEffect, emitDamage, emitDeath } from './effects';
+import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
+import { shouldWound, inflictWound } from './wound';
 import { emitFlag } from './flagEvents';
 import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
@@ -69,6 +70,24 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     const dmgMult = isSelf ? SELF_DAMAGE_MULT : 1;
     const kbMult = isSelf ? SELF_KNOCKBACK_MULT : 1;
 
+    // Directional knockback using weapon's knockbackForce
+    const push = () => {
+        const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
+        const airMult = target.isGrounded ? 1 : KNOCKBACK_AIR_MULT;
+        const force = (knockbackForce || amount / 10) * kbMult * airMult;
+        target.vel.x += (knockback.x / len) * force;
+        target.vel.y += (knockback.y / len) * force;
+    };
+
+    // A railgun beam through armor wounds instead of killing: the target lives (no death, no kill feed line)
+    if (shouldWound(target, source)) {
+        const lost = inflictWound(target, attackerId);
+        emitLimb(target, source.from);
+        push();
+        if (lost > 0) emitDamage(target.pos.x, target.pos.y - 40, lost);
+        return;
+    }
+
     const holdingHTF = state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
     let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
     if (target.armor > 0) {
@@ -79,12 +98,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
-    // Directional knockback using weapon's knockbackForce
-    const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
-    const airMult = target.isGrounded ? 1 : KNOCKBACK_AIR_MULT;
-    const force = (knockbackForce || amount / 10) * kbMult * airMult;
-    target.vel.x += (knockback.x / len) * force;
-    target.vel.y += (knockback.y / len) * force;
+    push();
 
     emitDamage(target.pos.x, target.pos.y - 40, dmg);
 
