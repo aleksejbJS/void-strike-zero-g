@@ -89,4 +89,5 @@ export class FighterMotion {
 
 /** Head tilt added to the pose while running; twice per stride, like a nod on each step. */
 export const headBob = (state: FighterState, phase: number): number =>
-    state === 'run' ? Math.sin(2 * phase) * HEAD_BOB_AMPLITUDE : 0;
+    state === 'run' ? Math.sin(2 * phase) * HEAD_BOB_AMPLITUDE
+        : state === 'walk' ? Math.sin(2 * phase) * HEAD_BOB_AMPLITUDE * 0.4 : 0;

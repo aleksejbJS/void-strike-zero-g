@@ -12,7 +12,7 @@ import { Scoreboard, TeamScore, KillFeed } from './ScoreHud';
 import { HudButtons, AchievementToast, AchievementsPanel } from './Achievements';
 import { HungerHud, HungerHudState, GunGameHud, GunGameStatus } from './ModeHud';
 import { DeathOverlay, ConnectionOverlay, InviteBanner, DebugStats } from './Overlays';
-import { MobileControls, Joystick } from './MobileControls';
+import { MobileHud, MobileControls } from './mobile/MobileHud';
 import { formatClock } from './format';
 import { MatchResult } from './MatchResult';
 import { FlagBanner } from './FlagBanner';
@@ -45,7 +45,7 @@ export interface GameHudProps {
     hunger: HungerHudState | null;
     gunGame: { status: GunGameStatus | null; winner: string | null } | null;
     reward: Reward | null; // XP for the match that just ended; null while play goes on
-    mobile: { joystick: Joystick | null; jumpDown: boolean; hookDown: boolean; onJump: (down: boolean) => void; onHook: (down: boolean) => void } | null;
+    mobile: MobileControls | null; // touch device: the phone HUD and twin sticks instead of the desktop pieces
 }
 
 const isTeamMode = (mode: GameMode) => mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -57,14 +57,38 @@ export const GameHud: React.FC<GameHudProps> = p => {
 
     return (
         <div className="font-body text-bay-chalk">
+            {p.mobile ? (
+                <MobileHud t={t} teamMode={isTeamMode(mode)} stats={stats} scores={p.scores} clock={clock} objective={p.objective}
+                    playerScores={p.playerScores} inventory={p.inventory} activeWeapon={p.activeWeapon} killFeed={p.killFeed}
+                    recentAchievement={p.recentAchievement} muted={p.muted} onToggleMute={p.onToggleMute}
+                    onOpenAchievements={p.onAchievementsOpen} controls={p.mobile} />
+            ) : (
+                <DesktopHud {...p} clock={clock} activeWeaponData={activeWeapon} />
+            )}
+            {isTeamMode(mode) && <FlagBanner t={t} banner={p.flagBanner} />}
+            {mode === GameMode.HUNGER_GAMES && p.hunger && <HungerHud t={t} s={p.hunger} ranking={p.playerScores} reward={p.reward} />}
+            {mode === GameMode.GUN_GAME && p.gunGame && <GunGameHud t={t} status={p.gunGame.status} winner={p.gunGame.winner} reward={p.reward} />}
+
+            {p.inviteLink && <InviteBanner t={t} link={p.inviteLink} />}
+            {p.debug && <DebugStats fps={p.debug.fps} tps={p.debug.tps} />}
+            {stats.dead && mode !== GameMode.HUNGER_GAMES && <DeathOverlay t={t} respawnMs={stats.respawn} />}
+            {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} />}
+            {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} reward={p.reward} onLeave={p.onLeave} />}
+            {p.achievementsOpen && <AchievementsPanel t={t} onClose={p.onAchievementsClose} />}
+        </div>
+    );
+};
+
+/** Desktop pieces: scoreboard or team score, buttons and kill feed, vitals, weapon slots, ammo. */
+const DesktopHud: React.FC<GameHudProps & { clock?: string; activeWeaponData?: Weapon }> = p => {
+    const { t, mode, stats, clock } = p;
+    return (
+        <>
             {!isTeamMode(mode) && p.playerScores.length > 0 && (
                 <Scoreboard t={t} players={p.playerScores} clock={clock} goal={p.match?.goal}
                     gunLadder={mode === GameMode.GUN_GAME ? { total: GUN_GAME_LADDER.length, perLevel: GUN_GAME_KILLS_PER_LEVEL } : undefined} />
             )}
             {isTeamMode(mode) && <TeamScore t={t} blue={p.scores.blue} red={p.scores.red} objective={p.objective} timer={clock} goal={p.match?.goal} />}
-            {isTeamMode(mode) && <FlagBanner t={t} banner={p.flagBanner} />}
-            {mode === GameMode.HUNGER_GAMES && p.hunger && <HungerHud t={t} s={p.hunger} ranking={p.playerScores} reward={p.reward} />}
-            {mode === GameMode.GUN_GAME && p.gunGame && <GunGameHud t={t} status={p.gunGame.status} winner={p.gunGame.winner} reward={p.reward} />}
 
             <div className="absolute right-8 top-7 z-50 flex flex-col items-end gap-2.5">
                 <HudButtons t={t} muted={p.muted} onToggleMute={p.onToggleMute} onOpenAchievements={p.onAchievementsOpen} />
@@ -74,15 +98,7 @@ export const GameHud: React.FC<GameHudProps> = p => {
 
             <Vitals t={t} hp={stats.hp} armor={stats.arm} fuel={stats.fuel} maxFuel={stats.maxFuel ?? 100} />
             <WeaponBar inventory={p.inventory} active={p.activeWeapon} />
-            <AmmoPanel t={t} weapon={activeWeapon} ammo={stats.ammo} />
-
-            {p.inviteLink && <InviteBanner t={t} link={p.inviteLink} />}
-            {p.debug && <DebugStats fps={p.debug.fps} tps={p.debug.tps} />}
-            {p.mobile && <MobileControls t={t} {...p.mobile} />}
-            {stats.dead && mode !== GameMode.HUNGER_GAMES && <DeathOverlay t={t} respawnMs={stats.respawn} />}
-            {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} />}
-            {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} reward={p.reward} onLeave={p.onLeave} />}
-            {p.achievementsOpen && <AchievementsPanel t={t} onClose={p.onAchievementsClose} />}
-        </div>
+            <AmmoPanel t={t} weapon={p.activeWeaponData} ammo={stats.ammo} />
+        </>
     );
 };

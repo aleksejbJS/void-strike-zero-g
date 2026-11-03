@@ -69,7 +69,7 @@ export class PartMotion {
         // Air blows floppy ears back when moving forward or falling; backing up never throws them forward
         this.flop.step(clamp(Math.max(forward, 0) + Math.max(fall, 0), 0, 1), dt);
         this.wings.step(flying ? 1 : 0, dt);
-        const running = state === 'run' ? Math.abs(forward) : 0;
+        const running = state === 'run' || state === 'walk' ? Math.abs(forward) : 0;
         this.wave += (IDLE_WAVE + (RUN_WAVE - IDLE_WAVE) * running) * Math.max(0, dt);
 
         return {

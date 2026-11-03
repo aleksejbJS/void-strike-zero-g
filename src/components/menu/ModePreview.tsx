@@ -25,15 +25,15 @@ export const ModePreview: React.FC<{ mode: GameMode; map: MapId; info: ModeInfo;
     const live = LIVE_SCENES[mode];
     const label = t('hb.previewLabel', info.name);
     return (
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 phone:gap-1.5">
             {/* key: restart the animations when the mode or map changes */}
             {live
                 ? <LiveStage key={`${mode}-${map}`} mode={mode} map={map} live={live} label={label} t={t} Schematic={Scene} />
                 : <Stage key={mode} label={label}><Scene t={t} /></Stage>}
             <div className="flex flex-col gap-2">
-                <h2 className="m-0 font-display text-[38px] font-black leading-none">{info.name}</h2>
-                <p className="m-0 text-[17px] text-bay-dust">{info.desc}</p>
-                <ul className="m-0 mt-1.5 flex list-none flex-col gap-1.5 p-0">
+                <h2 className="m-0 font-display text-[38px] font-black leading-none phone:sr-only">{info.name}</h2>
+                <p className="m-0 text-[17px] text-bay-dust phone:text-xs phone:leading-snug">{info.desc}</p>
+                <ul className="m-0 mt-1.5 flex phone:hidden list-none flex-col gap-1.5 p-0">
                     {info.rules.map(rule => (
                         <li key={rule} className="flex items-baseline gap-2.5 text-base leading-snug">
                             <span aria-hidden="true" className="h-2 w-2 shrink-0 -translate-y-px bg-bay-hazard" />

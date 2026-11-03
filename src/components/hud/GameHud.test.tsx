@@ -138,3 +138,41 @@ describe('GameHud', () => {
         expect(screen.getByText('Level 2!')).toBeInTheDocument();
     });
 });
+
+describe('GameHud on a phone', () => {
+    const controls = (over: Partial<NonNullable<GameHudProps['mobile']>> = {}): NonNullable<GameHudProps['mobile']> => ({
+        sticks: { move: null, aim: null }, hookDown: false, onHook: vi.fn(), onSelectWeapon: vi.fn(), ...over,
+    });
+
+    it('shows the top bar with your place instead of the desktop scoreboard', () => {
+        render(<GameHud {...base({ mobile: controls(), match: { timeLeftSec: 125, goal: 'First to 20 kills', result: null } })} />);
+        expect(screen.getByText('#1 of 2')).toBeTruthy();
+        expect(screen.getByText('2:05')).toBeTruthy();
+        expect(screen.getByText('82')).toBeTruthy();
+        expect(screen.queryByText('Scoreboard')).toBeNull();
+    });
+
+    it('team modes show the team score and the objective', () => {
+        render(<GameHud {...base({ mode: GameMode.CTF, mobile: controls(), objective: 'Take the red flag' })} />);
+        expect(screen.getByText('2')).toBeTruthy();
+        expect(screen.getByText('1')).toBeTruthy();
+        expect(screen.getByText('Take the red flag')).toBeTruthy();
+    });
+
+    it('tapping a weapon switches to it', () => {
+        const onSelectWeapon = vi.fn();
+        render(<GameHud {...base({ mobile: controls({ onSelectWeapon }) })} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Shotgun' }));
+        expect(onSelectWeapon).toHaveBeenCalledWith(1);
+        expect(screen.getByRole('button', { name: 'Machine Gun' }).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('the hook button holds the hook while pressed', () => {
+        const onHook = vi.fn();
+        render(<GameHud {...base({ mobile: controls({ onHook }) })} />);
+        const hook = screen.getByRole('button', { name: 'Grappling hook' });
+        fireEvent.touchStart(hook);
+        fireEvent.touchEnd(hook);
+        expect(onHook.mock.calls).toEqual([[true], [false]]);
+    });
+});

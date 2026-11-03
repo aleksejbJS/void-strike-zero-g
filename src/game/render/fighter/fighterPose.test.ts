@@ -4,7 +4,7 @@ import { bodyExtents, FighterState, RIG_SCALE, solvePose, upperPoint } from './f
 import { HITBOX } from './fighterStyle';
 import { HELMETS } from '../../build/buildParts';
 import { gripPoints } from './weaponGrips';
-import { faceAim } from './fighterAnimator';
+import { faceAim, stateOf } from './fighterAnimator';
 import { WeaponType } from '../../../types';
 
 const grip = gripPoints(WeaponType.MACHINE_GUN, 55 / 240);
@@ -109,5 +109,36 @@ describe('faceAim', () => {
         const left = faceAim(Math.PI - 0.3);
         expect(left.facing).toBe(-1);
         expect(left.local).toBeCloseTo(0.3);
+    });
+});
+
+describe('walking', () => {
+    const reach = (state: FighterState) => Math.max(
+        ...Array.from({ length: 16 }, (_, i) => Math.abs(pose(state, { phase: (i / 16) * Math.PI * 2 }).frontLeg.end.x)));
+
+    it('takes shorter steps than running', () => {
+        expect(reach('walk')).toBeLessThan(reach('run'));
+        expect(reach('walk')).toBeGreaterThan(4);
+    });
+
+    it('stays as tall as the hitbox', () => {
+        const p = pose('walk', { phase: Math.PI / 2 });
+        expect(p.hip.y).toBeGreaterThan(-31.5);
+        expect(p.hip.y).toBeLessThan(-29.5);
+    });
+});
+
+describe('stateOf', () => {
+    const fighter = (vx: number, extra = {}) => ({ isCrouching: false, isGrounded: true, jetpackOn: false, vel: { x: vx, y: 0 }, ...extra });
+
+    it('stands, walks or runs by ground speed', () => {
+        expect(stateOf(fighter(0.2))).toBe('idle');
+        expect(stateOf(fighter(-2))).toBe('walk');
+        expect(stateOf(fighter(4))).toBe('run');
+    });
+
+    it('flies or falls in the air whatever the speed', () => {
+        expect(stateOf(fighter(2, { isGrounded: false, jetpackOn: true }))).toBe('fly');
+        expect(stateOf(fighter(2, { isGrounded: false }))).toBe('fall');
     });
 });

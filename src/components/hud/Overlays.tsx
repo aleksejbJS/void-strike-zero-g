@@ -7,9 +7,9 @@ import type { Translate } from '../menu/types';
 export const DeathOverlay: React.FC<{ t: Translate; respawnMs: number }> = ({ t, respawnMs }) => (
     <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-[rgba(14,17,22,0.75)]">
         <div className="flex flex-col items-center gap-3">
-            <div aria-hidden="true" className="hazard-stripes h-3 w-[420px] max-w-[80vw]" />
-            <span className="font-display text-[88px] font-black uppercase leading-none text-bay-signal">{t('hud.youDied')}</span>
-            <span className="font-body text-2xl text-bay-chalk">{t('hud.respawnIn', Math.max(0, respawnMs / 1000).toFixed(1))}</span>
+            <div aria-hidden="true" className="hazard-stripes h-3 w-[420px] max-w-[80vw] phone:h-2 phone:w-[240px]" />
+            <span className="font-display text-[88px] font-black uppercase leading-none text-bay-signal phone:text-5xl">{t('hud.youDied')}</span>
+            <span className="font-body text-2xl text-bay-chalk phone:text-base">{t('hud.respawnIn', Math.max(0, respawnMs / 1000).toFixed(1))}</span>
         </div>
     </div>
 );
@@ -31,7 +31,7 @@ export const InviteBanner: React.FC<{ t: Translate; link: string }> = ({ t, link
             .catch(err => console.warn('Copy failed:', err));
     };
     return (
-        <div className={`${PANEL} absolute left-1/2 top-24 z-50 flex max-w-[90vw] -translate-x-1/2 flex-col gap-2 px-4 py-3 font-body`}>
+        <div className={`${PANEL} absolute left-1/2 top-24 z-50 flex max-w-[90vw] phone:top-10 phone:py-2 -translate-x-1/2 flex-col gap-2 px-4 py-3 font-body`}>
             <span className="font-display text-xl font-extrabold">{t('hud.invite')}</span>
             <div className="flex items-center gap-2">
                 <code className="min-w-0 truncate rounded bg-bay-steel px-2.5 py-2 text-sm">{link}</code>

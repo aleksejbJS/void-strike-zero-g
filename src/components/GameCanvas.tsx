@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Application, Container, Graphics, Texture, Sprite } from 'pixi.js';
-import { GameState, GameMode, Team, WeaponType, ItemType, NetworkMode, MapId } from '../types';
+import { GameState, GameMode, Team, WeaponType, ItemType, NetworkMode, MapId, Vector2 } from '../types';
 import { WEAPONS_DATA, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../constants';
 import { initAudio } from '../game/systems/audio';
 import { generateAssets } from '../game/systems/assets';
@@ -10,7 +10,11 @@ import { drawBotPaths } from '../game/render/botPathOverlay';
 import { ParticleView } from '../game/render/effects/particleView';
 import { drawMarks } from '../game/render/effects/marksView';
 import { destroyApp } from '../game/render/pixiApp';
-import { screenToWorld, toView, viewportOf } from '../game/render/viewport';
+import { screenToWorld, toView, viewportOf, worldToScreen, Viewport } from '../game/render/viewport';
+import { drawAimLine } from '../game/render/aimLine';
+import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim } from '../game/input/sticks';
+import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
+import { isTouchDevice } from './fullscreen';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
@@ -48,15 +52,14 @@ import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, 
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
 
-type JoystickState = { active: boolean; startX: number; startY: number; currentX: number; currentY: number };
+const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Walk: false };
 
 
 // Deathmatch-style modes use the chosen map; objective modes are built for the default map
 const effectiveMapFor = (mode: GameMode, selected: MapId) =>
     mode === GameMode.DEATHMATCH || mode === GameMode.HUNGER_GAMES || mode === GameMode.GUN_GAME ? selected : MapId.DEFAULT;
 
-const detectMobile = () =>
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+const detectMobile = isTouchDevice;
 
 export default function GameCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -126,14 +129,11 @@ export default function GameCanvas() {
 
     // Mobile touch controls
     const [isMobile, setIsMobile] = React.useState(detectMobile);
-    // Joystick: the ref drives game input, the state only drives the on-screen widget
-    const [touchJoystick, setTouchJoystick] = React.useState<JoystickState | null>(null);
-    const joystickRef = useRef<JoystickState | null>(null);
-    const updateJoystick = (next: JoystickState | null) => {
-        joystickRef.current = next;
-        setTouchJoystick(next);
-    };
-    const [touchButtons, setTouchButtons] = React.useState<{ jump: boolean; hook: boolean; fire: boolean }>({ jump: false, hook: false, fire: false });
+    // Twin sticks: the refs drive game input, the state only draws the sticks
+    const [touchSticks, setTouchSticks] = React.useState<TouchSticksState>({ move: null, aim: null });
+    const aimDirectionRef = useRef<Vector2 | null>(null);
+    const aimingRef = useRef(false);
+    const [hookDown, setHookDown] = React.useState(false);
     const [hungerBetTarget, setHungerBetTarget] = React.useState<string | null>(null);
     const [hungerWinner, setHungerWinner] = React.useState<string | null>(null);
     const [hungerWinnerId, setHungerWinnerId] = React.useState<string | null>(null);
@@ -347,9 +347,7 @@ export default function GameCanvas() {
         let onMouseDown: ((e: MouseEvent) => void) | null = null;
         let onMouseUp: ((e: MouseEvent) => void) | null = null;
         let onContextMenu: ((e: Event) => void) | null = null;
-        let onTouchStart: ((e: TouchEvent) => void) | null = null;
-        let onTouchMove: ((e: TouchEvent) => void) | null = null;
-        let onTouchEnd: ((e: TouchEvent) => void) | null = null;
+        let detachTouch: (() => void) | null = null;
         let onBlur: (() => void) | null = null;
         let onVisibilityChange: (() => void) | null = null;
         // Read once here: the isMobile state is not a dependency of this effect
@@ -465,6 +463,23 @@ export default function GameCanvas() {
             worldContainer.addChild(gameLayer);
             worldContainer.addChild(botPathLayer);
             app.stage.addChild(uiLayer);
+            const aimLine = new Graphics();
+            uiLayer.addChild(aimLine);
+            // Touch play: aim from the fighter along the aim stick (gliding after the thumb), and show where the shots go
+            let shownAim: Vector2 | null = null;
+            const aimFromStick = (view: Viewport, dtMs: number) => {
+                const local = gameState.current.players.find(p => p.id === localIdRef.current);
+                const wanted = aimDirectionRef.current;
+                if (!local || local.dead || !wanted) { drawAimLine(aimLine, null, null); return; }
+                shownAim = smoothAim(shownAim, wanted, dtMs);
+                const direction = shownAim;
+                const camera = gameState.current.camera;
+                const center = { x: local.pos.x, y: local.pos.y - local.height / 2 };
+                const target = worldToScreen(aimPoint(center, direction), camera, view);
+                mouse.current.x = target.x;
+                mouse.current.y = target.y;
+                drawAimLine(aimLine, aimingRef.current ? worldToScreen(center, camera, view) : null, aimingRef.current ? target : null);
+            };
             // In-world ad places get real TrafficStars banners from ads.json (house posters otherwise)
             const adsLayer = containerRef.current ? createAdsController(containerRef.current, new URL('ads.json', document.baseURI).href) : null;
             ads = adsLayer;
@@ -566,6 +581,7 @@ export default function GameCanvas() {
                 const liveMode = gameState.current.mode;
                 const view = viewNow();
                 viewRoot.scale.set(view.zoom);
+                if (mobile) aimFromStick(view, app.ticker.deltaMS);
                 const offline = !isOnline;
                 // Offline a finished Hunger Games round restarts here; online the server does it
                 if (offline && ((liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) || isMatchOver(gameState.current, now))) {
@@ -796,11 +812,7 @@ export default function GameCanvas() {
                 keys.current[e.code] = true;
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const num = parseInt(e.key);
-                if (!isNaN(num) && num >= 1 && num <= 6) {
-                    const w = local?.inventory[num - 1];
-                    if (w && local) local.weapon = w;
-                    sessionRef.current?.selectWeapon(num - 1);
-                }
+                if (!isNaN(num) && num >= 1 && num <= 6) selectWeapon(num - 1);
                 if (e.code === 'F3') {
                     e.preventDefault();
                     debugVisibleRef.current = !debugVisibleRef.current;
@@ -835,80 +847,17 @@ export default function GameCanvas() {
             };
             onVisibilityChange = () => { if (document.hidden) onBlur?.(); };
 
-            // Mobile touch controls
-            // Mobile touch controls
-
+            // Twin-stick touch controls: the sticks only press the keys / aim / fire a mouse would
             if (mobile) {
-                const isLeftHalf = (t: Touch) => t.clientX < app.canvas.getBoundingClientRect().width / 2;
-                const releaseMoveKeys = () => {
-                    keys.current['KeyW'] = false;
-                    keys.current['KeyS'] = false;
-                    keys.current['KeyA'] = false;
-                    keys.current['KeyD'] = false;
-                };
-
-                onTouchStart = (e: TouchEvent) => {
-                    e.preventDefault();
-                    const rect = app.canvas.getBoundingClientRect();
-                    // changedTouches: only the finger(s) that just went down
-                    for (const touch of Array.from(e.changedTouches)) {
-                        if (isLeftHalf(touch)) {
-                            // Left side - movement joystick
-                            updateJoystick({
-                                active: true,
-                                startX: touch.clientX,
-                                startY: touch.clientY,
-                                currentX: touch.clientX,
-                                currentY: touch.clientY
-                            });
-                        } else {
-                            // Right side - aim and fire
-                            mouse.current.x = touch.clientX - rect.left;
-                            mouse.current.y = touch.clientY - rect.top;
-                            mousePressed.current = true;
-                        }
-                    }
-                };
-
-                onTouchMove = (e: TouchEvent) => {
-                    e.preventDefault();
-                    const joystick = joystickRef.current;
-                    const leftTouch = Array.from(e.touches).find(isLeftHalf);
-                    if (joystick?.active && leftTouch) {
-                        const maxDistance = 50;
-                        const clampedX = Math.max(-maxDistance, Math.min(maxDistance, leftTouch.clientX - joystick.startX));
-                        const clampedY = Math.max(-maxDistance, Math.min(maxDistance, leftTouch.clientY - joystick.startY));
-
-                        updateJoystick({ ...joystick, currentX: leftTouch.clientX, currentY: leftTouch.clientY });
-
-                        // Update movement keys based on joystick
-                        keys.current['KeyW'] = clampedY < -20;
-                        keys.current['KeyS'] = clampedY > 20;
-                        keys.current['KeyA'] = clampedX < -20;
-                        keys.current['KeyD'] = clampedX > 20;
-                    }
-
-                    // Handle aiming on right side
-                    const rightTouch = Array.from(e.touches).find(t => !isLeftHalf(t));
-                    if (rightTouch) {
-                        const rect = app.canvas.getBoundingClientRect();
-                        mouse.current.x = rightTouch.clientX - rect.left;
-                        mouse.current.y = rightTouch.clientY - rect.top;
-                    }
-                };
-
-                onTouchEnd = (e: TouchEvent) => {
-                    e.preventDefault();
-                    const remaining = Array.from(e.touches);
-                    // Release the joystick as soon as no finger is left on the left half
-                    if (joystickRef.current?.active && !remaining.some(isLeftHalf)) {
-                        updateJoystick(null);
-                        releaseMoveKeys();
-                    }
-                    if (!remaining.some(t => !isLeftHalf(t))) {
-                        mousePressed.current = false;
-                    }
-                };
+                detachTouch = attachTouchSticks(app.canvas, sticks => {
+                    setTouchSticks(sticks);
+                    Object.assign(keys.current, sticks.move ? moveKeys(deflection(sticks.move)) : NO_MOVE_KEYS);
+                    const aim = sticks.aim ? deflection(sticks.aim, AIM_STICK_RADIUS) : null;
+                    const direction = aim && aimDirection(aim);
+                    if (direction) aimDirectionRef.current = direction; // a centred stick keeps the last aim
+                    aimingRef.current = !!aim;
+                    mousePressed.current = !!aim && isFiring(aim);
+                });
             }
 
             window.addEventListener('keydown', onKeyDown);
@@ -919,13 +868,6 @@ export default function GameCanvas() {
             window.addEventListener('contextmenu', onContextMenu);
             window.addEventListener('blur', onBlur);
             document.addEventListener('visibilitychange', onVisibilityChange);
-
-            // Mobile touch listeners
-            if (mobile && onTouchStart && onTouchMove && onTouchEnd) {
-                app.canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-                app.canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-                app.canvas.addEventListener('touchend', onTouchEnd, { passive: false });
-            }
         };
 
         setup();
@@ -944,13 +886,7 @@ export default function GameCanvas() {
             if (onBlur) window.removeEventListener('blur', onBlur);
             if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange);
 
-            // Mobile touch cleanup
-            if (mobile && pixiApp.current) {
-                const canvas = pixiApp.current.canvas;
-                if (onTouchStart) canvas.removeEventListener('touchstart', onTouchStart);
-                if (onTouchMove) canvas.removeEventListener('touchmove', onTouchMove);
-                if (onTouchEnd) canvas.removeEventListener('touchend', onTouchEnd);
-            }
+            detachTouch?.();
 
             // Keep textures: they are shared via the generateAssets() cache and reused next game
             if (pixiApp.current) destroyApp(pixiApp.current);
@@ -999,6 +935,13 @@ export default function GameCanvas() {
         ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue')
             : objective.timeMs !== undefined ? formatClock(Math.ceil(objective.timeMs / 1000)) : undefined)
         : null;
+    /** Keys 1–6 and the touch weapon row: switch locally at once, and tell the host when online. */
+    const selectWeapon = (index: number) => {
+        const local = gameState.current.players.find(p => p.id === localIdRef.current);
+        const weapon = local?.inventory[index];
+        if (local && weapon) local.weapon = weapon;
+        sessionRef.current?.selectWeapon(index);
+    };
     const leaveGame = () => actions.finishGame(gameState.current.players.find(p => p.id === localIdRef.current)?.score ?? 0);
 
     return (
@@ -1046,11 +989,10 @@ export default function GameCanvas() {
                 } : null}
                 reward={reward}
                 mobile={isMobile ? {
-                    joystick: touchJoystick,
-                    jumpDown: touchButtons.jump,
-                    hookDown: touchButtons.hook,
-                    onJump: down => { keys.current['Space'] = down; setTouchButtons(prev => ({ ...prev, jump: down })); },
-                    onHook: down => { hookPressed.current = down; setTouchButtons(prev => ({ ...prev, hook: down })); },
+                    sticks: touchSticks,
+                    hookDown,
+                    onHook: down => { hookPressed.current = down; setHookDown(down); },
+                    onSelectWeapon: selectWeapon,
                 } : null}
             />
         </div>

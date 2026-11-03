@@ -4,6 +4,19 @@
 
 ### 🐛 Fixes
 - Online, projectiles appeared ahead of the gun: a client first sees a projectile a snapshot or more after it was fired (≈18–20 px per tick × round trip + up to 33 ms between snapshots), and other fighters are drawn `INTERP_DELAY_MS` (100 ms) in the past. `net/projectileCatchUp.ts` now draws each new projectile from its shooter's `shotOrigin` as seen on this screen and closes the gap linearly over 12 ticks (0.1 s); purely visual, the server still decides hits. Projectiles more than 400 px from their shooter's gun when first seen (in flight when you joined) are left alone
+## Version 0.4.13 (2026-11-03)
+
+### 📱 Phone HUD and Touch Controls
+- Touch devices get their own HUD (`components/hud/mobile/*`, spec: `docs/plans/2026-11-03-mobile-hud-spec.md`, mockup D on the Mobile HUD canvas) instead of the desktop pieces, which are sized in fixed pixels and overlapped on a ~640 × 290 landscape phone (the old jetpack / hook buttons sat 230 px up and left the screen)
+- Top bar 28 px, see-through, hazard hairline: health / armor / fuel with 12 px icons, clock and place (`#3 of 4`) or blue : red score, sound and achievements; objective line and a 3-line kill feed under it
+- Twin sticks (`game/input/sticks.ts`, `game/input/touchSticks.ts`, per-finger by touch id, `touchcancel` handled): left = move keys (up = `KeyW` jump / jetpack), right = aim from the fighter's centre 300 units along the stick, fire only at the edge (≥ 85 % of a 64 px radius, dashed circle on the stick marks it; the move stick is 50 px), the shown aim glides after the stick (70 ms time constant, shortest way round), a centred stick keeps the last aim; dashed aim line in window pixels (`render/aimLine.ts`, `worldToScreen` in `render/viewport.ts`). The sticks only produce keys / aim / fire, so the host and protocol are unchanged
+- Walk and run on the move stick: inside the dashed circle (< 85 %) it also presses a new `Walk` key, which on the ground scales the move input by `WALK_INPUT` = 0.5 (~120 px/s, keyboard always runs, air control stays full; `Walk` added to the host's allowed keys). New `walk` animation state picked from ground speed (0.5–3 per frame; run ≥ 3), so remote fighters show it too: stride 7 instead of 11, feet lifted 3.5 instead of 7, smaller hip bob, lean and head bob (`fighterPose.ts`, `fighterAnimator.ts`); no step dust while walking
+- Carried weapons as a tappable row above the aim stick (shared `selectWeapon` with keys 1–6); hook button left of the stick; the jetpack button is gone
+- Hint for the first 3 matches on a device, 6 s (`touchHintMatches` in localStorage)
+- Menu and character setup on screens up to 500 px tall (a phone held sideways) fit one screen: the menu becomes three compact columns (mode names, preview + one-line description, map / play / create / join; tagline, rules and keyboard legend hidden), setup becomes preview + preset on the left and name, part tabs (tiles scroll inside) and Start on the right. They were one column 7 and 6 screens tall with desktop-size titles, since a sideways phone is wider than the `sm` breakpoint
+- Full screen on touch devices (`components/fullscreen.ts`): Start match requests it (`navigationUI: 'hide'`) and a landscape lock, the top bar has a toggle (follows `fullscreenchange`, so it also brings it back after a swipe), and `App` leaves it when the menu shows. Failures are logged; iPhones have no page full screen, so nothing happens there. `isTouchDevice` moved here from `GameCanvas`
+- Menu and setup are sized with `.h-viewport` (100vh, then 100dvh) instead of `h-screen`: on a phone 100vh is the height without the browser bar, and with `body { overflow: hidden }` the bottom (Start match) sat under the bar and could not be reached
+- Overlays shrink on screens up to 500 px tall (Tailwind screen `phone`): death screen, match results (scrolls), Hunger Games and Gun Game panels move under the top bar, flag banner, invite
 
 ## Version 0.4.12 (2026-11-03)
 

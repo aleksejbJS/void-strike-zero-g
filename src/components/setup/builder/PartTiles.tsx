@@ -25,7 +25,7 @@ const LockIcon: React.FC = () => (
 );
 
 const tileClass = (picked: boolean, locked: boolean) => [
-    'relative flex min-h-16 min-w-0 flex-col items-center justify-start gap-1 rounded border-2 bg-bay-steel px-1.5 py-1.5 text-center text-[13px] font-semibold leading-tight',
+    'relative flex min-h-16 min-w-0 flex-col items-center justify-start gap-1 rounded border-2 bg-bay-steel px-1.5 py-1.5 text-center text-[13px] font-semibold leading-tight phone:min-h-0 phone:gap-0.5 phone:py-1 phone:text-[11px]',
     picked ? 'border-bay-hazard text-bay-chalk' : 'border-transparent text-bay-chalk',
     locked ? 'cursor-not-allowed opacity-45' : 'hover:bg-bay-plate',
     focusRing,
@@ -47,7 +47,7 @@ export const PartTiles: React.FC<Props> = ({ slot, value, level, thumbs, onPick 
                     return (
                         <button key={id} type="button" aria-pressed={picked} disabled={locked} onClick={() => onPick(id)}
                             title={locked ? t('cs.lockedHint', opensAt) : undefined} className={tileClass(picked, locked)}>
-                            {thumbs?.[id] && <img src={thumbs[id]} alt="" draggable={false} className="aspect-square w-full max-w-16 object-contain short:max-w-12" />}
+                            {thumbs?.[id] && <img src={thumbs[id]} alt="" draggable={false} className="aspect-square w-full max-w-16 object-contain short:max-w-12 phone:max-w-9" />}
                             <span className="break-words [hyphens:auto]">{t(`cs.part.${slot}.${id}` as keyof TranslationKeys)}</span>
                             {locked && (
                                 <span className="flex items-center gap-1 text-[11px] font-semibold text-bay-dust">

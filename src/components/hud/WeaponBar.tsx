@@ -8,7 +8,7 @@ import { weaponLabel } from './weaponLabel';
 
 const SLOTS = 6;
 // Ammo pools this large are effectively unlimited
-const UNLIMITED_AMMO = 1000;
+export const UNLIMITED_AMMO = 1000;
 
 export const WeaponBar: React.FC<{ inventory: Weapon[]; active: WeaponType | null }> = ({ inventory, active }) => (
     <div className="pointer-events-none absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 gap-1.5">

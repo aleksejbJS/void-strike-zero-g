@@ -13,6 +13,7 @@ import { CharacterPreview } from './CharacterPreview';
 import { BuilderTabs } from './builder/BuilderTabs';
 import { XpBar } from './builder/XpBar';
 import { useFighterDraft } from './builder/useFighterDraft';
+import { enterFullscreen, isTouchDevice } from '../fullscreen';
 
 const MAX_NAME = 12;
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
@@ -37,6 +38,7 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
     const { preset, build, colors } = draft;
 
     const start = () => {
+        if (isTouchDevice()) void enterFullscreen(); // hides the browser bar; needs this tap
         saveBuild(build); // the match reads the saved build when it starts
         actions.selectSkin(preset.id);
         actions.setPlayerCustomization(name.trim() || 'Anonymous', colors);
@@ -50,54 +52,54 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
         : t(state.networkMode === NetworkMode.HOST ? 'cs.nextHost' : 'cs.nextOffline', mode, mapLabel);
     const startLabel = t(state.networkMode === NetworkMode.CLIENT ? 'cs.startJoin' : state.networkMode === NetworkMode.HOST ? 'cs.startHost' : 'cs.startOffline');
     const styleName = t(`cs.style.${preset.style}` as 'cs.style.human');
-    const arrowClass = `flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate ${focusRing}`;
+    const arrowClass = `flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate phone:h-9 phone:w-9 ${focusRing}`;
 
     return (
-        <div className="h-screen overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
-            {/* From lg up the page fits the window: only the part tiles scroll, Start stays in view */}
-            <div className="mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-10 pt-8 sm:px-[72px] sm:pt-11 lg:h-full short:gap-5 short:pb-6 short:pt-5">
-                <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-col gap-2.5">
+        <div className="h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
+            {/* From lg up, and on a phone held sideways, the page fits the window: only the part tiles scroll, Start stays in view */}
+            <div className="mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-10 pt-8 sm:px-[72px] sm:pt-11 lg:h-full short:gap-5 short:pb-6 short:pt-5 phone:h-full phone:gap-2 phone:px-3 phone:pb-2 phone:pt-2">
+                <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between phone:flex-row phone:items-center">
+                    <div className="flex flex-col gap-2.5 phone:flex-row phone:items-center phone:gap-4">
                         <button type="button" onClick={onBack} className={`flex items-center gap-1.5 self-start text-[15px] font-semibold text-bay-hazard hover:text-bay-chalk ${focusRing}`}>
                             <Chevron dir="l" />{t('cs.backToMenu')}
                         </button>
-                        <h1 className="m-0 font-display text-[52px] font-black uppercase leading-[0.9] sm:text-[76px] short:text-[56px]">{t('cs.title')}</h1>
+                        <h1 className="m-0 font-display text-[52px] font-black uppercase leading-[0.9] sm:text-[76px] short:text-[56px] phone:text-2xl">{t('cs.title')}</h1>
                     </div>
-                    <span className="self-start rounded bg-bay-steel px-3.5 py-2.5 text-[15px] text-bay-dust sm:self-auto">{next}</span>
+                    <span className="self-start rounded bg-bay-steel px-3.5 py-2.5 text-[15px] text-bay-dust sm:self-auto phone:self-auto phone:px-2 phone:py-1 phone:text-xs">{next}</span>
                 </header>
-                <div aria-hidden="true" className="hazard-stripes -mx-4 -mt-3 h-3.5 sm:-mx-[72px]" />
+                <div aria-hidden="true" className="hazard-stripes -mx-4 -mt-3 h-3.5 sm:-mx-[72px] phone:hidden" />
 
-                <main className="grid flex-grow grid-cols-1 gap-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_560px] lg:grid-rows-[minmax(0,1fr)] lg:items-start">
+                <main className="grid flex-grow grid-cols-1 gap-8 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_560px] lg:grid-rows-[minmax(0,1fr)] lg:items-start phone:min-h-0 phone:grid-cols-[minmax(0,230px)_minmax(0,1fr)] phone:grid-rows-[minmax(0,1fr)] phone:items-stretch phone:gap-3">
                     {/* Fixed-height preview that stays in view while the part tabs change height */}
-                    <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-6">
+                    <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-6 phone:static phone:min-h-0 phone:gap-1.5">
                         <CharacterPreview look={{ build, ...colors }} label={t('cs.preview')} badge={t('cs.skinCount', draft.presetIndex + 1, SKINS.length)} />
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 phone:gap-2">
                             <button type="button" onClick={() => draft.stepPreset(-1)} aria-label={t('cs.prevSkin')} className={arrowClass}><Chevron dir="l" /></button>
                             <div className="flex min-w-0 flex-grow flex-col items-center gap-0.5 text-center">
                                 <span className="flex flex-wrap items-baseline justify-center gap-x-2">
-                                    <span className="font-display text-4xl font-black leading-none">{preset.name}</span>
-                                    {draft.changed && <span className="text-[15px] font-semibold text-bay-hazard">{t('cs.changed')}</span>}
+                                    <span className="font-display text-4xl font-black leading-none phone:text-lg">{preset.name}</span>
+                                    {draft.changed && <span className="text-[15px] font-semibold text-bay-hazard phone:text-[11px]">{t('cs.changed')}</span>}
                                 </span>
-                                <span className="text-sm text-bay-dust">{t('cs.skinHint', styleName)}</span>
+                                <span className="text-sm text-bay-dust phone:hidden">{t('cs.skinHint', styleName)}</span>
                             </div>
                             <button type="button" onClick={() => draft.stepPreset(1)} aria-label={t('cs.nextSkin')} className={arrowClass}><Chevron dir="r" /></button>
                         </div>
                         <XpBar xp={xp} />
                     </div>
 
-                    <div className="flex min-w-0 flex-col gap-5 lg:h-full lg:min-h-0 short:gap-4">
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="setup-name" className="font-display text-2xl font-extrabold short:text-xl">{t('cs.name')}</label>
+                    <div className="flex min-w-0 flex-col gap-5 lg:h-full lg:min-h-0 short:gap-4 phone:h-full phone:min-h-0 phone:gap-2">
+                        <div className="flex flex-col gap-2 phone:flex-row phone:items-center">
+                            <label htmlFor="setup-name" className="font-display text-2xl font-extrabold short:text-xl phone:text-base">{t('cs.name')}</label>
                             <input id="setup-name" value={name} maxLength={MAX_NAME} onChange={e => setName(e.target.value.slice(0, MAX_NAME))}
-                                className="h-[54px] rounded border-2 border-bay-edge bg-bay-panel px-4 text-xl font-semibold text-bay-chalk focus:border-bay-hazard focus:outline-none short:h-[46px]" />
-                            <span className="text-[13px] text-bay-dust">{t('cs.nameHint', name.length, MAX_NAME)}</span>
+                                className="h-[54px] rounded border-2 border-bay-edge bg-bay-panel px-4 text-xl font-semibold text-bay-chalk focus:border-bay-hazard focus:outline-none short:h-[46px] phone:h-8 phone:min-w-0 phone:flex-1 phone:px-2 phone:text-sm" />
+                            <span className="text-[13px] text-bay-dust phone:hidden">{t('cs.nameHint', name.length, MAX_NAME)}</span>
                         </div>
 
                         <BuilderTabs build={build} colors={colors} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
 
                         <div className="mt-auto flex shrink-0 gap-3">
-                            <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel short:h-[60px] ${focusRing}`}>{t('cs.back')}</button>
-                            <button type="button" onClick={start} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] short:h-[60px] short:text-[28px] ${focusRing}`}>{startLabel}</button>
+                            <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel short:h-[60px] phone:hidden ${focusRing}`}>{t('cs.back')}</button>
+                            <button type="button" onClick={start} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] short:h-[60px] short:text-[28px] phone:h-10 phone:text-xl ${focusRing}`}>{startLabel}</button>
                         </div>
                     </div>
                 </main>

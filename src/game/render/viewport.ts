@@ -25,6 +25,12 @@ export const viewportOf = (screenW: number, screenH: number): Viewport => {
 /** A point in window pixels (mouse, touch) on the virtual screen. */
 export const toView = (p: Vector2, view: Viewport): Vector2 => ({ x: p.x / view.zoom, y: p.y / view.zoom });
 
+/** A world point in window pixels: the inverse of `screenToWorld`. */
+export const worldToScreen = (p: Vector2, camera: Vector2, view: Viewport): Vector2 => ({
+    x: (p.x - camera.x + view.w / 2) * view.zoom,
+    y: (p.y - camera.y + view.h / 2) * view.zoom,
+});
+
 /** A point in window pixels in the world, for a camera centred on `camera`. */
 export const screenToWorld = (p: Vector2, camera: Vector2, view: Viewport): Vector2 => {
     const v = toView(p, view);
