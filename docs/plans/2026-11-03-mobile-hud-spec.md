@@ -25,8 +25,9 @@ Only touch devices (`detectMobile()`) get it; the desktop HUD does not change.
 **Controls:**
 - Left half of the screen: floating move stick (appears where the thumb lands). Up = jump /
   jetpack (as today's `KeyW`), left/right = run, down = crouch.
-- Right half: floating aim stick. The fighter aims where the stick points; while the stick is
-  pushed past a dead zone the weapon fires (twin-stick). Letting go stops firing and keeps the
+- Right half: floating aim stick. The fighter aims where the stick points (the aim glides after
+  the thumb). Inside a dashed inner circle the stick only aims; pushed to the edge the weapon
+  fires (changed 2026-11-03 from "fires past a dead zone": rockets were wasted while aiming). Letting go stops firing and keeps the
   last aim. A dashed aim line runs from the fighter towards the aim point while aiming.
 - Hook: a small round button left of the aim stick; the hook flies where the fighter aims.
 - The old jetpack button is gone (the move stick does it).

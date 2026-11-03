@@ -17,11 +17,15 @@ export interface Deflection {
     amount: number; // 0..1, how far from the centre
 }
 
-export const STICK_RADIUS = 50;   // px the thumb travels to reach the rim
-const MOVE_THRESHOLD = 0.4;       // share of the radius before a move key is pressed
-const AIM_DEAD_ZONE = 0.15;       // below this the aim keeps its last direction
-const FIRE_THRESHOLD = 0.35;      // pushed this far the weapon fires
-export const AIM_REACH = 300;     // world units from the fighter to the aim point
+export const STICK_RADIUS = 50;     // px the thumb travels to reach the rim of the move stick
+export const AIM_STICK_RADIUS = 64; // the aim stick is wider, so the same thumb move turns the aim less
+const MOVE_THRESHOLD = 0.4;         // share of the radius before a move key is pressed
+const AIM_DEAD_ZONE = 0.15;         // below this the aim keeps its last direction
+// Inside this the aim stick only aims; the weapon fires only with the stick pushed to the edge,
+// so a rocket launcher does not spend its ammo while you line up a shot
+export const FIRE_THRESHOLD = 0.85;
+export const AIM_REACH = 300;       // world units from the fighter to the aim point
+const AIM_SMOOTHING_MS = 70;        // time constant of the aim following the stick
 
 export const deflection = (s: Stick, radius = STICK_RADIUS): Deflection => {
     const dx = s.x - s.originX;
@@ -43,6 +47,19 @@ export const aimDirection = (d: Deflection): Vector2 | null =>
     d.amount < AIM_DEAD_ZONE ? null : { x: d.x / d.amount, y: d.y / d.amount };
 
 export const isFiring = (d: Deflection) => d.amount >= FIRE_THRESHOLD;
+
+/**
+ * Turns the shown aim from `current` towards `target` a share of the way per frame, so the aim
+ * glides after the thumb instead of jumping with every twitch. Both are unit vectors.
+ */
+export const smoothAim = (current: Vector2 | null, target: Vector2, dtMs: number): Vector2 => {
+    if (!current) return target;
+    const from = Math.atan2(current.y, current.x);
+    let turn = Math.atan2(target.y, target.x) - from;
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn)); // shortest way round
+    const angle = from + turn * (1 - Math.exp(-Math.max(0, dtMs) / AIM_SMOOTHING_MS));
+    return { x: Math.cos(angle), y: Math.sin(angle) };
+};
 
 export const aimPoint = (from: Vector2, direction: Vector2, reach = AIM_REACH): Vector2 => ({
     x: from.x + direction.x * reach,

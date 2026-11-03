@@ -12,7 +12,7 @@ import { drawMarks } from '../game/render/effects/marksView';
 import { destroyApp } from '../game/render/pixiApp';
 import { screenToWorld, toView, viewportOf, worldToScreen, Viewport } from '../game/render/viewport';
 import { drawAimLine } from '../game/render/aimLine';
-import { aimDirection, aimPoint, deflection, isFiring, moveKeys } from '../game/input/sticks';
+import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim } from '../game/input/sticks';
 import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
 import { isTouchDevice } from './fullscreen';
 import { clearMarks } from '../game/systems/marks';
@@ -465,11 +465,14 @@ export default function GameCanvas() {
             app.stage.addChild(uiLayer);
             const aimLine = new Graphics();
             uiLayer.addChild(aimLine);
-            // Touch play: aim from the fighter along the aim stick, and show where the shots go
-            const aimFromStick = (view: Viewport) => {
+            // Touch play: aim from the fighter along the aim stick (gliding after the thumb), and show where the shots go
+            let shownAim: Vector2 | null = null;
+            const aimFromStick = (view: Viewport, dtMs: number) => {
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
-                const direction = aimDirectionRef.current;
-                if (!local || local.dead || !direction) { drawAimLine(aimLine, null, null); return; }
+                const wanted = aimDirectionRef.current;
+                if (!local || local.dead || !wanted) { drawAimLine(aimLine, null, null); return; }
+                shownAim = smoothAim(shownAim, wanted, dtMs);
+                const direction = shownAim;
                 const camera = gameState.current.camera;
                 const center = { x: local.pos.x, y: local.pos.y - local.height / 2 };
                 const target = worldToScreen(aimPoint(center, direction), camera, view);
@@ -578,7 +581,7 @@ export default function GameCanvas() {
                 const liveMode = gameState.current.mode;
                 const view = viewNow();
                 viewRoot.scale.set(view.zoom);
-                if (mobile) aimFromStick(view);
+                if (mobile) aimFromStick(view, app.ticker.deltaMS);
                 const offline = !isOnline;
                 // Offline a finished Hunger Games round restarts here; online the server does it
                 if (offline && ((liveMode === GameMode.HUNGER_GAMES && isHungerRoundOver(gameState.current, now)) || isMatchOver(gameState.current, now))) {
@@ -849,7 +852,7 @@ export default function GameCanvas() {
                 detachTouch = attachTouchSticks(app.canvas, sticks => {
                     setTouchSticks(sticks);
                     Object.assign(keys.current, sticks.move ? moveKeys(deflection(sticks.move)) : NO_MOVE_KEYS);
-                    const aim = sticks.aim ? deflection(sticks.aim) : null;
+                    const aim = sticks.aim ? deflection(sticks.aim, AIM_STICK_RADIUS) : null;
                     const direction = aim && aimDirection(aim);
                     if (direction) aimDirectionRef.current = direction; // a centred stick keeps the last aim
                     aimingRef.current = !!aim;

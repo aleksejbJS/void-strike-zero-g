@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aimDirection, aimPoint, deflection, isFiring, moveKeys, STICK_RADIUS } from './sticks';
+import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim, STICK_RADIUS } from './sticks';
 
 const stick = (dx: number, dy: number) => ({ originX: 100, originY: 200, x: 100 + dx, y: 200 + dy });
 
@@ -39,9 +39,32 @@ describe('aim stick', () => {
         expect(dir.y).toBeCloseTo(0.8);
     });
 
-    it('fires only when pushed well past the dead zone', () => {
-        expect(isFiring(deflection(stick(10, 0)))).toBe(false);
-        expect(isFiring(deflection(stick(STICK_RADIUS, 0)))).toBe(true);
+    it('only aims inside the circle and fires at the edge', () => {
+        expect(isFiring(deflection(stick(AIM_STICK_RADIUS / 2, 0), AIM_STICK_RADIUS))).toBe(false);
+        expect(isFiring(deflection(stick(AIM_STICK_RADIUS * 0.8, 0), AIM_STICK_RADIUS))).toBe(false);
+        expect(isFiring(deflection(stick(AIM_STICK_RADIUS, 0), AIM_STICK_RADIUS))).toBe(true);
+    });
+
+    it('the aim glides towards the stick instead of jumping', () => {
+        const right = { x: 1, y: 0 };
+        const up = { x: 0, y: -1 };
+        const step = smoothAim(right, up, 16);
+        const angle = Math.atan2(step.y, step.x);
+        expect(angle).toBeLessThan(0);              // turned towards up…
+        expect(angle).toBeGreaterThan(-Math.PI / 2); // …but not all the way in one frame
+        expect(Math.hypot(step.x, step.y)).toBeCloseTo(1);
+        let aim = right;
+        for (let i = 0; i < 30; i++) aim = smoothAim(aim, up, 16); // half a second
+        expect(aim.y).toBeCloseTo(-1, 2);
+    });
+
+    it('turns the short way round', () => {
+        const step = smoothAim({ x: -1, y: -0.01 }, { x: -1, y: 0.01 }, 16);
+        expect(step.x).toBeLessThan(-0.99); // stays on the left, no swing through the right
+    });
+
+    it('starts at the stick when there is no aim yet', () => {
+        expect(smoothAim(null, { x: 0, y: 1 }, 16)).toEqual({ x: 0, y: 1 });
     });
 
     it('aims at a point out from the fighter along the stick', () => {
