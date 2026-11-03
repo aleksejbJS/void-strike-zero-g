@@ -39,8 +39,24 @@ function currentLook(): FighterLook {
     return { build: loadBuild(), skinId: loadSkin(), colors, savedAt: readSavedAt() };
 }
 
-/** Null if the look was never customised (nothing look-related is stored). */
-const readStoredLook = (): FighterLook | null => (hasStoredLook() ? currentLook() : null);
+/**
+ * The build exactly as stored, so parts a newer build saved (unknown here) still reach the cloud;
+ * sanitizeSnapshot keeps them well-formed. The game's own build when nothing usable is stored.
+ */
+function rawStoredBuild(): unknown {
+    const saved = readStored(BUILD_KEY);
+    if (saved === null) return loadBuild();
+    try {
+        const parsed: unknown = JSON.parse(saved);
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed;
+    } catch (error) {
+        console.warn(`[account] stored "${BUILD_KEY}" is not valid JSON, using the game's build:`, error);
+    }
+    return loadBuild();
+}
+
+/** Null if the look was never customised (nothing look-related is stored). Untrusted: sanitize it. */
+const readStoredLook = (): unknown => (hasStoredLook() ? { ...currentLook(), build: rawStoredBuild() } : null);
 
 /** Writes the look keys the game reads. The "saved at" stamp is separate: see `saveLookIfChanged`. */
 function writeLookKeys(look: Omit<FighterLook, 'savedAt'>): void {

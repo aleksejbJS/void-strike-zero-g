@@ -66,7 +66,8 @@ describe('localSnapshot', () => {
     });
 
     it('sanitizes what it writes', () => {
-        writeLocalSnapshot({ achievements: { removed_ach: { progress: 1, unlocked: true } }, xp: -4, look: null });
+        const bad = { 'Bad Id': { progress: 1, unlocked: true }, killer: { progress: 'x', unlocked: true } };
+        writeLocalSnapshot({ achievements: bad as unknown as PlayerSnapshot['achievements'], xp: -4, look: null });
         expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 0, look: null });
         expect(achievementManager.exportProgress()).toEqual({});
     });

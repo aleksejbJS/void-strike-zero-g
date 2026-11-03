@@ -1,9 +1,11 @@
 // The player's whole saved progress as one value: what is pulled from / pushed to the cloud.
 // Pure data, no storage access. Sanitizing makes any untrusted value valid; merging never lowers anything.
+// Forward compatible: data a newer build added (achievement ids, fighter parts or slots this build does
+// not know) is kept, well-formed and bounded, so an older tab never erases it from the cloud. The game
+// ignores it: achievements are read through their definitions, and the build is sanitized on every load.
 
 import { DEFAULT_BUILD, FighterBuild } from '../game/build/buildParts';
 import { sanitizeBuild } from '../game/build/sanitizeBuild';
-import { ACHIEVEMENTS } from '../game/systems/achievements';
 import type { AchievementProgress } from '../game/systems/achievements';
 
 export interface FighterColors { player: string; head: string; torso: string; arms: string; legs: string; jetpack: string }
@@ -16,7 +18,14 @@ type Entry = AchievementProgress[string];
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 export const FIGHTER_COLOR_FIELDS: readonly (keyof FighterColors)[] = ['player', 'head', 'torso', 'arms', 'legs', 'jetpack'];
 const MAX_SKIN_ID = 40;
-const KNOWN_IDS: ReadonlySet<string> = new Set(ACHIEVEMENTS.map(a => a.id));
+const ACHIEVEMENT_ID_RE = /^[a-z0-9_]{1,40}$/;
+const MAX_ACHIEVEMENTS = 200;
+const BUILD_FIELD_RE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+const BUILD_VALUE_RE = /^#?[A-Za-z0-9_-]{1,40}$/;
+const MAX_BUILD_FIELDS = 40;
+
+/** Names like "constructor" or "__proto__" would clash with plain-object lookups. */
+const isSafeKey = (key: string, pattern: RegExp): boolean => pattern.test(key) && !(key in Object.prototype);
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
     typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -33,10 +42,12 @@ function sanitizeEntry(raw: unknown): Entry | null {
 function sanitizeAchievements(raw: unknown): AchievementProgress {
     const result: AchievementProgress = {};
     if (!isRecord(raw)) return result;
+    let count = 0;
     for (const id of Object.keys(raw)) {
-        if (!KNOWN_IDS.has(id)) continue;
+        if (count >= MAX_ACHIEVEMENTS) break;
+        if (!isSafeKey(id, ACHIEVEMENT_ID_RE)) continue;
         const entry = sanitizeEntry(raw[id]);
-        if (entry) result[id] = entry;
+        if (entry) { result[id] = entry; count += 1; }
     }
     return result;
 }
@@ -52,13 +63,29 @@ function sanitizeColors(raw: unknown): FighterColors | null {
     return colors;
 }
 
+const isBuildValue = (v: unknown): v is string | number =>
+    (typeof v === 'string' && BUILD_VALUE_RE.test(v)) || (typeof v === 'number' && Number.isFinite(v));
+
+/**
+ * The build as stored, not as the game uses it: fields are repaired by sanitizeBuild, then every
+ * well-formed field is carried through as it was, even one this build does not know (a newer part or
+ * slot). The value is typed FighterBuild but may hold such parts: the game sanitizes on every load.
+ */
+function storedBuild(raw: Record<string, unknown>): FighterBuild {
+    const build: Record<string, unknown> = { ...sanitizeBuild(raw, DEFAULT_BUILD) };
+    for (const key of Object.keys(raw).slice(0, MAX_BUILD_FIELDS)) {
+        if (isSafeKey(key, BUILD_FIELD_RE) && isBuildValue(raw[key])) build[key] = raw[key];
+    }
+    return build as unknown as FighterBuild;
+}
+
 function sanitizeLook(raw: unknown): FighterLook | null {
     if (!isRecord(raw) || !isRecord(raw.build) || !isCount(raw.savedAt)) return null;
     const { skinId } = raw;
     if (typeof skinId !== 'string' || skinId.length === 0 || skinId.length > MAX_SKIN_ID) return null;
     const colors = sanitizeColors(raw.colors);
     if (!colors) return null;
-    return { build: sanitizeBuild(raw.build, DEFAULT_BUILD), skinId, colors, savedAt: raw.savedAt };
+    return { build: storedBuild(raw.build), skinId, colors, savedAt: raw.savedAt };
 }
 
 /** Makes any untrusted value (cloud row, saved JSON) into a valid snapshot; bad parts are dropped. */
@@ -84,12 +111,19 @@ function mergeEntry(a: Entry | undefined, b: Entry | undefined): Entry {
 
 const copyLook = (look: FighterLook): FighterLook => ({ ...look, build: { ...look.build }, colors: { ...look.colors } });
 
+/**
+ * A tie keeps `b` (the cloud copy, at every call site): equal stamps mean one side copied the other, and
+ * a local copy may have lost parts an older build could not keep.
+ */
 function mergeLooks(a: FighterLook | null, b: FighterLook | null): FighterLook | null {
-    const winner = !a ? b : !b ? a : b.savedAt > a.savedAt ? b : a; // a tie keeps `a`
+    const winner = !a ? b : !b ? a : a.savedAt > b.savedAt ? a : b;
     return winner ? copyLook(winner) : null;
 }
 
-/** Never lowers anything: max progress and XP, unlocked if either side unlocked, newest look wins. */
+/**
+ * Never lowers anything: max progress and XP, unlocked if either side unlocked, newest look wins
+ * (`b` on a tie: pass the cloud copy, or the account's pending copy, as `b`).
+ */
 export function mergeSnapshots(a: PlayerSnapshot, b: PlayerSnapshot): PlayerSnapshot {
     const achievements: AchievementProgress = {};
     for (const id of new Set([...Object.keys(a.achievements), ...Object.keys(b.achievements)])) {

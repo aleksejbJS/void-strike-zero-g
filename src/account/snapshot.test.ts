@@ -43,6 +43,10 @@ describe('mergeSnapshots', () => {
         expect(mergeSnapshots(snap(), snap()).look).toBeNull();
     });
 
+    it('a savedAt tie keeps the second argument (the cloud copy)', () => {
+        expect(mergeSnapshots(snap({ look: look(5, 'local') }), snap({ look: look(5, 'cloud') })).look?.skinId).toBe('cloud');
+    });
+
     it('does not change its inputs or share objects with them', () => {
         const a = snap({ achievements: { killer: { progress: 7, unlocked: false } }, look: look(1) });
         const merged = mergeSnapshots(a, unlocked);
@@ -62,17 +66,25 @@ describe('sanitizeSnapshot', () => {
         expect(sanitizeSnapshot('nope')).toEqual({ achievements: {}, xp: 0, look: null });
     });
 
-    it('drops unknown achievement ids and malformed entries', () => {
+    it('keeps well-formed unknown achievement ids (a newer build), drops malformed ids and entries', () => {
         const result = sanitizeSnapshot({
             achievements: {
-                removed_ach: { progress: 1, unlocked: true },
+                future_ach: { progress: 1, unlocked: true },
                 killer: { progress: 4, unlocked: false },
                 first_blood: { progress: 'many', unlocked: true },
                 slayer: { progress: -1, unlocked: false },
                 executioner: 'yes',
+                'Bad Id': { progress: 1, unlocked: true },
+                ['x'.repeat(41)]: { progress: 1, unlocked: true },
+                constructor: { progress: 1, unlocked: true },
             },
         });
-        expect(result.achievements).toEqual({ killer: { progress: 4, unlocked: false } });
+        expect(result.achievements).toEqual({ future_ach: { progress: 1, unlocked: true }, killer: { progress: 4, unlocked: false } });
+    });
+
+    it('keeps at most 200 achievement entries', () => {
+        const many = Object.fromEntries(Array.from({ length: 250 }, (_, i) => [`a${i}`, { progress: 1, unlocked: false }]));
+        expect(Object.keys(sanitizeSnapshot({ achievements: many }).achievements)).toHaveLength(200);
     });
 
     it('keeps unlockedAt only when it is a valid number', () => {
@@ -91,10 +103,10 @@ describe('sanitizeSnapshot', () => {
         expect(sanitizeSnapshot({ xp: 12.9 }).xp).toBe(12);
     });
 
-    it('keeps a valid look and repairs the build field by field', () => {
-        const raw = { ...look(7), build: { helmet: 'dome', ears: 'not-a-part' } };
+    it('keeps a valid look, repairs malformed build fields and carries well-formed unknown ones', () => {
+        const raw = { ...look(7), build: { helmet: 'dome', ears: 'newer_part', tail: { x: 1 }, visor: 'a b', cape: 'red', ['bad key']: 'x' } };
         const result = sanitizeSnapshot({ look: raw }).look;
-        expect(result?.build).toEqual({ ...DEFAULT_BUILD, helmet: 'dome' });
+        expect(result?.build).toEqual({ ...DEFAULT_BUILD, helmet: 'dome', ears: 'newer_part', cape: 'red' });
         expect(result?.savedAt).toBe(7);
         expect(result?.colors).toEqual(colors);
     });
