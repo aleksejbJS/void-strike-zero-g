@@ -1,5 +1,15 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.13 (unreleased)
+
+### 📱 Phone HUD and Touch Controls
+- Touch devices get their own HUD (`components/hud/mobile/*`, spec: `docs/plans/2026-11-03-mobile-hud-spec.md`, mockup D on the Mobile HUD canvas) instead of the desktop pieces, which are sized in fixed pixels and overlapped on a ~640 × 290 landscape phone (the old jetpack / hook buttons sat 230 px up and left the screen)
+- Top bar 28 px, see-through, hazard hairline: health / armor / fuel with 12 px icons, clock and place (`#3 of 4`) or blue : red score, sound and achievements; objective line and a 3-line kill feed under it
+- Twin sticks (`game/input/sticks.ts`, `game/input/touchSticks.ts`, per-finger by touch id, `touchcancel` handled): left = move keys (up = `KeyW` jump / jetpack), right = aim from the fighter's centre 300 units along the stick, fire past 35 % deflection, a centred stick keeps the last aim; dashed aim line in window pixels (`render/aimLine.ts`, `worldToScreen` in `render/viewport.ts`). The sticks only produce keys / aim / fire, so the host and protocol are unchanged
+- Carried weapons as a tappable row above the aim stick (shared `selectWeapon` with keys 1–6); hook button left of the stick; the jetpack button is gone
+- Hint for the first 3 matches on a device, 6 s (`touchHintMatches` in localStorage)
+- Overlays shrink on screens up to 500 px tall (Tailwind screen `phone`): death screen, match results (scrolls), Hunger Games and Gun Game panels move under the top bar, flag banner, invite
+
 ## Version 0.4.12 (2026-11-03)
 
 ### 💀 Deaths

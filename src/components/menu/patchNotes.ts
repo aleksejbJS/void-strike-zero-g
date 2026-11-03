@@ -28,10 +28,17 @@ const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/pa
 const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
-const PREVIEWS = shots('previews'), DEATH = shots('death');
+const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.13', date: null, groups: [
+            { title: 'Playing on a phone', comparisons: [{ caption: 'A match on a phone in landscape', ...MOBILE_HUD }], points: [
+                'A new phone HUD: a slim see-through bar on top with health, armor, fuel, the clock and your place; nothing overlaps any more',
+                'Two sticks: the left one moves (push up to fly), the right one aims and fires, with an aim line, so your finger never covers the target',
+                'Tap a weapon above the right stick to switch to it; the hook button sits next to the stick',
+            ] },
+        ] },
         { version: '0.4.12', date: 'Nov 3, 2026', groups: [
             { title: 'Deaths', comparisons: [{ caption: 'A machine-gun kill and a rocket kill', ...DEATH }], points: [
                 'A killed fighter no longer breaks into loose pieces: they go limp and fall as one body in their own look, tumble and land on the platforms',
@@ -151,6 +158,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.13', date: null, groups: [
+            { title: 'Игра на телефоне', comparisons: [{ caption: 'Матч на телефоне в альбомной ориентации', ...MOBILE_HUD }], points: [
+                'Новый интерфейс для телефона: тонкая прозрачная полоса сверху со здоровьем, бронёй, топливом, временем и вашим местом; больше ничего не наезжает друг на друга',
+                'Два стика: левый — движение (вверх — полёт), правый — прицел и стрельба с линией прицела, так что палец не закрывает цель',
+                'Оружие меняется касанием по значку над правым стиком; кнопка крюка рядом со стиком',
+            ] },
+        ] },
         { version: '0.4.12', date: '03.11.2026', groups: [
             { title: 'Гибель', comparisons: [{ caption: 'Убийство из пулемёта и ракетой', ...DEATH }], points: [
                 'Убитый боец больше не разваливается на отдельные куски: он обмякает и падает целым телом в своём облике, кувыркается и ложится на платформу',
