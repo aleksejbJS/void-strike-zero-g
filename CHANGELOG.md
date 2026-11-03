@@ -9,6 +9,16 @@
 - Renderer: the cloud is drawn above fighters; a fighter inside is hidden together with name, health bar, aim line, jetpack flame and carried flag, and your own fighter shows as an outline. Offline and online alike
 - One pickup in every layout except Gun Game (it cannot score kills, so it stays off the ladder): `weapon_smoke` on the default Deathmatch and CTF maps, `tun_smoke` (Tunnels), `htf_smoke`, `inf_smoke`, `hg_smoke`; each floats just above a platform near cover and respawns like other weapons
 
+## Version 0.4.18 (2026-11-03)
+
+### 🐛 Fixes
+- Online respawn: the client does not predict while dead, so its own Matter body stayed where the player died. On respawn the snapshot moved `local.pos` to the spawn point, but the next prediction step read the stale body back and the client played on from the death spot, while the server (and everyone else) had the player at the spawn point; the server's shots came from there. Every snap reset by `LocalPrediction.snapTo` was undone the same way. `ClientSession.predict` now pushes the local player into its body before stepping (`clientRespawn.test.ts`)
+
+## Version 0.4.17 (2026-11-03)
+
+### 🚀 Rockets
+- A rocket now flies straight for its first 0.5 s (`ROCKET_MOTOR_TICKS` = 60 ticks, ~720 px) and only then starts to drop as before (+0.1 px/tick²). Before, it dropped from the first tick: 180 px lower after 720 px of flight. The age comes from `life` in `moveProjectile`, so clients extrapolating between snapshots follow the same path
+
 ## Version 0.4.16 (2026-11-03)
 
 ### 🐛 Fixes
