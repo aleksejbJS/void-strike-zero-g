@@ -33,7 +33,7 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.18', date: null, points: [
+        { version: '0.4.18', date: 'Nov 3, 2026', points: [
             'Online, after you respawned the game kept you where you died while everyone else saw you at the spawn point, so your shots came from somewhere else entirely',
         ] },
         { version: '0.4.17', date: 'Nov 3, 2026', points: [
@@ -181,7 +181,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.18', date: null, points: [
+        { version: '0.4.18', date: '03.11.2026', points: [
             'В игре по сети после возрождения игра оставляла вас там, где вы погибли, а остальные видели вас на точке возрождения — поэтому ваши выстрелы летели совсем из другого места',
         ] },
         { version: '0.4.17', date: '03.11.2026', points: [
