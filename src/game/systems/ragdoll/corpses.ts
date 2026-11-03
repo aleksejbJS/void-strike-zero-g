@@ -8,7 +8,7 @@ import { Corpse, createCorpse } from './corpseBody';
 import { stepCorpse } from './corpseStep';
 import { launchCorpse, launchLimb } from './corpseLaunch';
 
-/** At most this many corpses lie before the oldest one starts fading. */
+/** At most this many bodies lie before the oldest one starts fading (torn legs do not count). */
 export const MAX_CORPSES = 12;
 
 const STILL = { x: 0, y: 0 };
@@ -27,9 +27,12 @@ const fadeNow = (c: Corpse) => {
     c.removeAt = Math.min(c.removeAt, c.age + fade);
 };
 
-/** Only corpses that are not fading yet count toward the cap: when it is reached, the oldest starts to fade. */
+/**
+ * Only bodies that are not fading yet count toward the cap: when it is reached, the oldest starts to fade.
+ * A torn leg (`only`) is no body: it neither counts nor makes room, so it never takes a body's place.
+ */
 const makeRoom = (state: GameState) => {
-    const lying = state.corpses.filter(c => c.fadeAt > c.age);
+    const lying = state.corpses.filter(c => !c.only && c.fadeAt > c.age);
     if (lying.length >= MAX_CORPSES) fadeNow(lying[0]);
 };
 
@@ -50,7 +53,6 @@ export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
 
 /** A leg torn off a wounded fighter, as a corpse of its own that is only the back leg, thrown along the beam from `e.from`. */
 export const addLimb = (state: GameState, e: LimbEvent): Corpse => {
-    makeRoom(state);
     const leg = createCorpse({ x: e.x, y: e.y, facing: e.facing, kind: 'gib', parts: e.parts });
     leg.only = 'leg-back';
     launchLimb(leg, e.from, e.vel ?? STILL);

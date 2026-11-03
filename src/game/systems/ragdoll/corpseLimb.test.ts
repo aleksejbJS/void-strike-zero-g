@@ -82,13 +82,23 @@ describe.each([['lowest', 0], ['highest', 0.999999]])('addLimb at the %s random 
         expect(points.every(p => [p.x, p.y, p.px, p.py].every(Number.isFinite))).toBe(true);
     });
 
-    it('counts toward the corpse cap like any corpse', () => {
+    it('does not make a body fade early, even when the bodies fill the cap', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         for (let i = 0; i < MAX_CORPSES; i++) addCorpse(state, death({ x: i * 100 }));
         addLimb(state, limb());
-        const first = state.corpses[0];
-        expect(first.fadeAt).toBeLessThanOrEqual(first.age);
-        expect(state.corpses.slice(1).every(c => c.fadeAt > c.age)).toBe(true);
+        expect(state.corpses.every(c => c.fadeAt > c.age)).toBe(true);
+    });
+
+    it('does not count toward the corpse cap: the bodies still fill it on their own', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        for (let i = 0; i < 3; i++) addLimb(state, limb());
+        for (let i = 0; i < MAX_CORPSES; i++) addCorpse(state, death({ x: i * 100 }));
+        expect(state.corpses.every(c => c.fadeAt > c.age)).toBe(true); // 12 bodies and 3 legs: nobody fades yet
+        addCorpse(state, death());
+        const fading = state.corpses.filter(c => c.fadeAt <= c.age);
+        expect(fading).toHaveLength(1);
+        expect(fading[0].only).toBeUndefined(); // the oldest body, never a leg
+        expect(fading[0]).toBe(state.corpses[3]);
     });
 });
 
