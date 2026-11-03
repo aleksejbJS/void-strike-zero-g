@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { DEFAULT_BUILD } from '../game/build/buildParts';
+import { presetBuild } from '../game/build/buildPresets';
 import { achievementManager } from '../game/systems/achievements';
 import { clearLocalSnapshot, readLocalSnapshot, saveLookIfChanged, writeLocalSnapshot } from './localSnapshot';
 import { FighterLook, PlayerSnapshot } from './snapshot';
 
 const colors = { player: '#3b82f6', head: '#111111', torso: '#3b82f6', arms: '#222222', legs: '#475569', jetpack: '#ef4444' };
+const DEFAULT_COLORS = { player: '#3b82f6', head: '#3b82f6', torso: '#3b82f6', arms: '#3b82f6', legs: '#475569', jetpack: '#ef4444' };
 const look: FighterLook = { build: { ...DEFAULT_BUILD, helmet: 'dome' }, skinId: 'wolf', colors, savedAt: 77 };
 const full: PlayerSnapshot = {
     achievements: { killer: { progress: 10, unlocked: true, unlockedAt: 5 }, first_blood: { progress: 1, unlocked: false } },
@@ -49,11 +51,18 @@ describe('localSnapshot', () => {
         expect(JSON.parse(store.fighterBuild).helmet).toBe('dome');
     });
 
-    it('writing a snapshot with no look removes the stored look', () => {
+    it('writing a snapshot with no look leaves the stored look alone', () => {
         writeLocalSnapshot(full);
         writeLocalSnapshot({ ...full, look: null });
-        expect(readLocalSnapshot().look).toBeNull();
+        expect(readLocalSnapshot().look).toEqual(look);
+        expect(JSON.parse(store.fighterBuild).helmet).toBe('dome');
+    });
+
+    it('writing a snapshot with no look on an empty store stores no look', () => {
+        writeLocalSnapshot({ achievements: {}, xp: 5, look: null });
+        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 5, look: null });
         expect(store).not.toHaveProperty('fighterBuild');
+        expect(store).not.toHaveProperty('fighterLookSavedAt');
     });
 
     it('sanitizes what it writes', () => {
@@ -99,6 +108,30 @@ describe('localSnapshot', () => {
             expect(saveLookIfChanged(next)).toBe(true);
             expect(store.fighterLookSavedAt).toBe('1234');
             expect(readLocalSnapshot().look).toEqual({ ...next, savedAt: 1234 });
+        });
+
+        it('the default look on a fresh device is saved without a stamp, so a cloud look can still win', () => {
+            now.mockReturnValue(9999);
+            const defaults = { build: presetBuild('classic'), skinId: 'classic', colors: { ...DEFAULT_COLORS } };
+            expect(saveLookIfChanged(defaults)).toBe(false);
+            expect(store).not.toHaveProperty('fighterLookSavedAt');
+            expect(JSON.parse(store.fighterBuild)).toEqual(defaults.build); // the match still reads the build
+            expect(store.selectedSkin).toBe('classic');
+            expect(store.torsoColor).toBe('#3b82f6');
+            expect(readLocalSnapshot().look).toEqual({ ...defaults, savedAt: 0 });
+        });
+
+        it('a non-default look on a fresh device is stamped', () => {
+            now.mockReturnValue(4321);
+            const custom = { build: presetBuild('classic'), skinId: 'classic', colors: { ...DEFAULT_COLORS, jetpack: '#00ff00' } };
+            expect(saveLookIfChanged(custom)).toBe(true);
+            expect(store.fighterLookSavedAt).toBe('4321');
+        });
+
+        it('a different skin on a fresh device is stamped', () => {
+            now.mockReturnValue(4321);
+            expect(saveLookIfChanged({ build: presetBuild('classic'), skinId: 'wolf', colors: { ...DEFAULT_COLORS } })).toBe(true);
+            expect(store.fighterLookSavedAt).toBe('4321');
         });
 
         it('returns false and writes nothing for an identical look', () => {

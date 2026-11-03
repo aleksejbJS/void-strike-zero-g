@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
 import { GameMode, KillMessage, Weapon, WeaponType, NetworkMode, MapId } from '../types';
 import { WEAPONS_DATA } from '../constants';
-import { StoredPlayer, loadStoredPlayer } from './playerStorage';
+import { PLAYER_KEYS, StoredPlayer, loadStoredPlayer, writeStored } from './playerStorage';
 
 export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number };
 type ScoresState = { red: number; blue: number };
@@ -90,7 +90,7 @@ const reducer = (state: UIState, action: Action): UIState => {
     case 'selectMode':
       return { ...state, selectedMode: action.payload };
     case 'selectSkin': {
-      try { localStorage.setItem('selectedSkin', action.payload); } catch { /* ignore */ }
+      writeStored(PLAYER_KEYS.skin, action.payload);
       return { ...state, selectedSkin: action.payload };
     }
     case 'startGame':
@@ -123,16 +123,13 @@ const reducer = (state: UIState, action: Action): UIState => {
       return { ...state, playerScores: action.payload };
     case 'setPlayerCustomization':
       console.log('Reducer: setPlayerCustomization', action.payload);
-      // Save to localStorage
-      try {
-        localStorage.setItem('playerName', action.payload.name);
-        localStorage.setItem('playerColor', action.payload.colors.torso);
-        localStorage.setItem('torsoColor', action.payload.colors.torso);
-        localStorage.setItem('headColor', action.payload.colors.head);
-        localStorage.setItem('armColor', action.payload.colors.arms);
-        localStorage.setItem('legColor', action.payload.colors.legs);
-        localStorage.setItem('jetpackColor', action.payload.colors.jetpack);
-      } catch { /* ignore localStorage errors */ }
+      writeStored(PLAYER_KEYS.name, action.payload.name);
+      writeStored(PLAYER_KEYS.player, action.payload.colors.torso);
+      writeStored(PLAYER_KEYS.torso, action.payload.colors.torso);
+      writeStored(PLAYER_KEYS.head, action.payload.colors.head);
+      writeStored(PLAYER_KEYS.arms, action.payload.colors.arms);
+      writeStored(PLAYER_KEYS.legs, action.payload.colors.legs);
+      writeStored(PLAYER_KEYS.jetpack, action.payload.colors.jetpack);
       return {
         ...state,
         playerName: action.payload.name,

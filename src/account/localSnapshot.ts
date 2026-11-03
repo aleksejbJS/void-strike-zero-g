@@ -27,9 +27,11 @@ const readSavedAt = (): number => {
     return 0;
 };
 
-/** The look as stored now (missing parts get the game defaults); null if it was never customised. */
-function readStoredLook(): FighterLook | null {
-    if (!LOOK_KEYS.some(key => key !== LOOK_SAVED_AT_KEY && readStored(key) !== null)) return null;
+const hasStoredLook = (): boolean =>
+    LOOK_KEYS.some(key => key !== LOOK_SAVED_AT_KEY && readStored(key) !== null);
+
+/** The look as the game would use it now: stored parts, with the game defaults for anything missing. */
+function currentLook(): FighterLook {
     const colors: FighterColors = {
         player: loadPlayerColor(), head: loadHeadColor(), torso: loadTorsoColor(),
         arms: loadArmColor(), legs: loadLegColor(), jetpack: loadJetpackColor(),
@@ -37,10 +39,18 @@ function readStoredLook(): FighterLook | null {
     return { build: loadBuild(), skinId: loadSkin(), colors, savedAt: readSavedAt() };
 }
 
-function writeLook(look: FighterLook): void {
+/** Null if the look was never customised (nothing look-related is stored). */
+const readStoredLook = (): FighterLook | null => (hasStoredLook() ? currentLook() : null);
+
+/** Writes the look keys the game reads. The "saved at" stamp is separate: see `saveLookIfChanged`. */
+function writeLookKeys(look: Omit<FighterLook, 'savedAt'>): void {
     saveBuild(look.build);
     writeStored(PLAYER_KEYS.skin, look.skinId);
     for (const field of FIGHTER_COLOR_FIELDS) writeStored(PLAYER_KEYS[field], look.colors[field]);
+}
+
+function writeLook(look: FighterLook): void {
+    writeLookKeys(look);
     writeStored(LOOK_SAVED_AT_KEY, String(look.savedAt));
 }
 
@@ -52,13 +62,12 @@ export function readLocalSnapshot(): PlayerSnapshot {
     });
 }
 
-/** Makes local storage match the snapshot (a snapshot without a look removes the stored look). */
+/** Applies the snapshot to local storage. A snapshot without a look leaves the stored look alone. */
 export function writeLocalSnapshot(snapshot: PlayerSnapshot): void {
     const clean = sanitizeSnapshot(snapshot); // replaceProgress does no shape check of its own
     achievementManager.replaceProgress(clean.achievements);
     setXp(clean.xp);
     if (clean.look) writeLook(clean.look);
-    else LOOK_KEYS.forEach(removeStored);
 }
 
 /** Forgets the whole local player: progress, XP, look and name (used on logout). */
@@ -73,10 +82,16 @@ const sameLook = (a: Omit<FighterLook, 'savedAt'>, b: Omit<FighterLook, 'savedAt
     // sanitizeBuild gives every build the same key order, so the JSON text is comparable
     && JSON.stringify(sanitizeBuild(a.build)) === JSON.stringify(sanitizeBuild(b.build));
 
-/** Saves the look and stamps it with the current time, but only when it differs from the stored one. */
+/**
+ * Saves the look; stamps it with the current time only when it differs from what the game already
+ * uses. On a fresh device the "stored" look is the defaults, so an untouched default look is saved
+ * without a stamp (savedAt stays 0) and can never beat a customised look from the cloud.
+ */
 export function saveLookIfChanged(next: Omit<FighterLook, 'savedAt'>): boolean {
-    const stored = readStoredLook();
-    if (stored && sameLook(stored, next)) return false;
+    if (sameLook(currentLook(), next)) {
+        if (!hasStoredLook()) writeLookKeys(next); // the match reads the saved build
+        return false;
+    }
     writeLook({ ...next, savedAt: Date.now() });
     return true;
 }
