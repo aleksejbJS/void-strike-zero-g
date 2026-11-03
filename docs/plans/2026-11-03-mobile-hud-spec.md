@@ -52,6 +52,11 @@ screen without page scrolling:
   the left; name, part tabs (tiles scroll inside the panel) and Start on the right;
 - What's new: smaller title.
 
+**Full screen** (added 2026-11-03): on a touch device the match's Start button puts the page
+in full screen (browser bar hidden) and asks for a landscape lock; a button in the top bar leaves
+or re-enters it (the browser can leave it on a swipe); back in the menu the page leaves it.
+Browsers allow it only from a tap. iPhones do not support it for pages (no-op there).
+
 ## Non-goals
 
 - No change to desktop HUD, keyboard or mouse.

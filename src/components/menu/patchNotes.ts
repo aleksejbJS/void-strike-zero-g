@@ -38,6 +38,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Two sticks: the left one moves (push up to fly), the right one aims and fires, with an aim line, so your finger never covers the target',
                 'Tap a weapon above the right stick to switch to it; the hook button sits next to the stick',
                 'The menu and the character screen fit on a phone held sideways, no more scrolling through a long page',
+                'On Android a match goes full screen, so the browser bar no longer takes space; a button on the top bar switches it off and on',
             ] },
         ] },
         { version: '0.4.12', date: 'Nov 3, 2026', groups: [
@@ -165,6 +166,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Два стика: левый — движение (вверх — полёт), правый — прицел и стрельба с линией прицела, так что палец не закрывает цель',
                 'Оружие меняется касанием по значку над правым стиком; кнопка крюка рядом со стиком',
                 'Меню и экран персонажа помещаются на повёрнутом телефоне целиком, без прокрутки длинной страницы',
+                'На Android матч открывается на весь экран, строка браузера больше не мешает; кнопка в верхней полосе выключает и включает этот режим',
             ] },
         ] },
         { version: '0.4.12', date: '03.11.2026', groups: [

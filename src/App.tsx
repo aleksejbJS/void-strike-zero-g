@@ -6,6 +6,7 @@ import PlayerCustomization from './components/setup/CharacterSetup';
 import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
 import { ADS_ADMIN_HASH, rememberAdminFlag } from './components/ads/adminAccess';
+import { exitFullscreen } from './components/fullscreen';
 
 // Hidden ads admin page, loaded only when someone opens #ads-admin
 const AdsAdmin = lazy(() => import('./components/ads/AdsAdmin').then(m => ({ default: m.AdsAdmin })));
@@ -24,6 +25,11 @@ const App: React.FC = () => {
   const { state, actions } = useUIStore();
   const [showingCustomization, setShowingCustomization] = useState(false);
   const hash = useHash();
+
+  // A match may have gone full screen on a phone; the menu is shown with the browser bar again
+  useEffect(() => {
+    if (!state.isPlaying) void exitFullscreen();
+  }, [state.isPlaying]);
 
   React.useEffect(() => {
     rememberAdminFlag(window.location.search);

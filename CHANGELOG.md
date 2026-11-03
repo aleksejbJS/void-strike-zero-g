@@ -9,6 +9,7 @@
 - Carried weapons as a tappable row above the aim stick (shared `selectWeapon` with keys 1–6); hook button left of the stick; the jetpack button is gone
 - Hint for the first 3 matches on a device, 6 s (`touchHintMatches` in localStorage)
 - Menu and character setup on screens up to 500 px tall (a phone held sideways) fit one screen: the menu becomes three compact columns (mode names, preview + one-line description, map / play / create / join; tagline, rules and keyboard legend hidden), setup becomes preview + preset on the left and name, part tabs (tiles scroll inside) and Start on the right. They were one column 7 and 6 screens tall with desktop-size titles, since a sideways phone is wider than the `sm` breakpoint
+- Full screen on touch devices (`components/fullscreen.ts`): Start match requests it (`navigationUI: 'hide'`) and a landscape lock, the top bar has a toggle (follows `fullscreenchange`, so it also brings it back after a swipe), and `App` leaves it when the menu shows. Failures are logged; iPhones have no page full screen, so nothing happens there. `isTouchDevice` moved here from `GameCanvas`
 - Overlays shrink on screens up to 500 px tall (Tailwind screen `phone`): death screen, match results (scrolls), Hunger Games and Gun Game panels move under the top bar, flag banner, invite
 
 ## Version 0.4.12 (2026-11-03)

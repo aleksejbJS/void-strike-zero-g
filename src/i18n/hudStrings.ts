@@ -44,6 +44,8 @@ export interface HudKeys {
     'hud.touchAim': string;
     'hud.touchWeapons': string;
     'hud.place': string;
+    'hud.fullscreen': string;
+    'hud.exitFullscreen': string;
     'hud.hook': string;
     // Objective banner: {0} is a flag adjective (flagOf*) or a team name (team*)
     'hud.flagOfRed': string;
@@ -104,6 +106,8 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.touchAim': 'Right stick: aim, push further to fire',
         'hud.touchWeapons': 'Tap a weapon to switch',
         'hud.place': '#{0} of {1}',
+        'hud.fullscreen': 'Full screen',
+        'hud.exitFullscreen': 'Exit full screen',
         'hud.hook': 'Grappling hook',
         'hud.flagOfRed': 'Red',
         'hud.flagOfBlue': 'Blue',
@@ -161,6 +165,8 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.touchAim': 'Правый стик: прицел, дальше — огонь',
         'hud.touchWeapons': 'Нажмите на оружие, чтобы сменить',
         'hud.place': '№{0} из {1}',
+        'hud.fullscreen': 'На весь экран',
+        'hud.exitFullscreen': 'Выйти из полноэкранного режима',
         'hud.hook': 'Крюк',
         'hud.flagOfRed': 'Красный',
         'hud.flagOfBlue': 'Синий',

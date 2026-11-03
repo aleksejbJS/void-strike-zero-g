@@ -14,6 +14,7 @@ import { screenToWorld, toView, viewportOf, worldToScreen, Viewport } from '../g
 import { drawAimLine } from '../game/render/aimLine';
 import { aimDirection, aimPoint, deflection, isFiring, moveKeys } from '../game/input/sticks';
 import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
+import { isTouchDevice } from './fullscreen';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
@@ -58,8 +59,7 @@ const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false };
 const effectiveMapFor = (mode: GameMode, selected: MapId) =>
     mode === GameMode.DEATHMATCH || mode === GameMode.HUNGER_GAMES || mode === GameMode.GUN_GAME ? selected : MapId.DEFAULT;
 
-const detectMobile = () =>
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+const detectMobile = isTouchDevice;
 
 export default function GameCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);

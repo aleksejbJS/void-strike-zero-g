@@ -13,6 +13,7 @@ import { CharacterPreview } from './CharacterPreview';
 import { BuilderTabs } from './builder/BuilderTabs';
 import { XpBar } from './builder/XpBar';
 import { useFighterDraft } from './builder/useFighterDraft';
+import { enterFullscreen, isTouchDevice } from '../fullscreen';
 
 const MAX_NAME = 12;
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
@@ -37,6 +38,7 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
     const { preset, build, colors } = draft;
 
     const start = () => {
+        if (isTouchDevice()) void enterFullscreen(); // hides the browser bar; needs this tap
         saveBuild(build); // the match reads the saved build when it starts
         actions.selectSkin(preset.id);
         actions.setPlayerCustomization(name.trim() || 'Anonymous', colors);

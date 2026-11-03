@@ -4,6 +4,7 @@
 import React from 'react';
 import { ITEM_ICON } from '../hudIcons';
 import { HudButtons } from '../Achievements';
+import { useFullscreen } from '../../fullscreen';
 import type { Translate } from '../../menu/types';
 
 export type TopBarMatch =
@@ -35,6 +36,21 @@ const Stat: React.FC<{ icon: string; label: string; children: React.ReactNode }>
     </div>
 );
 
+/** Back into full screen after the browser left it (a swipe, the back gesture), or out of it. */
+const FullscreenButton: React.FC<{ t: Translate }> = ({ t }) => {
+    const fullscreen = useFullscreen();
+    if (!fullscreen.supported) return null;
+    return (
+        <button type="button" onClick={() => void fullscreen.toggle()} aria-pressed={fullscreen.active}
+            aria-label={t(fullscreen.active ? 'hud.exitFullscreen' : 'hud.fullscreen')}
+            className="pointer-events-auto flex h-7 w-8 items-center justify-center text-bay-chalk focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d={fullscreen.active ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'} />
+            </svg>
+        </button>
+    );
+};
+
 const MatchInfo: React.FC<{ t: Translate; clock?: string; match: TopBarMatch | null }> = ({ t, clock, match }) => (
     <div className="flex flex-1 items-baseline justify-center gap-2">
         {match?.kind === 'team' && <span className="font-display text-[15px] font-black leading-none text-blue-300">{match.blue}</span>}
@@ -61,6 +77,7 @@ export const MobileTopBar: React.FC<Props> = ({ t, hp, armor, fuelPercent, clock
                     <Bar percent={fuelPercent} color="#FFC21A" width={36} height={3} />
                 </Stat>
                 <MatchInfo t={t} clock={clock} match={match} />
+                <FullscreenButton t={t} />
                 <HudButtons t={t} small muted={muted} onToggleMute={onToggleMute} onOpenAchievements={onOpenAchievements} />
             </div>
             <div aria-hidden="true" className="hazard-stripes-xs pointer-events-none absolute inset-x-0 top-7 z-40 h-0.5 opacity-80" />
