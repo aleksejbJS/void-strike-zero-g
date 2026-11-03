@@ -2,11 +2,11 @@
 // Display side only: each client builds its own corpses from DEATH events, the server never does.
 
 import { GameState, WeaponType } from '../../../types';
-import type { DeathEvent } from '../events';
+import type { DeathEvent, LimbEvent } from '../events';
 import { isDeathKind } from '../deathKind';
 import { Corpse, createCorpse } from './corpseBody';
 import { stepCorpse } from './corpseStep';
-import { launchCorpse } from './corpseLaunch';
+import { launchCorpse, launchLimb } from './corpseLaunch';
 
 /** At most this many corpses lie before the oldest one starts fading. */
 export const MAX_CORPSES = 12;
@@ -27,19 +27,35 @@ const fadeNow = (c: Corpse) => {
     c.removeAt = Math.min(c.removeAt, c.age + fade);
 };
 
-/**
- * A corpse for a DEATH event, launched by its kind. Older hosts send no kind and no vel, a newer or
- * hostile host may send a kind we do not know: those fall, still. An unknown weapon is dropped.
- */
-export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
-    // Only corpses that are not fading yet count toward the cap
+/** Only corpses that are not fading yet count toward the cap: when it is reached, the oldest starts to fade. */
+const makeRoom = (state: GameState) => {
     const lying = state.corpses.filter(c => c.fadeAt > c.age);
     if (lying.length >= MAX_CORPSES) fadeNow(lying[0]);
-    const corpse = createCorpse({ ...e, kind: isDeathKind(e.kind) ? e.kind : 'fall', weapon: knownWeapon(e.weapon) });
+};
+
+/**
+ * A corpse for a DEATH event, launched by its kind. Older hosts send no kind and no vel, a newer or
+ * hostile host may send a kind we do not know: those fall, still. An unknown weapon is dropped, and
+ * only a real boolean says it had lost a leg.
+ */
+export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
+    makeRoom(state);
+    const oneLeg = typeof e.oneLeg === 'boolean' ? e.oneLeg : undefined;
+    const corpse = createCorpse({ ...e, kind: isDeathKind(e.kind) ? e.kind : 'fall', weapon: knownWeapon(e.weapon), oneLeg });
     // A host may send anything: only a real boolean says shot or splash
     launchCorpse(corpse, e.from, e.vel ?? STILL, typeof e.blast === 'boolean' ? e.blast : undefined);
     state.corpses.push(corpse);
     return corpse;
+};
+
+/** A leg torn off a wounded fighter, as a corpse of its own that is only the back leg, thrown along the beam from `e.from`. */
+export const addLimb = (state: GameState, e: LimbEvent): Corpse => {
+    makeRoom(state);
+    const leg = createCorpse({ x: e.x, y: e.y, facing: e.facing, kind: 'gib', parts: e.parts });
+    leg.only = 'leg-back';
+    launchLimb(leg, e.from, e.vel ?? STILL);
+    state.corpses.push(leg);
+    return leg;
 };
 
 /** One physics tick for every corpse; corpses whose time is up are removed. */

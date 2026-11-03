@@ -32,6 +32,8 @@ const SHOT_POWER = 7 * S;
 const SHOT_RANGE = 40;
 /** Upward share of a blast's power (the mockup's lift). */
 const LIFT = 0.45;
+/** A torn-off leg is thrown along the beam, as the upper half of a cut, and up so it arcs instead of sliding. */
+const LIMB_POWER = 8 * S, LIMB_LIFT = 5 * S;
 /** No point of a thrown body gets less than this share of the power. */
 const THROW_FLOOR = 0.5;
 /** Gib: the mockup's close blast (12 × 0.8; 8 here for the same reason as THROW_POWER) and its random scatter... */
@@ -133,13 +135,18 @@ const gib = (c: Corpse, from: Vector2 | undefined) => {
     }
 };
 
-/** Railgun: cut at the waist, the upper half flies along the beam, the legs fold where they stand (mockup `rail`). */
-const cut = (c: Corpse, from: Vector2 | undefined) => {
-    c.links = c.links.filter(l => UPPER.has(l.a) === UPPER.has(l.b));
+/** Unit vector of a beam's way through the hip: from `from` to the hip, without `from` backwards. */
+const beamAlong = (c: Corpse, from: Vector2 | undefined): Vector2 => {
     const hip = c.points.hip;
     const dx = from ? hip.x - from.x : -c.facing, dy = from ? hip.y - from.y : 0;
     const d = Math.max(Math.hypot(dx, dy), MIN_DIST);
-    const along = { x: dx / d, y: dy / d };
+    return { x: dx / d, y: dy / d };
+};
+
+/** Railgun: cut at the waist, the upper half flies along the beam, the legs fold where they stand (mockup `rail`). */
+const cut = (c: Corpse, from: Vector2 | undefined) => {
+    c.links = c.links.filter(l => UPPER.has(l.a) === UPPER.has(l.b));
+    const along = beamAlong(c, from);
     for (const id of UPPER_BODY) {
         const v = (id === 'head' ? 10 : rnd(7, 9)) * S;
         const lift = (id === 'head' ? 3.6 : rnd(2, 3.5)) * S;
@@ -165,6 +172,13 @@ export const fitSpeedCap = (c: Corpse): void => {
     for (const p of points) { p.px = p.x - (p.x - p.px) * k; p.py = p.y - (p.y - p.py) * k; }
 };
 
+/** The victim's own velocity (entity units) rides on top of the launch, then the whole body is held to the speed cap. */
+const carryOn = (c: Corpse, vel: Vector2) => {
+    const vx = vel.x * ENTITY_VEL_PER_TICK, vy = vel.y * ENTITY_VEL_PER_TICK;
+    for (const p of Object.values(c.points)) kick(p, vx, vy);
+    fitSpeedCap(c);
+};
+
 /**
  * Start a fresh corpse moving by its kind of death; `vel`: the victim's velocity (entity units).
  * `blast`: true for a splash kill, false for a shot or any other cause; undefined only from older hosts.
@@ -172,7 +186,15 @@ export const fitSpeedCap = (c: Corpse): void => {
 export const launchCorpse = (c: Corpse, from: Vector2 | undefined, vel: Vector2, blast?: boolean): void => {
     tossGun(c);
     LAUNCH[c.kind](c, from, blast);
-    const vx = vel.x * ENTITY_VEL_PER_TICK, vy = vel.y * ENTITY_VEL_PER_TICK;
-    for (const p of Object.values(c.points)) kick(p, vx, vy);
-    fitSpeedCap(c);
+    carryOn(c, vel);
+};
+
+/** A leg the railgun tore off: the knee flies along the beam, the foot trails so it tumbles. */
+export const launchLimb = (c: Corpse, from: Vector2 | undefined, vel: Vector2): void => {
+    c.links = c.links.filter(l => !l.joint && !l.min);
+    const along = beamAlong(c, from);
+    const v = LIMB_POWER * rnd(0.85, 1.15);
+    kick(c.points.knB, along.x * v, along.y * v - LIMB_LIFT * rnd(0.8, 1.2));
+    kick(c.points.anB, along.x * v * rnd(0.4, 0.8), along.y * v * rnd(0.4, 0.8) - LIMB_LIFT * rnd(0.4, 0.8));
+    carryOn(c, vel);
 };

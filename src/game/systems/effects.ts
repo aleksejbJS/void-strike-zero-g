@@ -8,7 +8,7 @@ import { gameEvents, GameEvent, DeathEvent, EffectKind, LimbEvent, RagdollColors
 import type { DeathKind } from './deathKind';
 import { nextId } from '../utils/id';
 import { createParticles } from './effectSpawn';
-import { addCorpse } from './ragdoll/corpses';
+import { addCorpse, addLimb } from './ragdoll/corpses';
 import { pushCorpses } from './ragdoll/corpsePush';
 import { explosionBurst } from './explosionFx';
 import { addMark, addMarkAt } from './marks';
@@ -77,6 +77,10 @@ const STILL = { x: 0, y: 0 };
 
 const SCORCH_RADIUS = 18;
 
+/** Droplets when a leg is torn off (a death throws 40); the blood is plain red, there is no victim colour to tint it. */
+const LIMB_BLOOD = 24;
+const LIMB_BLOOD_COLOR = '#ef4444';
+
 const explosionAt = (state: GameState, x: number, y: number, scale?: number) => {
     // The impact point sits just outside the wall; a blast in mid-air leaves nothing
     addMarkAt(state.platforms, x, y, SCORCH_RADIUS, SCORCH_RADIUS);
@@ -101,6 +105,9 @@ const bloodAt = (state: GameState, x: number, y: number, count: number, color: s
 
 /** -1 or 1: the side away from the hit, or undefined when it came from straight above/below or is unknown. */
 const sideAway = (x: number, from?: Vector2) => (from && from.x !== x ? Math.sign(x - from.x) : undefined);
+
+/** The colours come from the host and so does the build: unknown part ids would throw while drawing. */
+const safeParts = (parts?: RagdollColors) => parts && { ...parts, build: parts.build && sanitizeBuild(parts.build) };
 
 /** Turn one event into particles/decals/corpses/texts. Non-effect events are ignored. */
 export const applyEffectEvent = (state: GameState, e: GameEvent) => {
@@ -139,9 +146,14 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
                 rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
             });
-            // The build comes from the host: unknown part ids would throw while drawing
-            addCorpse(state, { ...e, parts: e.parts && { ...e.parts, build: e.parts.build && sanitizeBuild(e.parts.build) } });
+            addCorpse(state, { ...e, parts: safeParts(e.parts) });
             break;
+        case 'LIMB': {
+            const leg = addLimb(state, { ...e, parts: safeParts(e.parts) });
+            const hip = leg.points.hip; // the leg starts where the fighter stands: the wound is at its hip
+            bloodAt(state, hip.x, hip.y, LIMB_BLOOD, LIMB_BLOOD_COLOR, sideAway(e.x, e.from));
+            break;
+        }
         case 'FLOAT_TEXT':
             floatText(state, e.x, e.y, e.text, e.color);
             break;
