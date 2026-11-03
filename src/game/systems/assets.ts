@@ -1,6 +1,7 @@
 
 import { Assets, Texture } from 'pixi.js';
 import { ItemType } from '../../types';
+import { assetUrl } from '../../assetUrl';
 
 // Cache for loaded textures to avoid re-loading
 let cachedTextures: Record<string, Texture> | null = null;
@@ -50,29 +51,29 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
     // Manifest of assets
     // For now, we mix real files and generated SVGs (as data URIs)
     const manifest = {
-        [ItemType.HEALTH]: '/assets/items/health.png',
-        [ItemType.ARMOR]: '/assets/items/armor_shield.png',
-        [ItemType.AMMO]: '/assets/items/ammo.png',
-        [ItemType.FUEL]: '/assets/items/fuel.png',
+        [ItemType.HEALTH]: assetUrl('assets/items/health.png'),
+        [ItemType.ARMOR]: assetUrl('assets/items/armor_shield.png'),
+        [ItemType.AMMO]: assetUrl('assets/items/ammo.png'),
+        [ItemType.FUEL]: assetUrl('assets/items/fuel.png'),
         [ItemType.INTEL]: intelFallback,
-        weapon_shotgun: '/assets/items/shotgun.png',
-        weapon_rocket_launcher: '/assets/items/rocketlunch.png',
-        weapon_railgun: '/assets/items/railgun.png',
-        weapon_machine_gun: '/assets/items/machinegun.png',
-        weapon_grenade_launcher: '/assets/items/granat.png',
-        weapon_chainsaw: '/assets/items/chainsaw.png',
-        weapon_plasma_gun: '/assets/items/plasma_gun.png',
+        weapon_shotgun: assetUrl('assets/items/shotgun.png'),
+        weapon_rocket_launcher: assetUrl('assets/items/rocketlunch.png'),
+        weapon_railgun: assetUrl('assets/items/railgun.png'),
+        weapon_machine_gun: assetUrl('assets/items/machinegun.png'),
+        weapon_grenade_launcher: assetUrl('assets/items/granat.png'),
+        weapon_chainsaw: assetUrl('assets/items/chainsaw.png'),
+        weapon_plasma_gun: assetUrl('assets/items/plasma_gun.png'),
         // Trimmed pictures for weapons held by fighters (grip points in render/fighter/weaponGrips.ts)
-        held_machine_gun: '/assets/hud/machine_gun.png',
-        held_shotgun: '/assets/hud/shotgun.png',
-        held_rocket_launcher: '/assets/hud/rocket_launcher.png',
-        held_railgun: '/assets/hud/railgun.png',
-        held_grenade_launcher: '/assets/hud/grenade_launcher.png',
-        held_plasma_gun: '/assets/hud/plasma_gun.png',
-        held_chainsaw: '/assets/hud/chainsaw.png',
-        jetpack: '/assets/items/jetpack.png',
-        dirt_tile: '/assets/dirt_tile.png',
-        grass_tile: '/assets/grass_tile.png'
+        held_machine_gun: assetUrl('assets/hud/machine_gun.png'),
+        held_shotgun: assetUrl('assets/hud/shotgun.png'),
+        held_rocket_launcher: assetUrl('assets/hud/rocket_launcher.png'),
+        held_railgun: assetUrl('assets/hud/railgun.png'),
+        held_grenade_launcher: assetUrl('assets/hud/grenade_launcher.png'),
+        held_plasma_gun: assetUrl('assets/hud/plasma_gun.png'),
+        held_chainsaw: assetUrl('assets/hud/chainsaw.png'),
+        jetpack: assetUrl('assets/items/jetpack.png'),
+        dirt_tile: assetUrl('assets/dirt_tile.png'),
+        grass_tile: assetUrl('assets/grass_tile.png')
     };
 
     // Bump bundle name to force reload when manifest changes
