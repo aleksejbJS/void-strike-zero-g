@@ -146,6 +146,9 @@ export class ClientSession {
 
     private predict(state: GameState, local: Entity, controls: TickControls) {
         if (!this.physics.bodies.has(local.id)) this.physics.addPlayer(local);
+        // A snapshot may have moved us (respawn, snap): the body must start from there, or the
+        // step below reads back where we died and we play on there while the server has us elsewhere
+        this.physics.syncFromGameState({ players: [local] });
 
         // Same order as the server tick: step, read back, apply input, push
         this.physics.step(FIXED_STEP_MS);

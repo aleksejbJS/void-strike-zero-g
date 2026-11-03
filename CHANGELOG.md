@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.18 (unreleased)
+
+### 🐛 Fixes
+- Online respawn: the client does not predict while dead, so its own Matter body stayed where the player died. On respawn the snapshot moved `local.pos` to the spawn point, but the next prediction step read the stale body back and the client played on from the death spot, while the server (and everyone else) had the player at the spawn point; the server's shots came from there. Every snap reset by `LocalPrediction.snapTo` was undone the same way. `ClientSession.predict` now pushes the local player into its body before stepping (`clientRespawn.test.ts`)
+
 ## Version 0.4.17 (2026-11-03)
 
 ### 🚀 Rockets
