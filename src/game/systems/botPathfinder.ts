@@ -28,6 +28,7 @@ export interface PathQuery {
     allowed?: (n: NavNode) => boolean;   // e.g. inside the Hunger Games zone
     blocked?: { has(key: string): boolean }; // edges that failed recently
     fromX?: number;                      // where on the start surface the bot stands
+    walkPxPerS?: number;                 // ground speed; slower than a run (e.g. wounded) makes walks cost more
 }
 
 const RUN_PX_S = 240; // running along a surface to the next move costs time too
@@ -35,6 +36,7 @@ const RUN_PX_S = 240; // running along a surface to the next move costs time too
 /** Edges from `from` towards the goal; empty when already there or nothing is reachable. */
 export const findPath = (graph: NavGraph, q: PathQuery): NavEdge[] => {
     const n = graph.nodes.length;
+    const walkSpeed = q.walkPxPerS ?? RUN_PX_S;
     const dist = new Array<number>(n).fill(Infinity);
     const via = new Array<NavEdge | null>(n).fill(null);
     const done = new Array<boolean>(n).fill(false);
@@ -48,7 +50,7 @@ export const findPath = (graph: NavGraph, q: PathQuery): NavEdge[] => {
         done[u] = true;
         for (const e of graph.out[u]) {
             if (q.blocked?.has(edgeKey(e)) || (q.allowed && !q.allowed(graph.nodes[e.to]))) continue;
-            const d = dist[u] + Math.abs(e.startX - arriveX[u]) / RUN_PX_S + e.cost;
+            const d = dist[u] + Math.abs(e.startX - arriveX[u]) / walkSpeed + e.cost;
             if (d < dist[e.to]) { dist[e.to] = d; via[e.to] = e; arriveX[e.to] = e.endX; }
         }
     }

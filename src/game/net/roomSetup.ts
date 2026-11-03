@@ -67,6 +67,7 @@ const baseEntity = (mode: GameMode, team: Team) => {
         grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE,
         lastProcessedInput: 0,
         jetpackOn: false,
+        wound: undefined, // a new life starts whole (the Object.assign in respawnEveryone clears an old wound)
     };
 };
 

@@ -7,6 +7,8 @@ import { applyDamage, createExplosion, fireWeapon } from './combat';
 import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
 import { speedOf } from './ragdoll/corpseStep';
 import { updateCorpses } from './ragdoll/corpses';
+import { piecesOf } from '../render/ragdoll/corpsePose';
+import { sanitizeBuild } from '../build/sanitizeBuild';
 
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
@@ -128,6 +130,39 @@ describe('applyEffectEvent', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         applyEffectEvent(state, { type: 'SOUND', sound: 'hit' });
         expect(state.particles).toHaveLength(0);
+    });
+});
+
+describe('a torn-off leg (LIMB)', () => {
+    const limb = (extra: Partial<Extract<GameEvent, { type: 'LIMB' }>> = {}): GameEvent => ({
+        type: 'LIMB', x: 100, y: 300, facing: 1, vel: { x: 0, y: 0 }, from: { x: 0, y: 260 }, ...extra,
+    });
+
+    it('adds one leg piece and a blood burst at the hip', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        applyEffectEvent(state, limb());
+        expect(state.corpses).toHaveLength(1);
+        expect(piecesOf(state.corpses[0]).map(p => p.part)).toEqual(['leg-back']);
+        const blood = state.particles.filter(p => p.type === 'blood');
+        expect(blood.length).toBeGreaterThan(0);
+        expect(state.particles).toHaveLength(blood.length);
+        const hip = state.corpses[0].points.hip;
+        expect(blood.every(p => Math.abs(p.pos.x - hip.x) < 1 && Math.abs(p.pos.y - hip.y) < 1)).toBe(true);
+        expect(state.decals).toHaveLength(0); // a wound is not a death
+    });
+
+    it('the blood flies away from the beam', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        applyEffectEvent(state, limb({ from: { x: 400, y: 260 } }));
+        const blood = state.particles.filter(p => p.type === 'blood');
+        expect(blood.reduce((sum, p) => sum + p.vel.x, 0) / blood.length).toBeLessThan(0);
+    });
+
+    it('the build comes from the host: unknown part ids are made valid before they are drawn', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const junk = { ...DEFAULT_BUILD, helmet: 'no-such-helmet' } as unknown as FighterBuild;
+        applyEffectEvent(state, limb({ parts: { head: '#aa3322', torso: '#3366aa', arm: '#22aa66', leg: '#475569', build: junk } }));
+        expect(state.corpses[0].colors?.build).toEqual(sanitizeBuild(junk));
     });
 });
 

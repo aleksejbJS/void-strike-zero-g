@@ -8,8 +8,9 @@ import { nextId } from '../utils/id';
 import { distance, normalize, checkPointInRect, segmentRectEntry, segmentIntersectsRect } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
-import { emitEffect, emitDamage, emitDeath } from './effects';
+import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
+import { shouldWound, inflictWound, killCredit } from './wound';
 import { emitFlag } from './flagEvents';
 import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
@@ -69,9 +70,29 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     const dmgMult = isSelf ? SELF_DAMAGE_MULT : 1;
     const kbMult = isSelf ? SELF_KNOCKBACK_MULT : 1;
 
-    const holdingHTF = state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
+    // Directional knockback using weapon's knockbackForce
+    const push = () => {
+        const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
+        const airMult = target.isGrounded ? 1 : KNOCKBACK_AIR_MULT;
+        const force = (knockbackForce ?? amount / 10) * kbMult * airMult; // 0 is a real value: no push
+        target.vel.x += (knockback.x / len) * force;
+        target.vel.y += (knockback.y / len) * force;
+    };
+
+    // A railgun beam through armor wounds instead of killing: the target lives (no death, no kill feed line)
+    if (shouldWound(target, source)) {
+        const hadLeg = !target.wound; // re-wounded through new armor: the leg is already gone
+        const lost = inflictWound(target, attackerId);
+        if (hadLeg) emitLimb(target, source.from);
+        push();
+        if (lost > 0) emitDamage(target.pos.x, target.pos.y - 40, lost);
+        return;
+    }
+
+    // Bleeding is plain health loss: no flag bonus, armor, knockback or damage number
+    const holdingHTF = !source.bleed && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
     let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
-    if (target.armor > 0) {
+    if (target.armor > 0 && !source.bleed) {
         const absorb = Math.min(target.armor, dmg * 0.66);
         target.armor -= absorb;
         dmg -= absorb;
@@ -79,20 +100,19 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
-    // Directional knockback using weapon's knockbackForce
-    const len = Math.sqrt(knockback.x * knockback.x + knockback.y * knockback.y) || 1;
-    const airMult = target.isGrounded ? 1 : KNOCKBACK_AIR_MULT;
-    const force = (knockbackForce ?? amount / 10) * kbMult * airMult; // 0 is a real value: no push
-    target.vel.x += (knockback.x / len) * force;
-    target.vel.y += (knockback.y / len) * force;
-
-    emitDamage(target.pos.x, target.pos.y - 40, dmg);
+    if (!source.bleed) {
+        push();
+        emitDamage(target.pos.x, target.pos.y - 40, dmg);
+    }
 
     if (target.health <= 0) {
+        // A wounded fighter's frag goes to the railgun shooter: decided before the wound is cleared
+        const credit = killCredit(target, attackerId, source);
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
         // Blood, decal and ragdoll: the kind says how the body falls
         emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
+        target.wound = undefined; // after the event: it says oneLeg
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {
@@ -136,13 +156,13 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
             target.hasFlag = Team.NONE;
         }
 
-        if (attackerId) {
-            const killer = state.players.find(p => p.id === attackerId);
+        if (credit.attackerId) {
+            const killer = state.players.find(p => p.id === credit.attackerId);
             gameEvents.emit({
                 type: 'KILL',
                 killer: killer ? killer.name : 'World',
                 killerColor: killer ? killer.color : '#ffffff',
-                weapon: killer ? killer.weapon.name : 'Environment',
+                weapon: killer ? (credit.weapon ? WEAPONS_DATA[credit.weapon].name : killer.weapon.name) : 'Environment',
                 victim: target.name,
                 victimColor: target.color
             });
@@ -160,7 +180,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 
                 // Track achievement only for player-controlled kills
                 if (killer.type === 'player') {
-                    trackKill(killer.weapon.type);
+                    trackKill(credit.weapon ?? killer.weapon.type);
                 }
             }
         }

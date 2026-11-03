@@ -7,8 +7,10 @@ import { FighterState, RIG_SCALE, solvePose, STRIDE, WALK_STRIDE } from './fight
 import { lookFromEntity } from './fighterLook';
 import { gripPoints } from './weaponGrips';
 import { FighterFrame } from './fighterView';
-import { FighterMotion, headBob } from './fighterMotion';
+import { FighterMotion, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
+import { BleedDrips } from './fighterBleed';
+import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
 
@@ -31,6 +33,7 @@ interface AnimMemory {
     lastCos: number;          // cos(phase) on the previous frame, to catch the foot plant
     motion: FighterMotion;    // landing squash and hit flash
     dust: DustBudget;
+    bleed: BleedDrips;        // blood from the stump of a wounded fighter
     parts: PartMotion;        // springs for tail, ears, lamp and wings
 }
 
@@ -96,6 +99,12 @@ export class FighterAnimator {
             const foot = pose.frontLeg.end;
             m.dust.spawnStep(game, p.pos.x + foot.x * facing * RIG_SCALE, p.pos.y + foot.y * RIG_SCALE, Math.sign(p.vel.x) || facing);
         }
+        // A fighter without a leg hops along instead of running, and drips blood from the stump
+        const hop = p.wound ? hopLift(state, m.phase, moveDir) : 0;
+        if (p.wound) {
+            const tip = stumpTip(pose);
+            m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now);
+        }
         return {
             pose, grip, weapon, facing,
             weaponType: p.weapon.type,
@@ -107,6 +116,8 @@ export class FighterAnimator {
             squash: motion.squash,
             headBob: headBob(state, m.phase),
             hitFlash: motion.hitFlash,
+            oneLeg: !!p.wound,
+            hop,
         };
     }
 
@@ -119,7 +130,7 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), parts: new PartMotion(),
+                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), parts: new PartMotion(),
             };
             this.memory.set(id, m);
         }

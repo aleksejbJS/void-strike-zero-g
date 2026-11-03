@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FighterMotion, headBob } from './fighterMotion';
+import { FighterMotion, HOP_PX, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
 import { createMockState } from '../../../test/mocks';
 import { GameMode } from '../../../types';
@@ -101,17 +101,6 @@ describe('FighterMotion squash', () => {
     });
 });
 
-describe('FighterMotion hit flash', () => {
-    it('flashes for 80 ms after a health drop and not after a gain', () => {
-        const m = new FighterMotion();
-        expect(m.observe(0, 100, 0).hitFlash).toBe(0);
-        expect(m.observe(0, 80, 16).hitFlash).toBe(1);
-        expect(m.observe(0, 80, 60).hitFlash).toBe(1);
-        expect(m.observe(0, 80, 100).hitFlash).toBe(0);
-        expect(m.observe(0, 100, 116).hitFlash).toBe(0);
-    });
-});
-
 describe('headBob', () => {
     it('bobs the head only while running', () => {
         expect(headBob('idle', 1)).toBe(0);
@@ -176,5 +165,24 @@ describe('DustBudget', () => {
         for (let i = 0; i < 3; i++) a.spawnLanding(state, 0, 0);
         b.spawnLanding(state, 0, 0);
         expect(state.particles).toHaveLength(18);
+    });
+});
+
+describe('hopLift', () => {
+    it('lifts a one-legged fighter in time with the step, up to the full hop', () => {
+        expect(hopLift('walk', 0, 1)).toBe(HOP_PX);
+        expect(hopLift('walk', Math.PI / 3, 1)).toBeCloseTo(HOP_PX * 0.5);
+        expect(hopLift('walk', Math.PI, 1)).toBe(0);
+        expect(hopLift('walk', 3 * Math.PI / 2, 1)).toBe(0);
+    });
+
+    it('follows the direction of travel like the foot lift', () => {
+        expect(hopLift('walk', 0, -1)).toBe(0);
+        expect(hopLift('walk', Math.PI, -1)).toBe(HOP_PX);
+    });
+
+    it('hops only when walking or running upright', () => {
+        for (const state of ['idle', 'crouch', 'prone', 'fly', 'fall'] as const) expect(hopLift(state, 0, 1), state).toBe(0);
+        expect(hopLift('run', 0, 1)).toBe(HOP_PX);
     });
 });

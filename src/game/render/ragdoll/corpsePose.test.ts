@@ -138,3 +138,28 @@ describe('piecesOf', () => {
         }
     });
 });
+
+describe('piecesOf one-legged and torn-leg corpses', () => {
+    const partsOf = (c: Corpse) => piecesOf(c).map(p => p.part).sort();
+
+    it('a torn leg (only: leg-back) is exactly that one piece, where the knee lies', () => {
+        const c = createCorpse(death({ kind: 'gib' }));
+        c.only = 'leg-back';
+        expect(partsOf(c)).toEqual(['leg-back']);
+        expect(piecesOf(c)[0].at).toEqual({ x: c.points.knB.x, y: c.points.knB.y });
+    });
+
+    it('a gib of a one-legged fighter has no back leg', () => {
+        const c = createCorpse(death({ kind: 'gib', oneLeg: true }));
+        expect(partsOf(c)).toEqual(['arm-back', 'arm-front', 'head', 'leg-front', 'torso']);
+    });
+
+    it('a corpse with both legs keeps both', () => {
+        expect(partsOf(createCorpse(death({ kind: 'gib', oneLeg: false })))).toContain('leg-back');
+    });
+
+    it('a cut and a whole body of a one-legged fighter still have their usual pieces', () => {
+        expect(partsOf(createCorpse(death({ kind: 'cut', oneLeg: true })))).toEqual(['legs', 'upper']);
+        expect(piecesOf(createCorpse(death({ kind: 'fall', oneLeg: true })))).toEqual([]);
+    });
+});

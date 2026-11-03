@@ -5,6 +5,7 @@
 import { Vector2, WeaponType } from '../../../types';
 import type { DeathEvent, RagdollColors } from '../events';
 import type { DeathKind } from '../deathKind';
+import type { CorpsePiece } from '../../render/ragdoll/corpsePose';
 import { RIG_SCALE, solvePose, upperPoint } from '../../render/fighter/fighterPose';
 import { gripPoints } from '../../render/fighter/weaponGrips';
 import { nextId } from '../../utils/id';
@@ -33,7 +34,14 @@ export interface Corpse {
     removeAt: number;
     colors?: RagdollColors;
     weapon?: WeaponType;
+    /** Draw only this torn piece: a leg torn off a fighter who lived (its body is the fighter, not this corpse). */
+    only?: CorpsePiece['part'];
+    /** It had lost its back leg to a railgun wound: no back leg is drawn. */
+    oneLeg?: boolean;
 }
+
+/** What a corpse is made from: where and how a body stood, and what it looked like. A DEATH event has all of it. */
+export type CorpseSeed = Pick<DeathEvent, 'x' | 'y' | 'facing' | 'kind' | 'weapon' | 'parts' | 'oneLeg'>;
 
 /** A body lies 3.5 s then fades for 1 s; gib pieces lie 2 s then fade for 1 s (120 ticks/s). */
 const BODY_FADE_AT = 420;
@@ -91,7 +99,7 @@ const standingRig = (weapon: WeaponType | undefined): Record<CorpsePointId, Vect
 const distance = (p: CorpsePoint, q: CorpsePoint) => Math.hypot(p.x - q.x, p.y - q.y);
 
 /** A corpse standing where the fighter died, at rest; launching it is up to the caller. */
-export const createCorpse = (e: DeathEvent): Corpse => {
+export const createCorpse = (e: CorpseSeed): Corpse => {
     // Older hosts may send a DEATH event without `facing`
     const facing: 1 | -1 = e.facing === -1 ? -1 : 1;
     const kind: DeathKind = e.kind ?? 'fall';
@@ -118,5 +126,6 @@ export const createCorpse = (e: DeathEvent): Corpse => {
         removeAt: gib ? GIB_REMOVE_AT : BODY_REMOVE_AT,
         colors: e.parts,
         weapon: e.weapon,
+        oneLeg: e.oneLeg,
     };
 };

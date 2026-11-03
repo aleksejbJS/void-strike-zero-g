@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ITEM_ICON, PANEL } from './hudIcons';
+import { BleedingDrop } from './BleedingDrop';
 import type { Translate } from '../menu/types';
 
 const SEGMENTS = 10;
@@ -23,9 +24,10 @@ interface Props {
     armor: number;
     fuel: number;
     maxFuel: number;
+    bleeding?: boolean;
 }
 
-export const Vitals: React.FC<Props> = ({ t, hp, armor, fuel, maxFuel }) => {
+export const Vitals: React.FC<Props> = ({ t, hp, armor, fuel, maxFuel, bleeding }) => {
     // Brief "+25" when health goes up (pickups)
     const previousHp = useRef(hp);
     const [gain, setGain] = useState<number | null>(null);
@@ -47,7 +49,10 @@ export const Vitals: React.FC<Props> = ({ t, hp, armor, fuel, maxFuel }) => {
                 <span className="absolute -top-9 left-4 animate-[float_1.5s_ease-out_forwards] font-display text-3xl font-black text-green-400">+{gain}</span>
             )}
             <img src={ITEM_ICON.health} alt={t('hud.health')} className="h-9 w-9 justify-self-center object-contain" />
-            <span className={`font-display text-[52px] font-black leading-[0.9] ${low ? 'text-bay-signal' : ''}`}>{Math.max(0, hp)}</span>
+            <span className={`font-display text-[52px] font-black leading-[0.9] ${low ? 'text-bay-signal' : ''}`}>
+                {Math.max(0, hp)}
+                {bleeding && <BleedingDrop label={t('hud.bleeding')} className="ml-1 mt-1 align-top" />}
+            </span>
             <SegmentBar percent={hp} color={low ? '#FF4D2E' : '#ECE9E2'} height={14} />
 
             <img src={ITEM_ICON.armor} alt={t('hud.armor')} className="h-9 w-9 justify-self-center object-contain" />

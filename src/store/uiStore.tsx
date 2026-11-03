@@ -3,7 +3,7 @@ import { GameMode, KillMessage, Weapon, WeaponType, NetworkMode, MapId } from '.
 import { WEAPONS_DATA } from '../constants';
 import { PLAYER_KEYS, StoredPlayer, loadStoredPlayer, writeStored } from './playerStorage';
 
-export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number };
+export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number; bleeding?: boolean };
 type ScoresState = { red: number; blue: number };
 export type PlayerScore = { id: string; name: string; score: number; isPlayer: boolean; isLocal?: boolean; gunLevel?: number; gunProgress?: number; gunTotalLevels?: number };
 
