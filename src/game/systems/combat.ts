@@ -10,7 +10,7 @@ import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZ
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
-import { shouldWound, inflictWound } from './wound';
+import { shouldWound, inflictWound, killCredit } from './wound';
 import { emitFlag } from './flagEvents';
 import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
@@ -88,9 +88,10 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         return;
     }
 
-    const holdingHTF = state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
+    // Bleeding is plain health loss: no flag bonus, armor, knockback or damage number
+    const holdingHTF = !source.bleed && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
     let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
-    if (target.armor > 0) {
+    if (target.armor > 0 && !source.bleed) {
         const absorb = Math.min(target.armor, dmg * 0.66);
         target.armor -= absorb;
         dmg -= absorb;
@@ -98,15 +99,19 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
-    push();
-
-    emitDamage(target.pos.x, target.pos.y - 40, dmg);
+    if (!source.bleed) {
+        push();
+        emitDamage(target.pos.x, target.pos.y - 40, dmg);
+    }
 
     if (target.health <= 0) {
+        // A wounded fighter's frag goes to the railgun shooter: decided before the wound is cleared
+        const credit = killCredit(target, attackerId, source);
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
         // Blood, decal and ragdoll: the kind says how the body falls
         emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
+        target.wound = undefined; // after the event: it says oneLeg
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {
@@ -150,13 +155,13 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
             target.hasFlag = Team.NONE;
         }
 
-        if (attackerId) {
-            const killer = state.players.find(p => p.id === attackerId);
+        if (credit.attackerId) {
+            const killer = state.players.find(p => p.id === credit.attackerId);
             gameEvents.emit({
                 type: 'KILL',
                 killer: killer ? killer.name : 'World',
                 killerColor: killer ? killer.color : '#ffffff',
-                weapon: killer ? killer.weapon.name : 'Environment',
+                weapon: killer ? (credit.weapon ? WEAPONS_DATA[credit.weapon].name : killer.weapon.name) : 'Environment',
                 victim: target.name,
                 victimColor: target.color
             });
@@ -174,7 +179,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 
                 // Track achievement only for player-controlled kills
                 if (killer.type === 'player') {
-                    trackKill(killer.weapon.type);
+                    trackKill(credit.weapon ?? killer.weapon.type);
                 }
             }
         }

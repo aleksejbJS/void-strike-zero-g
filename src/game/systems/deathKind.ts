@@ -34,6 +34,8 @@ export const isSplash = (source: DamageSource): boolean =>
 
 /** `overkill` = the killing hit's damage after armor minus the victim's health right before it. */
 export const deathKind = (source: DamageSource, overkill: number): DeathKind => {
+    // Bleeding out: the body slumps, whatever beam made the wound
+    if (source.bleed) return 'fall';
     switch (source.weapon) {
         case WeaponType.SHOTGUN:
             // No distance known: treat as far, so a missing value never launches a body.

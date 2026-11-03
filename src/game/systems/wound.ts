@@ -25,3 +25,15 @@ export const inflictWound = (target: Entity, attackerId: string): number => {
 export const healWound = (p: Entity): void => {
     p.wound = undefined;
 };
+
+/**
+ * Who gets the frag when `target` dies. A wounded fighter belongs to the railgun shooter: bleeding out,
+ * or dying with no other player as the killer (own splash, a fall, the Hunger zone), credits the shooter
+ * with the Railgun, not the gun they hold now. Anyone else's kill, and the shooter's own other-weapon
+ * kill, stays as it was.
+ */
+export const killCredit = (target: Entity, attackerId: string, source: DamageSource): { attackerId: string; weapon?: WeaponType } => {
+    if (!target.wound) return { attackerId };
+    const noOtherKiller = source.bleed || attackerId === '' || attackerId === target.id;
+    return noOtherKiller ? { attackerId: target.wound.by, weapon: WeaponType.RAILGUN } : { attackerId };
+};
