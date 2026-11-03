@@ -6,6 +6,7 @@ import { MatterPhysicsEngine } from '../physics/MatterEngine';
 import { GameEvent } from '../systems/events';
 import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement } from '../systems/playerControl';
+import { applyStance, clampProneAim } from '../systems/stance';
 import { moveProjectile } from '../systems/physics';
 import { followCamera, pickCameraTarget } from '../systems/camera';
 import { jetpackTrail, projectileTrail } from '../systems/effects';
@@ -36,7 +37,7 @@ export interface TickControls {
 }
 
 // Fields the client owns for its own player between snapshots (predicted locally)
-const PREDICTED_FIELDS = ['pos', 'vel', 'isGrounded', 'isCrouching', 'height', 'grapple', 'jetpackFuel', 'aim'] as const;
+const PREDICTED_FIELDS = ['pos', 'vel', 'isGrounded', 'isCrouching', 'isProne', 'height', 'grapple', 'jetpackFuel', 'aim'] as const;
 
 // Timestamps at or above this mean "never" (e.g. no respawn in Hunger Games)
 const NEVER = Number.MAX_SAFE_INTEGER / 2;
@@ -151,9 +152,10 @@ export class ClientSession {
         this.physics.step(FIXED_STEP_MS);
         this.physics.syncGameState({ players: [local], platforms: state.platforms });
         const c = readControls(local, controls.keys);
-        local.isCrouching = c.wantsDown;
-        updateAim(local, controls.aim);
-        updateGrapple(state, local, controls.hookPressed, controls.aim);
+        applyStance(local, c);
+        const aim = clampProneAim(local, controls.aim);
+        updateAim(local, aim);
+        updateGrapple(state, local, controls.hookPressed, aim);
         applyPlayerMovement(state, local, c, state);
         this.prediction.applyCorrection(local);
         this.physics.syncFromGameState({ players: [local] });

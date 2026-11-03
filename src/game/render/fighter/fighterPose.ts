@@ -18,9 +18,11 @@ export const WALK_STRIDE = 7;  // walking: shorter steps, feet kept low, body up
 const WALK_LIFT = 3.5;
 const ANKLE_Y = -2.5;
 const CROUCH_TILT = 0.1; // largest head tilt while crouched (radians)
+const PRONE_LEAN = 1.38;  // upper body tipped forward almost flat
+const PRONE_TILT = 0.3;   // lying, the head follows the aim only a little
 const GRIP_REACH = 3;  // the rear hand sits this far down the barrel from the chest
 
-export type FighterState = 'idle' | 'walk' | 'run' | 'fly' | 'fall' | 'crouch';
+export type FighterState = 'idle' | 'walk' | 'run' | 'fly' | 'fall' | 'crouch' | 'prone';
 
 export interface PoseInput {
     state: FighterState;
@@ -89,6 +91,17 @@ const lowerBody = (input: PoseInput) => {
         }
         case 'crouch':
             return { hip: { x: -3, y: -12 }, lean: 0.4, feet: [{ x: 8, y: ANKLE_Y }, { x: -7, y: ANKLE_Y }], lift: 0 };
+        case 'prone': {
+            // Lying along the ground: hips back so the head and torso stay over the hitbox, legs
+            // stretched behind; crawling shuffles the feet and rocks the hips a little
+            const crawl = Math.sin(input.phase);
+            return {
+                hip: { x: -15, y: -7 + Math.abs(crawl) * 0.6 },
+                lean: PRONE_LEAN,
+                feet: [{ x: -38 + crawl * 3, y: -2 }, { x: -36 - crawl * 3, y: -3.5 }],
+                lift: 0,
+            };
+        }
         default:
             return {
                 hip: { x: 0, y: -30.5 + breath * 0.25 },
@@ -118,7 +131,9 @@ export const solvePose = (input: PoseInput): FighterPose => {
 
     // A crouched head stays nearly level so the head box does not swing out of the crouch hitbox
     const aimTilt = Math.max(-0.45, Math.min(0.45, input.aim * 0.45)) + lean * 0.5;
-    const tilt = input.state === 'crouch' ? Math.max(-CROUCH_TILT, Math.min(CROUCH_TILT, aimTilt)) : aimTilt;
+    const tilt = input.state === 'crouch' ? Math.max(-CROUCH_TILT, Math.min(CROUCH_TILT, aimTilt))
+        : input.state === 'prone' ? Math.max(-PRONE_TILT, Math.min(PRONE_TILT, input.aim * 0.5)) // the lean is not the head's
+            : aimTilt;
 
     const shoulderFront = upperPoint(frame, 2.5, -19);
     const shoulderBack = upperPoint(frame, -2.5, -19);

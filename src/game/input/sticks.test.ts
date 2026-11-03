@@ -27,6 +27,12 @@ describe('moveKeys', () => {
         expect(moveKeys(deflection(stick(5, -5)))).toMatchObject({ KeyW: false, KeyS: false, KeyA: false, KeyD: false });
     });
 
+    it('down half way crouches, down to the edge lies down', () => {
+        expect(moveKeys(deflection(stick(0, STICK_RADIUS * 0.6)))).toMatchObject({ KeyS: true, KeyZ: false });
+        expect(moveKeys(deflection(stick(0, STICK_RADIUS)))).toMatchObject({ KeyS: true, KeyZ: true });
+        expect(moveKeys(deflection(stick(STICK_RADIUS * 0.9, STICK_RADIUS * 0.4)))).toMatchObject({ KeyD: true, KeyZ: false }); // running, a little down
+    });
+
     it('half way walks, at the edge runs', () => {
         expect(moveKeys(deflection(stick(STICK_RADIUS * 0.6, 0)))).toMatchObject({ KeyD: true, Walk: true });
         expect(moveKeys(deflection(stick(STICK_RADIUS, 0)))).toMatchObject({ KeyD: true, Walk: false });

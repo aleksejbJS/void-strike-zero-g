@@ -78,6 +78,7 @@ export interface Entity {
   legColor?: string;
   isGrounded: boolean;
   isCrouching: boolean;
+  isProne?: boolean; // lying down (missing from older hosts: never lying)
   health: number;
   maxHealth: number;
   armor: number;

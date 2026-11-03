@@ -30,6 +30,8 @@ export interface HazardKeys {
     'ctl.fire': string;
     'ctl.grapple': string;
     'ctl.weapons': string;
+    'ctl.crouch': string;
+    'ctl.prone': string;
     'ctl.leftClick': string;
     'ctl.rightClick': string;
     'ctl.or': string;
@@ -76,6 +78,8 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.fire': 'Fire',
         'ctl.grapple': 'Grapple',
         'ctl.weapons': 'Weapons',
+        'ctl.crouch': 'Crouch',
+        'ctl.prone': 'Lie down (hold)',
         'ctl.leftClick': 'Left click',
         'ctl.rightClick': 'Right click',
         'ctl.or': 'or',
@@ -120,6 +124,8 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.fire': 'Огонь',
         'ctl.grapple': 'Крюк',
         'ctl.weapons': 'Оружие',
+        'ctl.crouch': 'Присесть',
+        'ctl.prone': 'Лечь (держать)',
         'ctl.leftClick': 'ЛКМ',
         'ctl.rightClick': 'ПКМ',
         'ctl.or': 'или',

@@ -11,6 +11,7 @@ import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
 import { emitFlag } from './flagEvents';
+import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 
 // --- Teams ---
@@ -201,8 +202,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
     p.weapon.ammo--;
     p.lastFired = Date.now();
 
-    const crouchY = p.isCrouching ? 15 : 0;
-    const origin = { x: p.pos.x, y: p.pos.y - 50 + crouchY };
+    const origin = { x: p.pos.x, y: p.pos.y - muzzleHeight(p) };
 
     const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
     const dir = { x: Math.cos(angle), y: Math.sin(angle) };

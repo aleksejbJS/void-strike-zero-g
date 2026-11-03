@@ -13,6 +13,8 @@ export const ControlsLegend: React.FC<{ t: Translate }> = ({ t }) => (
         <span className="flex items-center gap-2"><Key>Space</Key>{t('ctl.jetpack')}</span>
         <span className="flex items-center gap-2"><Key>{t('ctl.leftClick')}</Key>{t('ctl.fire')}</span>
         <span className="flex items-center gap-2"><Key>{t('ctl.rightClick')}</Key>{t('ctl.or')}<Key>Shift</Key>{t('ctl.grapple')}</span>
+        <span className="flex items-center gap-2"><Key>S</Key>{t('ctl.crouch')}</span>
+        <span className="flex items-center gap-2"><Key>Z</Key>{t('ctl.prone')}</span>
         <span className="flex items-center gap-2"><Key>1–6</Key>{t('ctl.weapons')}</span>
     </div>
 );

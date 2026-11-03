@@ -9,9 +9,8 @@ import { castRay } from './combat';
 import { applyMovement, MovementInput } from './movement';
 import { applyGrappleRelease } from './grapple';
 import { trackHookUse } from './achievements';
+import { applyStance } from './stance';
 
-const STANDING_HEIGHT = 72;
-const CROUCH_HEIGHT = 45;
 const MAP_CEILING_Y = -500;
 const HTF_CARRIER_SLOWDOWN = 0.85;
 
@@ -19,6 +18,7 @@ export interface PlayerControls {
     inputX: number;     // -1..1: ±1 runs, ±WALK_INPUT walks
     wantsJump: boolean; // W or Space
     wantsDown: boolean; // S
+    wantsProne: boolean; // Z held on the ground (touch: move stick down to the edge); a jump stands up
     isFlying: boolean;  // jetpack thrust this tick
 }
 
@@ -27,12 +27,13 @@ export const NO_KEYS: Record<string, boolean> = Object.freeze({}) as Record<stri
 export const readControls = (p: Entity, keys: Record<string, boolean>): PlayerControls => {
     const wantsJump = !!(keys['Space'] || keys['KeyW']);
     const wantsDown = !!keys['KeyS'];
+    const wantsProne = !!keys['KeyZ'] && !wantsJump && p.isGrounded;
     let inputX = 0;
     if (keys['KeyA']) inputX -= 1;
     if (keys['KeyD']) inputX += 1;
     // Touch play: a half-pushed move stick walks. Only on the ground: flying and air strafe stay full
     if (keys['Walk'] && p.isGrounded) inputX *= WALK_INPUT;
-    return { inputX, wantsJump, wantsDown, isFlying: wantsJump && p.jetpackFuel > 0 };
+    return { inputX, wantsJump, wantsDown, wantsProne, isFlying: wantsJump && p.jetpackFuel > 0 };
 };
 
 /** Shoulder-to-aim angle, stored on the entity so other clients can render where it points. */
@@ -60,14 +61,11 @@ export const updateGrapple = (state: GameState, p: Entity, hookPressed: boolean,
 };
 
 /**
- * Crouch height + Force Pipeline + mode/map limits.
+ * Stance (stand / crouch / lie) + Force Pipeline + mode/map limits.
  * Pass `particleState` to emit jetpack particles (omit on the server: they are cosmetic).
  */
 export const applyPlayerMovement = (state: GameState, p: Entity, controls: PlayerControls, particleState?: GameState) => {
-    if (p.type === 'player') {
-        p.isCrouching = controls.wantsDown;
-        p.height = p.isCrouching ? CROUCH_HEIGHT : STANDING_HEIGHT;
-    }
+    if (p.type === 'player') applyStance(p, controls);
 
     const movInput: MovementInput = {
         inputX: controls.inputX,
