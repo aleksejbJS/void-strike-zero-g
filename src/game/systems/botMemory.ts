@@ -17,6 +17,7 @@ export interface BotMemory {
     fireAllowedAt: number;  // reaction time: no shots at a freshly spotted target before this
     nav: BotNav;            // route on the navigation graph
     moves: BotMoves;        // strafe, dodge and escape timing
+    lastSeen: Map<string, Vector2>; // where each fighter was last seen out of smoke
 }
 
 // Progress is judged over a time window, not per tick: at 120 ticks/s a running
@@ -51,6 +52,7 @@ export const getBotMemory = (bot: Entity): BotMemory => {
             fireAllowedAt: 0,
             nav: newBotNav(),
             moves: newBotMoves(bot.health),
+            lastSeen: new Map(),
         };
         botMemory.set(bot.id, mem);
     }

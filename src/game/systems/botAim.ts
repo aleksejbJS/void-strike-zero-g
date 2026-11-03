@@ -36,7 +36,7 @@ export const aimAndFire = (state: GameState, bot: Entity, target: Entity, mem: B
     if (now < mem.fireAllowedAt) return;
     const fireReady = now - bot.lastFired > bot.weapon.fireRate * BOT_FIRE_COOLDOWN_SCALE;
     if (!fireReady || Math.abs(target.pos.y - bot.pos.y) >= BOT_VERTICAL_TOLERANCE) return;
-    if (!canSee(state, bot, target)) return;
+    if (!canSee(state, bot, target, now)) return;
 
     const speed = Math.hypot(target.vel.x, target.vel.y);
     const spread = Math.max(MIN_SPREAD_PX, dist * (BASE_SPREAD + MOVING_SPREAD * speed));

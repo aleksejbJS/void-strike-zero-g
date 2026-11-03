@@ -37,19 +37,19 @@ export const canSee = (state: GameState, bot: Entity, other: Entity, now = Date.
     && !smokeHides(state, muzzleOf(bot), centerOf(other), now);
 
 /** Nearest enemy the bot can see; if none is visible, the nearest one to head towards. */
-const pickTarget = (state: GameState, bot: Entity): { target: Entity | null; visible: boolean } => {
+const pickTarget = (state: GameState, bot: Entity, now: number): { target: Entity | null; visible: boolean } => {
     const enemies = state.players
         .filter(o => !o.dead && isEnemy(bot, o))
         .map(o => ({ o, d: distance(bot.pos, o.pos) }))
         .sort((a, b) => a.d - b.d);
-    const visible = enemies.find(({ o }) => canSee(state, bot, o));
+    const visible = enemies.find(({ o }) => canSee(state, bot, o, now));
     return { target: (visible ?? enemies[0])?.o ?? null, visible: !!visible };
 };
 
 export const senseTarget = (state: GameState, bot: Entity, mem: BotMemory, now: number): Entity | null => {
     if (now >= mem.nextScanAt) {
         mem.nextScanAt = now + BOT_SCAN_INTERVAL_MS;
-        const { target, visible } = pickTarget(state, bot);
+        const { target, visible } = pickTarget(state, bot, now);
         const spotted = visible && (target?.id !== mem.targetId || !mem.targetVisible);
         if (spotted) mem.fireAllowedAt = now + reactionDelay();
         mem.targetId = target?.id ?? null;

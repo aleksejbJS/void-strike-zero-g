@@ -9,6 +9,7 @@ import { insideZone } from './hungerRound';
 import { NavGraph } from './botNavGraph';
 import { roamGoal } from './botRoam';
 import { preferredRange } from './botCombatMoves';
+import { chasePoint } from './botSearch';
 
 export interface BotGoal {
     moveTarget: Vector2;
@@ -28,23 +29,25 @@ const nearestPickup = (state: GameState, bot: Entity, type: ItemType): Pickup | 
     return best;
 };
 
-const holdTheFlagGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null): BotGoal | null => {
+const holdTheFlagGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, now: number): BotGoal | null => {
     const neutralFlag = state.pickups.find(i => i.type === ItemType.FLAG && i.team === Team.NONE && i.active);
     const enemyHolder = state.players.find(p => p.team !== bot.team && p.hasFlag === p.team && !p.dead);
+    // Smoke hides where the holder is: chase the last-seen spot, or skip the chase when there is none
+    const holderAt = enemyHolder ? chasePoint(state, bot, mem, enemyHolder, now) : null;
     if (bot.hasFlag === bot.team) {
         mem.state = 'defend';
-        if (enemyHolder) return { moveTarget: enemyHolder.pos, target: enemyHolder };
+        if (enemyHolder && holderAt) return { moveTarget: holderAt, target: enemyHolder };
         if (!target) return { moveTarget: bot.pos, target };
         // Keep moving away from the nearest enemy to avoid being an easy target
         const away = Math.sign(bot.pos.x - target.pos.x) || 1;
         return { moveTarget: { x: bot.pos.x + away * 100, y: bot.pos.y }, target };
     }
     if (neutralFlag) { mem.state = 'flag-run'; return { moveTarget: neutralFlag.pos, target }; }
-    if (enemyHolder) { mem.state = 'hunt'; return { moveTarget: enemyHolder.pos, target: enemyHolder }; }
+    if (enemyHolder && holderAt) { mem.state = 'hunt'; return { moveTarget: holderAt, target: enemyHolder }; }
     return null;
 };
 
-const infiltrationGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null): BotGoal | null => {
+const infiltrationGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, now: number): BotGoal | null => {
     const intel = state.pickups.find(i => i.type === ItemType.INTEL);
     const carrier = state.players.find(p => p.hasFlag === Team.RED && !p.dead);
     if (bot.team === Team.BLUE) {
@@ -53,7 +56,13 @@ const infiltrationGoal = (state: GameState, bot: Entity, mem: BotMemory, target:
         if (intel) { mem.state = 'hunt'; return { moveTarget: intel.pos, target }; }
         return null;
     }
-    if (carrier) { mem.state = 'hunt'; return { moveTarget: carrier.pos, target: carrier }; }
+    if (carrier) {
+        // The intel is being carried: with the carrier lost in smoke, guarding its spawn is pointless
+        const carrierAt = chasePoint(state, bot, mem, carrier, now);
+        if (!carrierAt) return null;
+        mem.state = 'hunt';
+        return { moveTarget: carrierAt, target: carrier };
+    }
     if (intel) {
         mem.state = 'defend';
         return { moveTarget: distance(bot.pos, intel.pos) > 400 ? intel.pos : bot.pos, target };
@@ -61,13 +70,14 @@ const infiltrationGoal = (state: GameState, bot: Entity, mem: BotMemory, target:
     return null;
 };
 
-const ctfGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null): BotGoal | null => {
+const ctfGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, now: number): BotGoal | null => {
     if (bot.hasFlag !== Team.NONE) {
         mem.state = 'flag-run';
         return { moveTarget: baseFlagPos(bot.team === Team.BLUE ? Team.BLUE : Team.RED), target };
     }
     const enemyCarrier = state.players.find(p => p.hasFlag === bot.team);
-    if (enemyCarrier) { mem.state = 'defend'; return { moveTarget: enemyCarrier.pos, target: enemyCarrier }; }
+    const carrierAt = enemyCarrier ? chasePoint(state, bot, mem, enemyCarrier, now) : null;
+    if (enemyCarrier && carrierAt) { mem.state = 'defend'; return { moveTarget: carrierAt, target: enemyCarrier }; }
     // A teammate has the enemy flag: escort it home (shooting whoever chases it on the way)
     const teamCarrier = state.players.find(p => p !== bot && !p.dead && p.team === bot.team && p.hasFlag !== Team.NONE);
     if (teamCarrier) { mem.state = 'defend'; return { moveTarget: teamCarrier.pos, target }; }
@@ -77,12 +87,14 @@ const ctfGoal = (state: GameState, bot: Entity, mem: BotMemory, target: Entity |
 };
 
 const fightOrRoam = (state: GameState, bot: Entity, mem: BotMemory, target: Entity | null, graph: NavGraph, now: number): BotGoal => {
-    if (target) {
+    // Smoke hides where the target is: search its last-seen spot, then roam (still aiming at it)
+    const targetAt = target ? chasePoint(state, bot, mem, target, now) : null;
+    if (target && targetAt) {
         mem.state = 'hunt';
         // An enemy behind a wall: go and find it instead of holding distance
-        if (!mem.targetVisible) return { moveTarget: target.pos, target };
+        if (!mem.targetVisible) return { moveTarget: targetAt, target };
         // Close it to the weapon's range; within it hold the surface (combat moves strafe and back off)
-        if (distance(bot.pos, target.pos) > preferredRange(bot)) return { moveTarget: target.pos, target };
+        if (distance(bot.pos, targetAt) > preferredRange(bot)) return { moveTarget: targetAt, target };
         return { moveTarget: bot.pos, target };
     }
     mem.state = 'roam';
@@ -111,7 +123,7 @@ export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target
         return { moveTarget: medkit.pos, target };
     }
 
-    const goal = OBJECTIVES[state.mode]?.(state, bot, mem, target) ?? fightOrRoam(state, bot, mem, target, graph, now);
+    const goal = OBJECTIVES[state.mode]?.(state, bot, mem, target, now) ?? fightOrRoam(state, bot, mem, target, graph, now);
 
     // Detour for a weapon when low on ammo, still on the starter gun, or idle in free-for-all modes
     if (bot.hasFlag === Team.NONE) {
