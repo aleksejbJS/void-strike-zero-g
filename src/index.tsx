@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { UIProvider } from './store/uiStore';
+import { AccountProvider } from './account/AccountProvider';
 import './styles/hazard.css';
 
 const rootElement = document.getElementById('root');
@@ -13,7 +14,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <UIProvider>
-      <App />
+      <AccountProvider>
+        <App />
+      </AccountProvider>
     </UIProvider>
   </React.StrictMode>
 );
