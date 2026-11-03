@@ -13,6 +13,7 @@ const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
         case WeaponType.ROCKET_LAUNCHER: return 90 - Math.max(0, dist - 120) * 0.35;
         case WeaponType.GRENADE_LAUNCHER: return 85 - Math.max(0, dist - 140) * 0.3;
         case WeaponType.PLASMA_GUN: return 70 - Math.max(0, dist - 260) * 0.25;
+        case WeaponType.SMOKE_LAUNCHER: return -1000; // bots never fire smoke
         case WeaponType.RAILGUN: return dist > 280 ? 110 - Math.max(0, (dist - 280) * 0.1) : 40 + dist * 0.05;
         default: return 60 - Math.max(0, dist - 240) * 0.2; // Machine gun fallback
     }
@@ -47,6 +48,7 @@ export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null =
         if (!item.active || item.type !== ItemType.WEAPON || !item.subtype || !pickupReachable(state, item)) return;
         const existing = bot.inventory.find(w => w.type === item.subtype);
         const needsAmmo = existing ? existing.ammo < existing.maxAmmo * 0.4 : true;
+        if (item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never use it
         if (!existing && item.subtype === WeaponType.MACHINE_GUN) return; // skip default gun duplicates
         if (!existing && item.subtype === bot.weapon.type && bot.weapon.ammo > bot.weapon.maxAmmo * 0.5) return;
         if (!needsAmmo) return;

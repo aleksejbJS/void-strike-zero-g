@@ -33,6 +33,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.19', date: 'Nov 3, 2026', points: [
+            'Smoke launcher: fire a smoke cloud anywhere and hide for 10 seconds — from players and bots',
+        ] },
         { version: '0.4.18', date: 'Nov 3, 2026', points: [
             'Online, after you respawned the game kept you where you died while everyone else saw you at the spawn point, so your shots came from somewhere else entirely',
         ] },
@@ -181,6 +184,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.19', date: '03.11.2026', points: [
+            'Дымовой гранатомёт: выстрелите облаком дыма куда угодно и прячьтесь в нём 10 секунд — от игроков и от ботов',
+        ] },
         { version: '0.4.18', date: '03.11.2026', points: [
             'В игре по сети после возрождения игра оставляла вас там, где вы погибли, а остальные видели вас на точке возрождения — поэтому ваши выстрелы летели совсем из другого места',
         ] },

@@ -4,8 +4,11 @@ import { chooseGoal } from './botGoals';
 import { getBotMemory } from './botMemory';
 import { buildNavGraph } from './botNavGraph';
 import { baseFlagPos } from '../data/level';
-import { GameMode, Team, ItemType } from '../../types';
+import { GameMode, Team, ItemType, WeaponType } from '../../types';
+import { WEAPONS_DATA } from '../../constants';
 import { makeState, makeBot } from '../../test/botFixtures';
+import { findWeaponPickup, pickBestWeapon } from './botWeapons';
+import { SMOKE_DURATION_MS, spawnSmoke } from './smoke';
 
 beforeEach(() => {
   clearBotMemory();
@@ -145,5 +148,45 @@ describe('chooseGoal with a medkit', () => {
 
   it('a hurt flag carrier with both legs still heads straight home', () => {
     expect(goalOf(carrierState(10, false))).toEqual(baseFlagPos(Team.BLUE));
+  });
+});
+
+describe('bots and the smoke launcher', () => {
+  it('never switches to the smoke launcher, at any distance', () => {
+    [0, 1, 999].forEach(ammo => {
+      const bot = makeBot('bot1', Team.NONE, 0, 0) as any;
+      bot.weapon = { ...WEAPONS_DATA[WeaponType.MACHINE_GUN], ammo };
+      bot.inventory = [bot.weapon, { ...WEAPONS_DATA[WeaponType.SMOKE_LAUNCHER], ammo: 8 }];
+      for (let dist = 0; dist <= 1000; dist += 10) {
+        pickBestWeapon(bot, dist);
+        expect(bot.weapon.type).toBe(WeaponType.MACHINE_GUN);
+      }
+    });
+  });
+
+  it('does not go for a smoke launcher pickup', () => {
+    const state = makeState();
+    state.platforms = [{ id: 'floor', x: -5000, y: 0, w: 10000, h: 200, color: '#000' }];
+    const bot = makeBot('bot1', Team.NONE, 0, 0);
+    state.pickups = [{ id: 'smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 200, y: 0 }, active: true, respawnTime: 0, value: 0 }];
+    expect(findWeaponPickup(state, bot as any)).toBeNull();
+  });
+
+  it('does not shoot an enemy standing in smoke, and does once the cloud is gone', () => {
+    const state = makeState();
+    const bot = makeBot('bot1', Team.NONE, 0, 0);
+    state.players = [bot as any, makeBot('enemy', Team.NONE, 400, 0) as any];
+    spawnSmoke(state, { x: 400, y: -27 }, 10_000);
+    const shots: any[] = [];
+    const fire = (_b: any, target: any) => shots.push(target);
+
+    updateBotAI(bot as any, state, 10_000, fire);
+    updateBotAI(bot as any, state, 11_000, fire);
+    expect(shots).toHaveLength(0);
+
+    const clear = 10_000 + SMOKE_DURATION_MS;
+    updateBotAI(bot as any, state, clear, fire);
+    updateBotAI(bot as any, state, clear + 1000, fire);
+    expect(shots).toHaveLength(1);
   });
 });

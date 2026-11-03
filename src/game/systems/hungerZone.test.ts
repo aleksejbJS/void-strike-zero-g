@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { GameMode, Team } from '../../types';
-import { HUNGER_MIN_ZONE, HUNGER_QUIET_SHRINK, HUNGER_SHRINK_DELAY, HUNGER_SHRINK_STEP } from '../../constants';
+import { HUNGER_MIN_ZONE, HUNGER_QUIET_SHRINK, HUNGER_SHRINK_DELAY, HUNGER_SHRINK_STEP } from '../../hungerConstants';
 import { createMockState, createMockPlayer } from '../../test/mocks';
 import { createHungerZone, hungerSpawnPoint, hungerShieldLeft, HUNGER_SHIELD_MS, insideZone } from './hungerRound';
 import { scheduleHungerZoneShrink, tickHungerZoneShrink } from './gamemodes';

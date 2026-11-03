@@ -6,7 +6,7 @@ import { PHYSICS_TICK_RATE, PROJECTILE_MAX_LIFE } from '../../../constants';
 import { Projectile, Vector2, WeaponType } from '../../../types';
 
 const TRAIL_LENGTH = 7;
-const GRENADE_LIFE = 60; // ticks, as spawned in combat.ts
+const GRENADE_LIFE = 60; // ticks, as spawned in combat.ts (grenade and smoke rounds)
 
 export class ProjectileMemory {
     private readonly trails = new Map<string, Vector2[]>();
@@ -64,7 +64,7 @@ export class ProjectileMemory {
 
 /** The simulation's age of a projectile in ticks, from the life it has left. The view animates by ProjectileMemory.ageTicks instead. */
 export const projectileAge = (p: Projectile): number => {
-    const total = p.type === WeaponType.GRENADE_LAUNCHER ? GRENADE_LIFE : PROJECTILE_MAX_LIFE;
+    const total = p.type === WeaponType.GRENADE_LAUNCHER || p.type === WeaponType.SMOKE_LAUNCHER ? GRENADE_LIFE : PROJECTILE_MAX_LIFE;
     return total - (p.life ?? PROJECTILE_MAX_LIFE);
 };
 

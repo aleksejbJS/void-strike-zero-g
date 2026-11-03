@@ -15,6 +15,7 @@ import { addMark, addMarkAt } from './marks';
 import { flameColors } from '../render/fighter/parts/flamePalette';
 import { sanitizeBuild } from '../build/sanitizeBuild';
 import { presetBuild } from '../build/buildPresets';
+import { insideSmoke } from './smoke';
 
 // The blast without its scorch mark (marks are page-wide: the menu preview must not leave any)
 export { explosionBurst };
@@ -162,9 +163,10 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
 
 // --- Continuous trails (too frequent for events; derived from state every tick) ---
 
-/** Jetpack flame behind a flying entity. `thrustX` tilts it opposite to sideways thrust. */
-export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense = false) => {
+/** Jetpack flame behind a flying entity. `thrustX` tilts it opposite to sideways thrust. None for a fighter hidden in smoke. */
+export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense = false, now = Date.now()) => {
     if (Math.random() >= 0.5) return;
+    if (insideSmoke(state, { x: p.pos.x, y: p.pos.y - p.height / 2 }, now)) return; // the trail would give them away
     const color = flameColors(p.build?.flame ?? 'fire').particle;
     createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, color, 'fire');
 };

@@ -28,6 +28,7 @@ export enum WeaponType {
   RAILGUN = 'RAILGUN',
   PLASMA_GUN = 'PLASMA_GUN',
   GRENADE_LAUNCHER = 'GRENADE_LAUNCHER',
+  SMOKE_LAUNCHER = 'SMOKE_LAUNCHER',
   CHAINSAW = 'CHAINSAW',
 }
 
@@ -195,6 +196,14 @@ export interface Beam {
   width: number;
 }
 
+export interface SmokeCloud {
+  id: string;
+  pos: Vector2;
+  radius: number; // full radius; the live size shrinks during the fade (see smokeRadiusAt)
+  bornAt: number; // ms timestamp
+  endsAt: number; // ms timestamp
+}
+
 export interface GameState {
   mode: GameMode;
   scores: { [key in Team]: number };
@@ -223,6 +232,7 @@ export interface GameState {
   matchWinner?: { team?: Team; playerId?: string } | null; // null = draw
   matchEndReason?: 'score' | 'time';
   beams: Beam[];
+  smokes?: SmokeCloud[]; // smoke clouds; readers use `state.smokes ?? []`
 }
 
 export enum MapId {

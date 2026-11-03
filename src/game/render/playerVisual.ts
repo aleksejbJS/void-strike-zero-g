@@ -9,6 +9,7 @@ import { RIG_SCALE, upperPoint } from './fighter/fighterPose';
 import { drawGrappleRope } from './grappleRope';
 import { drawCarriedFlag } from './carriedFlag';
 import { clampProneAngle } from '../systems/stance';
+import { fighterInSmoke, fighterSmokeVisibility } from './smokeVisibility';
 
 // Height of the weapon above the feet, used to aim from the right spot on screen
 const AIM_HEIGHT = 49;
@@ -48,9 +49,12 @@ export const updatePlayerVisual = (
     c: Container, p: Entity, camera: Vector2, mouse: Vector2, screenW: number, screenH: number,
     textures: Record<string, Texture | undefined>, isLocal: boolean, game: GameState, now = Date.now(),
 ) => {
-    c.visible = !p.dead;
+    // Another fighter in smoke is hidden whole: body, rope, carried flag and jetpack flame all
+    // hang off this container. Your own stays drawn under the cloud; SmokeView outlines it.
+    const hidden = !p.dead && fighterSmokeVisibility(fighterInSmoke(game, p, now), isLocal) === 'hidden';
+    c.visible = !p.dead && !hidden;
     const view = views.get(c);
-    if (p.dead || !view) return;
+    if (p.dead || hidden || !view) return;
     c.alpha = 1;
     c.position.set(p.pos.x, p.pos.y);
 

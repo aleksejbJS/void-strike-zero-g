@@ -7,6 +7,9 @@ import { nextHungerZone } from './gamemodes';
 import { ParticleView } from '../render/effects/particleView';
 import { ProjectileView } from '../render/projectiles/projectileView';
 import { BeamView } from '../render/projectiles/beamView';
+import { SmokeView } from '../render/effects/smokeView';
+import { smokeSilhouette } from '../render/smokeVisibility';
+import { drawSmokeLauncherPickup } from '../render/smokeLauncherPickup';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
 import { createParticles } from './effectSpawn';
 import { createGroundFlagVisual, updateGroundFlagVisual } from '../render/flag/groundFlagView';
@@ -342,6 +345,8 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
             g.circle(13, -11, 8).fill(color);
             g.circle(13, -11, 5).fill(0x84cc16);
             g.rect(-12, -13, 4, 4).fill(0x1e293b);
+        } else if (item.subtype === WeaponType.SMOKE_LAUNCHER) {
+            drawSmokeLauncherPickup(g, color);
         } else if (item.subtype === WeaponType.CHAINSAW) {
             // Chainsaw blade and handle
             g.rect(-20, -14, 34, 8).fill(0x7f1d1d);
@@ -476,6 +481,10 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     // Beams (Railgun)
     cache.beamView ??= new BeamView(gameLayer);
     cache.beamView.sync(state.beams ?? []);
+
+    // Smoke clouds, last so they cover everything drawn before; your own fighter in smoke as an outline
+    cache.smokeView ??= new SmokeView(gameLayer);
+    cache.smokeView.sync(state.smokes ?? [], now, smokeSilhouette(state, state.players.find(pl => pl.id === localPlayerId), now));
 
     // Cursor
     let cursor = uiLayer.getChildByLabel('cursor') as Graphics;

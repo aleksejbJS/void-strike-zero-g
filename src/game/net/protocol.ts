@@ -35,7 +35,7 @@ export interface JoinRequest {
 // Platforms never change during a match: they are sent once in JoinAccepted.
 export type Snapshot = Pick<GameState,
     'mode' | 'currentMap' | 'scores' | 'players' | 'projectiles' | 'pickups'
-    | 'beams' | 'hungerZone' | 'hungerWinnerId' | 'hungerRoundEndsAt' | 'hungerRoundStartedAt' | 'hungerEndReason' | 'gunGameWinnerId'
+    | 'beams' | 'smokes' | 'hungerZone' | 'hungerWinnerId' | 'hungerRoundEndsAt' | 'hungerRoundStartedAt' | 'hungerEndReason' | 'gunGameWinnerId'
     | 'matchStartedAt' | 'matchEndsAt' | 'matchWinner' | 'matchEndReason' | 'lastHTFScore' | 'infiltrationEndTime'
 > & { serverTime: number };
 
@@ -61,6 +61,7 @@ export const buildSnapshot = (state: GameState, now: number): Snapshot => ({
     projectiles: state.projectiles,
     pickups: state.pickups,
     beams: state.beams,
+    smokes: state.smokes,
     hungerZone: state.hungerZone,
     hungerWinnerId: state.hungerWinnerId,
     hungerRoundEndsAt: state.hungerRoundEndsAt,
