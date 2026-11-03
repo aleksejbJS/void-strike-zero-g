@@ -97,20 +97,35 @@ describe('ProfileScreen account area', () => {
         expect(screen.queryByText(/^Title:/)).not.toBeInTheDocument();
     });
 
-    it('keeps the window and disables the button while the logout runs', async () => {
+    it('disables the button while the logout runs; Cancel and Escape still close the window', async () => {
         const request = deferred<void>();
         h.api.logOut.mockReturnValue(request.promise);
         await mountLoggedIn();
         await confirmLogout();
         const busy = within(dialog()).getByRole('button', { name: 'Please wait…' });
         expect(busy).toBeDisabled();
-        expect(within(dialog()).getByRole('button', { name: 'Cancel' })).toBeDisabled();
-        fireEvent.keyDown(window, { key: 'Escape' });
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        const cancel = within(dialog()).getByRole('button', { name: 'Cancel' });
+        expect(cancel).toBeEnabled();
+        fireEvent.click(cancel);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
         await act(async () => { request.resolve(); });
         await h.settle();
+        expect(h.api.logOut).toHaveBeenCalledTimes(1); // the provider finished the logout on its own
+        expect(protectButton()).toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('Escape closes the window while the logout runs', async () => {
+        const request = deferred<void>();
+        h.api.logOut.mockReturnValue(request.promise);
+        await mountLoggedIn();
+        await confirmLogout();
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        await act(async () => { request.resolve(); });
+        await h.settle();
+        expect(protectButton()).toBeInTheDocument();
     });
 
     describe('when logging out fails', () => {

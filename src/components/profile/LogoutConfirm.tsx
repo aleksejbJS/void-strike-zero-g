@@ -1,7 +1,8 @@
 // "Log out of this account?" window. Runs the logout itself and stays open until the service has answered:
 // the screen behind it may already show a guest by then (the device forgets the player before the request ends).
+// Cancel / Esc close it even while the logout runs: the account provider finishes it on its own.
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { AccountError } from '../../account/accountError';
 import { useAccount } from '../../account/useAccount';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -16,6 +17,7 @@ export const LogoutConfirm: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     const [error, setError] = useState<string | null>(null);
     const running = useRef(false); // set at once: a second click can come before the re-render
     const mounted = useRef(true);
+    const dismissed = useRef(false); // closed by the player: the running logout's outcome is not shown
     const cancel = useRef<HTMLButtonElement>(null);
     const titleId = useId();
 
@@ -30,12 +32,18 @@ export const LogoutConfirm: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         };
     }, []);
 
-    // Esc closes, except while the logout runs
+    const dismiss = useCallback((): void => {
+        dismissed.current = true;
+        onClose();
+    }, [onClose]);
+    const showing = (): boolean => mounted.current && !dismissed.current;
+
+    // Esc closes, also while the logout runs
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !pending) onClose(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [onClose, pending]);
+    }, [dismiss]);
 
     const confirm = async (): Promise<void> => {
         if (running.current) return;
@@ -44,14 +52,14 @@ export const LogoutConfirm: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         setError(null);
         try {
             await logOut();
-            if (mounted.current) onClose();
+            if (showing()) onClose();
         } catch (failure) {
             // An AccountError is an expected outcome (no connection); anything else is a misuse of the account API.
             if (!(failure instanceof AccountError)) console.error('[account] unexpected error while logging out:', failure);
-            if (mounted.current) setError(accountErrorMessage(t, failure));
+            if (showing()) setError(accountErrorMessage(t, failure));
         } finally {
             running.current = false;
-            if (mounted.current) setPending(false);
+            if (showing()) setPending(false);
         }
     };
 
@@ -67,8 +75,8 @@ export const LogoutConfirm: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                         className={`h-10 rounded bg-bay-hazard px-5 font-display text-xl font-black text-bay-ink hover:bg-[#FFD24D] disabled:cursor-wait disabled:opacity-60 phone:h-8 phone:text-base ${focusRing}`}>
                         {pending ? t('ac.busy') : t('pf.logout')}
                     </button>
-                    <button ref={cancel} type="button" onClick={onClose} disabled={pending}
-                        className={`h-10 rounded border-2 border-bay-edge px-4 font-semibold hover:bg-bay-steel disabled:cursor-wait disabled:opacity-60 phone:h-8 phone:text-sm ${focusRing}`}>
+                    <button ref={cancel} type="button" onClick={dismiss}
+                        className={`h-10 rounded border-2 border-bay-edge px-4 font-semibold hover:bg-bay-steel phone:h-8 phone:text-sm ${focusRing}`}>
                         {t('ac.cancel')}
                     </button>
                 </div>

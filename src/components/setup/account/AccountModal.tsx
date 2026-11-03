@@ -37,13 +37,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
         return () => { if (opener instanceof HTMLElement && opener.isConnected) opener.focus(); };
     }, [initialNickname]);
 
-    // Esc closes, except while a call runs: the window stays until the service has answered
-    const { pending } = form;
+    // Esc closes, also while a call runs (the provider finishes it; its late result is ignored)
+    const { dismiss } = form;
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !pending) onClose(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [onClose, pending]);
+    }, [dismiss]);
 
     const switchTab = (next: AccountTab) => { setTab(next); form.clearError(); };
     const onSubmit = (e: React.FormEvent) => { e.preventDefault(); void form.submit(tab, nickname, password); };
@@ -76,8 +76,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
                             className={`h-10 rounded bg-bay-hazard px-5 font-display text-xl font-black text-bay-ink hover:bg-[#FFD24D] disabled:cursor-wait disabled:opacity-60 phone:h-8 phone:text-base ${focusRing}`}>
                             {form.pending ? t('ac.busy') : t(TEXT[tab].submit)}
                         </button>
-                        <button type="button" onClick={onClose} disabled={pending}
-                            className={`h-10 rounded border-2 border-bay-edge px-4 font-semibold hover:bg-bay-steel disabled:cursor-wait disabled:opacity-60 phone:h-8 phone:text-sm ${focusRing}`}>
+                        <button type="button" onClick={dismiss}
+                            className={`h-10 rounded border-2 border-bay-edge px-4 font-semibold hover:bg-bay-steel phone:h-8 phone:text-sm ${focusRing}`}>
                             {t('ac.cancel')}
                         </button>
                     </div>

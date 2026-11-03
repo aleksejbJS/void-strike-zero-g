@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, within } from '@testing-library/react';
 import { AccountError } from '../../../account/accountError';
 import { AccountContext, AccountState } from '../../../account/useAccount';
 import { AccountModal } from './AccountModal';
@@ -41,20 +41,35 @@ describe('AccountModal notice', () => {
 });
 
 describe('AccountModal while a call runs', () => {
-    it('sends the call once, and keeps Cancel and Escape from closing the window', async () => {
+    it('sends the call once; Cancel closes the window while it runs and the late result is ignored', async () => {
+        const error = vi.spyOn(console, 'error');
         open();
         fillAndCreate();
         expect(dialog().getByRole('button', { name: 'Please wait…' })).toBeDisabled();
         fireEvent.submit(screen.getByLabelText('Password'));
         expect(signUp).toHaveBeenCalledTimes(1);
 
-        expect(dialog().getByRole('button', { name: 'Cancel' })).toBeDisabled();
+        expect(dialog().getByRole('button', { name: 'Cancel' })).toBeEnabled();
         fireEvent.click(dialog().getByRole('button', { name: 'Cancel' }));
-        fireEvent.keyDown(window, { key: 'Escape' });
-        expect(onClose).not.toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalledTimes(1);
 
         finish();
-        await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1)); // closed by the success
+        await act(async () => { await Promise.resolve(); });
+        expect(onClose).toHaveBeenCalledTimes(1); // the success does not close it a second time
+        expect(error).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+
+    it('Escape closes the window while a call runs, and a late failure shows nothing', async () => {
+        let fail!: (reason: unknown) => void;
+        signUp.mockReset().mockReturnValue(new Promise<void>((_resolve, reject) => { fail = reject; }));
+        open();
+        fillAndCreate();
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(onClose).toHaveBeenCalledTimes(1);
+
+        await act(async () => { fail(new AccountError('network')); await Promise.resolve(); });
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('closes on Escape and Cancel again after a failed call', async () => {

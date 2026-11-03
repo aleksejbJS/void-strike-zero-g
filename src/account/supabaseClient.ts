@@ -3,6 +3,7 @@
 // database is protected by Row Level Security, not by hiding the key.
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createTimeoutFetch } from './timeoutFetch';
 
 let cached: SupabaseClient | null | undefined;
 
@@ -22,6 +23,8 @@ export function getSupabase(): SupabaseClient | null {
         cached = createClient(url, anonKey, {
             // No OAuth or e-mail links, and the app uses #hash routes: never parse the URL for a session.
             auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+            // Every request (auth, tables, rpc) gives up after a while instead of hanging.
+            global: { fetch: createTimeoutFetch() },
         });
     } catch (error) {
         console.error('[account] Supabase client could not be created, accounts are disabled. Check VITE_SUPABASE_URL.', error);

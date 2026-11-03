@@ -17,7 +17,10 @@ interface View { status: AccountStatus; nickname: string | null; userId: string 
 const view = (status: AccountStatus, user: AccountUser | null = null): View =>
     ({ status, nickname: user?.nickname ?? null, userId: user?.id ?? null });
 
-/** Accounts cannot be used right now (disabled, still starting up, or a logout still finishing). */
+/**
+ * Accounts cannot be used right now: disabled, still starting up, or another login / logout still
+ * finishing (its window may have been closed while it runs).
+ */
 const unavailable = (): AccountError => new AccountError('network', 'accounts are not available right now');
 /** A programming mistake: the UI offered an action the current state does not allow. */
 const misuse = (what: string): Error => new Error(`[account] ${what}`);
@@ -89,8 +92,7 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         const sync = syncRef.current;
         const { status } = viewRef.current;
         if (status === 'loggedIn') throw misuse('log in while already logged in');
-        if (!api || !sync || status !== 'guest' || running.current === 'logout') throw unavailable();
-        if (running.current) throw misuse('log in while another login is running');
+        if (!api || !sync || status !== 'guest' || running.current) throw unavailable();
         running.current = 'login';
         try {
             const user = await call(api); // rejects with AccountError: the player stays a guest
@@ -112,8 +114,8 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         const userId = activeUser.current;
         const { status } = viewRef.current;
         if (status === 'guest') throw misuse('log out while not logged in');
-        if (!api || !sync || status !== 'loggedIn') throw unavailable();
-        if (running.current || !userId) throw misuse('log out while another login or logout is running');
+        if (!api || !sync || status !== 'loggedIn' || running.current) throw unavailable();
+        if (!userId) throw misuse('log out without an active account');
         running.current = 'logout';
         try {
             await logOutFlow({

@@ -41,19 +41,33 @@ describe('AccountProvider action guards', () => {
         await expect(again).rejects.not.toBeInstanceOf(AccountError);
     });
 
-    it('rejects a second login started while the first is running', async () => {
+    // A closed account window may leave its call running: a second one is "try again in a moment".
+    it('rejects a second login started while the first is running with a network AccountError', async () => {
         const first = deferred<typeof ALEX>();
         h.api.logIn.mockReturnValueOnce(first.promise);
         h.mount();
         await h.settle();
         let running!: Promise<void>;
         await act(async () => { running = h.account().logIn('Alex', 'secret'); });
-        const second = h.account().logIn('Alex', 'secret');
-        await expect(second).rejects.toThrow(/another login/);
-        await expect(second).rejects.not.toBeInstanceOf(AccountError);
+        await expect(h.account().logIn('Alex', 'secret')).rejects.toMatchObject(network);
         await act(async () => { first.resolve(ALEX); await running; });
         expect(h.account().status).toBe('loggedIn');
         expect(h.api.logIn).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a second logout while the first is still saving, with a network AccountError', async () => {
+        h.mount();
+        await h.settle();
+        await h.loginAs(ALEX);
+        const save = deferred<void>();
+        h.api.saveSnapshot.mockReturnValue(save.promise);
+        let first!: Promise<void>;
+        await act(async () => { first = h.account().logOut(); });
+        expect(h.account().status).toBe('loggedIn'); // still sending the last progress
+        await expect(h.account().logOut()).rejects.toMatchObject(network);
+        await act(async () => { save.resolve(); await first; });
+        expect(h.account().status).toBe('guest');
+        expect(h.api.logOut).toHaveBeenCalledTimes(1);
     });
 
     it('asks to retry a login while the previous logout request is still running', async () => {

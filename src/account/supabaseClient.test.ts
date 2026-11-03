@@ -46,4 +46,18 @@ describe('getSupabase', () => {
         expect(client).not.toBeNull();
         expect(getSupabase()).toBe(client);
     });
+
+    it('gives the client a fetch that times out', async () => {
+        vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+        vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon-key');
+        const createClient = vi.fn(() => ({}));
+        vi.doMock('@supabase/supabase-js', () => ({ createClient }));
+        try {
+            (await loadGetSupabase())();
+            expect(createClient).toHaveBeenCalledWith('https://example.supabase.co', 'anon-key',
+                expect.objectContaining({ global: { fetch: expect.any(Function) } }));
+        } finally {
+            vi.doUnmock('@supabase/supabase-js');
+        }
+    });
 });
