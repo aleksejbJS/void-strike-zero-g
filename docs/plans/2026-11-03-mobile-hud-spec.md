@@ -41,6 +41,17 @@ below the top bar so nothing overlaps it.
 **Hint:** "Left stick: move, up to fly · Right stick: aim and fire · Tap a weapon to switch",
 shown for 6 s at the start of a match, only in the first 3 matches on this device.
 
+**Menu and character setup on a phone held sideways** (added 2026-11-03 after testing): both
+screens were one long column (7 and 6 screens tall) with desktop-size titles, because a sideways
+phone is wide enough for the desktop text sizes. On screens up to 500 px tall each now fits one
+screen without page scrolling:
+- menu: small logo in one row with What's new / language; three columns — compact mode list
+  (names only), the mode preview with one line of description, map + Play vs bots + create /
+  join; tagline, rules and keyboard legend hidden;
+- character setup: Back + small title + "Next: …" in one row; preview, preset arrows and XP on
+  the left; name, part tabs (tiles scroll inside the panel) and Start on the right;
+- What's new: smaller title.
+
 ## Non-goals
 
 - No change to desktop HUD, keyboard or mouse.

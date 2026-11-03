@@ -37,6 +37,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'A new phone HUD: a slim see-through bar on top with health, armor, fuel, the clock and your place; nothing overlaps any more',
                 'Two sticks: the left one moves (push up to fly), the right one aims and fires, with an aim line, so your finger never covers the target',
                 'Tap a weapon above the right stick to switch to it; the hook button sits next to the stick',
+                'The menu and the character screen fit on a phone held sideways, no more scrolling through a long page',
             ] },
         ] },
         { version: '0.4.12', date: 'Nov 3, 2026', groups: [
@@ -163,6 +164,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Новый интерфейс для телефона: тонкая прозрачная полоса сверху со здоровьем, бронёй, топливом, временем и вашим местом; больше ничего не наезжает друг на друга',
                 'Два стика: левый — движение (вверх — полёт), правый — прицел и стрельба с линией прицела, так что палец не закрывает цель',
                 'Оружие меняется касанием по значку над правым стиком; кнопка крюка рядом со стиком',
+                'Меню и экран персонажа помещаются на повёрнутом телефоне целиком, без прокрутки длинной страницы',
             ] },
         ] },
         { version: '0.4.12', date: '03.11.2026', groups: [

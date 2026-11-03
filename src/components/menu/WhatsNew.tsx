@@ -47,8 +47,8 @@ export const WhatsNew: React.FC<Props> = ({ t, notes, onClose }) => {
             <div role="dialog" aria-modal="true" aria-labelledby="whats-new-title" onClick={e => e.stopPropagation()}
                 className="flex h-full w-full max-w-[480px] flex-col bg-bay-panel text-bay-chalk">
                 <div aria-hidden="true" className="hazard-stripes h-3.5 shrink-0" />
-                <div className="flex items-center justify-between px-7 pb-2 pt-6">
-                    <h2 id="whats-new-title" className="m-0 font-display text-[44px] font-black leading-none">{t('hb.whatsNew')}</h2>
+                <div className="flex items-center justify-between px-7 pb-2 pt-6 phone:pt-3">
+                    <h2 id="whats-new-title" className="m-0 font-display text-[44px] font-black leading-none phone:text-3xl">{t('hb.whatsNew')}</h2>
                     <button ref={closeButton} type="button" onClick={onClose} aria-label={t('hb.close')}
                         className="flex h-11 w-11 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>

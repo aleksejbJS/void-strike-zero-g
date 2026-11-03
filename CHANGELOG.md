@@ -8,6 +8,7 @@
 - Twin sticks (`game/input/sticks.ts`, `game/input/touchSticks.ts`, per-finger by touch id, `touchcancel` handled): left = move keys (up = `KeyW` jump / jetpack), right = aim from the fighter's centre 300 units along the stick, fire past 35 % deflection, a centred stick keeps the last aim; dashed aim line in window pixels (`render/aimLine.ts`, `worldToScreen` in `render/viewport.ts`). The sticks only produce keys / aim / fire, so the host and protocol are unchanged
 - Carried weapons as a tappable row above the aim stick (shared `selectWeapon` with keys 1–6); hook button left of the stick; the jetpack button is gone
 - Hint for the first 3 matches on a device, 6 s (`touchHintMatches` in localStorage)
+- Menu and character setup on screens up to 500 px tall (a phone held sideways) fit one screen: the menu becomes three compact columns (mode names, preview + one-line description, map / play / create / join; tagline, rules and keyboard legend hidden), setup becomes preview + preset on the left and name, part tabs (tiles scroll inside) and Start on the right. They were one column 7 and 6 screens tall with desktop-size titles, since a sideways phone is wider than the `sm` breakpoint
 - Overlays shrink on screens up to 500 px tall (Tailwind screen `phone`): death screen, match results (scrolls), Hunger Games and Gun Game panels move under the top bar, flag banner, invite
 
 ## Version 0.4.12 (2026-11-03)
