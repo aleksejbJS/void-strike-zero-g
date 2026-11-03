@@ -13,6 +13,12 @@ const CYRILLIC_LETTER = /^(?=\p{L})\p{Script=Cyrillic}$/u;
 const NEUTRAL_CHAR = /^[0-9_\- ]$/;
 const BOT_NAME = /^bot \d+$/;
 
+// The email local part is 'n' + 2 hex chars per UTF-8 byte of the key and must fit 64 chars.
+const EMAIL_LOCAL_MAX = 64;
+const KEY_MAX_BYTES = Math.floor((EMAIL_LOCAL_MAX - 1) / 2);
+
+const utf8 = (text: string): Uint8Array => new TextEncoder().encode(text);
+
 /** Trim and collapse inner whitespace runs to one space. */
 export function normalizeNickname(raw: string): string {
     return raw.trim().replace(/\s+/g, ' ');
@@ -38,14 +44,18 @@ export function validateNickname(raw: string): NicknameError | null {
     }
     if (hasLatin && hasCyrillic) return 'mixed_scripts';
 
+    // Wide letters (fullwidth, extended Latin/Cyrillic) and case mappings that grow (Ⱥ, İ)
+    // can push the lower-cased key past what the email local part holds.
     const key = nicknameKey(raw);
+    if (utf8(key).length > KEY_MAX_BYTES) return 'bad_chars';
+
     if (key === GUEST_DEFAULT_NAME.toLowerCase() || BOT_NAME.test(key)) return 'reserved';
     return null;
 }
 
 /** Stable fake address for a nickname: hex of its UTF-8 key (12 Cyrillic letters = 48 hex chars). */
 export function nicknameToEmail(raw: string): string {
-    const bytes = new TextEncoder().encode(nicknameKey(raw));
+    const bytes = utf8(nicknameKey(raw));
     const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
     return `n${hex}@players.invalid`;
 }

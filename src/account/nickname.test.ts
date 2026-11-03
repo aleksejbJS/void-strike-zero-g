@@ -53,6 +53,27 @@ describe('validateNickname', () => {
         expect(validateNickname('Alex Иван')).toBe('mixed_scripts');
     });
 
+    it('reports bad_chars before mixed_scripts', () => {
+        expect(validateNickname('Аlex!')).toBe('bad_chars'); // Cyrillic А + Latin + "!"
+    });
+
+    it('rejects names whose lower-cased key is too wide for the email local part', () => {
+        expect(validateNickname('Ａ'.repeat(12))).toBe('bad_chars'); // fullwidth A, 3 bytes
+        expect(validateNickname('Ꙁ'.repeat(12))).toBe('bad_chars'); // U+A640, Cyrillic Extended-B
+        expect(validateNickname('Ⱥ'.repeat(12))).toBe('bad_chars'); // lower-cases to 3-byte U+2C65
+        expect(validateNickname('İ'.repeat(12))).toBe('bad_chars'); // lower-cases to i + U+0307
+        expect(validateNickname('\u{10780}'.repeat(12))).toBe('bad_chars'); // 4-byte Latin letter
+    });
+
+    it('allows the longest Cyrillic name and stops exactly past 31 key bytes', () => {
+        expect(validateNickname('Ё'.repeat(12))).toBeNull(); // 24 bytes
+        const at31 = 'Ａ'.repeat(10) + 'b'; // 10 x 3 + 1 = 31 bytes
+        const at32 = 'Ａ'.repeat(10) + 'bc'; // 32 bytes
+        expect(validateNickname(at31)).toBeNull();
+        expect(validateNickname(at32)).toBe('bad_chars');
+        expect(nicknameToEmail(at31).split('@')[0].length).toBeLessThanOrEqual(64);
+    });
+
     it('reserves Anonymous and Bot <n> in any case', () => {
         expect(validateNickname('anonymous')).toBe('reserved');
         expect(validateNickname(' ANONYMOUS ')).toBe('reserved');
