@@ -44,6 +44,9 @@ export const HOOK_MIN_LENGTH = 40;         // minimum rope length
 export const SELF_DAMAGE_MULT = 0.5;       // 50% self-damage from own explosions
 export const SELF_KNOCKBACK_MULT = 2.0;    // 200% self-knockback (rocket-jump)
 export const KNOCKBACK_AIR_MULT = 1.5;     // knockback is stronger in air
+export const WOUND_HEALTH = 10;            // a railgun beam through armor leaves at most this much health
+export const BLEED_HP_PER_S = 1;           // a wounded fighter bleeds this much health per second
+export const HIT_MIN_HP = 0.5;             // a health drop below this per look is bleeding (1/120 per tick), not a hit: no flash, no dodge
 
 // Legacy aliases — keep for backward compatibility with bot.ts etc.
 export const FRICTION = GROUND_FRICTION;
@@ -164,7 +167,7 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
   [WeaponType.RAILGUN]: {
     type: WeaponType.RAILGUN,
     name: 'Railgun',
-    damage: 200, // one-shot, even through full armor (armor absorbs ~66%)
+    damage: 200, // kills an unarmored fighter; through any armor it wounds instead (wound.ts)
     fireRate: 1500,
     speed: 100,
     color: '#38bdf8',

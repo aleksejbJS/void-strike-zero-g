@@ -60,6 +60,7 @@ export const updatePlayerVisual = (
 
     const frame = animator.frame(p, aimOf(p, camera, mouse, screenW, screenH, isLocal), now, textures, game);
     drawFighter(view, frame);
+    view.root.position.y = -(frame.hop ?? 0); // a one-legged hop lifts the fighter; the contact shadow stays on the deck
     const shadow = c.getChildByLabel('contactShadow');
     if (shadow) shadow.visible = p.isGrounded;
 

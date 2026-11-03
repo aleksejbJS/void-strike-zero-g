@@ -8,6 +8,8 @@ import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/l
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
 import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
+import { healWound } from './wound';
+import { tickBleeding } from './bleeding';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -215,7 +217,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     return;
                 }
                 if (p.type === 'bot' && item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never pick it up; it stays for humans
-                if (item.type === ItemType.HEALTH && p.health < 100) { p.health = Math.min(100, p.health + item.value); collected = true; }
+                if (item.type === ItemType.HEALTH && p.health < 100) { p.health = Math.min(100, p.health + item.value); healWound(p); collected = true; }
                 else if (item.type === ItemType.ARMOR && p.armor < 100) { p.armor = Math.min(100, p.armor + item.value); collected = true; }
                 else if (item.type === ItemType.AMMO) { p.inventory.forEach(w => w.ammo = Math.min(w.maxAmmo, w.ammo + item.value)); collected = true; }
                 else if (item.type === ItemType.WEAPON) {
@@ -297,6 +299,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             }
         });
     });
+
+    // Bleeding: wounded fighters lose health until a medkit (after pickups, so a medkit stops it this tick)
+    tickBleeding(state);
 
     // Projectiles Update
     state.projectiles.forEach(proj => {

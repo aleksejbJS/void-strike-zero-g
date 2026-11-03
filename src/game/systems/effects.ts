@@ -4,11 +4,11 @@
 // so offline play and every online client look the same.
 
 import { Entity, GameState, Projectile, Vector2, WeaponType } from '../../types';
-import { gameEvents, GameEvent, DeathEvent, EffectKind } from './events';
+import { gameEvents, GameEvent, DeathEvent, EffectKind, LimbEvent, RagdollColors } from './events';
 import type { DeathKind } from './deathKind';
 import { nextId } from '../utils/id';
 import { createParticles } from './effectSpawn';
-import { addCorpse } from './ragdoll/corpses';
+import { addCorpse, addLimb } from './ragdoll/corpses';
 import { pushCorpses } from './ragdoll/corpsePush';
 import { explosionBurst } from './explosionFx';
 import { addMark, addMarkAt } from './marks';
@@ -34,20 +34,30 @@ export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, b
 /**
  * The DEATH event for an entity: where it fell, how it died, how it moved and the colours of its corpse.
  * `blast`: an explosion's splash killed it; always sent, false for a shot and every other cause
- * (only events from older hosts lack it).
+ * (only events from older hosts lack it). `oneLeg`: it was wounded, so its corpse has no second leg to lose.
  */
 export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false): DeathEvent => ({
     type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
     kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type, blast,
-    parts: {
-        head: e.headColor || e.color,
-        torso: e.torsoColor || e.color,
-        arm: e.armColor || e.color,
-        leg: e.legColor || '#475569',
-        jet: e.jetpackColor,
-        build: e.build ?? presetBuild(e.skinId),
-    },
+    oneLeg: !!e.wound, parts: ragdollColors(e),
 });
+
+/** The colours (and build) of the body parts that fly off a fighter: its corpse and its torn-off leg. */
+export const ragdollColors = (e: Entity): RagdollColors => ({
+    head: e.headColor || e.color,
+    torso: e.torsoColor || e.color,
+    arm: e.armColor || e.color,
+    leg: e.legColor || '#475569',
+    jet: e.jetpackColor,
+    build: e.build ?? presetBuild(e.skinId),
+});
+
+/** A fighter survived a railgun beam but lost a leg: the leg flies off (see LimbEvent). */
+export const emitLimb = (e: Entity, from?: Vector2) =>
+    gameEvents.emit({
+        type: 'LIMB', x: e.pos.x, y: e.pos.y, facing: e.facingRight ? 1 : -1, vel: { ...e.vel },
+        from: from && { ...from }, parts: ragdollColors(e),
+    });
 
 export const emitText = (x: number, y: number, text: string, color: string) =>
     gameEvents.emit({ type: 'FLOAT_TEXT', x, y, text, color });
@@ -67,6 +77,10 @@ const each = (n: number, spawn: () => void) => { for (let i = 0; i < n; i++) spa
 const STILL = { x: 0, y: 0 };
 
 const SCORCH_RADIUS = 18;
+
+/** Droplets when a leg is torn off (a death throws 40); the blood is plain red, there is no victim colour to tint it. */
+const LIMB_BLOOD = 24;
+const LIMB_BLOOD_COLOR = '#ef4444';
 
 const explosionAt = (state: GameState, x: number, y: number, scale?: number) => {
     // The impact point sits just outside the wall; a blast in mid-air leaves nothing
@@ -92,6 +106,9 @@ const bloodAt = (state: GameState, x: number, y: number, count: number, color: s
 
 /** -1 or 1: the side away from the hit, or undefined when it came from straight above/below or is unknown. */
 const sideAway = (x: number, from?: Vector2) => (from && from.x !== x ? Math.sign(x - from.x) : undefined);
+
+/** The colours come from the host and so does the build: unknown part ids would throw while drawing. */
+const safeParts = (parts?: RagdollColors) => parts && { ...parts, build: parts.build && sanitizeBuild(parts.build) };
 
 /** Turn one event into particles/decals/corpses/texts. Non-effect events are ignored. */
 export const applyEffectEvent = (state: GameState, e: GameEvent) => {
@@ -130,9 +147,14 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
                 rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
             });
-            // The build comes from the host: unknown part ids would throw while drawing
-            addCorpse(state, { ...e, parts: e.parts && { ...e.parts, build: e.parts.build && sanitizeBuild(e.parts.build) } });
+            addCorpse(state, { ...e, parts: safeParts(e.parts) });
             break;
+        case 'LIMB': {
+            const leg = addLimb(state, { ...e, parts: safeParts(e.parts) });
+            const hip = leg.points.hip; // the leg starts where the fighter stands: the wound is at its hip
+            bloodAt(state, hip.x, hip.y, LIMB_BLOOD, LIMB_BLOOD_COLOR, sideAway(e.x, e.from));
+            break;
+        }
         case 'FLOAT_TEXT':
             floatText(state, e.x, e.y, e.text, e.color);
             break;

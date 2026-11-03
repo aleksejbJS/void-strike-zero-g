@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { ITEM_ICON } from '../hudIcons';
+import { BleedingDrop } from '../BleedingDrop';
 import { HudButtons, InviteToggle } from '../Achievements';
 import { useFullscreen } from '../../fullscreen';
 import type { Translate } from '../../menu/types';
@@ -16,6 +17,7 @@ interface Props {
     hp: number;
     armor: number;
     fuelPercent: number;
+    bleeding?: boolean;
     clock?: string;
     match: TopBarMatch | null;
     muted: boolean;
@@ -61,13 +63,14 @@ const MatchInfo: React.FC<{ t: Translate; clock?: string; match: TopBarMatch | n
     </div>
 );
 
-export const MobileTopBar: React.FC<Props> = ({ t, hp, armor, fuelPercent, clock, match, muted, onToggleMute, onOpenAchievements, invite }) => {
+export const MobileTopBar: React.FC<Props> = ({ t, hp, armor, fuelPercent, bleeding, clock, match, muted, onToggleMute, onOpenAchievements, invite }) => {
     const low = hp <= 25;
     return (
         <>
             <div className="absolute inset-x-0 top-0 z-40 flex h-7 items-center gap-3 bg-bay-deep/55 pl-3 pr-0.5 [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
                 <Stat icon={ITEM_ICON.health} label={t('hud.health')}>
                     <span className={`w-5 font-display text-[15px] font-black leading-none ${low ? 'text-bay-signal' : ''}`}>{Math.max(0, hp)}</span>
+                    {bleeding && <BleedingDrop label={t('hud.bleeding')} size="sm" />}
                     <Bar percent={hp} color={low ? '#FF4D2E' : '#ECE9E2'} width={56} height={4} />
                 </Stat>
                 <Stat icon={ITEM_ICON.armor} label={t('hud.armor')}>

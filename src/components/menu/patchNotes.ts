@@ -33,6 +33,12 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.20', date: 'Nov 3, 2026', points: [
+            'Armor now saves you from the railgun: a beam through any armor burns it all, tears off a leg and leaves you with 10 health',
+            'Without the leg you only hop slowly on the ground and bleed 1 health a second; pick up any medkit within 10 seconds to get the leg back. Jetpack and hook work as always',
+            'If you bleed out, the frag goes to whoever fired the railgun. A red drop next to your health shows you are bleeding',
+            'Bots lose legs too and fly for a medkit, even with the flag',
+        ] },
         { version: '0.4.19', date: 'Nov 3, 2026', points: [
             'Smoke launcher: fire a smoke cloud anywhere and hide for 10 seconds — from players and bots',
         ] },
@@ -184,6 +190,12 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.20', date: '03.11.2026', points: [
+            'Броня теперь спасает от рельсы: луч через любую броню сжигает её целиком, отрывает ногу и оставляет 10 здоровья',
+            'Без ноги вы только медленно прыгаете по земле и теряете 1 здоровье в секунду; подберите любую аптечку за 10 секунд — и нога вернётся. Джетпак и крюк работают как обычно',
+            'Если вы истекли кровью, фраг получает тот, кто стрелял из рельсы. Красная капля рядом со здоровьем показывает, что вы истекаете кровью',
+            'Боты тоже теряют ноги и летят за аптечкой, даже с флагом',
+        ] },
         { version: '0.4.19', date: '03.11.2026', points: [
             'Дымовой гранатомёт: выстрелите облаком дыма куда угодно и прячьтесь в нём 10 секунд — от игроков и от ботов',
         ] },

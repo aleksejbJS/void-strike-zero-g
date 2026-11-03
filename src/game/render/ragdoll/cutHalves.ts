@@ -55,8 +55,9 @@ export const drawUpperHalf = (g: Graphics, look: FighterLook) => {
 /**
  * The legs around the hip: back leg, torso bottom with the belt, front leg, red cut. `legs`: where the
  * knees and ankles are now (cutLegsOf); without them the legs stand as the idle fighter's.
+ * `oneLeg`: the back leg was lost to a wound, so only the front leg is drawn.
  */
-export const drawLegsHalf = (g: Graphics, look: FighterLook, legs?: CutLegs) => {
+export const drawLegsHalf = (g: Graphics, look: FighterLook, legs?: CutLegs, oneLeg = false) => {
     const hip = STANDING_POSE.hip;
     const rel = (p: Vector2) => ({ x: p.x - hip.x, y: p.y - hip.y });
     const T: At = (x, y) => ({ x: x * TORSO_W, y });
@@ -64,8 +65,10 @@ export const drawLegsHalf = (g: Graphics, look: FighterLook, legs?: CutLegs) => 
     const back = legs ? { joint: legs.knB, end: legs.anB } : { joint: rel(STANDING_POSE.backLeg.joint), end: rel(STANDING_POSE.backLeg.end) };
     const front = legs ? { joint: legs.knF, end: legs.anF } : { joint: rel(STANDING_POSE.frontLeg.joint), end: rel(STANDING_POSE.frontLeg.end) };
     const legDark = shade(look.leg, LEG_DARK);
-    jointedLimb(g, top, back.joint, back.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
-    boot(g, back.end, 0x1b1f25);
+    if (!oneLeg) {
+        jointedLimb(g, top, back.joint, back.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
+        boot(g, back.end, 0x1b1f25);
+    }
     plate(g, [T(-6.2, 0.5), T(6.2, 0.5), T(CUT_RIGHT, CUT_Y), T(CUT_LEFT, CUT_Y)], look.torso);
     plate(g, [T(-6.4, -1.5), T(6.4, -1.5), T(6.3, 1.5), T(-6.3, 1.5)], BELT);
     jointedLimb(g, top, front.joint, front.end, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [look.leg, shade(look.leg, 0.9)] });

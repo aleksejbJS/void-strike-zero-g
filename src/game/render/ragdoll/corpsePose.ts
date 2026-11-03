@@ -107,11 +107,20 @@ const cutPieces = (c: Corpse, r: RigPoints): CorpsePiece[] => [
     piece(c, 'upper', world(c, 'neck'), headTiltOf(r)),
 ];
 
-/** The torn pieces to draw, back to front; a whole body (fall, thrown) has none. */
-export const piecesOf = (c: Corpse): CorpsePiece[] => {
+const tornPieces = (c: Corpse): CorpsePiece[] => {
     if (c.kind === 'gib') return gibPieces(c, rigPoints(c));
     if (c.kind === 'cut') return cutPieces(c, rigPoints(c));
     return [];
+};
+
+/**
+ * The torn pieces to draw, back to front; a whole body (fall, thrown) has none. A torn-off leg is only its
+ * `only` piece; a one-legged fighter's gib has no back leg to tear off (a cut keeps its legs half, see cutHalves.ts).
+ */
+export const piecesOf = (c: Corpse): CorpsePiece[] => {
+    const pieces = tornPieces(c);
+    if (c.only) return pieces.filter(p => p.part === c.only);
+    return c.oneLeg ? pieces.filter(p => p.part !== 'leg-back') : pieces;
 };
 
 /** Knees and ankles of cut legs inside their piece: rig units around the hip, before the piece's turn. */

@@ -71,7 +71,7 @@ const drawBody = (fighter: FighterView, c: Corpse) => {
     fighter.root.position.set(origin.x, origin.y);
     drawFighter(fighter, {
         pose, look: lookOfCorpse(c.colors), facing: c.facing, grip: gripPoints(weaponType, GUN_ASPECT),
-        weaponless: true, flame: false, flicker: 0, parts: IDLE_PARTS, muzzleFlash: 0, weaponType,
+        weaponless: true, flame: false, flicker: 0, parts: IDLE_PARTS, muzzleFlash: 0, weaponType, oneLeg: c.oneLeg,
     });
 };
 
@@ -96,7 +96,7 @@ export const updateCorpseView = (v: CorpseView, c: Corpse): void => {
         piecesOf(c).forEach((p, i) => {
             pieces[i].position.set(p.at.x, p.at.y);
             pieces[i].rotation = p.part === 'head' && v.head ? rollHead(v.head, c) : p.rotation;
-            if (p.part === 'legs' && v.legsLook && redraw) drawLegsHalf(pieces[i].clear(), v.legsLook, cutLegsOf(c));
+            if (p.part === 'legs' && v.legsLook && redraw) drawLegsHalf(pieces[i].clear(), v.legsLook, cutLegsOf(c), c.oneLeg);
         });
     }
     placeGun(v.gun, c);

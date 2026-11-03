@@ -15,6 +15,7 @@ import { LIMB_W } from './fighterStyle';
 import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
 import { createMuzzleLight, drawMuzzle, muzzlePoint } from './muzzleFlash';
+import { drawStump } from './fighterStump';
 
 export interface FighterView {
     root: Container;
@@ -40,6 +41,8 @@ export interface FighterFrame {
     parts: PartMotionFrame; // tail, ears, lamp and wings as the springs hold them
     muzzleFlash: number; // 0..1, strength of the flash (0 = none)
     squash?: number;   // 0..1, landing squash (default 0)
+    oneLeg?: boolean;  // the back leg is gone: a bloody stump instead (a wounded fighter)
+    hop?: number;      // px a one-legged hop lifts the fighter (default 0). Not drawn here: the owner of the root lifts it, shadow stays down
     headBob?: number;  // radians added to the head tilt (default 0)
     hitFlash?: number; // 0..1, brightens the colours after a hit (default 0)
     weaponless?: boolean; // empty hands: no weapon picture and no fallback gun (a corpse drops its gun)
@@ -93,8 +96,11 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     if (f.flame) drawFlame(b, pose, look, f.flicker);
     drawJetpack(b, pose, look, f.flame, f.parts);
     const legDark = shade(look.leg, 0.72);
-    jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
-    boot(b, pose.backLeg.end, 0x1b1f25);
+    if (f.oneLeg) drawStump(b, pose, look);
+    else {
+        jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
+        boot(b, pose.backLeg.end, 0x1b1f25);
+    }
     const armDark = shade(look.arm, 0.72);
     jointedLimb(b, pose.shoulderBack, pose.backArm.joint, pose.backArm.end, { widths: [4.6 * LIMB_W, 4.2 * LIMB_W], colors: [armDark, armDark] });
     drawTorso(b, pose, look);
