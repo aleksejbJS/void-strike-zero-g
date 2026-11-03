@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.17 (2026-11-03)
+
+### 🚀 Rockets
+- A rocket now flies straight for its first 0.5 s (`ROCKET_MOTOR_TICKS` = 60 ticks, ~720 px) and only then starts to drop as before (+0.1 px/tick²). Before, it dropped from the first tick: 180 px lower after 720 px of flight. The age comes from `life` in `moveProjectile`, so clients extrapolating between snapshots follow the same path
+
 ## Version 0.4.16 (2026-11-03)
 
 ### 🐛 Fixes

@@ -33,6 +33,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.17', date: 'Nov 3, 2026', points: [
+            'Rockets fly straight for the first half second (about a screen width) and only then start to drop',
+        ] },
         { version: '0.4.16', date: 'Nov 3, 2026', points: [
             'The invite link in a game you host can now be closed with ×; the new link button next to sound and achievements brings it back',
         ] },
@@ -175,6 +178,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.17', date: '03.11.2026', points: [
+            'Ракета первые полсекунды (примерно ширина экрана) летит прямо и только потом начинает падать',
+        ] },
         { version: '0.4.16', date: '03.11.2026', points: [
             'Плашку со ссылкой-приглашением в вашей игре теперь можно закрыть крестиком, а вернуть кнопкой-ссылкой рядом со звуком и достижениями',
         ] },
