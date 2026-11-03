@@ -6,6 +6,8 @@ import { chasePoint, SEARCH_REACHED } from './botSearch';
 import { chooseGoal } from './botGoals';
 import { buildNavGraph } from './botNavGraph';
 import { spawnSmoke } from './smoke';
+import { aimAndFire } from './botAim';
+import { updateBotAI } from './bot';
 
 const NOW = 1000;
 const BODY_CENTER_Y = -27; // a fighter's centre: pos.y - height / 2
@@ -82,5 +84,54 @@ describe('goals with a fighter hidden in smoke', () => {
         const goal = chooseGoal(state, bot, mem, enemy, buildNavGraph(state.platforms), NOW);
         expect(mem.state).toBe('roam');
         expect(goal.target).toBe(enemy);
+    });
+});
+
+describe('aiming at a fighter hidden in smoke', () => {
+    it('faces and aims at the last-seen spot, not the real position, and does not fire', () => {
+        const { state, bot, enemy, mem } = setup();
+        mem.lastSeen.set('enemy', { x: 300, y: 0 }); // seen on the right
+        enemy.pos = { x: -300, y: 0 };                // now on the left, inside a cloud
+        spawnSmoke(state, { x: -300, y: BODY_CENTER_Y }, NOW);
+        const shots: unknown[] = [];
+
+        aimAndFire(state, bot, enemy, mem, NOW, (_b, t) => shots.push(t));
+
+        expect(bot.facingRight).toBe(true);
+        expect(Math.abs(bot.aim)).toBeLessThan(Math.PI / 2); // pointing right
+        expect(shots).toHaveLength(0);
+    });
+
+    it('does not aim at a hidden fighter it never saw', () => {
+        const { state, bot, enemy } = setup();
+        spawnSmoke(state, { x: 300, y: BODY_CENTER_Y }, NOW);
+        bot.aim = 0.5;
+
+        updateBotAI(bot, state, NOW, () => {});
+
+        expect(bot.aim).toBeUndefined();
+    });
+});
+
+describe('HTF flag holder with the nearest enemy hidden in smoke', () => {
+    it('steps away from where the enemy was last seen, not from its real position', () => {
+        const { state, bot, enemy, mem } = setup();
+        state.mode = GameMode.HOLD_THE_FLAG;
+        bot.hasFlag = Team.RED; // holds the flag
+        const graph = buildNavGraph(state.platforms);
+        chooseGoal(state, bot, mem, enemy, graph, NOW); // sees the enemy on the right
+        enemy.pos = { x: -300, y: 0 };
+        spawnSmoke(state, { x: -300, y: BODY_CENTER_Y }, NOW);
+
+        expect(chooseGoal(state, bot, mem, enemy, graph, NOW).moveTarget.x).toBeLessThan(bot.pos.x);
+    });
+
+    it('holds its position when the hidden enemy was never seen', () => {
+        const { state, bot, enemy, mem } = setup();
+        state.mode = GameMode.HOLD_THE_FLAG;
+        bot.hasFlag = Team.RED;
+        spawnSmoke(state, { x: 300, y: BODY_CENTER_Y }, NOW);
+
+        expect(chooseGoal(state, bot, mem, enemy, buildNavGraph(state.platforms), NOW).moveTarget).toEqual(bot.pos);
     });
 });

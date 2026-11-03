@@ -212,6 +212,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     item.respawnTime = Number.MAX_SAFE_INTEGER;
                     return;
                 }
+                if (p.type === 'bot' && item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never pick it up; it stays for humans
                 if (item.type === ItemType.HEALTH && p.health < 100) { p.health = Math.min(100, p.health + item.value); collected = true; }
                 else if (item.type === ItemType.ARMOR && p.armor < 100) { p.armor = Math.min(100, p.armor + item.value); collected = true; }
                 else if (item.type === ItemType.AMMO) { p.inventory.forEach(w => w.ammo = Math.min(w.maxAmmo, w.ammo + item.value)); collected = true; }

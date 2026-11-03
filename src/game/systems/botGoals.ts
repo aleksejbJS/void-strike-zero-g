@@ -9,7 +9,7 @@ import { insideZone } from './hungerRound';
 import { NavGraph } from './botNavGraph';
 import { roamGoal } from './botRoam';
 import { preferredRange } from './botCombatMoves';
-import { chasePoint } from './botSearch';
+import { chasePoint, knownPos } from './botSearch';
 
 export interface BotGoal {
     moveTarget: Vector2;
@@ -37,9 +37,11 @@ const holdTheFlagGoal = (state: GameState, bot: Entity, mem: BotMemory, target: 
     if (bot.hasFlag === bot.team) {
         mem.state = 'defend';
         if (enemyHolder && holderAt) return { moveTarget: holderAt, target: enemyHolder };
-        if (!target) return { moveTarget: bot.pos, target };
         // Keep moving away from the nearest enemy to avoid being an easy target
-        const away = Math.sign(bot.pos.x - target.pos.x) || 1;
+        // (from where it was last seen if smoke hides it; hold still if the bot has no idea)
+        const enemyAt = target ? knownPos(state, bot, mem, target, now) : null;
+        if (!enemyAt) return { moveTarget: bot.pos, target };
+        const away = Math.sign(bot.pos.x - enemyAt.x) || 1;
         return { moveTarget: { x: bot.pos.x + away * 100, y: bot.pos.y }, target };
     }
     if (neutralFlag) { mem.state = 'flag-run'; return { moveTarget: neutralFlag.pos, target }; }

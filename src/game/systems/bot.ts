@@ -46,8 +46,8 @@ export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeap
     }
     if (now < mem.unstickUntil && bot.jetpackFuel > 0 && !bot.grapple.active) controls = { ...controls, isFlying: true };
 
-    if (target) aimAndFire(state, bot, target, mem, now, fireWeaponCallback);
-    else {
+    // No target, or one hidden in smoke that the bot never saw: look where it is going
+    if (!target || !aimAndFire(state, bot, target, mem, now, fireWeaponCallback)) {
         bot.aim = undefined;
         if (controls.inputX !== 0) bot.facingRight = controls.inputX > 0;
     }

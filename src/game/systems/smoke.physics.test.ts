@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GameMode, Team, WeaponType } from '../../types';
+import { GameMode, ItemType, Team, WeaponType } from '../../types';
 import { WEAPONS_DATA } from '../../constants';
 import { createMockState, createMockPlayer } from '../../test/mocks';
 import { buildSnapshot } from '../net/protocol';
@@ -131,5 +131,30 @@ describe('Smoke clouds in the simulation', () => {
 
         expect(buildSnapshot(state, 5).smokes).toEqual(state.smokes);
         expect(buildSnapshot(state, 5).smokes).toHaveLength(1);
+    });
+});
+
+describe('Smoke launcher pickup', () => {
+    const setup = (type: 'player' | 'bot') => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const fighter = { ...createMockPlayer('f', Team.NONE), type };
+        fighter.inventory = [{ ...fighter.weapon }];
+        state.players.push(fighter);
+        const item = { id: 'w', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 0, y: 0 }, active: true, respawnTime: 0, value: 0 };
+        state.pickups.push(item);
+        tick(state);
+        return { fighter, item };
+    };
+
+    it('is left alone by a bot walking over it', () => {
+        const { fighter, item } = setup('bot');
+        expect(fighter.inventory.map(w => w.type)).not.toContain(WeaponType.SMOKE_LAUNCHER);
+        expect(item.active).toBe(true);
+    });
+
+    it('is picked up by a human', () => {
+        const { fighter, item } = setup('player');
+        expect(fighter.inventory.map(w => w.type)).toContain(WeaponType.SMOKE_LAUNCHER);
+        expect(item.active).toBe(false);
     });
 });
