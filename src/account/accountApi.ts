@@ -3,14 +3,14 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AccountError, guarded } from './accountError';
+import { PASSWORD_MIN } from './passwordRules';
 import { nicknameKey, nicknameToEmail, normalizeNickname, validateNickname } from './nickname';
 import { PlayerSnapshot, sanitizeSnapshot } from './snapshot';
 
 export { AccountError } from './accountError';
 export type { AccountErrorCode } from './accountError';
 
-/** Supabase's default minimum; a shorter password would only come back as a server rejection. */
-export const PASSWORD_MIN = 6;
+export { PASSWORD_MIN };
 
 export interface AccountUser { id: string; nickname: string }
 

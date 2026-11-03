@@ -1,16 +1,22 @@
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, screen, fireEvent, within } from '@testing-library/react';
 import { installAccountHarness, networkError } from '../../test/accountHarness';
 import { clickStart, mountSetup, startAndSettle, typeName, ui } from '../../test/setupAccountKit';
 import { onProgressChanged } from '../../account/progressEvents';
+import { enterFullscreen, isTouchDevice } from '../fullscreen';
 
 // Pixi needs WebGL, which jsdom lacks; tile pictures are drawn by Pixi too
 vi.mock('./CharacterPreview', () => ({ CharacterPreview: () => <div /> }));
 vi.mock('./builder/usePartThumbnails', () => ({ usePartThumbnails: () => ({}) }));
+vi.mock('../fullscreen', () => ({ isTouchDevice: vi.fn(), enterFullscreen: vi.fn() }));
 
 describe('CharacterSetup Start for a guest', () => {
     const h = installAccountHarness();
+    beforeEach(() => {
+        vi.mocked(isTouchDevice).mockReset().mockReturnValue(false);
+        vi.mocked(enterFullscreen).mockReset();
+    });
     afterEach(() => { vi.restoreAllMocks(); });
 
     const dialog = () => screen.getByRole('dialog');
@@ -30,7 +36,21 @@ describe('CharacterSetup Start for a guest', () => {
         expect(ui().state.isPlaying).toBe(false);
         expect(within(dialog()).getByRole('tab', { name: 'Log in' })).toHaveAttribute('aria-selected', 'true');
         expect(within(dialog()).getByLabelText('Nickname')).toHaveValue('Alex');
-        expect(screen.getByText("This name is taken. If it's your account, enter the password")).toBeInTheDocument();
+        // Said inside the window, where the dimmed page behind cannot hide it, and on the page too
+        const taken = "This name is taken. If it's your account, enter the password";
+        expect(within(dialog()).getByRole('status')).toHaveTextContent(taken);
+        expect(screen.getAllByText(taken)).toHaveLength(2);
+    });
+
+    it('asks for fullscreen on the tap itself, before the taken-name check answers', async () => {
+        vi.mocked(isTouchDevice).mockReturnValue(true);
+        const answer = holdAnswer();
+        await mountSetup(h);
+        typeName('Alex');
+        clickStart();
+        expect(enterFullscreen).toHaveBeenCalledTimes(1);
+        await answer(false);
+        expect(enterFullscreen).toHaveBeenCalledTimes(1);
     });
 
     it('drops the message once the name is edited', async () => {

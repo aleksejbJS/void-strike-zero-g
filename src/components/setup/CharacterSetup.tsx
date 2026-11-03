@@ -44,7 +44,6 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => 
     const { preset, build, colors } = draft;
 
     const start = (playerName: string) => {
-        if (isTouchDevice()) void enterFullscreen(); // hides the browser bar; needs this tap
         // The match reads the saved build when it starts; a changed look is also stamped for the cloud merge
         if (saveLookIfChanged({ build, skinId: preset.id, colors: { ...colors, player: colors.torso } })) notifyProgressChanged();
         actions.selectSkin(preset.id);
@@ -53,6 +52,11 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => 
         onContinue();
     };
     const gate = useStartGate(name, start);
+    const onStart = () => {
+        // Hides the browser bar. It needs the tap's user activation, which a taken-name check that answers later would miss.
+        if (isTouchDevice()) void enterFullscreen();
+        gate.requestStart();
+    };
 
     const mode = MODE_INFO[language][state.selectedMode].name;
     const mapLabel = t(state.selectedMap === MapId.TUNNELS ? 'hb.mapTunnels' : state.selectedMap === MapId.HUNGER ? 'hb.mapHunger' : 'hb.mapDefault').toLowerCase();
@@ -103,12 +107,12 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => 
 
                         <div className="mt-auto flex shrink-0 gap-3">
                             <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel short:h-[60px] phone:hidden ${focusRing}`}>{t('cs.back')}</button>
-                            <button type="button" onClick={gate.requestStart} disabled={gate.checking} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] disabled:cursor-wait disabled:opacity-70 short:h-[60px] short:text-[28px] phone:h-10 phone:text-xl ${focusRing}`}>{startLabel}</button>
+                            <button type="button" onClick={onStart} disabled={gate.checking} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] disabled:cursor-wait disabled:opacity-70 short:h-[60px] short:text-[28px] phone:h-10 phone:text-xl ${focusRing}`}>{startLabel}</button>
                         </div>
                     </div>
                 </main>
             </div>
-            {gate.modal && <AccountModal initialTab={gate.modal.tab} initialNickname={gate.modal.nickname} onClose={gate.closeModal} />}
+            {gate.modal && <AccountModal initialTab={gate.modal.tab} initialNickname={gate.modal.nickname} notice={gate.modal.notice} onClose={gate.closeModal} />}
         </div>
     );
 };

@@ -9,6 +9,8 @@ export interface AccountModalProps {
     initialTab: AccountTab;
     initialNickname: string;
     onClose: () => void;
+    /** Why the window opened by itself (e.g. "this name is taken"), shown above the tabs. */
+    notice?: string;
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
@@ -18,7 +20,7 @@ const TEXT = {
 } as const;
 const inputClass = 'h-11 rounded border-2 border-bay-edge bg-bay-ink px-3 text-base font-semibold text-bay-chalk placeholder:font-medium placeholder:text-bay-plate focus:border-bay-hazard focus:outline-none phone:h-8 phone:text-sm';
 
-export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialNickname, onClose }) => {
+export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialNickname, onClose, notice }) => {
     const { t } = useTranslation();
     const [tab, setTab] = useState<AccountTab>(initialTab);
     const [nickname, setNickname] = useState(initialNickname);
@@ -35,12 +37,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
         return () => { if (opener instanceof HTMLElement && opener.isConnected) opener.focus(); };
     }, [initialNickname]);
 
-    // Esc closes
+    // Esc closes, except while a call runs: the window stays until the service has answered
+    const { pending } = form;
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !pending) onClose(); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [onClose]);
+    }, [onClose, pending]);
 
     const switchTab = (next: AccountTab) => { setTab(next); form.clearError(); };
     const onSubmit = (e: React.FormEvent) => { e.preventDefault(); void form.submit(tab, nickname, password); };
@@ -50,7 +53,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,12,15,0.8)] p-4 phone:p-2">
             <div role="dialog" aria-modal="true" aria-label={t('ac.dialog')}
                 className="max-h-full w-full max-w-[360px] overflow-y-auto rounded border-2 border-t-4 border-bay-edge border-t-bay-hazard bg-bay-panel p-4 text-bay-chalk phone:p-3">
-                <div role="tablist" className="mb-3 flex border-b-2 border-bay-edge phone:mb-2">
+                {notice && <p role="status" className="m-0 mb-3 text-sm font-semibold leading-snug text-bay-signal phone:mb-2 phone:text-xs">{notice}</p>}
+                <div role="tablist"className="mb-3 flex border-b-2 border-bay-edge phone:mb-2">
                     {(['signup', 'login'] as const).map(name => (
                         <button key={name} type="button" role="tab" aria-selected={tab === name} onClick={() => switchTab(name)}
                             className={`-mb-0.5 border-b-[3px] px-2.5 py-1 font-display text-xl font-black uppercase phone:text-base ${focusRing} ${tab === name ? 'border-bay-hazard text-bay-chalk' : 'border-transparent text-bay-dust hover:text-bay-chalk'}`}>
@@ -72,8 +76,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
                             className={`h-10 rounded bg-bay-hazard px-5 font-display text-xl font-black text-bay-ink hover:bg-[#FFD24D] disabled:cursor-wait disabled:opacity-60 phone:h-8 phone:text-base ${focusRing}`}>
                             {form.pending ? t('ac.busy') : t(TEXT[tab].submit)}
                         </button>
-                        <button type="button" onClick={onClose}
-                            className={`h-10 rounded border-2 border-bay-edge px-4 font-semibold hover:bg-bay-steel phone:h-8 phone:text-sm ${focusRing}`}>
+                        <button type="button" onClick={onClose} disabled={pending}
+                            className={`h-10 rounded border-2 border-bay-edge px-4 font-semibold hover:bg-bay-steel disabled:cursor-wait disabled:opacity-60 phone:h-8 phone:text-sm ${focusRing}`}>
                             {t('ac.cancel')}
                         </button>
                     </div>

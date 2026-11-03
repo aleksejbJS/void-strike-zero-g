@@ -1,8 +1,8 @@
 // Friendly text for everything that can go wrong in the sign-up / log-in window.
 
-import { PASSWORD_MIN } from '../../../account/accountApi';
 import { AccountError, AccountErrorCode } from '../../../account/accountError';
 import { NICK_MAX, NICK_MIN, NicknameError } from '../../../account/nickname';
+import { PASSWORD_MIN } from '../../../account/passwordRules';
 import type { TranslationKeys } from '../../../i18n/locales';
 import type { Translate } from '../../menu/types';
 

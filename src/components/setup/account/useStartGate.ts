@@ -4,10 +4,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GUEST_DEFAULT_NAME, nicknameKey } from '../../../account/nickname';
 import { useAccount } from '../../../account/useAccount';
+import { useTranslation } from '../../../i18n/useTranslation';
 import type { AccountTab } from './useAccountForm';
 import { needsTakenCheck, useTakenCheck } from './useTakenCheck';
 
-export interface ModalRequest { tab: AccountTab; nickname: string }
+/** What to open the account window with; `notice` says why it opened by itself. */
+export interface ModalRequest { tab: AccountTab; nickname: string; notice?: string }
 
 /** "Anonymous" is the guest default, not a nickname worth putting into an account form. */
 const nicknameFor = (name: string): string =>
@@ -20,6 +22,7 @@ const nicknameFor = (name: string): string =>
 export function useStartGate(name: string, launch: (playerName: string) => void) {
     const account = useAccount();
     const isTaken = useTakenCheck();
+    const { t } = useTranslation();
     const [modal, setModal] = useState<ModalRequest | null>(null);
     const [checking, setChecking] = useState(false);
     const [takenName, setTakenName] = useState<string | null>(null);
@@ -49,7 +52,7 @@ export function useStartGate(name: string, launch: (playerName: string) => void)
         setChecking(false);
         if (!taken) { latestLaunch.current(playerName); return; }
         setTakenName(guestName);
-        setModal({ tab: 'login', nickname: guestName });
+        setModal({ tab: 'login', nickname: guestName, notice: t('ac.taken') });
     };
 
     const requestStart = (): void => {

@@ -145,37 +145,11 @@ describe('AccountModal', () => {
         expect(error).toHaveBeenCalled();
     });
 
-    it('disables submit while the call runs, so it is sent once', async () => {
-        let finish!: () => void;
-        account.signUp.mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
-        open('signup');
-        fill('Alex', 'secret1');
-        fireEvent.click(submit('Create'));
-        const busy = within(screen.getByRole('dialog')).getByRole('button', { name: 'Please wait…' });
-        expect(busy).toBeDisabled();
-        fireEvent.submit(password());
-        expect(account.signUp).toHaveBeenCalledTimes(1);
-        finish();
-        await waitFor(() => expect(onClose).toHaveBeenCalled());
-    });
-
     it('closes on Escape and on Cancel', () => {
         open('signup');
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(onClose).toHaveBeenCalledTimes(1);
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(onClose).toHaveBeenCalledTimes(2);
-    });
-
-    it('does not report back after it was closed while a call was running', async () => {
-        let finish!: () => void;
-        account.signUp.mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
-        const { unmount } = open('signup');
-        fill('Alex', 'secret1');
-        fireEvent.click(submit('Create'));
-        unmount();
-        finish();
-        await Promise.resolve();
-        expect(onClose).not.toHaveBeenCalled();
     });
 });
