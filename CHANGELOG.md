@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.12 (unreleased)
+## Version 0.4.12 (2026-11-03)
 
 ### 💀 Deaths
 - A death is a jointed ragdoll now (verlet points, links and joint limits; `systems/ragdoll/*`, spec: `docs/plans/2026-11-02-death-ragdoll-spec.md`) drawn with the fighter's own build (`render/ragdoll/*`), instead of 6 loose pieces. It lands, slides and slips off platforms; a body lies 3.5 s and fades 1 s, gib pieces 2 s + 1 s; at most 12 corpses
