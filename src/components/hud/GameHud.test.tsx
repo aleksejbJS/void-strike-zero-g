@@ -175,4 +175,15 @@ describe('GameHud on a phone', () => {
         fireEvent.touchEnd(hook);
         expect(onHook.mock.calls).toEqual([[true], [false]]);
     });
+
+    it('the invite banner closes and the invite button brings it back', () => {
+        render(<GameHud {...base({ inviteLink: 'http://x/?host=abc' })} />);
+        const toggle = screen.getByRole('button', { name: 'Invite link' });
+        expect(toggle.getAttribute('aria-pressed')).toBe('true');
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        expect(screen.queryByText('Invite friends with this link')).toBeNull();
+        expect(toggle.getAttribute('aria-pressed')).toBe('false');
+        fireEvent.click(toggle);
+        expect(screen.getByText('http://x/?host=abc')).toBeInTheDocument();
+    });
 });

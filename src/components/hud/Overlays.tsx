@@ -23,7 +23,7 @@ export const ConnectionOverlay: React.FC<{ t: Translate; error: string | null }>
     </div>
 );
 
-export const InviteBanner: React.FC<{ t: Translate; link: string }> = ({ t, link }) => {
+export const InviteBanner: React.FC<{ t: Translate; link: string; onClose: () => void }> = ({ t, link, onClose }) => {
     const [copied, setCopied] = useState(false);
     const copy = () => {
         navigator.clipboard.writeText(link)
@@ -32,7 +32,13 @@ export const InviteBanner: React.FC<{ t: Translate; link: string }> = ({ t, link
     };
     return (
         <div className={`${PANEL} absolute left-1/2 top-24 z-50 flex max-w-[90vw] phone:top-10 phone:py-2 -translate-x-1/2 flex-col gap-2 px-4 py-3 font-body`}>
-            <span className="font-display text-xl font-extrabold">{t('hud.invite')}</span>
+            <div className="flex items-center justify-between gap-3">
+                <span className="font-display text-xl font-extrabold phone:text-base">{t('hud.invite')}</span>
+                <button type="button" onClick={onClose} aria-label={t('hud.close')}
+                    className="-mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded text-bay-dust hover:bg-bay-steel hover:text-bay-chalk focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
+            </div>
             <div className="flex items-center gap-2">
                 <code className="min-w-0 truncate rounded bg-bay-steel px-2.5 py-2 text-sm">{link}</code>
                 <button type="button" onClick={copy}

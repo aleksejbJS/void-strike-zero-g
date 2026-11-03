@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { ITEM_ICON } from '../hudIcons';
-import { HudButtons } from '../Achievements';
+import { HudButtons, InviteToggle } from '../Achievements';
 import { useFullscreen } from '../../fullscreen';
 import type { Translate } from '../../menu/types';
 
@@ -21,6 +21,7 @@ interface Props {
     muted: boolean;
     onToggleMute: () => void;
     onOpenAchievements: () => void;
+    invite?: InviteToggle;
 }
 
 const Bar: React.FC<{ percent: number; color: string; width: number; height: number }> = ({ percent, color, width, height }) => (
@@ -60,7 +61,7 @@ const MatchInfo: React.FC<{ t: Translate; clock?: string; match: TopBarMatch | n
     </div>
 );
 
-export const MobileTopBar: React.FC<Props> = ({ t, hp, armor, fuelPercent, clock, match, muted, onToggleMute, onOpenAchievements }) => {
+export const MobileTopBar: React.FC<Props> = ({ t, hp, armor, fuelPercent, clock, match, muted, onToggleMute, onOpenAchievements, invite }) => {
     const low = hp <= 25;
     return (
         <>
@@ -78,7 +79,7 @@ export const MobileTopBar: React.FC<Props> = ({ t, hp, armor, fuelPercent, clock
                 </Stat>
                 <MatchInfo t={t} clock={clock} match={match} />
                 <FullscreenButton t={t} />
-                <HudButtons t={t} small muted={muted} onToggleMute={onToggleMute} onOpenAchievements={onOpenAchievements} />
+                <HudButtons t={t} small muted={muted} onToggleMute={onToggleMute} onOpenAchievements={onOpenAchievements} invite={invite} />
             </div>
             <div aria-hidden="true" className="hazard-stripes-xs pointer-events-none absolute inset-x-0 top-7 z-40 h-0.5 opacity-80" />
         </>

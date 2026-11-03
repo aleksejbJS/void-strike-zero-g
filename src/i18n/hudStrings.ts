@@ -20,6 +20,7 @@ export interface HudKeys {
     'hud.close': string;
     'hud.invite': string;
     'hud.copy': string;
+    'hud.inviteButton': string;
     'hud.copied': string;
     'hud.waiting': string;
     'hud.credits': string;
@@ -82,6 +83,7 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.close': 'Close',
         'hud.invite': 'Invite friends with this link',
         'hud.copy': 'Copy link',
+        'hud.inviteButton': 'Invite link',
         'hud.copied': 'Copied',
         'hud.waiting': 'Friends who open it join this game',
         'hud.credits': 'Credits: {0}',
@@ -141,6 +143,7 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.close': 'Закрыть',
         'hud.invite': 'Пригласите друзей этой ссылкой',
         'hud.copy': 'Скопировать ссылку',
+        'hud.inviteButton': 'Ссылка-приглашение',
         'hud.copied': 'Скопировано',
         'hud.waiting': 'Кто откроет её, попадёт в эту игру',
         'hud.credits': 'Кредиты: {0}',

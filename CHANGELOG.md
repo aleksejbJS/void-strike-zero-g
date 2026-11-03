@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.16 (2026-11-03)
+
+### 🐛 Fixes
+- The invite banner of a browser-hosted game stayed on screen for the whole match with no way to close it. It now has a × button (`InviteBanner` `onClose`), and while a link exists a link button joins sound and achievements in the top-right (`HudButtons` `invite`, also on the phone top bar) to hide or show it again. Open by default; the state lives in `GameHud`
+
 ## Version 0.4.15 (2026-11-03)
 
 ### 🪖 Lying Down

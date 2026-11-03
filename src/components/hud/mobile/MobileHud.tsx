@@ -8,7 +8,7 @@ import type { PlayerScore, StatsState } from '../../../store/uiStore';
 import type { TouchSticksState } from '../../../game/input/touchSticks';
 import { Achievement } from '../../../game/systems/achievements';
 import { weaponLabel } from '../weaponLabel';
-import { AchievementToast } from '../Achievements';
+import { AchievementToast, InviteToggle } from '../Achievements';
 import { MobileTopBar, TopBarMatch } from './MobileTopBar';
 import { MobileWeapons } from './MobileWeapons';
 import { TouchSticks } from './TouchSticks';
@@ -37,6 +37,7 @@ interface Props {
     muted: boolean;
     onToggleMute: () => void;
     onOpenAchievements: () => void;
+    invite?: InviteToggle;
     controls: MobileControls;
 }
 
@@ -65,7 +66,7 @@ export const MobileHud: React.FC<Props> = p => {
         <>
             <MobileTopBar t={t} hp={stats.hp} armor={stats.arm} fuelPercent={fuelPercent} clock={p.clock}
                 match={matchOf(p.teamMode, p.scores, p.playerScores)}
-                muted={p.muted} onToggleMute={p.onToggleMute} onOpenAchievements={p.onOpenAchievements} />
+                muted={p.muted} onToggleMute={p.onToggleMute} onOpenAchievements={p.onOpenAchievements} invite={p.invite} />
             {p.objective && (
                 <span className="pointer-events-none absolute left-1/2 top-9 z-40 -translate-x-1/2 text-[11px] text-bay-chalk [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">{p.objective}</span>
             )}
