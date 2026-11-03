@@ -7,7 +7,6 @@ import { GameEvent } from '../systems/events';
 import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement } from '../systems/playerControl';
 import { applyStance, clampProneAim } from '../systems/stance';
-import { moveProjectile } from '../systems/physics';
 import { followCamera, pickCameraTarget } from '../systems/camera';
 import { jetpackTrail, projectileTrail } from '../systems/effects';
 import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/particles';
@@ -15,6 +14,7 @@ import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
+import { ProjectileCatchUp } from './projectileCatchUp';
 import { SessionSocket } from './sessionSocket';
 import { sanitizeBuild } from '../build/sanitizeBuild';
 import { presetBuild } from '../build/buildPresets';
@@ -64,6 +64,7 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
 export class ClientSession {
     localId: string | null = null;
     private readonly prediction = new LocalPrediction();
+    private readonly projectiles = new ProjectileCatchUp();
     private readonly buffer = new SnapshotBuffer();
     private latest: Snapshot | null = null;
     private sequence = 0;
@@ -120,10 +121,8 @@ export class ClientSession {
         for (const p of state.players) {
             if (p.id !== this.localId && p.jetpackOn && !p.dead) jetpackTrail(state, p);
         }
-        for (const proj of state.projectiles) {
-            moveProjectile(proj);
-            projectileTrail(state, proj);
-        }
+        this.projectiles.advance(state.projectiles, state.players); // after interpolation: guns are where they're drawn
+        for (const proj of state.projectiles) projectileTrail(state, proj);
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, Date.now());

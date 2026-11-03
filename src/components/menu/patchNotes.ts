@@ -32,9 +32,12 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.14', date: null, points: [
+        { version: '0.4.15', date: null, points: [
             'Fighters can lie down: hold Z, or push the move stick down to the edge on a phone. Lying, you are hard to hit, crawl slowly and shoot only forward',
             'A jump gets you back on your feet',
+        ] },
+        { version: '0.4.14', date: 'Nov 3, 2026', points: [
+            'Online, shots now leave the gun: bullets and rockets used to appear a little way ahead of the fighter who fired them, and further still for other players',
         ] },
         { version: '0.4.13', date: null, groups: [
             { title: 'Fighters', points: [
@@ -168,9 +171,12 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.14', date: null, points: [
+        { version: '0.4.15', date: null, points: [
             'Бойцы умеют ложиться: держите Z, а на телефоне тяните левый стик вниз до края. Лёжа в вас трудно попасть, вы медленно ползёте и стреляете только вперёд',
             'Прыжок поднимает бойца на ноги',
+        ] },
+        { version: '0.4.14', date: '03.11.2026', points: [
+            'В игре по сети выстрелы вылетают из оружия: раньше пули и ракеты появлялись чуть впереди стрелявшего бойца, а у других игроков — ещё дальше',
         ] },
         { version: '0.4.13', date: null, groups: [
             { title: 'Бойцы', points: [
