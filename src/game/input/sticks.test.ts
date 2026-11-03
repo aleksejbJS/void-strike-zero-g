@@ -20,11 +20,16 @@ describe('deflection', () => {
 
 describe('moveKeys', () => {
     it('pushing up jumps / flies and pushing sideways runs', () => {
-        expect(moveKeys(deflection(stick(-40, -40)))).toEqual({ KeyW: true, KeyS: false, KeyA: true, KeyD: false });
+        expect(moveKeys(deflection(stick(-40, -40)))).toMatchObject({ KeyW: true, KeyS: false, KeyA: true, KeyD: false });
     });
 
     it('a small wobble presses nothing', () => {
-        expect(moveKeys(deflection(stick(5, -5)))).toEqual({ KeyW: false, KeyS: false, KeyA: false, KeyD: false });
+        expect(moveKeys(deflection(stick(5, -5)))).toMatchObject({ KeyW: false, KeyS: false, KeyA: false, KeyD: false });
+    });
+
+    it('half way walks, at the edge runs', () => {
+        expect(moveKeys(deflection(stick(STICK_RADIUS * 0.6, 0)))).toMatchObject({ KeyD: true, Walk: true });
+        expect(moveKeys(deflection(stick(STICK_RADIUS, 0)))).toMatchObject({ KeyD: true, Walk: false });
     });
 });
 

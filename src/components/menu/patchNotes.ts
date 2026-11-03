@@ -33,9 +33,12 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.4.13', date: null, groups: [
+            { title: 'Fighters', points: [
+                'Fighters now walk as well as run: a slower pace with shorter steps, which everyone in the match sees',
+            ] },
             { title: 'Playing on a phone', comparisons: [{ caption: 'A match on a phone in landscape', ...MOBILE_HUD }], points: [
                 'A new phone HUD: a slim see-through bar on top with health, armor, fuel, the clock and your place; nothing overlaps any more',
-                'Two sticks: the left one moves (push up to fly), the right one aims with an aim line and fires only when pushed to the edge, so your finger never covers the target and rockets are not wasted while you aim',
+                'Two sticks: the left one walks, runs at the edge and flies when pushed up, the right one aims with an aim line and fires only when pushed to the edge, so your finger never covers the target and rockets are not wasted while you aim',
                 'Tap a weapon above the right stick to switch to it; the hook button sits next to the stick',
                 'The menu and the character screen fit on a phone held sideways, no more scrolling through a long page',
                 'On Android a match goes full screen, so the browser bar no longer takes space; a button on the top bar switches it off and on',
@@ -162,9 +165,12 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ],
     ru: [
         { version: '0.4.13', date: null, groups: [
+            { title: 'Бойцы', points: [
+                'Бойцы теперь умеют ходить шагом, а не только бегать: медленнее и короткими шагами, и это видят все в матче',
+            ] },
             { title: 'Игра на телефоне', comparisons: [{ caption: 'Матч на телефоне в альбомной ориентации', ...MOBILE_HUD }], points: [
                 'Новый интерфейс для телефона: тонкая прозрачная полоса сверху со здоровьем, бронёй, топливом, временем и вашим местом; больше ничего не наезжает друг на друга',
-                'Два стика: левый — движение (вверх — полёт), правый — прицел с линией прицела, а стреляет только у края круга, так что палец не закрывает цель и ракеты не улетают, пока целишься',
+                'Два стика: левый — шаг, у края — бег, вверх — полёт; правый — прицел с линией прицела, а стреляет только у края круга, так что палец не закрывает цель и ракеты не улетают, пока целишься',
                 'Оружие меняется касанием по значку над правым стиком; кнопка крюка рядом со стиком',
                 'Меню и экран персонажа помещаются на повёрнутом телефоне целиком, без прокрутки длинной страницы',
                 'На Android матч открывается на весь экран, строка браузера больше не мешает; кнопка в верхней полосе выключает и включает этот режим',

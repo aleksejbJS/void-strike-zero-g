@@ -3,7 +3,7 @@
 // so the server and the predicting client move a player exactly the same way.
 
 import { Entity, GameMode, GameState, Vector2 } from '../../types';
-import { HOOK_RANGE } from '../../constants';
+import { HOOK_RANGE, WALK_INPUT } from '../../constants';
 import { distance, normalize } from '../utils/math';
 import { castRay } from './combat';
 import { applyMovement, MovementInput } from './movement';
@@ -16,7 +16,7 @@ const MAP_CEILING_Y = -500;
 const HTF_CARRIER_SLOWDOWN = 0.85;
 
 export interface PlayerControls {
-    inputX: number;     // -1, 0 or 1
+    inputX: number;     // -1..1: ±1 runs, ±WALK_INPUT walks
     wantsJump: boolean; // W or Space
     wantsDown: boolean; // S
     isFlying: boolean;  // jetpack thrust this tick
@@ -30,6 +30,8 @@ export const readControls = (p: Entity, keys: Record<string, boolean>): PlayerCo
     let inputX = 0;
     if (keys['KeyA']) inputX -= 1;
     if (keys['KeyD']) inputX += 1;
+    // Touch play: a half-pushed move stick walks. Only on the ground: flying and air strafe stay full
+    if (keys['Walk'] && p.isGrounded) inputX *= WALK_INPUT;
     return { inputX, wantsJump, wantsDown, isFlying: wantsJump && p.jetpackFuel > 0 };
 };
 

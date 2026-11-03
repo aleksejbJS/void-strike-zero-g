@@ -12,13 +12,15 @@ export const THIGH = 14.5;
 export const SHIN = 14.5;
 export const UPPER_ARM = 11.5;
 export const FOREARM = 11.5;
-const STRIDE = 11;     // how far a foot travels forward/back from the hip while running
+export const STRIDE = 11;      // how far a foot travels forward/back from the hip while running
 const STEP_LIFT = 7;
+export const WALK_STRIDE = 7;  // walking: shorter steps, feet kept low, body upright
+const WALK_LIFT = 3.5;
 const ANKLE_Y = -2.5;
 const CROUCH_TILT = 0.1; // largest head tilt while crouched (radians)
 const GRIP_REACH = 3;  // the rear hand sits this far down the barrel from the chest
 
-export type FighterState = 'idle' | 'run' | 'fly' | 'fall' | 'crouch';
+export type FighterState = 'idle' | 'walk' | 'run' | 'fly' | 'fall' | 'crouch';
 
 export interface PoseInput {
     state: FighterState;
@@ -61,6 +63,15 @@ const lowerBody = (input: PoseInput) => {
             return {
                 hip: { x: 0, y: -30.5 + Math.abs(Math.cos(input.phase)) * 1.6 - 0.8 },
                 lean: input.moveDir >= 0 ? 0.16 : -0.06,
+                feet: [foot(input.phase), foot(input.phase + Math.PI)],
+                lift: 0,
+            };
+        }
+        case 'walk': {
+            const foot = (ph: number) => ({ x: WALK_STRIDE * Math.sin(ph), y: ANKLE_Y - Math.max(0, Math.cos(ph) * input.moveDir) * WALK_LIFT });
+            return {
+                hip: { x: 0, y: -30.5 + Math.abs(Math.cos(input.phase)) * 0.8 - 0.4 },
+                lean: input.moveDir >= 0 ? 0.06 : -0.03,
                 feet: [foot(input.phase), foot(input.phase + Math.PI)],
                 lift: 0,
             };

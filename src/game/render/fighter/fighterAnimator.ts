@@ -3,7 +3,7 @@
 
 import { Texture } from 'pixi.js';
 import { Entity, GameState } from '../../../types';
-import { FighterState, RIG_SCALE, solvePose } from './fighterPose';
+import { FighterState, RIG_SCALE, solvePose, STRIDE, WALK_STRIDE } from './fighterPose';
 import { lookFromEntity } from './fighterLook';
 import { gripPoints } from './weaponGrips';
 import { FighterFrame } from './fighterView';
@@ -13,9 +13,10 @@ import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
-const STRIDE_CYCLE_PX = 4 * 11 * RIG_SCALE; // ground covered by one full step cycle
+const cyclePx = (stride: number) => 4 * stride * RIG_SCALE; // ground covered by one full step cycle
 const MAX_PHASE_SPEED = 24;      // rad/s, keeps very fast slides from blurring the legs
-const RUN_THRESHOLD = 0.5;
+const MOVE_THRESHOLD = 0.5;      // slower than this on the ground is standing
+const RUN_SPEED = 3;             // faster than this (~180 px/s) runs, slower walks; a run is ~4
 const RECOIL_MS = 160;
 const RECOIL_DECAY_MS = 35;
 const FALLBACK_ASPECT = 0.23;
@@ -34,9 +35,13 @@ interface AnimMemory {
 
 export const heldWeaponKey = (type: string) => `held_${type.toLowerCase()}`;
 
-const stateOf = (p: Entity): FighterState => {
+/** Picked from speed, not input, so other players see a walk or a run the same way. */
+export const stateOf = (p: Pick<Entity, 'isCrouching' | 'isGrounded' | 'vel' | 'jetpackOn'>): FighterState => {
     if (p.isCrouching) return 'crouch';
-    if (p.isGrounded) return Math.abs(p.vel.x) > RUN_THRESHOLD ? 'run' : 'idle';
+    if (p.isGrounded) {
+        const speed = Math.abs(p.vel.x);
+        return speed <= MOVE_THRESHOLD ? 'idle' : speed < RUN_SPEED ? 'walk' : 'run';
+    }
     return p.jetpackOn ? 'fly' : 'fall';
 };
 
@@ -60,8 +65,9 @@ export class FighterAnimator {
         const { facing, local } = faceAim(aim);
         const state = stateOf(p);
         const moveDir = Math.sign(p.vel.x) * facing || 1;
-        if (state === 'run') {
-            const rate = (Math.abs(p.vel.x) * VEL_TO_PX_PER_S / STRIDE_CYCLE_PX) * Math.PI * 2;
+        if (state === 'run' || state === 'walk') {
+            const stride = state === 'run' ? STRIDE : WALK_STRIDE;
+            const rate = (Math.abs(p.vel.x) * VEL_TO_PX_PER_S / cyclePx(stride)) * Math.PI * 2;
             m.phase += Math.min(rate, MAX_PHASE_SPEED) * dt;
         }
         const cosNow = Math.cos(m.phase);

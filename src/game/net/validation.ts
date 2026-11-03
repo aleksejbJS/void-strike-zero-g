@@ -9,7 +9,7 @@ import { presetBuild } from '../build/buildPresets';
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const FALLBACK_COLOR = '#3b82f6';
-const ALLOWED_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight'];
+const ALLOWED_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'Walk'];
 const WORLD_MIN = -5000;
 const WORLD_MAX = 10000;
 const MAX_WEAPON_SLOTS = 6;

@@ -52,7 +52,7 @@ import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, 
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
 
-const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false };
+const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Walk: false };
 
 
 // Deathmatch-style modes use the chosen map; objective modes are built for the default map

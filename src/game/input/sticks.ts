@@ -24,6 +24,8 @@ const AIM_DEAD_ZONE = 0.15;         // below this the aim keeps its last directi
 // Inside this the aim stick only aims; the weapon fires only with the stick pushed to the edge,
 // so a rocket launcher does not spend its ammo while you line up a shot
 export const FIRE_THRESHOLD = 0.85;
+// The move stick works the same way: inside it walks, at the edge it runs
+export const RUN_THRESHOLD = 0.85;
 export const AIM_REACH = 300;       // world units from the fighter to the aim point
 const AIM_SMOOTHING_MS = 70;        // time constant of the aim following the stick
 
@@ -40,6 +42,7 @@ export const moveKeys = (d: Deflection) => ({
     KeyS: d.y > MOVE_THRESHOLD,
     KeyA: d.x < -MOVE_THRESHOLD,
     KeyD: d.x > MOVE_THRESHOLD,
+    Walk: d.amount < RUN_THRESHOLD,
 });
 
 /** Unit vector the aim stick points along, or null while it is near the centre. */
