@@ -2,6 +2,7 @@
 // and when nearly dead, a hook (or jetpack) escape to another surface away from the enemy.
 
 import { Entity, GameState, Team, WeaponType } from '../../types';
+import { HIT_MIN_HP } from '../../constants';
 import { distance } from '../utils/math';
 import { NavGraph, NavNode } from './botNavGraph';
 import { nodeAt } from './botPathfinder';
@@ -40,14 +41,16 @@ export const combatMoves = (
     state: GameState, bot: Entity, nav: BotNav, moves: BotMoves, graph: NavGraph,
     target: Entity | null, targetVisible: boolean, controls: BotControls, now: number,
 ): BotControls => {
-    const hit = bot.health < moves.lastHealth;
+    // A drop smaller than HIT_MIN_HP is bleeding, not a hit: a wounded bot must not hop every few seconds
+    const hit = moves.lastHealth - bot.health > HIT_MIN_HP;
     moves.lastHealth = bot.health;
     // A flag carrier just runs for home: no hops, no detours
     if (!target || !targetVisible || bot.grapple.active || bot.hasFlag !== Team.NONE) return controls;
     const here = bot.isGrounded ? nodeAt(graph, bot.pos) : null;
 
-    // Nearly dead and the enemy is close: get off this surface
-    const dying = bot.health < bot.maxHealth * ESCAPE_HEALTH && distance(bot.pos, target.pos) < ESCAPE_RANGE;
+    // Nearly dead and the enemy is close: get off this surface. Not when wounded: it is always nearly
+    // dead and its way to a medkit (botGoals) matters more than getting away
+    const dying = !bot.wound && bot.health < bot.maxHealth * ESCAPE_HEALTH && distance(bot.pos, target.pos) < ESCAPE_RANGE;
     if (dying && here && now >= moves.escapeReadyAt) {
         const edge = escapeRoute(state, graph, here, bot, target);
         if (edge) {
