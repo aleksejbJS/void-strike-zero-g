@@ -87,6 +87,33 @@ describe('AccountProvider logOut', () => {
         expect(h.api.saveSnapshot).toHaveBeenCalledTimes(savesBefore); // guest progress never goes to the account
         expect(h.store[PENDING_ALEX]).toBeUndefined();
     });
+
+    it('a push queued behind a slow last push never sends the guest progress to the logged-out account', async () => {
+        await loggedInWithXp(70);
+        const save = deferred<void>();
+        h.api.saveSnapshot.mockReturnValueOnce(save.promise);
+        const request = deferred<void>();
+        h.api.logOut.mockReturnValue(request.promise);
+        let pending!: Promise<void>;
+        await act(async () => { pending = h.account().logOut(); });
+        await h.settle(); // the last push (xp 70) hangs
+        const savesBefore = h.api.saveSnapshot.mock.calls.length;
+        notifyProgressChanged(); // a change during the push...
+        await h.advance(DEFAULT_DEBOUNCE_MS); // ...whose debounced flush queues behind it
+
+        await act(async () => { save.resolve(); });
+        await h.settle();
+        expect(h.account().status).toBe('guest');
+        h.store.fighterXp = '15'; // guest progress while the logout request runs
+        await h.settle();
+        await act(async () => { request.resolve(); await pending; });
+        await h.advance(DEFAULT_DEBOUNCE_MS);
+
+        expect(h.api.saveSnapshot).toHaveBeenCalledTimes(savesBefore);
+        expect(h.savedFor(ALEX.id).map(s => s.xp)).not.toContain(15);
+        expect(JSON.parse(h.store[PENDING_ALEX]).xp).toBe(70); // the change it missed is kept for this account
+        expect(h.store.fighterXp).toBe('15');
+    });
 });
 
 describe('AccountProvider pending progress on the next login', () => {

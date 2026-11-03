@@ -73,4 +73,22 @@ describe('sync: requestPush and dispose', () => {
 
         expect(h.sync.hasPending(USER)).toBe(true); // survives for the next session
     });
+
+    it('a follow-up flush queued behind the running one never starts after dispose', async () => {
+        let release!: () => void;
+        h.saveSnapshot.mockImplementationOnce(() => new Promise<void>(r => { release = r; }));
+        // Like logout: its last flush is awaited first, and the session is disposed as soon as it settles.
+        const disposedAfter = h.sync.flush(USER).then(result => { h.sync.dispose(); return result; });
+        await vi.advanceTimersByTimeAsync(0); // the save hangs
+        h.sync.requestPush(USER); // a change during the save...
+        await vi.advanceTimersByTimeAsync(2000); // ...whose debounced flush queues a follow-up behind it
+        const followUp = h.sync.flush(USER); // joins that queued follow-up
+        release();
+        await expect(disposedAfter).resolves.toBe(true);
+        await expect(followUp).resolves.toBe(false);
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(h.saveSnapshot).toHaveBeenCalledTimes(1); // local may already belong to someone else
+        expect(h.sync.hasPending(USER)).toBe(true); // the missed change stays marked
+    });
 });

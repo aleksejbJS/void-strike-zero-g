@@ -16,7 +16,7 @@ export interface Sync {
     /** Merges with the cloud copy and saves it. Never rejects: false means it failed and stays pending. */
     flush(userId: string): Promise<boolean>;
     hasPending(userId: string): boolean;
-    /** Cancels scheduled flushes. Unsaved progress stays marked, for the next session. */
+    /** Cancels scheduled and queued flushes. Unsaved progress stays marked, for the next session. */
     dispose(): void;
 }
 
@@ -82,6 +82,12 @@ export function createSync(api: AccountApi, opts: { debounceMs?: number } = {}):
         if (!next) {
             next = inFlight.then(() => {
                 queued.delete(userId);
+                if (disposed) {
+                    // The session ended while this waited (logout): local storage may already be cleared or
+                    // hold guest progress, so never push it. The dirty flag stays for the next session.
+                    running.delete(userId);
+                    return false;
+                }
                 return startFlush(userId);
             });
             queued.set(userId, next);
