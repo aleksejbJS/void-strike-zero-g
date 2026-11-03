@@ -33,6 +33,13 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.22', date: 'Nov 3, 2026', groups: [
+            { title: 'Accounts & profile', points: [
+                'Protect your nickname with a password: nobody else can take it, and your achievements, fighter level and fighter look follow you to any device. You can also log in on the character screen',
+                'A new Profile screen shows your level and every achievement with its progress',
+                'Playing without an account works exactly as before, and a game starts even when the accounts service is down',
+            ] },
+        ] },
         { version: '0.4.20', date: 'Nov 3, 2026', points: [
             'Armor now saves you from the railgun: a beam through any armor burns it all, tears off a leg and leaves you with 10 health',
             'Without the leg you only hop slowly on the ground and bleed 1 health a second; pick up any medkit within 10 seconds to get the leg back. Jetpack and hook work as always',
@@ -190,6 +197,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.22', date: '03.11.2026', groups: [
+            { title: 'Аккаунты и профиль', points: [
+                'Защитите ник паролем: никто другой его не займёт, а достижения, уровень бойца и его внешний вид перейдут с вами на любое устройство. Войти в аккаунт можно и на экране бойца',
+                'Новый экран «Профиль» показывает ваш уровень и все достижения с прогрессом',
+                'Игра без аккаунта работает как раньше, а матч начнётся, даже если сервис аккаунтов не отвечает',
+            ] },
+        ] },
         { version: '0.4.20', date: '03.11.2026', points: [
             'Броня теперь спасает от рельсы: луч через любую броню сжигает её целиком, отрывает ногу и оставляет 10 здоровья',
             'Без ноги вы только медленно прыгаете по земле и теряете 1 здоровье в секунду; подберите любую аптечку за 10 секунд — и нога вернётся. Джетпак и крюк работают как обычно',

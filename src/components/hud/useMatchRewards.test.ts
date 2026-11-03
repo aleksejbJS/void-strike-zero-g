@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { GameMode, GameState } from '../../types';
+import { onProgressChanged } from '../../account/progressEvents';
 import { useMatchRewards } from './useMatchRewards';
 
 // Only the fields detectMatchEnd reads.
@@ -40,6 +41,19 @@ describe('useMatchRewards', () => {
         }
         expect(store.fighterXp).toBe('20');
         expect(result.current).toBe(reward);
+    });
+
+    it('signals a progress change once per paid match (cloud push when logged in)', () => {
+        const changed = vi.fn();
+        const stop = onProgressChanged(changed);
+        const state = makeState();
+        renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(500);
+        expect(changed).not.toHaveBeenCalled();
+        state.current.matchEndsAt = 10_000;
+        run(1000);
+        expect(changed).toHaveBeenCalledTimes(1);
+        stop();
     });
 
     it('gives XP again for the next match', () => {

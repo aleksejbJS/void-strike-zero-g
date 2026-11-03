@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
+import { AccountProvider } from '../../account/AccountProvider';
 import { UIProvider, useUIStore } from '../../store/uiStore';
 import { NetworkMode } from '../../types';
 import { SKINS } from '../../constants';
@@ -22,7 +23,8 @@ const renderSetup = (network = NetworkMode.OFFLINE) => {
         React.useEffect(() => actions.setNetworkState(network, null), [actions]);
         return null;
     };
-    render(<UIProvider><Spy /><NetworkInit /><CharacterSetup onContinue={onContinue} onBack={onBack} /></UIProvider>);
+    // api={null}: accounts are off, so this is the plain screen
+    render(<UIProvider><AccountProvider api={null}><Spy /><NetworkInit /><CharacterSetup onContinue={onContinue} onBack={onBack} /></AccountProvider></UIProvider>);
     return { onContinue, onBack };
 };
 
