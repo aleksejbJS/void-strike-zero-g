@@ -1,5 +1,5 @@
 import { describe, it, test, expect, beforeEach, vi, Mock } from 'vitest';
-import { achievementManager, AchievementManager, memoryStore, trackKill, trackFlagCapture, trackItemPickup } from './achievements';
+import { achievementManager, AchievementManager, ACHIEVEMENTS, memoryStore, trackKill, trackFlagCapture, trackItemPickup } from './achievements';
 import { WeaponType } from '../../types';
 
 describe('Achievement System', () => {
@@ -130,6 +130,71 @@ describe('Achievement System', () => {
       const firstBlood = achievements.find(a => a.id === 'first_blood');
 
       expect(firstBlood?.unlocked).toBe(true);
+    });
+  });
+
+  describe('Categories', () => {
+    const expected: Record<string, string[]> = {
+      combat: ['first_blood', 'killer', 'slayer', 'executioner', 'chainsaw_master', 'sniper', 'demolition_expert'],
+      modes: ['flag_capturer', 'king_of_hill', 'survivor'],
+      movement: ['acrobatic', 'hook_master', 'speed_demon'],
+      collecting: ['collector', 'hoarder'],
+      special: ['perfectionist', 'veteran'],
+    };
+
+    test('every achievement has one of the 5 categories', () => {
+      for (const a of ACHIEVEMENTS) expect(Object.keys(expected)).toContain(a.category);
+    });
+    test.each(Object.entries(expected))('%s holds exactly the agreed ids', (category, ids) => {
+      const actual = ACHIEVEMENTS.filter(a => a.category === category).map(a => a.id);
+      expect(actual.sort()).toEqual([...ids].sort());
+    });
+    test('getAchievements exposes the category', () => {
+      expect(achievementManager.getAchievements().find(a => a.id === 'sniper')?.category).toBe('combat');
+    });
+  });
+
+  describe('Whole-progress API', () => {
+    const byId = () => Object.fromEntries(achievementManager.getAchievements().map(a => [a.id, a]));
+
+    test('replaceProgress unlocks without firing unlock listeners', () => {
+      const listener = vi.fn();
+      const unsubscribe = achievementManager.onAchievementUnlocked(listener);
+      achievementManager.replaceProgress({ killer: { progress: 10, unlocked: true } });
+      unsubscribe();
+      expect(byId().killer).toMatchObject({ unlocked: true, progress: 10 });
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    test('replaceProgress overwrites previous progress instead of merging', () => {
+      trackKill(WeaponType.MACHINE_GUN);
+      achievementManager.replaceProgress({ killer: { progress: 3, unlocked: false } });
+      expect(byId().first_blood.unlocked).toBe(false);
+      expect(byId().killer.progress).toBe(3);
+    });
+
+    test('replaceProgress persists under achievementProgress', () => {
+      const killer = { progress: 10, unlocked: true, unlockedAt: 5 };
+      achievementManager.replaceProgress({ killer });
+      expect(JSON.parse(memoryStore['achievementProgress'])).toEqual({ killer });
+      expect(new AchievementManager().getAchievements().find(a => a.id === 'killer')?.unlocked).toBe(true);
+    });
+
+    test('replaceProgress copies its input', () => {
+      const input = { killer: { progress: 4, unlocked: false } };
+      achievementManager.replaceProgress(input);
+      input.killer.progress = 9;
+      expect(achievementManager.exportProgress().killer.progress).toBe(4);
+    });
+
+    test('exportProgress returns a deep copy', () => {
+      trackKill(WeaponType.MACHINE_GUN);
+      const exported = achievementManager.exportProgress();
+      expect(exported.killer.progress).toBe(1);
+      Object.assign(exported.killer, { progress: 99, unlocked: true });
+      delete exported.first_blood;
+      expect(byId().killer).toMatchObject({ progress: 1, unlocked: false });
+      expect(byId().first_blood.unlocked).toBe(true);
     });
   });
 });
