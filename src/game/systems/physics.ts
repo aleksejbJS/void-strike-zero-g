@@ -1,5 +1,5 @@
 import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectile, Entity } from '../../types';
-import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL } from '../../constants';
+import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL, ROCKET_MOTOR_TICKS } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { updateBotAI } from './bot';
@@ -22,7 +22,9 @@ import { updateMatch } from './matchRound';
 export const moveProjectile = (proj: Projectile) => {
     proj.pos.x += proj.vel.x;
     proj.pos.y += proj.vel.y;
-    if (proj.type === WeaponType.ROCKET_LAUNCHER) proj.vel.y += 0.1;
+    // A rocket flies straight while its motor burns, then drops (age comes from the life it has left)
+    const age = PROJECTILE_MAX_LIFE - (proj.life ?? PROJECTILE_MAX_LIFE);
+    if (proj.type === WeaponType.ROCKET_LAUNCHER && age >= ROCKET_MOTOR_TICKS) proj.vel.y += 0.1;
     if (proj.type === WeaponType.GRENADE_LAUNCHER) proj.vel.y += 0.25;
 };
 
