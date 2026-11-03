@@ -40,10 +40,10 @@ export interface HudKeys {
     'hud.gunKills': string;
     'hud.gunComplete': string;
     'hud.mobileTitle': string;
-    'hud.mobileMove': string;
-    'hud.mobileAim': string;
-    'hud.mobileButtons': string;
-    'hud.jump': string;
+    'hud.touchMove': string;
+    'hud.touchAim': string;
+    'hud.touchWeapons': string;
+    'hud.place': string;
     'hud.hook': string;
     // Objective banner: {0} is a flag adjective (flagOf*) or a team name (team*)
     'hud.flagOfRed': string;
@@ -100,10 +100,10 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.gunKills': '{0} of {1} kills to the next weapon',
         'hud.gunComplete': 'Gun Game complete',
         'hud.mobileTitle': 'Touch controls',
-        'hud.mobileMove': 'Left half: move',
-        'hud.mobileAim': 'Right half: aim and fire',
-        'hud.mobileButtons': 'Buttons: jetpack and hook',
-        'hud.jump': 'Jetpack',
+        'hud.touchMove': 'Left stick: move, push up to fly',
+        'hud.touchAim': 'Right stick: aim, push further to fire',
+        'hud.touchWeapons': 'Tap a weapon to switch',
+        'hud.place': '#{0} of {1}',
         'hud.hook': 'Grappling hook',
         'hud.flagOfRed': 'Red',
         'hud.flagOfBlue': 'Blue',
@@ -157,10 +157,10 @@ export const hudStrings: Record<Language, HudKeys> = {
         'hud.gunKills': '{0} из {1} убийств до следующего оружия',
         'hud.gunComplete': 'Гонка вооружений завершена',
         'hud.mobileTitle': 'Управление касанием',
-        'hud.mobileMove': 'Левая половина: движение',
-        'hud.mobileAim': 'Правая половина: прицел и огонь',
-        'hud.mobileButtons': 'Кнопки: джетпак и крюк',
-        'hud.jump': 'Джетпак',
+        'hud.touchMove': 'Левый стик: движение, вверх — полёт',
+        'hud.touchAim': 'Правый стик: прицел, дальше — огонь',
+        'hud.touchWeapons': 'Нажмите на оружие, чтобы сменить',
+        'hud.place': '№{0} из {1}',
         'hud.hook': 'Крюк',
         'hud.flagOfRed': 'Красный',
         'hud.flagOfBlue': 'Синий',

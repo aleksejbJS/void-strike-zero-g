@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIN_ZOOM, screenToWorld, toView, VIEW_HEIGHT, VIEW_WIDTH, viewportOf } from './viewport';
+import { MIN_ZOOM, screenToWorld, toView, VIEW_HEIGHT, VIEW_WIDTH, viewportOf, worldToScreen } from './viewport';
 
 describe('viewportOf', () => {
     it.each([[1280, 720], [1920, 1080], [2560, 1440], [3840, 2160]])('shows the same 16:9 slice on a %ix%i window', (w, h) => {
@@ -54,5 +54,16 @@ describe('screenToWorld', () => {
         const camera = { x: 120, y: 40 };
         const m = toView({ x: 300, y: 900 }, v);
         expect(screenToWorld({ x: 300, y: 900 }, camera, v)).toEqual({ x: m.x - v.w / 2 + camera.x, y: m.y - v.h / 2 + camera.y });
+    });
+});
+
+describe('worldToScreen', () => {
+    it('undoes screenToWorld', () => {
+        const view = viewportOf(640, 290);
+        const camera = { x: 1200, y: 400 };
+        const world = screenToWorld({ x: 123, y: 45 }, camera, view);
+        const back = worldToScreen(world, camera, view);
+        expect(back.x).toBeCloseTo(123);
+        expect(back.y).toBeCloseTo(45);
     });
 });

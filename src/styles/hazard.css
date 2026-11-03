@@ -8,6 +8,11 @@
     background: repeating-linear-gradient(-45deg, #FFC21A 0 8px, #1A1D21 8px 16px);
 }
 
+/* Hairline edge under the phone HUD's top bar */
+.hazard-stripes-xs {
+    background: repeating-linear-gradient(-45deg, #FFC21A 0 4px, #1A1D21 4px 8px);
+}
+
 /* A platform as drawn in the game: steel top over hazard tape */
 .hazard-platform {
     background: repeating-linear-gradient(-45deg, #FFC21A 0 8px, #1A1D21 8px 16px);

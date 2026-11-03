@@ -5,18 +5,21 @@ import React, { useEffect } from 'react';
 import { Achievement, achievementManager } from '../../game/systems/achievements';
 import type { Translate } from '../menu/types';
 
-const iconButton = 'pointer-events-auto flex h-11 w-11 items-center justify-center rounded bg-bay-ink/90 text-bay-chalk hover:bg-bay-steel focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard';
+const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard';
+const iconButton = `pointer-events-auto flex h-11 w-11 items-center justify-center rounded bg-bay-ink/90 text-bay-chalk hover:bg-bay-steel ${FOCUS}`;
+// Phone top bar: no plate, small icons, the full bar height to tap
+const smallIconButton = `pointer-events-auto flex h-7 w-8 items-center justify-center text-bay-chalk ${FOCUS}`;
 
-export const HudButtons: React.FC<{ t: Translate; muted: boolean; onToggleMute: () => void; onOpenAchievements: () => void }> = ({ t, muted, onToggleMute, onOpenAchievements }) => (
-    <div className="flex gap-2">
-        <button type="button" onClick={onToggleMute} aria-label={t('hud.sound')} aria-pressed={!muted} className={iconButton}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+export const HudButtons: React.FC<{ t: Translate; muted: boolean; onToggleMute: () => void; onOpenAchievements: () => void; small?: boolean }> = ({ t, muted, onToggleMute, onOpenAchievements, small }) => (
+    <div className={`flex ${small ? '' : 'gap-2'}`}>
+        <button type="button" onClick={onToggleMute} aria-label={t('hud.sound')} aria-pressed={!muted} className={small ? smallIconButton : iconButton}>
+            <svg width={small ? 14 : 20} height={small ? 14 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M11 5L6 9H3v6h3l5 4z" />
                 {muted ? <path d="M16 9l5 6M21 9l-5 6" /> : <path d="M16 9a4 4 0 010 6M19 6a8 8 0 010 12" />}
             </svg>
         </button>
-        <button type="button" onClick={onOpenAchievements} aria-label={t('hud.achievements')} className={iconButton}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <button type="button" onClick={onOpenAchievements} aria-label={t('hud.achievements')} className={small ? smallIconButton : iconButton}>
+            <svg width={small ? 14 : 20} height={small ? 14 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M8 4h8v5a4 4 0 01-8 0z" /><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4M12 13v4M8 20h8" />
             </svg>
         </button>

@@ -11,8 +11,8 @@ export const FlagBanner: React.FC<{ t: Translate; banner: FlagBannerEvent | null
     const text = banner && flagBannerText(t, banner);
     if (!banner || !text) return null;
     return (
-        <div className="pointer-events-none absolute inset-x-0 top-[168px] z-40 flex justify-center px-4">
-            <span key={banner.id} role="status" className="hb-banner px-16 py-1.5 text-center font-display text-[40px] font-black uppercase leading-none tracking-wide sm:text-[60px]"
+        <div className="pointer-events-none absolute inset-x-0 top-[168px] z-40 phone:top-14 flex justify-center px-4">
+            <span key={banner.id} role="status" className="hb-banner px-16 py-1.5 text-center font-display text-[40px] font-black uppercase leading-none tracking-wide sm:text-[60px] phone:px-8 phone:text-2xl"
                 style={{ color: flagBannerColor(banner), background: BAND, WebkitTextStroke: '1.5px #0E1116', paintOrder: 'stroke fill', textShadow: '0 3px 0 rgba(0,0,0,0.6)' }}>
                 {text}
             </span>

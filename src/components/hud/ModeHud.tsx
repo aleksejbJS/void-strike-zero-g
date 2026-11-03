@@ -32,11 +32,11 @@ export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: Pla
     <>
         {s.fightInSec !== null && !s.ended && (
             <div role="status" className="pointer-events-none absolute inset-x-0 top-[28%] z-40 flex flex-col items-center gap-1">
-                <span className="font-display text-6xl font-black text-bay-hazard drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">{t('hud.fightIn', s.fightInSec)}</span>
+                <span className="font-display text-6xl font-black text-bay-hazard phone:text-4xl drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">{t('hud.fightIn', s.fightInSec)}</span>
                 <span className="rounded bg-bay-ink/80 px-2 py-0.5 text-sm text-bay-dust">{t('hud.shieldHint')}</span>
             </div>
         )}
-        <div className={`${PANEL} pointer-events-none absolute left-1/2 top-6 z-40 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-sm`}>
+        <div className={`${PANEL} pointer-events-none absolute left-1/2 top-6 z-40 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-sm phone:top-9 phone:max-w-[60vw] phone:gap-x-2 phone:px-2 phone:py-1 phone:text-[11px]`}>
             <span className="font-semibold text-lime-300">{t('hud.credits', s.credits)}</span>
             <span className="text-bay-dust">{s.betTarget ? t('hud.betPlaced', s.betTarget) : t('hud.betHint')}</span>
             {s.timeLeftSec !== null && !s.ended && <span className="font-semibold text-bay-hazard">{t('hud.roundEnds', formatClock(s.timeLeftSec))}</span>}
@@ -44,7 +44,7 @@ export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: Pla
         </div>
 
         {s.localDead && !s.betTarget && !s.ended && (
-            <div className={`${PANEL} absolute bottom-[200px] left-1/2 z-50 w-[380px] max-w-[90vw] -translate-x-1/2 p-4`}>
+            <div className={`${PANEL} absolute bottom-[200px] left-1/2 z-50 w-[380px] max-w-[90vw] -translate-x-1/2 p-4 phone:bottom-auto phone:top-16 phone:max-h-[70vh] phone:overflow-y-auto phone:p-2.5`}>
                 <div className="mb-2.5 font-display text-xl font-extrabold">{t('hud.placeBet')}</div>
                 <div className="grid grid-cols-2 gap-2">
                     {s.alive.map(p => (
@@ -60,10 +60,10 @@ export const HungerHud: React.FC<{ t: Translate; s: HungerHudState; ranking: Pla
 
         {s.ended && (
             <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
-                <div className={`${PANEL} flex w-[440px] max-w-[90vw] flex-col items-center gap-2 overflow-hidden pb-6`}>
+                <div className={`${PANEL} flex w-[440px] max-w-[90vw] flex-col items-center gap-2 overflow-hidden pb-6 phone:max-h-[92vh] phone:overflow-y-auto phone:gap-1 phone:pb-3`}>
                     <div aria-hidden="true" className="hazard-stripes h-3 w-full" />
                     {s.timeUp && <span className="mt-3 text-sm font-semibold text-bay-hazard">{t('hud.timeUp')}</span>}
-                    <span className={`font-display text-4xl font-black ${s.timeUp ? '' : 'mt-4'}`}>{s.winner ? t('hud.winner', s.winner) : t('hud.noSurvivors')}</span>
+                    <span className={`font-display text-4xl font-black phone:text-2xl ${s.timeUp ? '' : 'mt-4 phone:mt-2'}`}>{s.winner ? t('hud.winner', s.winner) : t('hud.noSurvivors')}</span>
                     {s.restartSec !== null && <span className="text-sm text-bay-dust">{t('hud.nextRound', s.restartSec)}</span>}
                     <div className="mt-2 w-full px-6">
                         <div className="mb-1 font-display text-lg font-extrabold">{t('hud.finalRanking')}</div>
@@ -91,22 +91,22 @@ export interface GunGameStatus {
 export const GunGameHud: React.FC<{ t: Translate; status: GunGameStatus | null; winner: string | null; reward: Reward | null }> = ({ t, status, winner, reward }) => (
     <>
         {status && (
-            <div className={`${PANEL} pointer-events-none absolute left-1/2 top-6 z-40 flex w-[300px] -translate-x-1/2 flex-col gap-1.5 px-4 py-3`}>
+            <div className={`${PANEL} pointer-events-none absolute left-1/2 top-6 z-40 flex w-[300px] -translate-x-1/2 flex-col gap-1.5 px-4 py-3 phone:top-9 phone:w-[200px] phone:gap-1 phone:px-2.5 phone:py-1.5`}>
                 <div className="flex items-baseline justify-between">
-                    <span className="font-display text-2xl font-black">{status.weapon}</span>
-                    <span className="text-[13px] text-bay-dust">{t('hud.gunLevel', status.level, status.total)}</span>
+                    <span className="font-display text-2xl font-black phone:text-sm">{status.weapon}</span>
+                    <span className="text-[13px] text-bay-dust phone:text-[10px]">{t('hud.gunLevel', status.level, status.total)}</span>
                 </div>
                 <div aria-hidden="true" className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${status.perLevel}, minmax(0, 1fr))` }}>
-                    {Array.from({ length: status.perLevel }, (_, i) => <span key={i} className={`h-2 ${i < status.progress ? 'bg-bay-hazard' : 'bg-bay-plate'}`} />)}
+                    {Array.from({ length: status.perLevel }, (_, i) => <span key={i} className={`h-2 phone:h-1 ${i < status.progress ? 'bg-bay-hazard' : 'bg-bay-plate'}`} />)}
                 </div>
-                <span className="text-[13px] text-bay-dust">{t('hud.gunKills', status.progress, status.perLevel)}</span>
+                <span className="text-[13px] text-bay-dust phone:hidden">{t('hud.gunKills', status.progress, status.perLevel)}</span>
             </div>
         )}
         {winner && (
             <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
                 <div className={`${PANEL} flex flex-col items-center gap-2 overflow-hidden pb-6`}>
                     <div aria-hidden="true" className="hazard-stripes h-3 w-full" />
-                    <span className="mt-4 px-8 font-display text-4xl font-black">{t('hud.winner', winner)}</span>
+                    <span className="mt-4 px-8 font-display text-4xl font-black phone:mt-2 phone:text-2xl">{t('hud.winner', winner)}</span>
                     <span className="text-sm text-bay-dust">{t('hud.gunComplete')}</span>
                     {reward && <div className="mt-2 w-full"><RewardPanel t={t} reward={reward} /></div>}
                 </div>
