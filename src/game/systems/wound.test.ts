@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameMode, Team, WeaponType, Entity } from '../../types';
 import { createMockState, createMockPlayer } from '../../test/mocks';
 import { gameEvents, GameEvent } from './events';
@@ -9,7 +9,7 @@ import { healWound } from './wound';
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
 beforeEach(() => { events = []; unsubscribe = gameEvents.on(e => events.push(e)); });
-afterEach(() => unsubscribe());
+afterEach(() => { unsubscribe(); vi.useRealTimers(); });
 
 const limbs = () => events.flatMap(e => (e.type === 'LIMB' ? [e] : []));
 
@@ -141,6 +141,9 @@ describe('railgun wound', () => {
     it('the round-start shield still blocks the beam', () => {
         const { state, shooter, target } = duel(100, 100);
         state.mode = GameMode.HUNGER_GAMES;
+        // The shield is measured against the clock inside applyDamage: freeze it so a slow machine cannot outlast the shield
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(1_000_000);
         state.hungerRoundStartedAt = Date.now();
         beam(state, shooter);
         expect(target.wound).toBeUndefined();

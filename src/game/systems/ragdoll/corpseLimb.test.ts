@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameMode, Platform } from '../../../types';
 import { createMockState } from '../../../test/mocks';
 import type { DeathEvent, LimbEvent } from '../events';
@@ -19,7 +19,12 @@ const limb = (extra: Partial<LimbEvent> = {}): LimbEvent => ({
 
 const run = (c: Corpse, ticks: number) => { for (let i = 0; i < ticks; i++) stepCorpse(c, [FLOOR]); };
 
-describe('addLimb', () => {
+// The launch rolls its speeds with Math.random. Each test runs at the lowest and at the highest roll
+// (the two ends of every range it draws from) instead of leaving the result to luck.
+describe.each([['lowest', 0], ['highest', 0.999999]])('addLimb at the %s random roll', (_name, roll) => {
+    beforeEach(() => { vi.spyOn(Math, 'random').mockReturnValue(roll); });
+    afterEach(() => { vi.restoreAllMocks(); });
+
     it('adds one torn-leg corpse: a gib that is only the back leg', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         const leg = addLimb(state, limb());
@@ -41,12 +46,10 @@ describe('addLimb', () => {
 
     it('is thrown like a shot: along the beam, away from where it came from', () => {
         const state = createMockState(GameMode.DEATHMATCH);
-        for (let i = 0; i < 20; i++) {
-            const fromLeft = addLimb(state, limb({ from: { x: -300, y: TOP - 40 } }));
-            const fromRight = addLimb(state, limb({ from: { x: 300, y: TOP - 40 } }));
-            expect(fromLeft.points.knB.x - fromLeft.points.knB.px).toBeGreaterThan(1);
-            expect(fromRight.points.knB.x - fromRight.points.knB.px).toBeLessThan(-1);
-        }
+        const fromLeft = addLimb(state, limb({ from: { x: -300, y: TOP - 40 } }));
+        const fromRight = addLimb(state, limb({ from: { x: 300, y: TOP - 40 } }));
+        expect(fromLeft.points.knB.x - fromLeft.points.knB.px).toBeGreaterThan(1);
+        expect(fromRight.points.knB.x - fromRight.points.knB.px).toBeLessThan(-1);
     });
 
     it('carries the fighter velocity from before the knockback', () => {

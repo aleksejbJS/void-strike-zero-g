@@ -5,6 +5,8 @@ import { updatePhysics } from './physics';
 import { resetHungerRound } from '../net/roomSetup';
 import { tickBleeding } from './bleeding';
 
+const NOW = 1_000_000; // a fixed clock: nothing here may depend on the wall clock
+
 /** A fighter wounded by 'shooter' with the given health and armor, alone in a fresh state. */
 const wounded = (health = 10, armor = 0, mode = GameMode.DEATHMATCH) => {
     const state = createMockState(mode);
@@ -52,7 +54,7 @@ describe('tickBleeding', () => {
 
     it('pauses when the round is decided', () => {
         const { state, p } = wounded(10, 0, GameMode.HUNGER_GAMES);
-        state.hungerRoundEndsAt = Date.now() + 5000;
+        state.hungerRoundEndsAt = NOW + 5000;
         bleed(state, 120);
         expect(p.health).toBe(10);
         expect(p.wound).toBeDefined();
@@ -81,7 +83,7 @@ describe('medkit', () => {
 describe('round reset', () => {
     it('clears the wound', () => {
         const { state, p } = wounded(10, 0, GameMode.HUNGER_GAMES);
-        resetHungerRound(state, Date.now());
+        resetHungerRound(state, NOW);
         expect(p.wound).toBeUndefined();
     });
 });
