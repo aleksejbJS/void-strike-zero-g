@@ -6,6 +6,7 @@ export const GROUND_FRICTION = 0.85;       // harder stop on ground (was 0.9)
 export const AIR_RESISTANCE = 0.995;       // longer arcs in air (was 0.99)
 export const MOVE_SPEED = 0.70;            // with GROUND_FRICTION 0.85 → runs ~240 px/s
 export const CROUCH_SPEED = 0.40;          // ~135 px/s
+export const PRONE_SPEED = 0.18;           // crawling, ~60 px/s
 export const WALK_INPUT = 0.5;             // a half-pushed touch stick walks (the Walk key): ~120 px/s
 export const JUMP_FORCE = -14;
 export const DOUBLE_JUMP_FORCE = -10;

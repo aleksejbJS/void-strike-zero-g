@@ -15,6 +15,7 @@ import { drawAimLine } from '../game/render/aimLine';
 import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim } from '../game/input/sticks';
 import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
 import { isTouchDevice } from './fullscreen';
+import { clampProneAim } from '../game/systems/stance';
 import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
@@ -52,7 +53,7 @@ import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, 
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
 
-const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Walk: false };
+const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Walk: false, KeyZ: false };
 
 
 // Deathmatch-style modes use the chosen map; objective modes are built for the default map
@@ -475,7 +476,7 @@ export default function GameCanvas() {
                 const direction = shownAim;
                 const camera = gameState.current.camera;
                 const center = { x: local.pos.x, y: local.pos.y - local.height / 2 };
-                const target = worldToScreen(aimPoint(center, direction), camera, view);
+                const target = worldToScreen(clampProneAim(local, aimPoint(center, direction)), camera, view);
                 mouse.current.x = target.x;
                 mouse.current.y = target.y;
                 drawAimLine(aimLine, aimingRef.current ? worldToScreen(center, camera, view) : null, aimingRef.current ? target : null);

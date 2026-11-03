@@ -16,6 +16,7 @@ const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz fram
 const cyclePx = (stride: number) => 4 * stride * RIG_SCALE; // ground covered by one full step cycle
 const MAX_PHASE_SPEED = 24;      // rad/s, keeps very fast slides from blurring the legs
 const MOVE_THRESHOLD = 0.5;      // slower than this on the ground is standing
+const CRAWL_STRIDE = 3;          // crawling: tiny shuffles
 const RUN_SPEED = 3;             // faster than this (~180 px/s) runs, slower walks; a run is ~4
 const RECOIL_MS = 160;
 const RECOIL_DECAY_MS = 35;
@@ -36,7 +37,8 @@ interface AnimMemory {
 export const heldWeaponKey = (type: string) => `held_${type.toLowerCase()}`;
 
 /** Picked from speed, not input, so other players see a walk or a run the same way. */
-export const stateOf = (p: Pick<Entity, 'isCrouching' | 'isGrounded' | 'vel' | 'jetpackOn'>): FighterState => {
+export const stateOf = (p: Pick<Entity, 'isCrouching' | 'isProne' | 'isGrounded' | 'vel' | 'jetpackOn'>): FighterState => {
+    if (p.isProne) return 'prone';
     if (p.isCrouching) return 'crouch';
     if (p.isGrounded) {
         const speed = Math.abs(p.vel.x);
@@ -65,8 +67,8 @@ export class FighterAnimator {
         const { facing, local } = faceAim(aim);
         const state = stateOf(p);
         const moveDir = Math.sign(p.vel.x) * facing || 1;
-        if (state === 'run' || state === 'walk') {
-            const stride = state === 'run' ? STRIDE : WALK_STRIDE;
+        if (state === 'run' || state === 'walk' || (state === 'prone' && Math.abs(p.vel.x) > MOVE_THRESHOLD / 2)) {
+            const stride = state === 'run' ? STRIDE : state === 'walk' ? WALK_STRIDE : CRAWL_STRIDE;
             const rate = (Math.abs(p.vel.x) * VEL_TO_PX_PER_S / cyclePx(stride)) * Math.PI * 2;
             m.phase += Math.min(rate, MAX_PHASE_SPEED) * dt;
         }

@@ -7,6 +7,7 @@ import {
     GRAVITY,
     MOVE_SPEED,
     CROUCH_SPEED,
+    PRONE_SPEED,
     GROUND_FRICTION,
     AIR_RESISTANCE,
     AIR_STRAFE_FORCE,
@@ -50,7 +51,7 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
 
     // --- 2. Player/Bot horizontal input ---
     if (p.isGrounded) {
-        const speed = p.isCrouching ? CROUCH_SPEED : MOVE_SPEED;
+        const speed = p.isProne ? PRONE_SPEED : p.isCrouching ? CROUCH_SPEED : MOVE_SPEED;
         p.vel.x += input.inputX * speed;
     } else if (!input.isFlying) {
         // Air strafe — weak control without jetpack

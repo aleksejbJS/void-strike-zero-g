@@ -8,10 +8,12 @@ import { FighterAnimator } from './fighter/fighterAnimator';
 import { RIG_SCALE, upperPoint } from './fighter/fighterPose';
 import { drawGrappleRope } from './grappleRope';
 import { drawCarriedFlag } from './carriedFlag';
+import { clampProneAngle } from '../systems/stance';
 
 // Height of the weapon above the feet, used to aim from the right spot on screen
 const AIM_HEIGHT = 49;
 const AIM_HEIGHT_CROUCHED = 29;
+const AIM_HEIGHT_PRONE = 8;
 
 const views = new WeakMap<Container, FighterView>();
 const animator = new FighterAnimator();
@@ -33,8 +35,9 @@ export const forgetPlayerVisual = (id: string) => animator.forget(id);
 const aimOf = (p: Entity, camera: Vector2, mouse: Vector2, screenW: number, screenH: number, isLocal: boolean) => {
     if (isLocal) {
         const shoulderX = p.pos.x - camera.x + screenW / 2;
-        const shoulderY = p.pos.y - (p.isCrouching ? AIM_HEIGHT_CROUCHED : AIM_HEIGHT) - camera.y + screenH / 2;
-        return Math.atan2(mouse.y - shoulderY, mouse.x - shoulderX);
+        const shoulderY = p.pos.y - (p.isProne ? AIM_HEIGHT_PRONE : p.isCrouching ? AIM_HEIGHT_CROUCHED : AIM_HEIGHT) - camera.y + screenH / 2;
+        const angle = Math.atan2(mouse.y - shoulderY, mouse.x - shoulderX);
+        return p.isProne ? clampProneAngle(angle) : angle; // the simulation clamps the shots the same way
     }
     // Other humans: aim direction comes from the server; bots look where they move
     if (p.aim !== undefined && Number.isFinite(p.aim)) return p.aim;

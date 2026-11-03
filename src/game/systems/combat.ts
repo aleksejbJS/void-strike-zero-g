@@ -11,6 +11,7 @@ import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
 import { emitFlag } from './flagEvents';
+import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 
 // --- Teams ---
@@ -196,8 +197,8 @@ export const createExplosion = (state: GameState, pos: Vector2, ownerId: string,
 
 // --- Weapon Firing ---
 
-/** Where a fighter's shots start (crouching lowers the gun). */
-export const shotOrigin = (p: Entity): Vector2 => ({ x: p.pos.x, y: p.pos.y - 50 + (p.isCrouching ? 15 : 0) });
+/** Where a fighter's shots start (crouching and lying lower the gun). */
+export const shotOrigin = (p: Entity): Vector2 => ({ x: p.pos.x, y: p.pos.y - muzzleHeight(p) });
 
 export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
     if (p.weapon.ammo <= 0) return;

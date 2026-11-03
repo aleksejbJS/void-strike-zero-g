@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { solveLimb } from './ik';
 import { bodyExtents, FighterState, RIG_SCALE, solvePose, upperPoint } from './fighterPose';
-import { HITBOX } from './fighterStyle';
+import { HEAD_R, HITBOX } from './fighterStyle';
 import { HELMETS } from '../../build/buildParts';
 import { gripPoints } from './weaponGrips';
 import { faceAim, stateOf } from './fighterAnimator';
@@ -140,5 +140,20 @@ describe('stateOf', () => {
     it('flies or falls in the air whatever the speed', () => {
         expect(stateOf(fighter(2, { isGrounded: false, jetpackOn: true }))).toBe('fly');
         expect(stateOf(fighter(2, { isGrounded: false }))).toBe('fall');
+    });
+});
+
+describe('lying down', () => {
+    it('fits the 26 px prone hitbox and keeps the head over it', () => {
+        for (const phase of [0, 1, 2, 3, 4, 5]) {
+            const p = pose('prone', { phase });
+            expect(-(p.head.y - HEAD_R) * RIG_SCALE).toBeLessThan(HITBOX.prone + HITBOX.margin);
+            expect(Math.abs(p.head.x * RIG_SCALE)).toBeLessThan(HITBOX.halfW + HITBOX.margin);
+            expect(p.frontLeg.end.y).toBeLessThanOrEqual(0);
+        }
+    });
+
+    it('is the state of a lying fighter', () => {
+        expect(stateOf({ isCrouching: false, isProne: true, isGrounded: true, jetpackOn: false, vel: { x: 2, y: 0 } })).toBe('prone');
     });
 });

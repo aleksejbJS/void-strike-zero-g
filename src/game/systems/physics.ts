@@ -13,6 +13,7 @@ import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
 import { updateCorpses } from './ragdoll/corpses';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
+import { applyStance, clampProneAim } from './stance';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
@@ -140,14 +141,15 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             const pHookPressed = remote ? remote.hookPressed : isLocal && hookPressed;
 
             controls = readControls(p, pKeys);
-            p.isCrouching = controls.wantsDown; // before firing: crouch lowers the muzzle
+            applyStance(p, controls); // before firing: crouching and lying lower the muzzle
 
             // Local mouse is in screen coords; remote inputs already carry world coords
-            const aim = remote
+            const rawAim = remote
                 ? remote.mouse
                 : isLocal
                     ? { x: mouse.x - screenW / 2 + state.camera.x, y: mouse.y - screenH / 2 + state.camera.y }
                     : null;
+            const aim = rawAim && clampProneAim(p, rawAim);
             if (aim) updateAim(p, aim);
 
             if (aim && pMousePressed && now - p.lastFired > p.weapon.fireRate) {
@@ -172,7 +174,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             // Bots press the same controls a player has
             const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
             updateGrapple(state, p, bot.hook, bot.hookAim ?? p.pos);
-            controls = { inputX: bot.inputX, wantsJump: bot.reel, wantsDown: false, isFlying: bot.isFlying };
+            controls = { inputX: bot.inputX, wantsJump: bot.reel, wantsDown: false, wantsProne: false, isFlying: bot.isFlying };
         }
 
         // Force Pipeline — unified movement (gravity, input, jetpack, grapple, friction, speed caps)
