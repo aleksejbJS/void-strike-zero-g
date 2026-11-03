@@ -36,14 +36,16 @@ export const canSee = (state: GameState, bot: Entity, other: Entity, now = Date.
     && botHasLineOfSight(state, muzzleOf(bot), centerOf(other))
     && !smokeHides(state, muzzleOf(bot), centerOf(other), now);
 
-/** Nearest enemy the bot can see; if none is visible, the nearest one to head towards. */
+/** Nearest enemy the bot can see; if none is visible, the nearest one to head towards,
+ *  preferring one smoke does not hide (a wall does not hide where it is). */
 const pickTarget = (state: GameState, bot: Entity, now: number): { target: Entity | null; visible: boolean } => {
     const enemies = state.players
         .filter(o => !o.dead && isEnemy(bot, o))
         .map(o => ({ o, d: distance(bot.pos, o.pos) }))
         .sort((a, b) => a.d - b.d);
     const visible = enemies.find(({ o }) => canSee(state, bot, o, now));
-    return { target: (visible ?? enemies[0])?.o ?? null, visible: !!visible };
+    const unhidden = visible ? undefined : enemies.find(({ o }) => !smokeHides(state, muzzleOf(bot), centerOf(o), now));
+    return { target: (visible ?? unhidden ?? enemies[0])?.o ?? null, visible: !!visible };
 };
 
 export const senseTarget = (state: GameState, bot: Entity, mem: BotMemory, now: number): Entity | null => {

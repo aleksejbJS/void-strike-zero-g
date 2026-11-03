@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Team } from '../../types';
 import { makeState, makeBot } from '../../test/botFixtures';
-import { canSee } from './botSenses';
+import { canSee, senseTarget } from './botSenses';
+import { clearBotMemory, getBotMemory } from './botMemory';
 import { SMOKE_DURATION_MS, spawnSmoke } from './smoke';
 
 // Open floor, bot and enemy 300 px apart (pos = centre-x, bottom-y)
@@ -45,5 +46,41 @@ describe('canSee with smoke', () => {
     spawnSmoke(state, { x: 150, y: -40 }, NOW);
     expect(canSee(state, bot, enemy, NOW + 5000)).toBe(false); // mid-life, still thick
     expect(canSee(state, bot, enemy, NOW + SMOKE_DURATION_MS)).toBe(true);
+  });
+});
+
+describe('fallback target with nobody in sight', () => {
+  // Bot at 0; enemy A 200 px right, enemy B 600 px left; walls on both sides hide both
+  const setupTwo = () => {
+    clearBotMemory();
+    const state = makeState();
+    const bot = makeBot('bot1', Team.RED, 0, 0) as any;
+    const near = makeBot('near', Team.BLUE, 200, 0) as any;
+    const far = makeBot('far', Team.BLUE, -600, 0) as any;
+    state.players = [bot, near, far];
+    state.platforms = [
+      { id: 'wallR', x: 100, y: -200, w: 20, h: 300, color: '#000' },
+      { id: 'wallL', x: -120, y: -200, w: 20, h: 300, color: '#000' },
+    ];
+    return { state, bot, near, far, mem: getBotMemory(bot) };
+  };
+
+  it('with no smoke heads for the nearest enemy', () => {
+    const { state, bot, mem } = setupTwo();
+    expect(senseTarget(state, bot, mem, NOW)?.id).toBe('near');
+  });
+
+  it('prefers a wall-hidden enemy over a nearer one hidden in smoke', () => {
+    const { state, bot, mem } = setupTwo();
+    spawnSmoke(state, { x: 200, y: BODY_CENTER_Y }, NOW);
+    expect(senseTarget(state, bot, mem, NOW)?.id).toBe('far');
+    expect(mem.targetVisible).toBe(false);
+  });
+
+  it('falls back to a smoke-hidden enemy when it is the only one', () => {
+    const { state, bot, far, mem } = setupTwo();
+    state.players = state.players.filter((p: any) => p !== far);
+    spawnSmoke(state, { x: 200, y: BODY_CENTER_Y }, NOW);
+    expect(senseTarget(state, bot, mem, NOW)?.id).toBe('near');
   });
 });
