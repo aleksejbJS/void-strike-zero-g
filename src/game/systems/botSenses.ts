@@ -5,6 +5,7 @@ import { BOT_AIM_DISTANCE } from '../../constants';
 import { distance, normalize, checkPointInRect } from '../utils/math';
 import { isTeammate } from './combat';
 import { BotMemory, reactionDelay } from './botMemory';
+import { smokeHides } from './smoke';
 
 // Re-picking a target only this often also works as the bot's reaction time
 const BOT_SCAN_INTERVAL_MS = 200;
@@ -29,8 +30,11 @@ export const botHasLineOfSight = (state: GameState, from: Vector2, to: Vector2) 
     return false;
 };
 
-export const canSee = (state: GameState, bot: Entity, other: Entity) =>
-    distance(bot.pos, other.pos) < BOT_AIM_DISTANCE && botHasLineOfSight(state, muzzleOf(bot), centerOf(other));
+/** Walls and smoke both block sight; a bot standing in smoke still sees out of it. */
+export const canSee = (state: GameState, bot: Entity, other: Entity, now = Date.now()) =>
+    distance(bot.pos, other.pos) < BOT_AIM_DISTANCE
+    && botHasLineOfSight(state, muzzleOf(bot), centerOf(other))
+    && !smokeHides(state, muzzleOf(bot), centerOf(other), now);
 
 /** Nearest enemy the bot can see; if none is visible, the nearest one to head towards. */
 const pickTarget = (state: GameState, bot: Entity): { target: Entity | null; visible: boolean } => {
