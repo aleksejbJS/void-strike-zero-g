@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import { AccountProvider } from '../../account/AccountProvider';
 import { UIProvider } from '../../store/uiStore';
 import CharacterSetup from './CharacterSetup';
 
@@ -12,7 +13,7 @@ const setItem = localStorage.setItem as Mock;
 const stampWrites = () => setItem.mock.calls.filter(([key]) => key === 'fighterLookSavedAt').length;
 
 const startMatch = (change?: () => void) => {
-    render(<UIProvider><CharacterSetup onContinue={vi.fn()} onBack={vi.fn()} /></UIProvider>);
+    render(<UIProvider><AccountProvider api={null}><CharacterSetup onContinue={vi.fn()} onBack={vi.fn()} /></AccountProvider></UIProvider>);
     change?.();
     fireEvent.click(screen.getByRole('button', { name: 'Start match' }));
     cleanup();

@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { SKINS } from '../../constants';
 import { MapId, NetworkMode } from '../../types';
 import { saveLookIfChanged } from '../../account/localSnapshot';
+import { notifyProgressChanged } from '../../account/progressEvents';
+import { useAccount } from '../../account/useAccount';
 import { loadXp } from '../../game/build/progress';
 import { levelForXp } from '../../game/build/unlocks';
 import { useUIStore } from '../../store/uiStore';
@@ -13,9 +15,11 @@ import { CharacterPreview } from './CharacterPreview';
 import { BuilderTabs } from './builder/BuilderTabs';
 import { XpBar } from './builder/XpBar';
 import { useFighterDraft } from './builder/useFighterDraft';
+import { AccountModal } from './account/AccountModal';
+import { NameField } from './account/NameField';
+import { useStartGate } from './account/useStartGate';
 import { enterFullscreen, isTouchDevice } from '../fullscreen';
 
-const MAX_NAME = 12;
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
 const Chevron: React.FC<{ dir: 'l' | 'r' }> = ({ dir }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -23,7 +27,9 @@ const Chevron: React.FC<{ dir: 'l' | 'r' }> = ({ dir }) => (
     </svg>
 );
 
-const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> = ({ onContinue, onBack }) => {
+interface Props { onContinue: () => void; onBack: () => void; onOpenProfile?: () => void }
+
+const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => {
     const { state, actions } = useUIStore();
     const { t, language } = useTranslation();
     const [name, setName] = useState(state.playerName);
@@ -37,15 +43,16 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
     });
     const { preset, build, colors } = draft;
 
-    const start = () => {
+    const start = (playerName: string) => {
         if (isTouchDevice()) void enterFullscreen(); // hides the browser bar; needs this tap
         // The match reads the saved build when it starts; a changed look is also stamped for the cloud merge
-        saveLookIfChanged({ build, skinId: preset.id, colors: { ...colors, player: colors.torso } });
+        if (saveLookIfChanged({ build, skinId: preset.id, colors: { ...colors, player: colors.torso } })) notifyProgressChanged();
         actions.selectSkin(preset.id);
-        actions.setPlayerCustomization(name.trim() || 'Anonymous', colors);
+        actions.setPlayerCustomization(playerName, colors);
         actions.startGame(state.selectedMode);
         onContinue();
     };
+    const gate = useStartGate(name, start);
 
     const mode = MODE_INFO[language][state.selectedMode].name;
     const mapLabel = t(state.selectedMap === MapId.TUNNELS ? 'hb.mapTunnels' : state.selectedMap === MapId.HUNGER ? 'hb.mapHunger' : 'hb.mapDefault').toLowerCase();
@@ -89,24 +96,27 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
                     </div>
 
                     <div className="flex min-w-0 flex-col gap-5 lg:h-full lg:min-h-0 short:gap-4 phone:h-full phone:min-h-0 phone:gap-2">
-                        <div className="flex flex-col gap-2 phone:flex-row phone:items-center">
-                            <label htmlFor="setup-name" className="font-display text-2xl font-extrabold short:text-xl phone:text-base">{t('cs.name')}</label>
-                            <input id="setup-name" value={name} maxLength={MAX_NAME} onChange={e => setName(e.target.value.slice(0, MAX_NAME))}
-                                className="h-[54px] rounded border-2 border-bay-edge bg-bay-panel px-4 text-xl font-semibold text-bay-chalk focus:border-bay-hazard focus:outline-none short:h-[46px] phone:h-8 phone:min-w-0 phone:flex-1 phone:px-2 phone:text-sm" />
-                            <span className="text-[13px] text-bay-dust phone:hidden">{t('cs.nameHint', name.length, MAX_NAME)}</span>
-                        </div>
+                        <NameField name={name} onName={setName} busy={gate.checking} takenName={gate.takenName}
+                            onOpenModal={gate.openModal} onOpenProfile={onOpenProfile} />
 
                         <BuilderTabs build={build} colors={colors} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
 
                         <div className="mt-auto flex shrink-0 gap-3">
                             <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel short:h-[60px] phone:hidden ${focusRing}`}>{t('cs.back')}</button>
-                            <button type="button" onClick={start} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] short:h-[60px] short:text-[28px] phone:h-10 phone:text-xl ${focusRing}`}>{startLabel}</button>
+                            <button type="button" onClick={gate.requestStart} disabled={gate.checking} className={`h-[72px] flex-grow rounded bg-bay-hazard font-display text-[34px] font-black text-bay-ink hover:bg-[#FFD24D] disabled:cursor-wait disabled:opacity-70 short:h-[60px] short:text-[28px] phone:h-10 phone:text-xl ${focusRing}`}>{startLabel}</button>
                         </div>
                     </div>
                 </main>
             </div>
+            {gate.modal && <AccountModal initialTab={gate.modal.tab} initialNickname={gate.modal.nickname} onClose={gate.closeModal} />}
         </div>
     );
+};
+
+const CharacterSetup: React.FC<Props> = props => {
+    const { nickname } = useAccount();
+    // A login rewrites the saved look and XP under the screen: the editor starts over from what is saved now
+    return <SetupScreen key={nickname ?? 'guest'} {...props} />;
 };
 
 export default CharacterSetup;

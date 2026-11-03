@@ -6,8 +6,9 @@ import { ObjectiveKeys, objectiveStrings } from './objectiveStrings';
 import { MatchKeys, matchStrings } from './matchStrings';
 import { BuilderKeys, builderStrings } from './builderStrings';
 import { RewardKeys, rewardStrings } from './rewardStrings';
+import { AccountKeys, accountStrings } from './accountStrings';
 
-export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys {
+export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys, AccountKeys {
   // Menu
   'menu.title': string;
   'menu.deploy': string;
@@ -101,6 +102,7 @@ export const translations: Record<Language, TranslationKeys> = {
     ...matchStrings.en,
     ...builderStrings.en,
     ...rewardStrings.en,
+    ...accountStrings.en,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'DEPLOY',
@@ -192,6 +194,7 @@ export const translations: Record<Language, TranslationKeys> = {
     ...matchStrings.ru,
     ...builderStrings.ru,
     ...rewardStrings.ru,
+    ...accountStrings.ru,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'СТАРТ',
