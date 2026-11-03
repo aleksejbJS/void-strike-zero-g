@@ -32,6 +32,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.14', date: null, points: [
+            'Online, shots now leave the gun: bullets and rockets used to appear a little way ahead of the fighter who fired them, and further still for other players',
+        ] },
         { version: '0.4.12', date: 'Nov 3, 2026', groups: [
             { title: 'Deaths', comparisons: [{ caption: 'A machine-gun kill and a rocket kill', ...DEATH }], points: [
                 'A killed fighter no longer breaks into loose pieces: they go limp and fall as one body in their own look, tumble and land on the platforms',
@@ -151,6 +154,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.14', date: null, points: [
+            'В игре по сети выстрелы вылетают из оружия: раньше пули и ракеты появлялись чуть впереди стрелявшего бойца, а у других игроков — ещё дальше',
+        ] },
         { version: '0.4.12', date: '03.11.2026', groups: [
             { title: 'Гибель', comparisons: [{ caption: 'Убийство из пулемёта и ракетой', ...DEATH }], points: [
                 'Убитый боец больше не разваливается на отдельные куски: он обмякает и падает целым телом в своём облике, кувыркается и ложится на платформу',

@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.14 (unreleased)
+
+### 🐛 Fixes
+- Online, projectiles appeared ahead of the gun: a client first sees a projectile a snapshot or more after it was fired (≈18–20 px per tick × round trip + up to 33 ms between snapshots), and other fighters are drawn `INTERP_DELAY_MS` (100 ms) in the past. `net/projectileCatchUp.ts` now draws each new projectile from its shooter's `shotOrigin` as seen on this screen and closes the gap linearly over 12 ticks (0.1 s); purely visual, the server still decides hits. Projectiles more than 400 px from their shooter's gun when first seen (in flight when you joined) are left alone
+
 ## Version 0.4.12 (2026-11-03)
 
 ### 💀 Deaths
