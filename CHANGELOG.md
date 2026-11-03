@@ -12,7 +12,7 @@
 
 ### 🐛 Fixes
 - Online, projectiles appeared ahead of the gun: a client first sees a projectile a snapshot or more after it was fired (≈18–20 px per tick × round trip + up to 33 ms between snapshots), and other fighters are drawn `INTERP_DELAY_MS` (100 ms) in the past. `net/projectileCatchUp.ts` now draws each new projectile from its shooter's `shotOrigin` as seen on this screen and closes the gap linearly over 12 ticks (0.1 s); purely visual, the server still decides hits. Projectiles more than 400 px from their shooter's gun when first seen (in flight when you joined) are left alone
-## Version 0.4.13 (unreleased)
+## Version 0.4.13 (2026-11-03)
 
 ### 📱 Phone HUD and Touch Controls
 - Touch devices get their own HUD (`components/hud/mobile/*`, spec: `docs/plans/2026-11-03-mobile-hud-spec.md`, mockup D on the Mobile HUD canvas) instead of the desktop pieces, which are sized in fixed pixels and overlapped on a ~640 × 290 landscape phone (the old jetpack / hook buttons sat 230 px up and left the screen)

@@ -39,7 +39,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         { version: '0.4.14', date: 'Nov 3, 2026', points: [
             'Online, shots now leave the gun: bullets and rockets used to appear a little way ahead of the fighter who fired them, and further still for other players',
         ] },
-        { version: '0.4.13', date: null, groups: [
+        { version: '0.4.13', date: 'Nov 3, 2026', groups: [
             { title: 'Fighters', points: [
                 'Fighters now walk as well as run: a slower pace with shorter steps, which everyone in the match sees',
             ] },
@@ -178,7 +178,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         { version: '0.4.14', date: '03.11.2026', points: [
             'В игре по сети выстрелы вылетают из оружия: раньше пули и ракеты появлялись чуть впереди стрелявшего бойца, а у других игроков — ещё дальше',
         ] },
-        { version: '0.4.13', date: null, groups: [
+        { version: '0.4.13', date: '03.11.2026', groups: [
             { title: 'Бойцы', points: [
                 'Бойцы теперь умеют ходить шагом, а не только бегать: медленнее и короткими шагами, и это видят все в матче',
             ] },
