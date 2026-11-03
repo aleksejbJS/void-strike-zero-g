@@ -1,5 +1,16 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.20 (unreleased)
+
+### 🦵 Railgun Wound
+- A railgun beam on a fighter with any armor (> 0) no longer kills (spec: `docs/plans/2026-11-03-railgun-wound-spec.md`): armor drops to 0, health becomes min(health, `WOUND_HEALTH` = 10) and the fighter loses the back leg (`Entity.wound = { by: shooterId }`, `systems/wound.ts`). A beam on an unarmored fighter still kills, including a wounded one (the wound burned the armor). A wounded fighter who picks up armor and is beamed again is wounded again: armor 0, health min(·, 10), the bleed credited to the newest shooter, no second leg thrown. Only the railgun wounds; the Hunger round-start shield still blocks the beam
+- Bleeding: −`BLEED_HP_PER_S` (1) HP per second, applied per tick (`systems/bleeding.ts`, after the players loop in `updatePhysics`) as plain health loss: no armor, knockback, Hold the Flag bonus or damage number. Paused once the Hunger round is decided (and stops with the match). Any medkit (+25 HP as before) gives the leg back and stops it; death and respawn clear the wound
+- Kill credit (`killCredit`): a wounded fighter who bleeds out, or dies with no other player as the killer (own splash, falling off the map, the Hunger zone), is a railgun kill by the shooter: score, kill-feed line with Railgun, Gun Game progress and the railgun achievement, whatever the shooter holds now. Kills by anyone else count as before. A bled-out body slumps (`fall`)
+- Without the leg: ground speed is `PRONE_SPEED` (~60 px/s, a quarter of a run) in `applyMovement`, so the host and online client prediction agree; jump, jetpack, grapple, crouch, lying down, shooting and carrying a flag are unchanged. `wound` travels in the snapshot
+- Look: a `LIMB` event throws a torn back leg along the beam with a blood burst at the hip (`launchLimb`, `addLimb`); the wounded fighter is drawn with one leg and a bloody stump, hops on one leg while moving on the ground and drips blood from the stump (one drop per 150 ms, client-side, none while hidden in smoke); a wounded fighter's corpse (`DEATH` with `oneLeg`) has one leg whatever killed them
+- HUD: a pulsing red blood drop right after the HP digits while bleeding, on desktop and on the phone top bar (`BleedingDrop`, `hud.bleeding` label)
+- Bots: a wounded flag carrier now also detours for a medkit, and route planning for a wounded bot uses the hop speed, so long walks cost more and jetpack and hook win
+
 ## Version 0.4.19 (2026-11-03)
 
 ### 💨 Smoke Launcher
