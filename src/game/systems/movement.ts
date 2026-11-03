@@ -51,7 +51,8 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
 
     // --- 2. Player/Bot horizontal input ---
     if (p.isGrounded) {
-        const speed = p.isProne ? PRONE_SPEED : p.isCrouching ? CROUCH_SPEED : MOVE_SPEED;
+        // A wounded fighter (lost a leg) can only hop at crawl speed
+        const speed = p.isProne || p.wound ? PRONE_SPEED : p.isCrouching ? CROUCH_SPEED : MOVE_SPEED;
         p.vel.x += input.inputX * speed;
     } else if (!input.isFlying) {
         // Air strafe — weak control without jetpack

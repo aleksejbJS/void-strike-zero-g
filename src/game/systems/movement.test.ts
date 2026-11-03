@@ -96,4 +96,24 @@ describe('Force Pipeline — movement.ts', () => {
         applyMovement(p, noInput);
         expect(Math.abs(p.vel.x)).toBeLessThanOrEqual(8.0);
     });
+
+    it('wounded fighter hops at crawl speed', () => {
+        const wounded = makePlayer({ isGrounded: true, wound: { by: 'railgun' } });
+        const prone = makePlayer({ isGrounded: true, isProne: true });
+        for (let i = 0; i < 200; i++) {
+            applyMovement(wounded, { ...noInput, inputX: 1 });
+            applyMovement(prone, { ...noInput, inputX: 1 });
+        }
+        expect(wounded.vel.x).toBeCloseTo(prone.vel.x, 10);
+    });
+
+    it('wounded fighter still flies', () => {
+        const wounded = makePlayer({ isGrounded: false, wound: { by: 'railgun' } });
+        const healthy = makePlayer({ isGrounded: false });
+        const flyInput = { ...noInput, isFlying: true, wantsJump: true };
+        applyMovement(wounded, flyInput);
+        applyMovement(healthy, flyInput);
+        expect(wounded.vel.y).toBeLessThan(0);
+        expect(wounded.vel.y).toBeCloseTo(healthy.vel.y, 10);
+    });
 });
