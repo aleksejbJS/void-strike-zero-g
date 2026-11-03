@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { botHasLineOfSight, updateBotAI, clearBotMemory } from './bot';
+import { chooseGoal } from './botGoals';
+import { getBotMemory } from './botMemory';
+import { buildNavGraph } from './botNavGraph';
+import { baseFlagPos } from '../data/level';
 import { GameMode, Team, ItemType } from '../../types';
 import { makeState, makeBot } from '../../test/botFixtures';
 
@@ -119,5 +123,27 @@ describe('updateBotAI', () => {
     state.players = [bot as any, makeBot('enemy', Team.NONE, 600, 400) as any];
 
     expect(updateBotAI(bot as any, state, 10_000, noFire).isFlying).toBe(false);
+  });
+});
+
+describe('chooseGoal with a medkit', () => {
+  const carrierState = (health: number, wounded: boolean) => {
+    const state = makeState();
+    state.mode = GameMode.CTF;
+    state.platforms = [{ id: 'floor', x: -5000, y: 0, w: 10000, h: 200, color: '#000' }];
+    const bot = { ...makeBot('bot1', Team.BLUE, 0, 0), health, hasFlag: Team.RED, ...(wounded ? { wound: { by: 'shooter' } } : {}) };
+    state.players = [bot as any];
+    state.pickups = [{ id: 'hp', type: ItemType.HEALTH, pos: { x: -500, y: 0 }, active: true, respawnTime: 0, value: 50 }];
+    return { state, bot };
+  };
+  const goalOf = ({ state, bot }: ReturnType<typeof carrierState>) =>
+    chooseGoal(state, bot as any, getBotMemory(bot as any), null, buildNavGraph(state.platforms), 10_000).moveTarget;
+
+  it('wounded flag carrier goes for a medkit', () => {
+    expect(goalOf(carrierState(10, true))).toEqual({ x: -500, y: 0 });
+  });
+
+  it('a hurt flag carrier with both legs still heads straight home', () => {
+    expect(goalOf(carrierState(10, false))).toEqual(baseFlagPos(Team.BLUE));
   });
 });

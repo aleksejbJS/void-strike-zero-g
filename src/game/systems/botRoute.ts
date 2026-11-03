@@ -9,6 +9,7 @@ import { BotNav, newBotNav } from './botNavState';
 const REPLAN_MS = 500;
 const BLOCK_MS = 6000;
 const RESPAWN_GAP_MS = 500;
+const WOUNDED_WALK_PX_S = 60; // a one-legged hop (PRONE_SPEED): long walks are not worth it, flying is
 const ENGAGE_RANGE = 30; // px from the take-off point that count as "started the move"
 // How long a move may take once started, before it counts as failed
 const EDGE_LIMIT_MS: Record<NavEdge['kind'], number> = { walk: 2500, drop: 3000, jet: 5000, hook: 7000 };
@@ -64,7 +65,7 @@ export const updateRoute = (state: GameState, bot: Entity, nav: BotNav, graph: N
     const offRoute = nav.path.length > 0 && here !== null && here.id !== nav.path[0].from;
     const due = now >= nav.replanAt || target !== nav.goalNode || offRoute;
     if (!busy && due && (now >= nav.lockedUntil || offRoute)) {
-        nav.path = findPath(graph, { from: here.id, fromX: bot.pos.x, goal, allowed: zoneFilter(state), blocked: activeBlocks(nav, now) });
+        nav.path = findPath(graph, { from: here.id, fromX: bot.pos.x, goal, allowed: zoneFilter(state), blocked: activeBlocks(nav, now), walkPxPerS: bot.wound ? WOUNDED_WALK_PX_S : undefined });
         nav.goalNode = target;
         nav.replanAt = now + REPLAN_MS;
         startEdge(nav);

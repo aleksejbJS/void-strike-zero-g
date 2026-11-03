@@ -104,8 +104,8 @@ export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target
     }
 
     // Low on health: go for a medkit, still shooting back on the way
-    // (a flag carrier heads straight home instead)
-    const medkit = bot.health < LOW_HEALTH && bot.hasFlag === Team.NONE ? nearestPickup(state, bot, ItemType.HEALTH) : null;
+    // (a flag carrier heads straight home instead, unless it is wounded: only a medkit heals that)
+    const medkit = bot.health < LOW_HEALTH && (bot.hasFlag === Team.NONE || bot.wound) ? nearestPickup(state, bot, ItemType.HEALTH) : null;
     if (medkit) {
         mem.state = 'retreat';
         return { moveTarget: medkit.pos, target };

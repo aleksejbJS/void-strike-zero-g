@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Platform, GameMode, MapId } from '../../types';
-import { buildNavGraph, JET_RISE, NavGraph } from './botNavGraph';
+import { buildNavGraph, JET_RISE, NavEdge, NavGraph } from './botNavGraph';
 import { findPath, nodeAt } from './botPathfinder';
 import { getPlatforms } from '../data/level';
 
@@ -46,6 +46,18 @@ describe('bot navigation graph', () => {
         const g = buildNavGraph([FLOOR, plat(0, -2000, 200, 30)]);
         const start = nodeAt(g, { x: 0, y: 1000 })!;
         expect(findPath(g, { from: start.id, goal: { x: 100, y: -2000 } })).toEqual([]); // stays on the floor
+    });
+
+    it('slow walking makes long walks expensive', () => {
+        // Two surfaces; a take-off 960 px down the floor (cheap at a run) or a jet right here (cost 4.5 s)
+        const edges: NavEdge[] = [
+            { from: 0, to: 1, kind: 'walk', cost: 0.05, startX: 1160, endX: 1200 },
+            { from: 0, to: 1, kind: 'jet', cost: 4.5, startX: 200, endX: 250 },
+        ];
+        const g: NavGraph = { nodes: [{ id: 0, x0: 0, x1: 1200, y: 1000 }, { id: 1, x0: 1200, x1: 1500, y: 1000 }], edges, out: [edges, []] };
+        const plan = (walkPxPerS?: number) => findPath(g, { from: 0, fromX: 200, goal: { x: 1400, y: 1000 }, walkPxPerS }).map(e => e.kind);
+        expect(plan()).toEqual(['walk']);       // 960 px at 240 px/s = 4 s: cheaper than the jet
+        expect(plan(60)).toEqual(['jet']);      // 960 px at 60 px/s = 16 s: not worth it
     });
 
     it.each([
