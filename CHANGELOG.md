@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.21 (unreleased)
+
+### 📜 Ad Settings Page Scrolls
+- The ad settings page (`#ads-admin`) could not be scrolled: the game turns page scrolling off (`body { overflow: hidden }` in `index.html`), so on a laptop only the first of the 11 ad places was reachable. The page's `<main>` is now its own scroll container (`h-screen overflow-y-auto`); the game itself is unchanged. Owner-only page, so no player patch note
+
 ## Version 0.4.20 (2026-11-03)
 
 ### 🦵 Railgun Wound
