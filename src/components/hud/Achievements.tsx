@@ -10,8 +10,18 @@ const iconButton = `pointer-events-auto flex h-11 w-11 items-center justify-cent
 // Phone top bar: no plate, small icons, the full bar height to tap
 const smallIconButton = `pointer-events-auto flex h-7 w-8 items-center justify-center text-bay-chalk ${FOCUS}`;
 
-export const HudButtons: React.FC<{ t: Translate; muted: boolean; onToggleMute: () => void; onOpenAchievements: () => void; small?: boolean }> = ({ t, muted, onToggleMute, onOpenAchievements, small }) => (
+/** Show / hide the invite banner; present only while hosting a game that has a link */
+export interface InviteToggle { open: boolean; onToggle: () => void }
+
+export const HudButtons: React.FC<{ t: Translate; muted: boolean; onToggleMute: () => void; onOpenAchievements: () => void; invite?: InviteToggle; small?: boolean }> = ({ t, muted, onToggleMute, onOpenAchievements, invite, small }) => (
     <div className={`flex ${small ? '' : 'gap-2'}`}>
+        {invite && (
+            <button type="button" onClick={invite.onToggle} aria-label={t('hud.inviteButton')} aria-pressed={invite.open} className={small ? smallIconButton : iconButton}>
+                <svg width={small ? 14 : 20} height={small ? 14 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M10 14a4 4 0 006 0l3-3a4 4 0 00-6-6l-1 1" /><path d="M14 10a4 4 0 00-6 0l-3 3a4 4 0 006 6l1-1" />
+                </svg>
+            </button>
+        )}
         <button type="button" onClick={onToggleMute} aria-label={t('hud.sound')} aria-pressed={!muted} className={small ? smallIconButton : iconButton}>
             <svg width={small ? 14 : 20} height={small ? 14 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M11 5L6 9H3v6h3l5 4z" />

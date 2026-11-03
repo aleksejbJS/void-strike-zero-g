@@ -32,6 +32,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.16', date: 'Nov 3, 2026', points: [
+            'The invite link in a game you host can now be closed with ×; the new link button next to sound and achievements brings it back',
+        ] },
         { version: '0.4.15', date: 'Nov 3, 2026', points: [
             'Fighters can lie down: hold Z, or push the move stick down to the edge on a phone. Lying, you are hard to hit, crawl slowly and shoot only forward',
             'A jump gets you back on your feet',
@@ -171,6 +174,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.16', date: '03.11.2026', points: [
+            'Плашку со ссылкой-приглашением в вашей игре теперь можно закрыть крестиком, а вернуть кнопкой-ссылкой рядом со звуком и достижениями',
+        ] },
         { version: '0.4.15', date: '03.11.2026', points: [
             'Бойцы умеют ложиться: держите Z, а на телефоне тяните левый стик вниз до края. Лёжа в вас трудно попасть, вы медленно ползёте и стреляете только вперёд',
             'Прыжок поднимает бойца на ноги',
