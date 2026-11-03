@@ -10,6 +10,7 @@ import { forgetPlayerVisual } from '../../../game/render/playerVisual';
 import { ProjectileView } from '../../../game/render/projectiles/projectileView';
 import { ParticleView } from '../../../game/render/effects/particleView';
 import { BeamView } from '../../../game/render/projectiles/beamView';
+import { SmokeView } from '../../../game/render/effects/smokeView';
 import { STAGE_H, STAGE_W, toStage, VIEW_CENTER, VIEW_SCALE } from './previewWorld';
 
 const OFF_SCREEN = { x: -100, y: -100 }; // the renderer draws a cursor at the mouse
@@ -41,6 +42,7 @@ export const createPreviewRenderer = (app: Application, state: GameState, textur
         decals: new Map(),
         floatingTexts: new Map(),
         beamView: null as BeamView | null,
+        smokeView: null as SmokeView | null,
         textures,
     };
     const look: MapLook = createMapLook({ stage: app.stage, world }, world, { platformLayer, backgroundLayer, cache }, undefined, { ads: false });
