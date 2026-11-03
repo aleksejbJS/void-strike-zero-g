@@ -196,13 +196,15 @@ export const createExplosion = (state: GameState, pos: Vector2, ownerId: string,
 
 // --- Weapon Firing ---
 
+/** Where a fighter's shots start (crouching lowers the gun). */
+export const shotOrigin = (p: Entity): Vector2 => ({ x: p.pos.x, y: p.pos.y - 50 + (p.isCrouching ? 15 : 0) });
+
 export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
     if (p.weapon.ammo <= 0) return;
     p.weapon.ammo--;
     p.lastFired = Date.now();
 
-    const crouchY = p.isCrouching ? 15 : 0;
-    const origin = { x: p.pos.x, y: p.pos.y - 50 + crouchY };
+    const origin = shotOrigin(p);
 
     const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
     const dir = { x: Math.cos(angle), y: Math.sin(angle) };
