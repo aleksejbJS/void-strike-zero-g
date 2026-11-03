@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { SKINS } from '../../constants';
 import { MapId, NetworkMode } from '../../types';
-import { saveBuild } from '../../game/build/buildStorage';
+import { saveLookIfChanged } from '../../account/localSnapshot';
 import { loadXp } from '../../game/build/progress';
 import { levelForXp } from '../../game/build/unlocks';
 import { useUIStore } from '../../store/uiStore';
@@ -39,7 +39,8 @@ const CharacterSetup: React.FC<{ onContinue: () => void; onBack: () => void }> =
 
     const start = () => {
         if (isTouchDevice()) void enterFullscreen(); // hides the browser bar; needs this tap
-        saveBuild(build); // the match reads the saved build when it starts
+        // The match reads the saved build when it starts; a changed look is also stamped for the cloud merge
+        saveLookIfChanged({ build, skinId: preset.id, colors: { ...colors, player: colors.torso } });
         actions.selectSkin(preset.id);
         actions.setPlayerCustomization(name.trim() || 'Anonymous', colors);
         actions.startGame(state.selectedMode);

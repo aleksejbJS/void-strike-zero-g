@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
 import { GameMode, KillMessage, Weapon, WeaponType, NetworkMode, MapId } from '../types';
 import { WEAPONS_DATA } from '../constants';
+import { StoredPlayer, loadStoredPlayer } from './playerStorage';
 
 export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number };
 type ScoresState = { red: number; blue: number };
@@ -46,61 +47,12 @@ interface UIActions {
   selectSkin: (skinId: string) => void;
   selectMode: (mode: GameMode) => void;
   selectMap: (mapId: MapId) => void;
+  reloadPlayer: () => void;
   setNetworkState: (mode: NetworkMode, gameId: string | null) => void;
 }
 
-// Load from localStorage or use defaults
-const loadPlayerName = () => {
-  try {
-    return localStorage.getItem('playerName') || 'Anonymous';
-  } catch { return 'Anonymous'; }
-};
-
-const loadPlayerColor = () => {
-  try {
-    return localStorage.getItem('playerColor') || '#3b82f6';
-  } catch { return '#3b82f6'; }
-};
-
-const loadHeadColor = () => {
-  try {
-    return localStorage.getItem('headColor') || loadPlayerColor();
-  } catch { return loadPlayerColor(); }
-};
-
-const loadTorsoColor = () => {
-  try {
-    return localStorage.getItem('torsoColor') || loadPlayerColor();
-  } catch { return loadPlayerColor(); }
-};
-
-const loadArmColor = () => {
-  try {
-    return localStorage.getItem('armColor') || loadPlayerColor();
-  } catch { return loadPlayerColor(); }
-};
-
-const loadLegColor = () => {
-  try {
-    return localStorage.getItem('legColor') || '#475569';
-  } catch { return '#475569'; }
-};
-
-const loadJetpackColor = () => {
-  try {
-    return localStorage.getItem('jetpackColor') || '#ef4444';
-  } catch { return '#ef4444'; }
-};
-
-const loadSkin = () => {
-  try {
-    return localStorage.getItem('selectedSkin') || 'classic';
-  } catch { return 'classic'; }
-};
-
 const initialState: UIState = {
   isPlaying: false,
-  selectedSkin: loadSkin(),
   selectedMode: GameMode.DEATHMATCH,
   lastScore: null,
   stats: { hp: 100, arm: 0, fuel: 100, ammo: 0, dead: false, respawn: 0 },
@@ -110,13 +62,7 @@ const initialState: UIState = {
   killFeed: [],
   isMuted: false,
   playerScores: [],
-  playerName: loadPlayerName(),
-  playerColor: loadPlayerColor(),
-  headColor: loadHeadColor(),
-  torsoColor: loadTorsoColor(),
-  armColor: loadArmColor(),
-  legColor: loadLegColor(),
-  jetpackColor: loadJetpackColor(),
+  ...loadStoredPlayer(),
   networkMode: NetworkMode.OFFLINE,
   gameId: null,
   selectedMap: MapId.DEFAULT,
@@ -136,7 +82,8 @@ type Action =
   | { type: 'setPlayerScores'; payload: PlayerScore[] }
   | { type: 'setPlayerCustomization'; payload: { name: string; colors: { torso: string; head: string; arms: string; legs: string; jetpack: string } } }
   | { type: 'setNetworkState'; payload: { mode: NetworkMode; gameId: string | null } }
-  | { type: 'selectMap'; payload: MapId };
+  | { type: 'selectMap'; payload: MapId }
+  | { type: 'reloadPlayer'; payload: StoredPlayer };
 
 const reducer = (state: UIState, action: Action): UIState => {
   switch (action.type) {
@@ -200,6 +147,8 @@ const reducer = (state: UIState, action: Action): UIState => {
       return { ...state, networkMode: action.payload.mode, gameId: action.payload.gameId };
     case 'selectMap':
       return { ...state, selectedMap: action.payload };
+    case 'reloadPlayer':
+      return { ...state, ...action.payload };
     default:
       return state;
   }
@@ -230,6 +179,8 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setPlayerCustomization: (name, colors) => dispatch({ type: 'setPlayerCustomization', payload: { name, colors } }),
     setNetworkState: (mode, gameId) => dispatch({ type: 'setNetworkState', payload: { mode, gameId } }),
     selectMap: mapId => dispatch({ type: 'selectMap', payload: mapId }),
+    // Re-reads name, skin and colours from storage (after a cloud pull rewrote them)
+    reloadPlayer: () => dispatch({ type: 'reloadPlayer', payload: loadStoredPlayer() }),
   }), []);
 
   return <UIContext.Provider value={{ state, actions }}>{children}</UIContext.Provider>;

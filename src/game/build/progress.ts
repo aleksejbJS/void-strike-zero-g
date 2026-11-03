@@ -27,7 +27,8 @@ export function loadXp(): number {
     }
 }
 
-const saveXp = (xp: number): void => {
+/** Overwrite the saved XP (a match adds to it; an account sync sets the merged total). */
+export const setXp = (xp: number): void => {
     try {
         storage().setItem(XP_KEY, String(xp));
     } catch (err) {
@@ -39,7 +40,7 @@ const saveXp = (xp: number): void => {
 export function addMatchXp(won: boolean): Reward {
     const before = loadXp();
     const gained = MATCH_XP + (won ? WIN_XP : 0);
-    saveXp(before + gained);
+    setXp(before + gained);
     const levelBefore = levelForXp(before);
     const levelAfter = levelForXp(before + gained);
     return { gained, levelBefore, levelAfter, unlocked: unlockedBetween(levelBefore, levelAfter) };
