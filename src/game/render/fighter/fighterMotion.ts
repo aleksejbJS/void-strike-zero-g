@@ -17,6 +17,7 @@ const FAST_FRAMES_FOR_LANDING = 2;
 const SQUASH_MS = 180;
 const FLASH_MS = 80;
 const HEAD_BOB_AMPLITUDE = 0.05;
+export const HOP_PX = 4;            // how high a one-legged fighter springs off the ground on each hop
 
 export interface MotionFrame {
     landed: boolean;  // true for exactly one frame per landing
@@ -91,3 +92,11 @@ export class FighterMotion {
 export const headBob = (state: FighterState, phase: number): number =>
     state === 'run' ? Math.sin(2 * phase) * HEAD_BOB_AMPLITUDE
         : state === 'walk' ? Math.sin(2 * phase) * HEAD_BOB_AMPLITUDE * 0.4 : 0;
+
+/**
+ * How far (screen px) a one-legged fighter is lifted off the ground. It follows the foot lift of the step
+ * (the arc is the half of the cycle the foot is up), so the leg tucks as the body rises and lands with it.
+ * Only upright, moving fighters hop: a crawl, a crouch and the air have their own poses.
+ */
+export const hopLift = (state: FighterState, phase: number, moveDir: number): number =>
+    state === 'walk' || state === 'run' ? HOP_PX * Math.max(0, Math.cos(phase) * moveDir) : 0;

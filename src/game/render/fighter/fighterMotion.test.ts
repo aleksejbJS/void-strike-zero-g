@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FighterMotion, headBob } from './fighterMotion';
+import { FighterMotion, HOP_PX, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
 import { createMockState } from '../../../test/mocks';
 import { GameMode } from '../../../types';
@@ -176,5 +176,24 @@ describe('DustBudget', () => {
         for (let i = 0; i < 3; i++) a.spawnLanding(state, 0, 0);
         b.spawnLanding(state, 0, 0);
         expect(state.particles).toHaveLength(18);
+    });
+});
+
+describe('hopLift', () => {
+    it('lifts a one-legged fighter in time with the step, up to the full hop', () => {
+        expect(hopLift('walk', 0, 1)).toBe(HOP_PX);
+        expect(hopLift('walk', Math.PI / 3, 1)).toBeCloseTo(HOP_PX * 0.5);
+        expect(hopLift('walk', Math.PI, 1)).toBe(0);
+        expect(hopLift('walk', 3 * Math.PI / 2, 1)).toBe(0);
+    });
+
+    it('follows the direction of travel like the foot lift', () => {
+        expect(hopLift('walk', 0, -1)).toBe(0);
+        expect(hopLift('walk', Math.PI, -1)).toBe(HOP_PX);
+    });
+
+    it('hops only when walking or running upright', () => {
+        for (const state of ['idle', 'crouch', 'prone', 'fly', 'fall'] as const) expect(hopLift(state, 0, 1), state).toBe(0);
+        expect(hopLift('run', 0, 1)).toBe(HOP_PX);
     });
 });

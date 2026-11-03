@@ -6,7 +6,7 @@ import { dot } from '../fighter/fighterPaint';
 
 /** Torn flesh, and the darker middle of a torn joint. */
 export const TORN = 0xb91c1c;
-const TORN_CORE = 0x5f0f14;
+export const TORN_CORE = 0x5f0f14;
 const END_R = 2.6;
 const EDGE_W = 2.6;
 
