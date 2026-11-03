@@ -9,6 +9,9 @@ import { PlayerSnapshot, sanitizeSnapshot } from './snapshot';
 export { AccountError } from './accountError';
 export type { AccountErrorCode } from './accountError';
 
+/** Supabase's default minimum; a shorter password would only come back as a server rejection. */
+export const PASSWORD_MIN = 6;
+
 export interface AccountUser { id: string; nickname: string }
 
 export interface AccountApi {
@@ -44,6 +47,7 @@ export function createAccountApi(client: SupabaseClient): AccountApi {
         async signUp(nick, password) {
             const problem = validateNickname(nick);
             if (problem) throw new AccountError('invalid_nickname', problem);
+            if (password.length < PASSWORD_MIN) throw new AccountError('weak_password', `shorter than ${PASSWORD_MIN} characters`);
             const nickname = normalizeNickname(nick);
 
             return guarded('signUp', async () => {
