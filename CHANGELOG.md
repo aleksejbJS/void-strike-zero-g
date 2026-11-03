@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.15 (unreleased)
+## Version 0.4.15 (2026-11-03)
 
 ### 🪖 Lying Down
 - Hold Z, or push the touch move stick down to its edge (≥ 85 % and mostly downward), to lie down on the ground (spec: `docs/plans/2026-11-03-prone-spec.md`). Ctrl was the first choice; Ctrl+W closes the tab and pages cannot block it
