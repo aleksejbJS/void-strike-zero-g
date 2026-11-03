@@ -64,13 +64,17 @@ export function createSync(api: AccountApi, opts: { debounceMs?: number } = {}):
 
     function startFlush(userId: string): Promise<boolean> {
         const promise = runFlush(userId).finally(() => {
-            if (running.get(userId) === promise) running.delete(userId);
+            // While a follow-up is queued it is about to start: stay "running" so a flush called in that
+            // gap joins the queue instead of starting a second run beside it.
+            if (running.get(userId) === promise && !queued.has(userId)) running.delete(userId);
         });
         running.set(userId, promise);
         return promise;
     }
 
     function flush(userId: string): Promise<boolean> {
+        clearTimeout(timers.get(userId)); // this run covers whatever the pending debounce was waiting for
+        timers.delete(userId);
         const inFlight = running.get(userId);
         if (!inFlight) return startFlush(userId);
         // The flight under way may have read local before its latest change: wait for it, then run once more.
@@ -97,8 +101,9 @@ export function createSync(api: AccountApi, opts: { debounceMs?: number } = {}):
 
     function requestPush(userId: string): void {
         markDirty(userId);
-        if (disposed) return;
+        // Counted even after dispose: a flush still in flight must not clear the flag of this change.
         pushCount.set(userId, (pushCount.get(userId) ?? 0) + 1);
+        if (disposed) return;
         clearTimeout(timers.get(userId));
         timers.set(userId, setTimeout(() => {
             timers.delete(userId);

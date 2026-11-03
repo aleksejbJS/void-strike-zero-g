@@ -83,6 +83,40 @@ describe('sync: flush', () => {
         expect(maxActive).toBe(1);
     });
 
+    it('a flush called right as the running one ends joins the queued follow-up instead of starting a second run', async () => {
+        let active = 0;
+        let maxActive = 0;
+        h.saveSnapshot.mockImplementation(async () => {
+            active++;
+            maxActive = Math.max(maxActive, active);
+            await new Promise<void>(r => setTimeout(r, 10));
+            active--;
+        });
+
+        const first = h.sync.flush(USER);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(h.saveSnapshot).toHaveBeenCalledTimes(1);
+
+        // This continuation runs the moment the first flush settles, while the follow-up is still queued.
+        const calledAgain = first.then(() => h.sync.flush(USER));
+        const followUp = h.sync.flush(USER);
+
+        await vi.advanceTimersByTimeAsync(100);
+        await expect(Promise.all([first, calledAgain, followUp])).resolves.toEqual([true, true, true]);
+        expect(h.saveSnapshot).toHaveBeenCalledTimes(2);
+        expect(maxActive).toBe(1);
+    });
+
+    it('a manual flush cancels the pending debounce timer', async () => {
+        h.sync.requestPush(USER);
+        await expect(h.sync.flush(USER)).resolves.toBe(true);
+        expect(h.saveSnapshot).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(5000);
+        expect(h.saveSnapshot).toHaveBeenCalledTimes(1); // no redundant flush later
+        expect(h.sync.hasPending(USER)).toBe(false);
+    });
+
     it('does not clear the flag when another push arrived during the save', async () => {
         let releaseFirst!: () => void;
         h.saveSnapshot.mockImplementationOnce(() => new Promise<void>(r => { releaseFirst = r; }));

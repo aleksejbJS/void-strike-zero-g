@@ -59,4 +59,18 @@ describe('sync: requestPush and dispose', () => {
         expect(h.saveSnapshot).not.toHaveBeenCalled();
         expect(h.sync.hasPending(USER)).toBe(true);
     });
+
+    it('a flush already in flight does not clear the flag of a push requested after dispose', async () => {
+        let release!: () => void;
+        h.saveSnapshot.mockImplementationOnce(() => new Promise<void>(r => { release = r; }));
+        h.sync.requestPush(USER);
+        await vi.advanceTimersByTimeAsync(2000); // debounced flush starts, save hangs
+
+        h.sync.dispose();
+        h.sync.requestPush(USER); // a local change the running flush may have missed
+        release();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(h.sync.hasPending(USER)).toBe(true); // survives for the next session
+    });
 });
