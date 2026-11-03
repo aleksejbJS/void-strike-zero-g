@@ -48,6 +48,8 @@ export interface AccountKeys {
     'pf.filter.modes': string;
     'pf.filter.collecting': string;
     'pf.filter.special': string;
+    'pf.progress.hours': string;
+    'pf.progress.seconds': string;
     'pf.protect': string;
     'pf.protect.hint': string;
     'pf.logout': string;
@@ -100,6 +102,8 @@ export const accountStrings: Record<Language, AccountKeys> = {
         'pf.filter.modes': 'Modes',
         'pf.filter.collecting': 'Collecting',
         'pf.filter.special': 'Special',
+        'pf.progress.hours': '{0} / {1} h',
+        'pf.progress.seconds': '{0} / {1} s',
         'pf.protect': 'Protect your nickname',
         'pf.protect.hint': 'Add a password: nobody else can take your name, and your progress is saved in the cloud.',
         'pf.logout': 'Log out',
@@ -150,6 +154,8 @@ export const accountStrings: Record<Language, AccountKeys> = {
         'pf.filter.modes': 'Режимы',
         'pf.filter.collecting': 'Сбор',
         'pf.filter.special': 'Особые',
+        'pf.progress.hours': '{0} / {1} ч',
+        'pf.progress.seconds': '{0} / {1} с',
         'pf.protect': 'Защитить ник',
         'pf.protect.hint': 'Добавьте пароль: ник никто не займёт, а прогресс сохранится в облаке.',
         'pf.logout': 'Выйти',

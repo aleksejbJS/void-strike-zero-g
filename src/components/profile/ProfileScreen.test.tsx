@@ -46,6 +46,18 @@ describe('ProfileScreen content', () => {
         expect(within(open).queryByRole('progressbar')).not.toBeInTheDocument();
     });
 
+    it('shows the time achievements in hours and seconds, not raw seconds', async () => {
+        achievementManager.updateProgress('veteran', 7500);
+        achievementManager.updateProgress('king_of_hill', 123);
+        await mountProfile(h);
+
+        const veteran = screen.getByText('Veteran').closest('li') as HTMLElement;
+        expect(within(veteran).getByText('2 / 10 h')).toBeInTheDocument();
+        expect(within(veteran).getByRole('progressbar')).toHaveAttribute('aria-valuetext', '2 / 10 h');
+        const king = screen.getByText('King of the Hill').closest('li') as HTMLElement;
+        expect(within(king).getByText('123 / 500 s')).toBeInTheDocument();
+    });
+
     it('colours the border by rarity and greys what is locked', async () => {
         unlock('first_blood');
         await mountProfile(h);
