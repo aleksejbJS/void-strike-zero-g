@@ -87,4 +87,5 @@ export const createPreviewState = (mode: GameMode, map: MapId): GameState => ({
     camera: { x: VIEW_CENTER.x * VIEW_SCALE, y: VIEW_CENTER.y * VIEW_SCALE, zoom: 1 },
     corpses: [],
     beams: [],
+    smokes: [],
 });

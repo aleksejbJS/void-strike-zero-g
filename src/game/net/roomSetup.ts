@@ -49,6 +49,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     hungerWinnerId: null,
     gunGameWinnerId: null,
     beams: [],
+    smokes: [],
 });
 
 const startingWeapon = (mode: GameMode) =>
@@ -136,6 +137,7 @@ const respawnEveryone = (state: GameState) => {
     }
     state.projectiles = [];
     state.beams = [];
+    state.smokes = [];
     state.pickups = getInitialPickups(state.mode, state.currentMap);
 };
 

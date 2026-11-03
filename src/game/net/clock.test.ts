@@ -22,3 +22,19 @@ describe('toLocalClock', () => {
         expect(hungerSpectator.respawnTimer).toBe(Number.MAX_SAFE_INTEGER);
     });
 });
+
+describe('toLocalClock smoke clouds', () => {
+    it('shifts each cloud\'s birth and end, leaving the host\'s own objects alone', () => {
+        const cloud = { id: 'smoke_1', pos: { x: 1, y: 2 }, radius: 110, bornAt: 2000, endsAt: 12000 };
+        const snap: any = { serverTime: 5000, players: [], smokes: [cloud] };
+        toLocalClock(snap, -400);
+        expect(snap.smokes).toEqual([{ ...cloud, bornAt: 1600, endsAt: 11600 }]);
+        expect(cloud.endsAt).toBe(12000);
+    });
+
+    it('copes with a snapshot that has no clouds', () => {
+        const snap: any = { serverTime: 5000, players: [] };
+        toLocalClock(snap, 300);
+        expect(snap.smokes).toBeUndefined();
+    });
+});

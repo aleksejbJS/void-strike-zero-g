@@ -17,13 +17,14 @@ import { applyStance, clampProneAim } from './stance';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
+import { spawnSmoke, updateSmokes } from './smoke';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
     proj.pos.x += proj.vel.x;
     proj.pos.y += proj.vel.y;
     if (proj.type === WeaponType.ROCKET_LAUNCHER) proj.vel.y += 0.1;
-    if (proj.type === WeaponType.GRENADE_LAUNCHER) proj.vel.y += 0.25;
+    if (proj.type === WeaponType.GRENADE_LAUNCHER || proj.type === WeaponType.SMOKE_LAUNCHER) proj.vel.y += 0.25;
 };
 
 // --- MAIN PHYSICS UPDATE LOOP ---
@@ -325,7 +326,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 applyDamage(state, target, proj.ownerId, WEAPONS_DATA[proj.type].damage, proj.vel, WEAPONS_DATA[proj.type].knockbackForce, source);
             }
         }
-        if (proj.type === WeaponType.GRENADE_LAUNCHER && proj.life <= 0) hit = true;
+        const smokeRound = proj.type === WeaponType.SMOKE_LAUNCHER;
+        if ((proj.type === WeaponType.GRENADE_LAUNCHER || smokeRound) && proj.life <= 0) hit = true;
         // Stray projectile ran out of life without hitting anything — remove silently
         if (!hit && proj.life <= 0) proj.active = false;
 
@@ -336,12 +338,13 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 // A rocket that hit a full-health fighter finishes them with its blast: still a direct hit
                 createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id);
             } else {
+                if (smokeRound) spawnSmoke(state, impact, now); // bursts into a cloud: no blast, no damage splash
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
             // Any weapon hitting a fighter draws blood; a wall hit throws sparks. An explosive keeps its
             // own spark either way (it is part of the blast, not of the hit).
             if (hitFighter) emitEffect('blood', proj.pos.x, proj.pos.y, '#ef4444', 6);
-            if (explosive || !hitFighter) emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
+            if (explosive || (!hitFighter && !smokeRound)) emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
         }
     });
     state.projectiles = state.projectiles.filter(p => p.active);
@@ -352,6 +355,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         beam.life -= 0.05; // Fade out speed
     });
     state.beams = state.beams.filter(b => b.life > 0);
+    updateSmokes(state, now);
 
     // Hold The Flag scoring tick
     if (state.mode === GameMode.HOLD_THE_FLAG) {

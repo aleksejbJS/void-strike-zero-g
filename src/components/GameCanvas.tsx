@@ -229,7 +229,8 @@ export default function GameCanvas() {
         hungerZone: undefined,
         hungerWinnerId: null,
         gunGameWinnerId: null,
-        beams: []
+        beams: [],
+        smokes: []
     });
 
     const initLevel = () => {
