@@ -3,6 +3,7 @@
 // its few headline points; the full detail lives in CHANGELOG.md.
 
 import { Language } from '../../types';
+import { assetUrl } from '../../assetUrl';
 
 /** A pair of screenshots showing what a change looks like. */
 export interface BeforeAfter {
@@ -24,8 +25,8 @@ export interface PatchNote {
     points?: string[];     // small releases: one flat list
 }
 
-const FIGHTER = { before: '/assets/patch/fighter-before.png', after: '/assets/patch/fighter-after.png' };
-const shots = (name: string, ext = 'jpg') => ({ before: `/assets/patch/${name}-before.${ext}`, after: `/assets/patch/${name}-after.${ext}` });
+const FIGHTER = { before: assetUrl('assets/patch/fighter-before.png'), after: assetUrl('assets/patch/fighter-after.png') };
+const shots = (name: string, ext = 'jpg') => ({ before: assetUrl(`assets/patch/${name}-before.${ext}`), after: assetUrl(`assets/patch/${name}-after.${ext}`) });
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
 const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
