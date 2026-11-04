@@ -4,7 +4,8 @@ import { Entity, Vector2 } from '../../types';
 import { distance } from '../utils/math';
 import { BotMoves, BotNav, newBotMoves, newBotNav } from './botNavState';
 
-export type BotState = 'hunt' | 'defend' | 'retreat' | 'flag-run' | 'roam';
+/** defend: escorting or chasing a flag/carrier; guard: holding the Infiltration intel's spot (takes cover). */
+export type BotState = 'hunt' | 'defend' | 'guard' | 'retreat' | 'flag-run' | 'roam';
 
 /** When a last-seen spot was recorded, and the fighter's `respawnTimer` then (it changes on every death). */
 export interface SeenStamp { at: number; life: number }
