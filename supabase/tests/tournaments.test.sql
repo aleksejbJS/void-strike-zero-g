@@ -292,6 +292,14 @@ begin
 
     perform tt.expect_error(format('select public.publish_host(%L, %s, %L, %L)', m.id, v_guest,
         tt.sec(v_tid, v_guest), 'peer-guest'), 'bad_ticket');
+    perform tt.expect_error(format('select public.publish_host(%L, %s, %L, %L)', m.id, m.host_seat,
+        tt.sec(v_tid, m.host_seat), repeat('p', 129)), 'bad_peer_id');
+    perform tt.expect_error(format('select public.publish_host(%L, %s, %L, %L)', m.id, m.host_seat,
+        tt.sec(v_tid, m.host_seat), ''), 'bad_peer_id');
+    assert exists (select 1 from pg_constraint where conname = 'tournament_matches_host_peer_id_len'
+                   and conrelid = 'public.tournament_matches'::regclass), 'peer id length is also a column check';
+    perform public.publish_host(m.id, m.host_seat, tt.sec(v_tid, m.host_seat), repeat('p', 128));
+    assert (tt.m(v_tid, 0, 0)).host_peer_id = repeat('p', 128), '128 chars accepted';
     perform public.publish_host(m.id, m.host_seat, tt.sec(v_tid, m.host_seat), 'peer-host');
     assert (tt.m(v_tid, 0, 0)).host_peer_id = 'peer-host', 'host peer id published';
 end $$;
@@ -313,6 +321,9 @@ begin
         tt.sec(v_tid, m.host_seat)), 'bad_score');
     perform tt.expect_error(format('select public.report_result(%L, %s, %L, -1, 3)', m.id, m.host_seat,
         tt.sec(v_tid, m.host_seat)), 'bad_score');
+    perform tt.expect_error(format('select public.report_result(%L, %s, %L, 11, 3)', m.id, m.host_seat,
+        tt.sec(v_tid, m.host_seat)), 'bad_score');
+    assert (tt.m(v_tid, 0, 1)).status = 'ready', 'rejected scores change nothing';
 
     perform tt.report(m.id, 4, 10);
     v_done := tt.m(v_tid, 0, 1);
@@ -384,6 +395,24 @@ begin
     assert (tt.m(v_tid, 0, v_other.slot)).status = 'ready', 'both seen recently: untouched';
 end $$;
 
+-- A ready match older than 15 min is closed even when both sides are fresh (stalling host, no link).
+do $$
+declare v_tid uuid := tt.running(4);
+declare m public.tournament_matches := tt.m(v_tid, 0, 0);
+declare v_other public.tournament_matches := tt.m(v_tid, 0, 1);
+begin
+    update public.tournament_matches set ready_at = now() - interval '16 minutes',
+        a_seen_at = now(), b_seen_at = now() where id = m.id;
+    update public.tournament_matches set ready_at = now() - interval '14 minutes',
+        a_seen_at = now(), b_seen_at = now() where id = v_other.id;
+    perform public.resolve_stale(v_tid);
+    m := tt.m(v_tid, 0, 0);
+    assert m.status = 'done' and m.decided_by = 'walkover', '16 min old match closed by walkover';
+    assert m.winner_seat in (m.seat_a, m.seat_b), 'winner is one of the two';
+    assert (tt.m(v_tid, 1, 0)).seat_a = m.winner_seat, 'winner advances';
+    assert (tt.m(v_tid, 0, 1)).status = 'ready', '14 min old match with fresh sides untouched';
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Case: a full bracket of 4 played to the end
 -- ---------------------------------------------------------------------------
@@ -409,12 +438,37 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- Case: Realtime publication holds the three tables (the test script creates it before the migration)
+-- Case: Realtime publishes tournaments and matches, never seats (they hold secret_hash).
+-- The test script creates the publication and, between the two migration loads, adds tournament_seats
+-- to it the way an earlier version of the migration did: the second load must take it out again.
 -- ---------------------------------------------------------------------------
 do $$
 begin
     assert (select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public'
-            and tablename in ('tournaments', 'tournament_seats', 'tournament_matches')) = 3, 'tables in realtime';
+            and tablename in ('tournaments', 'tournament_matches')) = 2, 'tournaments and matches in realtime';
+    assert not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime'
+                       and schemaname = 'public' and tablename = 'tournament_seats'), 'seats not in realtime';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Case: every seat change bumps tournaments.updated_at (that row is what Realtime tells the lobby about).
+-- now() is constant inside one DO block, so updated_at is backdated before each call.
+-- ---------------------------------------------------------------------------
+do $$
+declare v_tid uuid := tt.create();
+begin
+    update public.tournaments set updated_at = now() - interval '1 hour' where id = v_tid;
+    perform tt.join(v_tid, 'Second');
+    assert (select updated_at from public.tournaments where id = v_tid) = now(), 'join bumps updated_at';
+
+    perform tt.join(v_tid, 'Third');
+    update public.tournaments set updated_at = now() - interval '1 hour' where id = v_tid;
+    perform public.leave_tournament(v_tid, 2, tt.sec(v_tid, 2));
+    assert (select updated_at from public.tournaments where id = v_tid) = now(), 'leave bumps updated_at';
+
+    update public.tournaments set updated_at = now() - interval '1 hour' where id = v_tid;
+    perform tt.start(v_tid);
+    assert (select updated_at from public.tournaments where id = v_tid) = now(), 'start bumps updated_at';
 end $$;
 
 -- ---------------------------------------------------------------------------

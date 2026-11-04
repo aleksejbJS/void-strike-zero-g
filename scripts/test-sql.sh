@@ -75,6 +75,8 @@ SQL
 
 echo "[test-sql] loading the migration twice (it must be idempotent)"
 "${PSQL[@]}" -f "$MIGRATION"
+# Simulate a database where an earlier version ran: it published tournament_seats. The re-run must drop it.
+"${PSQL[@]}" -c "alter publication supabase_realtime add table public.tournament_seats"
 "${PSQL[@]}" -f "$MIGRATION"
 
 echo "[test-sql] running $TESTS"

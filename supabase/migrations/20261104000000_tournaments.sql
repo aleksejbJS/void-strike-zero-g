@@ -11,7 +11,7 @@
 --     after the other: the first decision about a match wins, the second is a no-op.
 --   * Server time (now()) is the only clock for every time rule.
 -- Error messages are codes the client maps: not_open, full, not_creator, not_enough_players, bad_ticket,
--- and for malformed input bad_name, bad_nickname, bad_score.
+-- and for malformed input bad_name, bad_nickname, bad_score, bad_peer_id.
 
 -- digest() and gen_random_bytes(). Hosted Supabase already has pgcrypto in schema "extensions".
 create extension if not exists pgcrypto with schema extensions;
@@ -28,8 +28,11 @@ create table if not exists public.tournaments (
     created_at timestamptz not null default now(),
     started_at timestamptz,
     finished_at timestamptz,
-    champion_seat int
+    champion_seat int,
+    updated_at timestamptz not null default now() -- bumped on every seat change (see Realtime below)
 );
+-- For databases where an earlier version of this file already ran.
+alter table public.tournaments add column if not exists updated_at timestamptz not null default now();
 
 -- seat: 0..7. The creator is 0, sign-ups take the lowest free number, bots take the numbers left at start.
 create table if not exists public.tournament_seats (
@@ -52,7 +55,7 @@ create table if not exists public.tournament_matches (
     seat_a int,
     seat_b int,
     host_seat int,
-    host_peer_id text,
+    host_peer_id text constraint tournament_matches_host_peer_id_len check (char_length(host_peer_id) <= 128),
     status text not null default 'waiting' check (status in ('waiting', 'ready', 'done')),
     score_a int not null default 0,
     score_b int not null default 0,
@@ -63,6 +66,18 @@ create table if not exists public.tournament_matches (
     b_seen_at timestamptz,
     unique (tournament_id, round, slot)
 );
+-- For databases where an earlier version of this file already ran (the table existed without the check).
+do $$
+begin
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'tournament_matches_host_peer_id_len' and conrelid = 'public.tournament_matches'::regclass
+    ) then
+        alter table public.tournament_matches add constraint tournament_matches_host_peer_id_len
+            check (char_length(host_peer_id) <= 128);
+    end if;
+end
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Read access: everyone may read, nobody may write directly
@@ -88,8 +103,12 @@ grant select (tournament_id, seat, nickname, is_bot, bracket_pos, joined_at)
     on table public.tournament_seats to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- Realtime: the browsers watch these tables. Skipped when the publication does not exist
--- (local test cluster) and for tables already in it, so a re-run never fails.
+-- Realtime: the browsers watch tournaments and tournament_matches. Skipped when the publication does
+-- not exist (local test cluster) and for tables already in it, so a re-run never fails.
+-- tournament_seats is deliberately NOT published: a change payload could carry secret_hash if Realtime
+-- ignored the column grant. Seat changes bump tournaments.updated_at instead, and the browser reloads
+-- the seats through the normal (column-granted) select. An earlier version of this file published the
+-- seats, so they are removed here when present.
 -- ---------------------------------------------------------------------------
 do $$
 declare
@@ -99,7 +118,7 @@ begin
         raise notice 'Publication supabase_realtime not found (or covers all tables): skipping Realtime setup';
         return;
     end if;
-    foreach v_table in array array['tournaments', 'tournament_seats', 'tournament_matches'] loop
+    foreach v_table in array array['tournaments', 'tournament_matches'] loop
         if not exists (
             select 1 from pg_publication_tables
             where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = v_table
@@ -107,6 +126,12 @@ begin
             execute format('alter publication supabase_realtime add table public.%I', v_table);
         end if;
     end loop;
+    if exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'tournament_seats'
+    ) then
+        alter publication supabase_realtime drop table public.tournament_seats;
+    end if;
 end
 $$;
 
@@ -119,7 +144,7 @@ create or replace function public.tournament_check_ticket(p_id uuid, p_seat int,
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 begin
     if p_secret is null or p_secret !~ '^[0-9a-fA-F]{64}$' then
@@ -140,7 +165,7 @@ create or replace function public.settle(p_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     v_changed int;
@@ -216,7 +241,7 @@ create or replace function public.create_tournament(p_name text, p_nickname text
 returns json
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     v_name text := btrim(coalesce(p_name, ''));
@@ -247,7 +272,7 @@ create or replace function public.join_tournament(p_id uuid, p_nickname text)
 returns json
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     v_nickname text := btrim(coalesce(p_nickname, ''));
@@ -275,6 +300,8 @@ begin
 
     insert into tournament_seats (tournament_id, seat, nickname, secret_hash)
     values (p_id, v_seat, v_nickname, digest(v_secret, 'sha256'));
+    -- Seats are not in Realtime: this row change is what tells the lobby someone joined.
+    update tournaments t set updated_at = now() where t.id = p_id;
 
     return json_build_object('seat', v_seat, 'secret', encode(v_secret, 'hex'));
 end;
@@ -285,7 +312,7 @@ create or replace function public.leave_tournament(p_id uuid, p_seat int, p_secr
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     v_status text;
@@ -304,9 +331,9 @@ begin
     order by s.joined_at, s.seat
     limit 1;
 
-    -- Always touches the tournament row, even when nothing else changes: Realtime cannot filter
-    -- DELETE events on tournament_seats by tournament, so this UPDATE is what tells the lobby.
+    -- Seats are not in Realtime: bumping updated_at is what tells the lobby someone left.
     update tournaments t set
+        updated_at = now(),
         creator_seat = case when t.creator_seat = p_seat and v_next is not null then v_next else t.creator_seat end,
         status = case when v_next is null then 'expired' else t.status end
     where t.id = p_id;
@@ -318,7 +345,7 @@ create or replace function public.start_tournament(p_id uuid, p_seat int, p_secr
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     t tournaments;
@@ -368,7 +395,7 @@ begin
         seat_b = (select s.seat from tournament_seats s where s.tournament_id = p_id and s.bracket_pos = 2 * m.slot + 1)
     where m.tournament_id = p_id and m.round = 0;
 
-    update tournaments set status = 'running', size = v_size, started_at = now() where id = p_id;
+    update tournaments set status = 'running', size = v_size, started_at = now(), updated_at = now() where id = p_id;
 
     perform settle(p_id);
 end;
@@ -384,7 +411,7 @@ create or replace function public.tournament_lock_match(p_match uuid, p_seat int
 returns public.tournament_matches
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     v_tournament uuid;
@@ -411,7 +438,7 @@ create or replace function public.match_seen(p_match uuid, p_seat int, p_secret 
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     m tournament_matches := tournament_lock_match(p_match, p_seat, p_secret);
@@ -428,13 +455,16 @@ create or replace function public.publish_host(p_match uuid, p_seat int, p_secre
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     m tournament_matches := tournament_lock_match(p_match, p_seat, p_secret);
 begin
     if m.host_seat is distinct from p_seat then
         raise exception 'bad_ticket';
+    end if;
+    if p_peer_id is null or char_length(p_peer_id) not between 1 and 128 then
+        raise exception 'bad_peer_id';
     end if;
     update tournament_matches x set host_peer_id = p_peer_id where x.id = p_match and x.status = 'ready';
 end;
@@ -448,7 +478,7 @@ create or replace function public.report_result(
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 declare
     m tournament_matches := tournament_lock_match(p_match, p_seat, p_secret);
@@ -460,7 +490,9 @@ begin
         return;
     end if;
     -- A duel always has a winner (sudden death on a tie), so equal scores mean a broken client.
-    if p_score_a is null or p_score_b is null or p_score_a < 0 or p_score_b < 0 or p_score_a = p_score_b then
+    -- The score limit is 10, so nobody can have more.
+    if p_score_a is null or p_score_b is null or least(p_score_a, p_score_b) < 0
+        or greatest(p_score_a, p_score_b) > 10 or p_score_a = p_score_b then
         raise exception 'bad_score';
     end if;
 
@@ -479,11 +511,13 @@ $$;
 -- Anyone may call this (every browser watching the bracket does, now and then). A ready match older
 -- than 60 s is decided by walkover when a human side has not sent a heartbeat for 60 s:
 -- one side stale -> the other side wins; both stale -> coin flip. Bots are never stale.
+-- Any ready match older than 15 min is closed too (coin flip when neither side is stale): a stalling host
+-- or a link that never forms must not freeze the bracket. A real duel ends within 10 min plus sudden death.
 create or replace function public.resolve_stale(p_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public, extensions, pg_temp
 as $$
 begin
     perform 1 from tournaments t where t.id = p_id and t.status = 'running' for update;
@@ -495,7 +529,8 @@ begin
         select
             m.id, m.seat_a, m.seat_b,
             not sa.is_bot and (m.a_seen_at is null or m.a_seen_at < now() - interval '60 seconds') as a_stale,
-            not sb.is_bot and (m.b_seen_at is null or m.b_seen_at < now() - interval '60 seconds') as b_stale
+            not sb.is_bot and (m.b_seen_at is null or m.b_seen_at < now() - interval '60 seconds') as b_stale,
+            m.ready_at < now() - interval '15 minutes' as timed_out
         from tournament_matches m
         join tournament_seats sa on sa.tournament_id = m.tournament_id and sa.seat = m.seat_a
         join tournament_seats sb on sb.tournament_id = m.tournament_id and sb.seat = m.seat_b
@@ -505,12 +540,12 @@ begin
         status = 'done',
         decided_by = 'walkover',
         winner_seat = case
-            when s.a_stale and s.b_stale then (case when random() < 0.5 then s.seat_a else s.seat_b end)
+            when s.a_stale = s.b_stale then (case when random() < 0.5 then s.seat_a else s.seat_b end)
             when s.a_stale then s.seat_b
             else s.seat_a
         end
     from sides s
-    where x.id = s.id and (s.a_stale or s.b_stale);
+    where x.id = s.id and (s.a_stale or s.b_stale or s.timed_out);
 
     perform settle(p_id);
 end;
