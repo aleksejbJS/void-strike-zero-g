@@ -89,11 +89,30 @@ describe('Force Pipeline — movement.ts', () => {
         expect(hanging.jetpackFuel).toBe(grounded.jetpackFuel);
     });
 
-    it('should not recharge fuel on the grapple while thrusting', () => {
+    it('on the hook W only reels: no thrust, no flame, fuel refills', () => {
         const grapple = { active: true, pos: { x: 100, y: 100 }, length: 200 };
-        const p = makePlayer({ isGrounded: false, jetpackFuel: 50, grapple });
-        applyMovement(p, { ...noInput, isFlying: true, wantsJump: true });
-        expect(p.jetpackFuel).toBeLessThan(50);
+        const hooked = makePlayer({ isGrounded: false, jetpackFuel: 50, grapple: { ...grapple } });
+        const idle = makePlayer({ isGrounded: false, jetpackFuel: 50, grapple: { ...grapple } });
+        const reel = { ...noInput, isFlying: true, wantsJump: true, wantsReel: true };
+        applyMovement(hooked, reel);
+        applyMovement(idle, { ...noInput, wantsReel: true });
+        expect(hooked.jetpackOn).toBe(false);
+        expect(hooked.jetpackFuel).toBeGreaterThan(50);
+        expect(hooked.vel.y).toBeCloseTo(idle.vel.y, 10); // reel only, no jetpack thrust on top
+        expect(hooked.grapple.length).toBeLessThan(200); // reeled in
+    });
+
+    it('the jetpack works again once the hook is released', () => {
+        const p = makePlayer({ isGrounded: false, jetpackFuel: 50, grapple: { active: true, pos: { x: 100, y: 100 }, length: 200 } });
+        const fly = { ...noInput, isFlying: true, wantsJump: true };
+        applyMovement(p, { ...fly, wantsReel: true });
+        p.grapple.active = false;
+        p.vel = { x: 0, y: 2 };
+        const fuel = p.jetpackFuel;
+        applyMovement(p, fly);
+        expect(p.jetpackOn).toBe(true);
+        expect(p.vel.y).toBeLessThan(2);
+        expect(p.jetpackFuel).toBeLessThan(fuel);
     });
 
     it('should apply ground friction', () => {

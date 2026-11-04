@@ -33,6 +33,10 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.27', date: 'Nov 4, 2026', points: [
+            'Fixed: a railgun beam no longer just wounds a fighter whose armor shows 0; a tiny leftover of armor now counts as none',
+            'On the hook, W and Space only reel you in: the jetpack stays off and refills the whole time you hang',
+        ] },
         { version: '0.4.25', date: 'Nov 4, 2026', groups: [
             { title: 'Tournaments', points: [
                 'A new Tournaments button in the menu: a knockout of 1-on-1 duels for up to 8 players. Create one and share the link, or sign up for an open one; the creator presses Start and empty seats are filled by bots',
@@ -212,6 +216,10 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.27', date: '04.11.2026', points: [
+            'Исправлено: луч рельсы больше не просто ранит бойца, у которого броня показывает 0; крошечный остаток брони теперь не считается',
+            'На крюке W и пробел только подтягивают вас: джетпак не включается и заправляется всё время, пока вы висите',
+        ] },
         { version: '0.4.25', date: '04.11.2026', groups: [
             { title: 'Турниры', points: [
                 'В меню появилась кнопка «Турниры». Турнир на вылет до 8 игроков: дуэли один на один. Создайте свой и поделитесь ссылкой или запишитесь в открытый; создатель нажимает «Старт», а пустые места занимают боты',

@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.27 (2026-11-04)
+
+### 🎯 Railgun and Armor Slivers
+- Armor absorbs `min(armor, dmg × 0.66)`, so hits left fractional leftovers like 0.3 while the HUD showed `Math.round(armor)` = 0; the railgun then wounded a fighter who seemed to have no armor. Armor below 1 now counts as none: one shared helper (`systems/armor.ts`: `hasArmor`, `absorbArmor`) clears any leftover below 1 to 0 right after armor absorbs a hit, and `shouldWound` checks `hasArmor` (armor ≥ 1). The damage maths moved out of `combat.ts` into the helper
+
+### 🪝 Hook Reels, Jetpack Rests
+- While the grapple is attached, W/Space only reel in: the jetpack does not fire (no thrust, no flame, `jetpackOn` false, no fuel spent) and the tank refills the whole time the hook is attached, even while W is held (before, a reeling player also thrust and burned fuel). `movement.ts` computes `flying = input.isFlying && !p.grapple.active` once and uses it for thrust, `jetpackOn`, air strafe and recharge, so the rule is shared by offline play, the server, client prediction and bots
+
 ## Version 0.4.25 (2026-11-04)
 
 ### 🏆 Tournaments
