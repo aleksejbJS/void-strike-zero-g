@@ -3,6 +3,7 @@ import { AdPlace, BACKDROP_CONTAINERS, DECAL_CONTAINER, Rect, STATION_AD_PLACES,
 import { themeFor } from './mapLook';
 import { MINE_AD_PLACES, MINE_DECOR_RECTS } from './themes/mineTheme';
 import { ARENA_AD_PLACES, ARENA_DECOR_RECTS } from './themes/arenaTheme';
+import { PIT_AD_PLACES, PIT_DECOR_RECTS } from './themes/pitTheme';
 import { GameMode, MapId } from '../../../types';
 
 const cameras = (x0: number, x1: number, y0: number, y1: number) => {
@@ -16,6 +17,8 @@ const THEMES: { name: string; places: AdPlace[]; decor: Rect[]; cams: { x: numbe
     { name: 'station', places: STATION_AD_PLACES, decor: BACKDROP_CONTAINERS.map(([x, y, w, h]) => ({ x, y, w, h })), cams: cameras(-2000, 4000, -1000, 820) },
     { name: 'mine', places: MINE_AD_PLACES, decor: MINE_DECOR_RECTS, cams: cameras(-2000, 4000, -900, 900) },
     { name: 'arena', places: ARENA_AD_PLACES, decor: ARENA_DECOR_RECTS, cams: cameras(-2800, 5800, -1800, 1400) },
+    // The Pit's camera follows fighters inside its 2600x1400 box
+    { name: 'pit', places: PIT_AD_PLACES, decor: PIT_DECOR_RECTS, cams: cameras(0, 2600, 0, 1400) },
 ];
 
 const overlaps = (a: Rect, b: Rect, gap = 8) =>
@@ -66,6 +69,7 @@ describe('map themes', () => {
         expect(themeFor(GameMode.DEATHMATCH, MapId.TUNNELS)).toBe('mine');
         expect(themeFor(GameMode.GUN_GAME, MapId.TUNNELS)).toBe('mine');
         expect(themeFor(GameMode.HUNGER_GAMES, MapId.HUNGER)).toBe('arena');
+        expect(themeFor(GameMode.DUEL, MapId.PIT)).toBe('pit');
     });
 
     it('ad place ids are unique across all maps (they are keys in ads.json)', () => {
