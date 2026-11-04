@@ -48,12 +48,17 @@ export interface AccountHarness {
     savedFor(userId: string): PlayerSnapshot[];
     /** Logs the mounted (guest) provider in as `user`. */
     loginAs(user: AccountUser): Promise<void>;
+    /** Plays "the session ended by itself" to every onSessionEnded listener, then lets things settle. */
+    endSession(): Promise<void>;
+    /** How many onSessionEnded listeners are subscribed now. */
+    sessionListeners(): number;
 }
 
 export function installAccountHarness(): AccountHarness {
     const h = {} as { -readonly [K in keyof AccountHarness]: AccountHarness[K] };
     let latest: AccountState | null = null;
     let uiState: UIState | null = null;
+    const sessionEnded = new Set<() => void>();
 
     const Probe: React.FC = () => {
         latest = useAccount();
@@ -86,6 +91,11 @@ export function installAccountHarness(): AccountHarness {
     h.savedFor = userId => h.api.saveSnapshot.mock.calls
         .filter(([id]) => id === userId)
         .map(([, snapshot]) => snapshot as PlayerSnapshot);
+    h.endSession = async () => {
+        for (const listener of [...sessionEnded]) act(() => listener());
+        await h.settle();
+    };
+    h.sessionListeners = () => sessionEnded.size;
     h.loginAs = async user => {
         h.api.logIn.mockResolvedValue(user);
         await act(async () => { await h.account().logIn(user.nickname, 'secret'); });
@@ -110,7 +120,12 @@ export function installAccountHarness(): AccountHarness {
             isNicknameTaken: vi.fn().mockResolvedValue(false),
             fetchSnapshot: vi.fn().mockResolvedValue(null),
             saveSnapshot: vi.fn().mockResolvedValue(undefined),
+            onSessionEnded: vi.fn((listener: () => void) => {
+                sessionEnded.add(listener);
+                return () => { sessionEnded.delete(listener); };
+            }),
         };
+        sessionEnded.clear();
         latest = null;
         uiState = null;
     });

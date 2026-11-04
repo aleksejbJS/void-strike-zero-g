@@ -1,7 +1,7 @@
 // "Is this guest name somebody's account?" for the Start button. Only a guest with a real name is checked;
 // a slow or broken service never blocks a match: the check then answers "not taken" and warns.
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { GUEST_DEFAULT_NAME, nicknameKey } from '../../../account/nickname';
 import { AccountStatus, useAccount } from '../../../account/useAccount';
 
@@ -18,8 +18,12 @@ export const needsTakenCheck = (status: AccountStatus, name: string): boolean =>
 /** Resolves true only when the service says the name belongs to an account. Never rejects. */
 export function useTakenCheck(): (name: string) => Promise<boolean> {
     const { status, isNicknameTaken } = useAccount();
+    // The status when the check runs, not when Start was clicked (Start may wait for the start-up first).
+    const latest = useRef({ status, isNicknameTaken });
+    useEffect(() => { latest.current = { status, isNicknameTaken }; });
 
     return useCallback(async (name: string): Promise<boolean> => {
+        const { status, isNicknameTaken } = latest.current;
         if (!needsTakenCheck(status, name)) return false;
 
         let timer: ReturnType<typeof setTimeout> | undefined;
@@ -39,5 +43,5 @@ export function useTakenCheck(): (name: string) => Promise<boolean> {
         } finally {
             clearTimeout(timer);
         }
-    }, [status, isNicknameTaken]);
+    }, []);
 }

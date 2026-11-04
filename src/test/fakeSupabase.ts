@@ -18,11 +18,18 @@ export function makeFakeSupabase(over: Partial<{
     progress: Result;
     upsert: Result;
 }> = {}) {
+    // onAuthStateChange listeners; `emitAuth` plays an auth event to them, as Supabase would.
+    const authListeners = new Set<(event: string) => void>();
+    const emitAuth = (event: string): void => { for (const listener of [...authListeners]) listener(event); };
     const auth = {
         signUp: vi.fn(over.signUp ?? (async () => ok({ user: { id: 'u1' }, session: { access_token: 't' } }))),
         signInWithPassword: vi.fn(over.signInWithPassword ?? (async () => ok({ user: { id: 'u1' }, session: {} }))),
         signOut: vi.fn(over.signOut ?? (async () => ({ error: null }))),
         getSession: vi.fn(over.getSession ?? (async () => ok({ session: null }))),
+        onAuthStateChange: vi.fn((listener: (event: string) => void) => {
+            authListeners.add(listener);
+            return { data: { subscription: { unsubscribe: () => { authListeners.delete(listener); } } } };
+        }),
     };
     const rpc = vi.fn(over.rpc ?? (async () => ok(false)));
     const eq = vi.fn();
@@ -41,5 +48,5 @@ export function makeFakeSupabase(over: Partial<{
         upsert: (row: unknown) => upsert(row),
     }));
     const client = { auth, rpc, from } as unknown as SupabaseClient;
-    return { client, auth, rpc, from, select, eq, upsert };
+    return { client, auth, rpc, from, select, eq, upsert, emitAuth, authListeners };
 }

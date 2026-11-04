@@ -7,7 +7,9 @@ export type AccountErrorCode =
     | 'invalid_nickname'
     | 'weak_password'
     | 'rate_limited'
-    | 'network';
+    | 'network'
+    /** An earlier login / logout on this device is still finishing: try again in a moment. */
+    | 'busy';
 
 export class AccountError extends Error {
     constructor(readonly code: AccountErrorCode, message: string = code) {

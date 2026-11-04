@@ -1,8 +1,8 @@
 // What the UI sees of the account: its status and the login / logout actions.
 // Provided by AccountProvider. The methods reject with AccountError, which the UI turns into messages
-// ('network' also means "not available right now": disabled, starting up, or a logout still finishing).
-// An action the current status does not allow at all (log in while logged in, log out as a guest, a second
-// call while one runs) is a programming mistake and rejects with a plain Error.
+// ('network' also means "not available right now": disabled or still starting up; 'busy' means an earlier
+// login / logout is still finishing). An action the current status does not allow at all (log in while
+// logged in, log out as a guest) is a programming mistake and rejects with a plain Error.
 
 import { createContext, useContext } from 'react';
 
