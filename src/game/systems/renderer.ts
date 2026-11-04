@@ -450,13 +450,14 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     // Players
     const activePlayerIds = new Set(state.players.map(p => p.id));
     for (const [id, container] of cache.players) {
-        if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true, context: true }); cache.players.delete(id); forgetPlayerVisual(id); }
+        if (!activePlayerIds.has(id)) { gameLayer.removeChild(container); container.destroy({ children: true, context: true }); cache.players.delete(id); forgetPlayerVisual(id, cache.animator); }
     }
     state.players.forEach(p => {
-        if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true, context: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id); } return; }
+        if (p.dead) { if (cache.players.has(p.id)) { const c = cache.players.get(p.id); gameLayer.removeChild(c); c.destroy({ children: true, context: true }); cache.players.delete(p.id); forgetPlayerVisual(p.id, cache.animator); } return; }
         let visual = cache.players.get(p.id);
         if (!visual) { visual = createPlayerVisual(p); gameLayer.addChild(visual); cache.players.set(p.id, visual); }
-        updatePlayerVisual(visual, p, state.camera, toView(mouse, view), view.w, view.h, cache.textures, p.id === localPlayerId, state);
+        // cache.animator: a watched match's own animation memory (matchViewCache); the game screen has none, so the page's
+        updatePlayerVisual(visual, p, state.camera, toView(mouse, view), view.w, view.h, cache.textures, p.id === localPlayerId, state, undefined, cache.animator);
     });
 
     // Projectiles: pooled sprites per live id; each shotgun shot leaves one muzzle puff where it was first seen

@@ -1,6 +1,7 @@
 // One watched match drawn into its own Pixi canvas inside `host`: the same layers, map look and
 // fighters as the game screen, but nobody's HUD or cursor, no scorch marks (marks.ts is one
-// page-wide list, the game screen's) and in-world ads only while switched on.
+// page-wide list, the game screen's) and in-world ads only while switched on. Its fighters are
+// animated with its own memory (matchViewCache), never shared with other tiles or the game screen.
 
 import { Application, Container, Graphics, Texture } from 'pixi.js';
 import { GameMode, GameState, MapId } from '../../../types';
@@ -11,12 +12,7 @@ import { setHouseHidden } from '../scene/adFrames';
 import { createAdsController, AdsController } from '../../ads/adsController';
 import { destroyApp } from '../pixiApp';
 import { viewportOf } from '../viewport';
-import { forgetPlayerVisual } from '../playerVisual';
-import type { ProjectileView } from '../projectiles/projectileView';
-import type { ParticleView } from '../effects/particleView';
-import type { BeamView } from '../projectiles/beamView';
-import type { SmokeView } from '../effects/smokeView';
-import type { CorpseView } from '../ragdoll/corpseView';
+import { newVisualCache } from './matchViewCache';
 
 export interface MatchView {
     render(state: GameState, now: number): void;
@@ -30,20 +26,6 @@ const NO_LOCAL_ID = '';
 const NO_MOUSE = { x: -1000, y: -1000 };
 
 const adsConfigUrl = () => new URL('ads.json', document.baseURI).href;
-
-// The per-view sprite cache syncVisuals fills (the same shape GameCanvas keeps)
-const newVisualCache = (textures: Record<string, Texture>) => ({
-    players: new Map<string, Container>(),
-    projectileView: null as ProjectileView | null,
-    particleView: null as ParticleView | null,
-    pickups: new Map<string, Container>(),
-    decals: new Map<string, Graphics>(),
-    floatingTexts: new Map<string, Container>(),
-    beamView: null as BeamView | null,
-    smokeView: null as SmokeView | null,
-    corpses: new Map<string, CorpseView>(),
-    textures,
-});
 
 export const createMatchView = async (host: HTMLElement): Promise<MatchView> => {
     const app = new Application();
@@ -124,7 +106,7 @@ export const createMatchView = async (host: HTMLElement): Promise<MatchView> => 
             ads?.destroy();
             ads = null;
             look.destroy(); // frees the baked map textures before the app goes away
-            for (const id of cache.players.keys()) forgetPlayerVisual(id);
+            // Its fighters' animation memory is its own (cache.animator): nothing page-wide to forget
             cache.projectileView?.clear();
             cache.particleView?.clear();
             cache.beamView?.clear();
