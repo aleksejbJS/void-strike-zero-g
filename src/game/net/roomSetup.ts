@@ -5,6 +5,7 @@ import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants
 import { getPlatforms, getInitialPickups } from '../data/level';
 import { getCoverLayout } from '../cover/coverLayout';
 import { liftOutOfCover } from '../cover/coverSpawn';
+import { restoreAllCover } from '../cover/coverTick';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks } from '../build/botLooks';
@@ -145,8 +146,9 @@ export const resetHungerRound = (state: GameState, now: number) => {
     state.hungerEndReason = undefined;
 };
 
-/** Fresh start for every player (keeping identity, team and input tracking), pickups and shots. */
+/** Fresh start for every player (keeping identity, team and input tracking), cover, pickups and shots. */
 const respawnEveryone = (state: GameState) => {
+    restoreAllCover(state); // first: liftOutOfCover below must see the cover that is coming back
     state.players.forEach((p, i) => {
         const { lastProcessedInput, aim } = p;
         Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });

@@ -12,6 +12,7 @@ import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
 import { grantSpawnShield } from './spawnShield';
 import { liftOutOfCover } from '../cover/coverSpawn';
+import { tickCover } from '../cover/coverTick';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -365,6 +366,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         }
     });
     state.projectiles = state.projectiles.filter(p => p.active);
+
+    // Cover: lit barrels go off, broken pieces come back (after the shots, so a barrel hit this tick is lit already)
+    tickCover(state, now);
 
     // Beams Update
     if (!state.beams) state.beams = [];

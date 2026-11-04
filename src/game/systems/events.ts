@@ -3,12 +3,15 @@
 import type { FighterBuild } from '../build/buildParts';
 import type { Team, Vector2, WeaponType } from '../../types';
 import type { DeathKind } from './deathKind';
+import type { CoverKind } from '../cover/coverTypes';
 
 export type EffectKind = 'blood' | 'spark' | 'explosion' | 'shell' | 'respawn';
 
 /** Which objective changed hands: a CTF team flag, the Hold the Flag neutral flag, the Infiltration intel. */
 export type FlagKind = 'ctf' | 'hold' | 'intel';
 export type FlagAction = 'grabbed' | 'lost' | 'returned' | 'captured';
+/** What happened to a piece of cover: took a hit, broke, came back. */
+export type CoverAction = 'hit' | 'break' | 'restore';
 
 export type GameEvent =
     | { type: 'KILL'; killer: string; killerColor: string; weapon: string; victim: string; victimColor: string }
@@ -29,7 +32,9 @@ export type GameEvent =
     | { type: 'LIMB'; x: number; y: number; facing: 1 | -1; vel: Vector2; from?: Vector2; parts?: RagdollColors }
     // An objective changed hands (HUD banner). `team`: the flag's team for CTF grabbed/lost/returned,
     // the scoring team for CTF captured, the holder's team in Hold the Flag, NONE for intel.
-    | { type: 'FLAG'; kind: FlagKind; action: FlagAction; team: Team };
+    | { type: 'FLAG'; kind: FlagKind; action: FlagAction; team: Team }
+    // A piece of cover changed (cosmetics + sound): `kind` picks the look, x/y = the middle of the piece.
+    | { type: 'COVER'; action: CoverAction; kind: CoverKind; x: number; y: number };
 
 export type DeathEvent = Extract<GameEvent, { type: 'DEATH' }>;
 export type LimbEvent = Extract<GameEvent, { type: 'LIMB' }>;
