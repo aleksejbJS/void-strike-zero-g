@@ -28,6 +28,7 @@ import { clearBotMemory } from '../game/systems/bot';
 import { ffaBotLooks } from '../game/build/botLooks';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
 import { getCoverLayout } from '../game/cover/coverLayout';
+import { liftOutOfCover } from '../game/cover/coverSpawn';
 import { useUIStore } from '../store/uiStore';
 import { GameHud } from './hud/GameHud';
 import { objectiveFor, Objective } from './hud/objective';
@@ -321,7 +322,10 @@ export default function GameCanvas() {
                 });
             }
 
-            gameState.current.players.forEach(p => physicsEngine.current.addPlayer(p));
+            gameState.current.players.forEach(p => {
+                liftOutOfCover(gameState.current, p); // a random spawn can land inside a crate
+                physicsEngine.current.addPlayer(p);
+            });
         }
 
         // Pickups

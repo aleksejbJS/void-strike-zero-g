@@ -13,6 +13,7 @@ import { createRoomState, createBots, createJoinedPlayer, spawnPointFor, pickTea
 import { isHungerRoundOver } from '../systems/hungerRound';
 import { isMatchOver } from '../systems/matchRound';
 import { duelSpawnPoint } from '../systems/duelRules';
+import { liftOutOfCover } from '../cover/coverSpawn';
 
 const MAX_BODY_SPEED_X = 15;
 
@@ -46,6 +47,7 @@ export class GameRoom {
         this.spawnPoint = spawnPointFor(config.mode);
         this.state = createRoomState(config.mode, config.map);
         this.state.players.push(...createBots(config.mode, config.bots));
+        this.state.players.forEach(p => liftOutOfCover(this.state, p));
         this.state.platforms.forEach(p => this.physics.addPlatform(p));
         this.state.players.forEach(p => this.physics.addPlayer(p));
         // The event bus is global: one room per process (true for the Node server)
@@ -62,6 +64,7 @@ export class GameRoom {
         const hunger = this.state.mode === GameMode.HUNGER_GAMES;
         const duel = this.state.mode === GameMode.DUEL;
         if (duel) player.pos = duelSpawnPoint(this.state, id); // opposite side from the opponent
+        liftOutOfCover(this.state, player);
         if (duel && this.departed?.name === player.name) {
             player.score = this.departed.score; // back after a dropped link: the duel goes on where it was
             this.departed = null;
@@ -147,11 +150,11 @@ export class GameRoom {
         this.physics.clear();
     }
 
-    /** Bodies for exactly the current players (after bots were removed between rounds). */
+    /** Bodies for exactly the current players, platforms and cover (after bots were removed between rounds). */
     private syncBodies() {
-        const ids = new Set(this.state.players.map(p => p.id));
+        const keep = new Set([...this.state.players, ...this.state.platforms, ...(this.state.cover ?? [])].map(e => e.id));
         for (const id of [...this.physics.bodies.keys()]) {
-            if (!ids.has(id) && !this.state.platforms.some(pl => pl.id === id)) this.physics.removeBody(id);
+            if (!keep.has(id)) this.physics.removeBody(id);
         }
         this.physics.syncFromGameState(this.state);
     }

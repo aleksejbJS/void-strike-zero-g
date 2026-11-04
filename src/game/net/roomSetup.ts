@@ -4,6 +4,7 @@ import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../type
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
 import { getCoverLayout } from '../cover/coverLayout';
+import { liftOutOfCover } from '../cover/coverSpawn';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks } from '../build/botLooks';
@@ -150,6 +151,7 @@ const respawnEveryone = (state: GameState) => {
         const { lastProcessedInput, aim } = p;
         Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
         if (state.mode === GameMode.DUEL) p.pos = duelSpawnByIndex(i); // the fighters start on opposite sides
+        liftOutOfCover(state, p);
     });
     state.projectiles = [];
     state.beams = [];

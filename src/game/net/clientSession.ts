@@ -127,11 +127,11 @@ export class ClientSession {
         if (!this.physics.bodies.has(local.id)) this.physics.addPlayer(local);
         // A snapshot may have moved us (respawn, snap): the body must start from there, or the
         // step below reads back where we died and we play on there while the server has us elsewhere
-        this.physics.syncFromGameState({ players: [local] });
+        this.physics.syncFromGameState({ players: [local], cover: state.cover });
 
         // Same order as the server tick: step, read back, apply input, push
         this.physics.step(FIXED_STEP_MS);
-        this.physics.syncGameState({ players: [local], platforms: state.platforms });
+        this.physics.syncGameState({ players: [local], platforms: state.platforms, cover: state.cover });
         const c = readControls(local, controls.keys);
         applyStance(local, c);
         const aim = clampProneAim(local, controls.aim);
@@ -139,7 +139,7 @@ export class ClientSession {
         updateGrapple(state, local, controls.hookPressed, aim);
         applyPlayerMovement(state, local, c, state);
         this.prediction.applyCorrection(local);
-        this.physics.syncFromGameState({ players: [local] });
+        this.physics.syncFromGameState({ players: [local], cover: state.cover });
         this.prediction.record(this.sequence, local.pos);
     }
 
@@ -170,10 +170,10 @@ export class ClientSession {
             return merged;
         });
 
-        // Only platforms and our own player have bodies on the client
-        const platformIds = new Set(state.platforms.map(p => p.id));
+        // Only platforms, cover and our own player have bodies on the client
+        const staticIds = new Set([...state.platforms, ...(state.cover ?? [])].map(p => p.id));
         for (const id of [...this.physics.bodies.keys()]) {
-            if (id !== this.localId && !platformIds.has(id)) this.physics.removeBody(id);
+            if (id !== this.localId && !staticIds.has(id)) this.physics.removeBody(id);
         }
     }
 }

@@ -11,6 +11,7 @@ import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
 import { grantSpawnShield } from './spawnShield';
+import { liftOutOfCover } from '../cover/coverSpawn';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -57,6 +58,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 p.maxFuel = DEFAULT_MAX_FUEL; p.jetpackFuel = DEFAULT_MAX_FUEL;
                 p.pos = state.mode === GameMode.DUEL ? duelSpawnPoint(state, p.id) : getSpawnPoint(p.team);
                 p.vel = { x: 0, y: 0 };
+                liftOutOfCover(state, p);
                 if (state.mode === GameMode.GUN_GAME) {
                     applyGunGameLoadout(p, p.gunLevel || 0);
                 } else if (state.mode === GameMode.DUEL) {

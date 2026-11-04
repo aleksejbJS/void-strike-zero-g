@@ -1,12 +1,14 @@
 import Matter from 'matter-js';
 import { Platform, Entity, Vector2 } from '../../types';
+import { Cover } from '../cover/coverTypes';
+import { coverRect, intactCover, isIntact } from '../cover/coverGeometry';
 
 // Feet within this band around a platform top count as standing on it
 const GROUND_ABOVE = 3; // the solver often leaves a resting body ~2 px above the surface
 const GROUND_BELOW = 4;
 const RISING = -0.5; // moving up faster than this (jetpack, rocket jump) is not standing
 
-const standsOnPlatform = (player: Entity, platforms: Platform[]) => {
+const standsOnPlatform = (player: Entity, platforms: Pick<Platform, 'x' | 'y' | 'w'>[]) => {
     if (player.dead || player.vel.y < RISING) return false;
     const left = player.pos.x - player.width / 2;
     const right = player.pos.x + player.width / 2;
@@ -164,7 +166,9 @@ export class MatterPhysicsEngine {
     }
 
     // Sync Matter.js positions/velocities back to game state
-    public syncGameState(state: { platforms: Platform[], players: Entity[] }) {
+    public syncGameState(state: { platforms: Platform[], players: Entity[], cover?: Cover[] }) {
+        // Intact cover is ground too: a fighter on a crate stands, and falls when it breaks
+        const ground = [...state.platforms, ...intactCover(state).map(coverRect)];
         for (const player of state.players) {
             const body = this.bodies.get(player.id);
             if (body) {
@@ -178,7 +182,7 @@ export class MatterPhysicsEngine {
                 // Grounded from collisions, or standing on a platform top: with gravity applied by
                 // the Force Pipeline a resting body touches the floor only every other step, so
                 // collisions alone flicker (the fighter slid with frozen legs and ground friction)
-                player.isGrounded = this.groundedSet.has(player.id) || standsOnPlatform(player, state.platforms);
+                player.isGrounded = this.groundedSet.has(player.id) || standsOnPlatform(player, ground);
             }
         }
     }
@@ -195,7 +199,8 @@ export class MatterPhysicsEngine {
 
     // Push game state velocity/position changes back to Matter bodies
     // Call this after updatePhysics modifies velocities (jetpack, grapple, bots, etc.)
-    public syncFromGameState(state: { players: Entity[] }) {
+    public syncFromGameState(state: { players: Entity[], cover?: Cover[] }) {
+        if (state.cover) this.syncCover(state.cover);
         for (const player of state.players) {
             const body = this.bodies.get(player.id);
             if (body) {
@@ -209,6 +214,15 @@ export class MatterPhysicsEngine {
                 const centerY = player.pos.y - player.height / 2;
                 Matter.Body.setPosition(body, { x: centerX, y: centerY });
             }
+        }
+    }
+
+    // A static body for every intact piece of cover, none for a broken one (it comes back when it returns)
+    private syncCover(cover: Cover[]) {
+        for (const c of cover) {
+            const present = this.bodies.has(c.id);
+            if (isIntact(c) && !present) this.addPlatform({ id: c.id, ...coverRect(c), color: '' });
+            else if (!isIntact(c) && present) this.removeBody(c.id);
         }
     }
 }
