@@ -31,7 +31,7 @@ export function makeFakeTournamentSupabase() {
         queries.push({ table, calls });
         const answer = () => tables[table] ?? ok([]);
         const chain: Record<string, unknown> = {};
-        for (const method of ['select', 'eq', 'or', 'order']) {
+        for (const method of ['select', 'eq', 'in', 'or', 'order']) {
             chain[method] = (...args: unknown[]) => { calls.push([method, ...args]); return chain; };
         }
         chain.maybeSingle = async () => { calls.push(['maybeSingle']); return answer(); };

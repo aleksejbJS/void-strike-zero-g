@@ -63,6 +63,9 @@ export type TournamentErrorCode =
     | 'offline'
     | 'unknown';
 
+/** The message of the 'unknown' error loadSnapshot throws for a tournament that does not exist (any more). */
+export const TOURNAMENT_NOT_FOUND = 'tournament not found';
+
 export class TournamentError extends Error {
     constructor(readonly code: TournamentErrorCode, message: string = code) {
         super(message);

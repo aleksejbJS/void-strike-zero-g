@@ -18,11 +18,13 @@ interface Props {
     onPlay: () => void;
     onCreateGame: () => void;
     onJoin: (target: string) => void;
+    /** Absent when tournaments are not available (no Supabase in this build): no button then. */
+    onTournaments?: () => void;
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
 
-export const PlayPanel: React.FC<Props> = ({ t, maps, selectedMap, playSubtitle, onSelectMap, onPlay, onCreateGame, onJoin }) => {
+export const PlayPanel: React.FC<Props> = ({ t, maps, selectedMap, playSubtitle, onSelectMap, onPlay, onCreateGame, onJoin, onTournaments }) => {
     const [invite, setInvite] = useState('');
     const submitJoin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,6 +50,13 @@ export const PlayPanel: React.FC<Props> = ({ t, maps, selectedMap, playSubtitle,
                 <span className="font-display text-[36px] font-black leading-none phone:text-2xl">{t('hb.playBots')}</span>
                 <span className="text-sm font-medium text-[#2A2410] phone:text-[11px] phone:leading-tight">{playSubtitle}</span>
             </button>
+
+            {onTournaments && (
+                <button type="button" onClick={onTournaments}
+                    className={`h-[50px] rounded border-2 border-bay-hazard text-base font-semibold text-bay-hazard transition-colors hover:bg-bay-hazard hover:text-bay-ink phone:h-auto phone:min-h-9 phone:px-2 phone:py-1 phone:text-[13px] ${focusRing}`}>
+                    {t('tournament.menu')}
+                </button>
+            )}
 
             <div aria-hidden="true" className="my-1.5 h-px bg-bay-plate phone:hidden" />
 

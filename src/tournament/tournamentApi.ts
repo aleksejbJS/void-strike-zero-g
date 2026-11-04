@@ -9,7 +9,7 @@ import {
     type MatchDbRow, type SeatDbRow, type TournamentDbRow,
 } from './tournamentRows';
 import {
-    TournamentError, type SeatTicket, type TournamentErrorCode, type TournamentRow, type TournamentSnapshot,
+    TOURNAMENT_NOT_FOUND, TournamentError, type MatchStatus, type SeatTicket, type TournamentErrorCode, type TournamentRow, type TournamentSnapshot,
 } from './types';
 
 const MINUTE_MS = 60_000;
@@ -126,11 +126,32 @@ export async function loadSnapshot(id: string): Promise<TournamentSnapshot> {
     ]);
     if (!tournament) {
         console.error(`[tournament] loadSnapshot: tournament ${id} not found (expired and cleaned up?)`);
-        throw new TournamentError('unknown', 'tournament not found');
+        throw new TournamentError('unknown', TOURNAMENT_NOT_FOUND);
     }
     return {
         tournament: toTournament(tournament as TournamentDbRow),
         seats: ((seats ?? []) as SeatDbRow[]).map(toSeat),
         matches: ((matches ?? []) as MatchDbRow[]).map(toMatch),
+    };
+}
+
+/** What the list rows need beyond the tournament rows: who sits where, and how far the bracket got. */
+export interface ListDetails {
+    seats: Array<{ tournamentId: string; seat: number; nickname: string; isBot: boolean }>;
+    matches: Array<{ tournamentId: string; round: number; status: MatchStatus }>;
+}
+
+/** Seats and match progress of several tournaments at once (two reads, whatever the number of tournaments). */
+export async function loadListDetails(ids: string[]): Promise<ListDetails> {
+    if (ids.length === 0) return { seats: [], matches: [] };
+    const [seats, matches] = await Promise.all([
+        request('loadListDetails', (db) => db.from('tournament_seats').select('tournament_id, seat, nickname, is_bot').in('tournament_id', ids)),
+        request('loadListDetails', (db) => db.from('tournament_matches').select('tournament_id, round, status').in('tournament_id', ids)),
+    ]);
+    type SeatPart = { tournament_id: string; seat: number; nickname: string; is_bot: boolean };
+    type MatchPart = { tournament_id: string; round: number; status: MatchStatus };
+    return {
+        seats: ((seats ?? []) as SeatPart[]).map((r) => ({ tournamentId: r.tournament_id, seat: r.seat, nickname: r.nickname, isBot: r.is_bot })),
+        matches: ((matches ?? []) as MatchPart[]).map((r) => ({ tournamentId: r.tournament_id, round: r.round, status: r.status })),
     };
 }
