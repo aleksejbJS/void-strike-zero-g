@@ -1,53 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { SpectatorSession, SpectatorCallbacks } from './spectatorSession';
-import { EmitterSocket } from './sessionSocket';
-import { MSG, Snapshot, WatchAccepted } from './protocol';
+import { MSG } from './protocol';
 import { gameEvents, GameEvent } from '../systems/events';
 import { presetBuild } from '../build/buildPresets';
-import { createMockPlayer, createMockState } from '../../test/mocks';
-import { Entity, GameMode, Team } from '../../types';
-
-/** Records what the session sends and lets a test play the host's part. */
-class FakeSocket extends EmitterSocket {
-    sent: { event: string; data: unknown }[] = [];
-    emit(event: string, data?: unknown) { this.sent.push({ event, data }); }
-    disconnect() {}
-    fire(event: string, data?: unknown) { this.dispatch(event, data); }
-}
-
-const platform = { id: 'floor', x: 0, y: 500, w: 800, h: 20 } as any;
-
-// What a host sends: the dynamic parts of the state (platforms travel separately, in WatchAccepted)
-const snapshotOf = (players: Entity[]): Snapshot => {
-    const { platforms: _platforms, ...dynamic } = createMockState(GameMode.DEATHMATCH);
-    return { ...dynamic, players, serverTime: Date.now() } as any;
-};
-
-const watchInfo = (players: Entity[] = []): WatchAccepted => ({
-    mode: GameMode.DEATHMATCH,
-    map: 'arena' as any,
-    platforms: [platform],
-    snapshot: snapshotOf(players),
-});
-
-const at = (id: string, x: number, score = 0): Entity => ({ ...createMockPlayer(id, Team.NONE), pos: { x, y: 300 }, score });
-
-const setup = () => {
-    const socket = new FakeSocket();
-    const cb = { onWatching: vi.fn(), onRejected: vi.fn(), onEnded: vi.fn(), onSound: vi.fn() } satisfies SpectatorCallbacks;
-    const session = new SpectatorSession(socket, cb);
-    return { socket, cb, session, state: createMockState(GameMode.DEATHMATCH) };
-};
-
-/** Connect, get accepted and run one tick so the world lands in `state`. */
-const watching = (players: Entity[] = []) => {
-    const ctx = setup();
-    const info = watchInfo(players);
-    ctx.socket.fire('connect');
-    ctx.socket.fire(MSG.WATCHING, info);
-    ctx.session.tick(ctx.state, performance.now() + 500);
-    return { ...ctx, info };
-};
+import { Team } from '../../types';
+import { setup, watching, watchInfo, snapshotOf, at } from './spectatorTestKit';
 
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -116,33 +72,6 @@ describe('SpectatorSession: events stay on this tile', () => {
         expect(() => session.tick(state, performance.now() + 500)).not.toThrow();
         expect(cb.onSound).not.toHaveBeenCalled();
         expect(state.particles).toHaveLength(0);
-    });
-});
-
-describe('SpectatorSession: connection loss', () => {
-    it('reports a disconnect after watching started', () => {
-        const { socket, cb } = watching();
-        socket.fire('disconnect');
-        expect(cb.onEnded).toHaveBeenCalledWith('disconnected');
-    });
-
-    it('stays quiet about a disconnect that came before the host accepted (the rejection is the news)', () => {
-        const { socket, cb } = setup();
-        socket.fire('disconnect');
-        expect(cb.onEnded).not.toHaveBeenCalled();
-    });
-
-    it('reports a failed connection', () => {
-        const { socket, cb } = setup();
-        socket.fire('connect_error', new Error('timeout'));
-        expect(cb.onEnded).toHaveBeenCalledWith('connection_error');
-    });
-
-    it('stops listening once disposed', () => {
-        const { socket, cb, session } = watching();
-        session.dispose();
-        socket.fire('disconnect');
-        expect(cb.onEnded).not.toHaveBeenCalled();
     });
 });
 

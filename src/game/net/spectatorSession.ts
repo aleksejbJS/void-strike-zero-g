@@ -20,7 +20,7 @@ import { presetBuild } from '../build/buildPresets';
 export interface SpectatorCallbacks {
     onWatching: (info: WatchAccepted) => void;
     onRejected: (reason: JoinRejected['reason']) => void;
-    /** The link is gone: lost after watching started, or it never came up. */
+    /** The link is gone (it closed, with or without an answer, or never came up); fires at most once, and not after a rejection. */
     onEnded: (why: 'disconnected' | 'connection_error') => void;
     /** The caller decides whether this tile is audible. */
     onSound: (e: GameEvent) => void;
@@ -40,16 +40,26 @@ export class SpectatorSession {
     private readonly buffer = new SnapshotBuffer();
     private readonly projectiles = new ProjectileCatchUp();
     private watching = false;
+    private rejected = false;
+    private ended = false;
     private platforms: GameState['platforms'] | null = null; // from the host, not yet in a state
     private latest: Snapshot | null = null;
     private effects: GameEvent[] = [];
 
     constructor(private readonly socket: SessionSocket, callbacks: SpectatorCallbacks) {
         this.socket.on('connect', () => this.socket.emit(MSG.WATCH, {}));
-        // Before the host accepts, a closed link is already explained by its rejection
-        this.socket.on('disconnect', () => { if (this.watching) callbacks.onEnded('disconnected'); });
-        this.socket.on('connect_error', () => callbacks.onEnded('connection_error'));
-        this.socket.on(MSG.JOIN_REJECTED, (data: JoinRejected) => callbacks.onRejected(data.reason));
+        // onEnded fires at most once; a rejection already told the caller why the link closes
+        const end = (why: 'disconnected' | 'connection_error') => {
+            if (this.ended) return;
+            this.ended = true;
+            callbacks.onEnded(why);
+        };
+        this.socket.on('disconnect', () => { if (!this.rejected) end('disconnected'); });
+        this.socket.on('connect_error', () => end('connection_error'));
+        this.socket.on(MSG.JOIN_REJECTED, (data: JoinRejected) => {
+            this.rejected = true;
+            callbacks.onRejected(data.reason);
+        });
         this.socket.on(MSG.WATCHING, (info: WatchAccepted) => {
             this.watching = true;
             this.platforms = info.platforms;
