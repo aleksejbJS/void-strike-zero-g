@@ -1,5 +1,6 @@
 // The bracket screen's autopilot: turns myTurn into actions. My match is ready -> start the duel as its host,
-// or as the guest once the host published its peer id. While waiting, keep telling the server I am here.
+// or as the guest once the host published its peer id. While my match is unsettled, keep telling the server
+// I am here.
 
 import { useEffect, useMemo } from 'react';
 import { myTurn, type MyTurn } from '../../game/tournament/myTurn';
@@ -23,10 +24,10 @@ const runKey = (turn: MyTurn): string | null => {
     return null;
 };
 
-/** The match a waiting seat belongs to: the ready one (wait-host) or the next one still waiting for its other seat. */
+/** My latest match while it is not settled: ready (to play, or played and left unsettled) or waiting for its other seat. */
 const openMatchOf = (s: TournamentSnapshot, seat: number): MatchRow | null => {
-    const mine = s.matches.filter(m => m.status !== 'done' && (m.seatA === seat || m.seatB === seat));
-    return mine.sort((x, y) => y.round - x.round)[0] ?? null;
+    const latest = s.matches.filter(m => m.seatA === seat || m.seatB === seat).sort((x, y) => y.round - x.round)[0];
+    return latest && latest.status !== 'done' ? latest : null;
 };
 
 export interface MyTurnState {
@@ -56,9 +57,11 @@ export const useMyTurn = (snapshot: TournamentSnapshot, ticket: SeatTicket | nul
         // eslint-disable-next-line react-hooks/exhaustive-deps -- acts on a change of kind or match only
     }, [key]);
 
-    // Heartbeat while waiting, so a waiting player is never counted as gone
-    const waiting = ticket !== null && (turn.kind === 'wait-host' || turn.kind === 'wait-round');
-    const heartbeatMatch = waiting ? openMatchOf(snapshot, ticket.seat)?.id ?? null : null;
+    // Heartbeat whenever my match is unsettled, so a player on the bracket is never counted as gone. That
+    // includes a duel this page already left (host vanished, Escape): the server's stale rules then favour the
+    // side that is still here. Two players who both left keep it open until the server's 15-min timeout.
+    const running = snapshot.tournament.status === 'running';
+    const heartbeatMatch = ticket !== null && running ? openMatchOf(snapshot, ticket.seat)?.id ?? null : null;
     useEffect(() => {
         if (!ticket || heartbeatMatch === null) return undefined;
         const beat = () => {

@@ -13,7 +13,7 @@ export const makeRun = (over: Partial<TournamentMatchRun> = {}): TournamentMatch
     ticket, matchId: 'm1', role: 'host', withBot: false, side: 'a', ...over,
 });
 
-const fighter = (id: string, score: number) => ({ id, name: id, score }) as unknown as Entity;
+export const fighter = (id: string, score: number, type: string = 'player') => ({ id, name: id, score, type }) as unknown as Entity;
 
 /** A duel in progress between `me` and `them`; pass `them: null` for a missing opponent. */
 export const duelState = (me: number, them: number | null): GameState => ({

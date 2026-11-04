@@ -14,11 +14,11 @@ export const DeathOverlay: React.FC<{ t: Translate; respawnMs: number }> = ({ t,
     </div>
 );
 
-export const ConnectionOverlay: React.FC<{ t: Translate; error: string | null }> = ({ t, error }) => (
+export const ConnectionOverlay: React.FC<{ t: Translate; error: string | null; inTournament?: boolean }> = ({ t, error, inTournament }) => (
     <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center">
         <div role={error ? 'alert' : 'status'} className={`${PANEL} max-w-md px-6 py-4 text-center font-body`}>
             <div className={error ? 'font-semibold text-bay-signal' : ''}>{error ?? t('net.connecting')}</div>
-            {error && <div className="mt-2 text-sm text-bay-dust">{t('net.backToMenu')}</div>}
+            {error && <div className="mt-2 text-sm text-bay-dust">{t(inTournament ? 'tournament.net.backToBracket' : 'net.backToMenu')}</div>}
         </div>
     </div>
 );

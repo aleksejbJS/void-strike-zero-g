@@ -1,4 +1,5 @@
 // Results screen at the end of a score/time-limited match; the next match starts by itself.
+// In a tournament duel it counts down to the return to the bracket instead.
 
 import React from 'react';
 import type { PlayerScore } from '../../store/uiStore';
@@ -14,9 +15,11 @@ interface Props {
     ranking: PlayerScore[];
     reward: Reward | null;
     onLeave: () => void;
+    /** A tournament duel: seconds until the return to the bracket (replaces the next-match countdown). */
+    tournament?: { backInSec: number } | null;
 }
 
-export const MatchResult: React.FC<Props> = ({ t, result, ranking, reward, onLeave }) => (
+export const MatchResult: React.FC<Props> = ({ t, result, ranking, reward, onLeave, tournament }) => (
     <div className="absolute inset-0 z-[55] flex items-center justify-center bg-[rgba(14,17,22,0.7)]">
         <div role="dialog" aria-labelledby="match-result-title" className={`${PANEL} flex w-[480px] max-w-[92vw] flex-col items-center overflow-hidden pb-6 phone:max-h-[94vh] phone:overflow-y-auto phone:pb-3`}>
             <div aria-hidden="true" className="hazard-stripes h-3.5 w-full" />
@@ -45,10 +48,10 @@ export const MatchResult: React.FC<Props> = ({ t, result, ranking, reward, onLea
             {reward && <div className="mt-5 w-full"><RewardPanel t={t} reward={reward} /></div>}
 
             <div className="mt-6 flex w-full items-center justify-between gap-4 px-7 phone:mt-3">
-                <span className="text-sm text-bay-dust">{t('match.next', result.restartSec)}</span>
+                <span className="text-sm text-bay-dust">{tournament ? t('tournament.end.backIn', tournament.backInSec) : t('match.next', result.restartSec)}</span>
                 <button type="button" onClick={onLeave}
                     className="h-12 rounded border-2 phone:h-10 border-bay-chalk px-5 font-semibold hover:bg-bay-chalk hover:text-bay-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
-                    {t('match.toMenu')}
+                    {tournament ? t('tournament.end.toBracket') : t('match.toMenu')}
                 </button>
             </div>
         </div>

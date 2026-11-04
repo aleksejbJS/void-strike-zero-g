@@ -91,6 +91,27 @@ describe('useMyTurn', () => {
         expect(matchSeen).toHaveBeenCalledWith('m-1-0', seat(0));
     });
 
+    it('keeps sending matchSeen for a duel it already played while the match is not settled', () => {
+        vi.useFakeTimers();
+        const stale = publishHost(makeSnapshot(4), 0, 0, 'peer-1');
+        const first = mount(stale, seat(1)); // joins as the guest
+        act(() => store.actions.endTournamentMatch()); // host vanished: back to the bracket
+        first.unmount();
+        vi.mocked(matchSeen).mockClear();
+        mount(stale, seat(1)); // the row still says ready with the same peer id
+        expect(store.state.tournamentMatch).toBeNull();
+        expect(matchSeen).toHaveBeenCalledWith('m-0-0', seat(1));
+        act(() => { vi.advanceTimersByTime(10_000); });
+        expect(matchSeen).toHaveBeenCalledTimes(2);
+    });
+
+    it('sends no heartbeat once the tournament is finished', () => {
+        vi.useFakeTimers();
+        const snap = makeSnapshot(4);
+        mount({ ...snap, tournament: { ...snap.tournament, status: 'finished' } }, seat(1));
+        expect(matchSeen).not.toHaveBeenCalled();
+    });
+
     it('logs a failed heartbeat', async () => {
         const warned = vi.spyOn(console, 'warn').mockImplementation(() => {});
         vi.mocked(matchSeen).mockRejectedValue(new Error('offline'));

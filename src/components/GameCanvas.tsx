@@ -1011,6 +1011,7 @@ export default function GameCanvas() {
                     winner: gunGameWinner,
                 } : null}
                 reward={reward}
+                tournament={tournamentRun ? { backInSec: tourney.backInSec } : null}
                 mobile={isMobile ? {
                     sticks: touchSticks,
                     hookDown,

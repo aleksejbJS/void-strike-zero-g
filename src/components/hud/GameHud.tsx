@@ -46,6 +46,7 @@ export interface GameHudProps {
     gunGame: { status: GunGameStatus | null; winner: string | null } | null;
     reward: Reward | null; // XP for the match that just ended; null while play goes on
     mobile: MobileControls | null; // touch device: the phone HUD and twin sticks instead of the desktop pieces
+    tournament?: { backInSec: number } | null; // a tournament duel: Esc and the end screen lead back to the bracket
 }
 
 const isTeamMode = (mode: GameMode) => mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -75,8 +76,8 @@ export const GameHud: React.FC<GameHudProps> = p => {
             {p.inviteLink && inviteOpen && <InviteBanner t={t} link={p.inviteLink} onClose={() => setInviteOpen(false)} />}
             {p.debug && <DebugStats fps={p.debug.fps} tps={p.debug.tps} />}
             {stats.dead && mode !== GameMode.HUNGER_GAMES && <DeathOverlay t={t} respawnMs={stats.respawn} />}
-            {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} />}
-            {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} reward={p.reward} onLeave={p.onLeave} />}
+            {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} inTournament={!!p.tournament} />}
+            {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} reward={p.reward} onLeave={p.onLeave} tournament={p.tournament} />}
             {p.achievementsOpen && <AchievementsPanel t={t} onClose={p.onAchievementsClose} />}
         </div>
     );

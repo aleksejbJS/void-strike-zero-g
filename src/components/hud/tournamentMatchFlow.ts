@@ -2,7 +2,7 @@
 // the bracket after the end screen, and giving up on an opponent or host that vanished.
 // useTournamentMatch drives it with a clock tick and the connection's signals.
 
-import type { GameState } from '../../types';
+import type { Entity, GameState } from '../../types';
 import type { TournamentMatchRun } from '../../store/tournamentSlice';
 import { matchSeen, publishHost, reportResult, resolveStale } from '../../tournament/tournamentApi';
 
@@ -10,7 +10,12 @@ export const HEARTBEAT_MS = 10_000; // matchSeen while connected (resolve_stale 
 export const BACK_TO_BRACKET_MS = 8_000; // after the end screen appears
 export const OPPONENT_GONE_MS = 60_000; // the spec's no-show / disconnect timeout
 export const HOST_SILENT_MS = 5_000; // PeerJS never reports a vanished host: no snapshot this long means gone
+export const GUEST_JOIN_MS = 30_000; // a guest that cannot join the host by then goes back to the bracket
 const RETRY_MS = 5_000; // a failed publish or report is tried again while the duel is open
+
+/** The duel's other fighter: a player or a bot, never any other entity. */
+const opponentOf = (state: GameState, localId: string): Entity | undefined =>
+    state.players.find(p => p.id !== localId && (p.type === 'player' || p.type === 'bot'));
 
 export interface MatchFlowDeps {
     run: TournamentMatchRun;
@@ -25,6 +30,7 @@ export interface MatchFlowDeps {
 
 export class TournamentMatchFlow {
     private connectedAt: number | null; // the host plays from the start, the guest once joined
+    private readonly joinDeadline: number; // guest only: give up when not joined by then
     private lastBeatAt = -Infinity;
     private lastSnapshotAt = 0;
     private endSeenAt: number | null = null;
@@ -35,11 +41,24 @@ export class TournamentMatchFlow {
 
     constructor(private readonly deps: MatchFlowDeps, now: number) {
         this.connectedAt = deps.run.role === 'host' ? now : null;
+        this.joinDeadline = now + GUEST_JOIN_MS;
+    }
+
+    /** Whole seconds until the end screen goes back to the bracket (the full delay until the end is seen). */
+    backInSec(now: number): number {
+        const left = this.endSeenAt === null ? BACK_TO_BRACKET_MS : BACK_TO_BRACKET_MS - (now - this.endSeenAt);
+        return Math.max(0, Math.ceil(left / 1000));
     }
 
     /** Called a few times a second. */
     tick(now: number): void {
-        if (this.finished || this.connectedAt === null) return;
+        if (this.finished) return;
+        if (this.connectedAt === null) {
+            if (now < this.joinDeadline) return;
+            console.warn('[tournament] could not join the host within 30 s, going back to the bracket');
+            this.finish(); // the stale rules settle the match
+            return;
+        }
         if (now - this.lastBeatAt >= HEARTBEAT_MS) {
             this.lastBeatAt = now;
             this.call('matchSeen', () => matchSeen(this.deps.run.matchId, this.deps.run.ticket));
@@ -90,7 +109,7 @@ export class TournamentMatchFlow {
     }
 
     private watchOpponent(state: GameState, localId: string, now: number): void {
-        if (state.players.some(p => p.id !== localId)) {
+        if (opponentOf(state, localId)) {
             this.missingSince = null;
             return;
         }
@@ -100,13 +119,13 @@ export class TournamentMatchFlow {
         this.finished = true;
         resolveStale(this.deps.run.ticket.tournamentId)
             .catch((error: unknown) => this.deps.fail('resolveStale', error))
-            .finally(() => this.deps.end());
+            .finally(() => { if (!this.disposed) this.deps.end(); });
     }
 
     /** scoreA belongs to the match's seat A: mine when I sit there, the opponent's otherwise. */
     private report(state: GameState, localId: string): void {
         const mine = state.players.find(p => p.id === localId)?.score ?? 0;
-        const theirs = state.players.find(p => p.id !== localId)?.score ?? 0;
+        const theirs = opponentOf(state, localId)?.score ?? 0;
         const [scoreA, scoreB] = this.deps.run.side === 'a' ? [mine, theirs] : [theirs, mine];
         const send = () => this.call('reportResult', () => reportResult(this.deps.run.matchId, this.deps.run.ticket, scoreA, scoreB), send);
         send();

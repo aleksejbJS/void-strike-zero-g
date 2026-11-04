@@ -43,6 +43,27 @@ describe('useTournamentMatch: guest', () => {
         expect(endTournamentMatch).toHaveBeenCalledTimes(1);
     });
 
+    it('gives up on a host it cannot join within 30 s', async () => {
+        const warned = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        renderMatch(guest(), duelState(0, 0));
+        await advance(29_500);
+        expect(endTournamentMatch).not.toHaveBeenCalled();
+        await advance(1_000);
+        expect(endTournamentMatch).toHaveBeenCalledTimes(1);
+        expect(warned).toHaveBeenCalledWith(expect.stringContaining('[tournament]'));
+    });
+
+    it('joining before 30 s cancels the join deadline', async () => {
+        const { result } = renderMatch(guest(), duelState(0, 0));
+        await advance(20_000);
+        act(() => result.current.signals.joined());
+        for (let i = 0; i < 20; i++) {
+            await advance(1_000);
+            act(() => result.current.signals.snapshot());
+        }
+        expect(endTournamentMatch).not.toHaveBeenCalled();
+    });
+
     it('a lost connection goes back to the bracket at once', () => {
         const { result } = renderMatch(guest(), duelState(0, 0));
         act(() => result.current.signals.joined());

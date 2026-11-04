@@ -8,7 +8,7 @@ import type { TournamentMatchRun } from '../../store/tournamentSlice';
 import { useTranslation } from '../../i18n/useTranslation';
 import { TournamentError } from '../../tournament/types';
 import { ERROR_KEYS } from '../tournament/TournamentFrame';
-import { TournamentMatchFlow } from './tournamentMatchFlow';
+import { BACK_TO_BRACKET_MS, TournamentMatchFlow } from './tournamentMatchFlow';
 
 const POLL_MS = 250;
 
@@ -28,6 +28,8 @@ export interface TournamentMatchLink {
     signals: TournamentMatchSignals;
     /** A failed tournament call, for the netError banner; null when all is well. */
     error: string | null;
+    /** The end screen's countdown back to the bracket, in whole seconds. */
+    backInSec: number;
 }
 
 export function useTournamentMatch(
@@ -43,6 +45,7 @@ export function useTournamentMatch(
     const endRef = useRef(actions.endTournamentMatch);
     endRef.current = actions.endTournamentMatch;
     const [error, setError] = useState<string | null>(null);
+    const [backInSec, setBackInSec] = useState(BACK_TO_BRACKET_MS / 1000);
     const flowRef = useRef<TournamentMatchFlow | null>(null);
 
     useEffect(() => {
@@ -60,8 +63,13 @@ export function useTournamentMatch(
             ok: () => setError(null),
         }, Date.now());
         flowRef.current = flow;
-        const timer = setInterval(() => flow.tick(Date.now()), POLL_MS);
-        flow.tick(Date.now());
+        const step = () => {
+            const now = Date.now();
+            flow.tick(now);
+            setBackInSec(flow.backInSec(now)); // React skips the render when the second did not change
+        };
+        const timer = setInterval(step, POLL_MS);
+        step();
         return () => {
             clearInterval(timer);
             flow.dispose();
@@ -76,5 +84,5 @@ export function useTournamentMatch(
         disconnected: () => flowRef.current?.disconnected(),
     }), []);
 
-    return { signals, error };
+    return { signals, error, backInSec };
 }
