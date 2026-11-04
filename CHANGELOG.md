@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.31 (2026-11-04)
+
+### 🛡️ Infiltration defenders take cover
+- Red bots holding the intel's spot used bot state `defend`, which 0.4.30 exempts from taking cover (meant for CTF escorts and carrier chases). They now use a new state `guard` (`botMemory.ts`, `botGoals.ts` Infiltration branch), so they crouch behind the bastion crates like any bot under fire. Tests: `botGoals.infiltration.test.ts`, `botCombatMoves.test.ts` (`guard` hides).
+
 ## Version 0.4.30 (2026-11-04)
 
 ### 📦 Destructible Cover

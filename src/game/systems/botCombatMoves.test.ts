@@ -118,8 +118,8 @@ describe('combatMoves cover gives way', () => {
         expect(step(1008, botState, goLeft).wantsDown).toBeFalsy();
     });
 
-    it('a hunting bot does hide', () => {
-        expect(withCrate().step(1000, 'hunt', goLeft).inputX).toBe(1);
+    it.each(['hunt', 'guard'] as BotState[])('a bot on %s does hide', botState => {
+        expect(withCrate().step(1000, botState, goLeft).inputX).toBe(1);
     });
 
     it('a wounded bot keeps heading for its medkit', () => {

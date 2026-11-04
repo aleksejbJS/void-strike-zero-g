@@ -66,7 +66,7 @@ const infiltrationGoal = (state: GameState, bot: Entity, mem: BotMemory, target:
         return { moveTarget: carrierAt, target: carrier };
     }
     if (intel) {
-        mem.state = 'defend';
+        mem.state = 'guard'; // holding the base, not escorting: free to take cover there
         return { moveTarget: distance(bot.pos, intel.pos) > 400 ? intel.pos : bot.pos, target };
     }
     return null;
