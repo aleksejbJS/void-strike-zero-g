@@ -10,6 +10,8 @@ type Tickets = Record<string, SeatTicket>;
 
 // The last JSON we saved: the fallback when real storage cannot be read or written.
 let memoryRaw: string | null = null;
+// True after a write that storage refused: what it still holds is older than memoryRaw, so memoryRaw wins.
+let storageBehind = false;
 const warned = new Set<string>();
 
 function warnOnce(topic: string, message: string, detail: unknown): void {
@@ -28,6 +30,7 @@ function storage(): Storage | null {
 }
 
 function readRaw(): string | null {
+    if (storageBehind && memoryRaw !== null) return memoryRaw;
     try {
         const raw = storage()?.getItem(KEY) ?? null;
         if (raw !== null) return raw;
@@ -41,7 +44,9 @@ function writeRaw(raw: string): void {
     memoryRaw = raw;
     try {
         storage()?.setItem(KEY, raw);
+        storageBehind = false;
     } catch (error) {
+        storageBehind = true;
         warnOnce('storage', 'localStorage not writable, seat tickets are kept in memory only:', error);
     }
 }

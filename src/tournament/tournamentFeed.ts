@@ -22,17 +22,21 @@ export function watchTournament(id: string, onSnapshot: (snapshot: TournamentSna
 
     let stopped = false;
     let latestLoad = 0;
+    let loadsRunning = 0;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     const reload = async (): Promise<void> => {
         const thisLoad = ++latestLoad;
         let snapshot: TournamentSnapshot;
+        loadsRunning++;
         try {
             snapshot = await loadSnapshot(id);
         } catch (error) {
             console.warn('[tournament] feed could not reload, it will try again on the next change', error);
             return;
+        } finally {
+            loadsRunning--;
         }
         // An older, slower load must not overwrite a newer answer; nothing is delivered after unsubscribe.
         if (!stopped && thisLoad === latestLoad) onSnapshot(snapshot);
@@ -47,7 +51,9 @@ export function watchTournament(id: string, onSnapshot: (snapshot: TournamentSna
     };
 
     const startPolling = (): void => {
-        if (pollTimer === null) pollTimer = setInterval(() => void reload(), POLL_MS);
+        // A tick is skipped while a load is still running: requests can take up to 15 s (the fetch timeout), and a
+        // newer load would make the older one "stale", so with a slow connection nothing would ever be delivered.
+        if (pollTimer === null) pollTimer = setInterval(() => { if (loadsRunning === 0) void reload(); }, POLL_MS);
     };
     const stopPolling = (): void => {
         if (pollTimer !== null) clearInterval(pollTimer);
@@ -59,6 +65,7 @@ export function watchTournament(id: string, onSnapshot: (snapshot: TournamentSna
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments', filter: `id=eq.${id}` }, scheduleReload)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches', filter: `tournament_id=eq.${id}` }, scheduleReload)
         .subscribe((status, error) => {
+            if (stopped) return; // a status that arrives after the unsubscribe must not start any timer
             if (status === 'SUBSCRIBED') {
                 stopPolling(); // also after a recovery: Realtime rejoins on its own
                 scheduleReload();

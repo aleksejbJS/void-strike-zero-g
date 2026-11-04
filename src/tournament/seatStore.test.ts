@@ -92,6 +92,32 @@ describe('seatStore without working storage', () => {
         expect(warn).toHaveBeenCalledTimes(1);
     });
 
+    it('a write that fails after an earlier success keeps the new ticket readable, and recovers later', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        let refuse = false;
+        vi.stubGlobal('localStorage', {
+            getItem: (key: string) => (key in stored ? stored[key] : null),
+            setItem: (key: string, value: string) => {
+                if (refuse) throw new DOMException('full', 'QuotaExceededError');
+                stored[key] = value;
+            },
+            removeItem: () => {},
+        });
+        const store = await freshStore();
+        store.saveTicket(B); // written
+        refuse = true;
+        store.saveTicket(A); // refused: storage still holds only B
+        expect(store.ticketFor('tournament-a')).toEqual(A);
+        expect(store.ticketFor('tournament-b')).toEqual(B);
+        expect(warn).toHaveBeenCalledTimes(1);
+
+        refuse = false;
+        const C: SeatTicket = { tournamentId: 'tournament-c', seat: 1, secret: 'cc'.repeat(32) };
+        store.saveTicket(C); // storage works again: everything is written
+        expect(Object.keys(JSON.parse(stored.tournamentTickets)).sort()).toEqual(['tournament-a', 'tournament-b', 'tournament-c']);
+        expect(store.ticketFor('tournament-a')).toEqual(A);
+    });
+
     it('no localStorage at all (Node) keeps tickets in memory without noise', async () => {
         vi.stubGlobal('localStorage', undefined);
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

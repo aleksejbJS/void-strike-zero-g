@@ -3,12 +3,14 @@ import { getSupabase } from '../account/supabaseClient';
 import { makeFakeTournamentSupabase } from '../test/fakeTournamentSupabase';
 import { loadSnapshot } from './tournamentApi';
 import { watchTournament } from './tournamentFeed';
+import type { TournamentSnapshot } from './types';
 
 vi.mock('../account/supabaseClient', () => ({ getSupabase: vi.fn() }));
 vi.mock('./tournamentApi', () => ({ loadSnapshot: vi.fn() }));
 
 const T_ID = '11111111-1111-4111-8111-111111111111';
 const POLL_MS = 5000;
+const SNAPSHOT = { seats: [], matches: [] } as unknown as TournamentSnapshot;
 
 // A promise the test settles by hand (Promise.withResolvers is not in this project's TS lib).
 function deferred<T>() {
@@ -75,6 +77,44 @@ describe('watchTournament polling fallback', () => {
         expect(vi.getTimerCount()).toBe(0);
         expect(() => stop()).not.toThrow(); // calling it twice is harmless
         expect(fake.removeChannel).toHaveBeenCalledTimes(1);
+    });
+
+    it('statuses that arrive after the unsubscribe start no timer', async () => {
+        const stop = watchTournament(T_ID, () => {});
+        stop();
+        fake.channels[0].setStatus('SUBSCRIBED');
+        fake.channels[0].setStatus('CHANNEL_ERROR');
+        fake.channels[0].setStatus('TIMED_OUT');
+        expect(vi.getTimerCount()).toBe(0);
+        await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+        expect(load).not.toHaveBeenCalled();
+    });
+
+    it('a poll tick is skipped while a load is still running, so a slow load is still delivered', async () => {
+        const slow = deferred<TournamentSnapshot>();
+        load.mockReturnValueOnce(slow.promise);
+        const onSnapshot = vi.fn();
+        watchTournament(T_ID, onSnapshot);
+        fake.channels[0].setStatus('CHANNEL_ERROR');
+        await vi.advanceTimersByTimeAsync(POLL_MS); // load 1 starts and hangs
+        expect(load).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(POLL_MS * 2 + 2000); // 12 s in: the tick at 10 s was skipped
+        expect(load).toHaveBeenCalledTimes(1);
+        slow.resolve(SNAPSHOT);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(onSnapshot).toHaveBeenCalledTimes(1);
+        expect(onSnapshot).toHaveBeenCalledWith(SNAPSHOT);
+        await vi.advanceTimersByTimeAsync(POLL_MS); // polling goes on once the load is done
+        expect(load).toHaveBeenCalledTimes(2);
+    });
+
+    it('a failed load does not block the next poll tick', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        load.mockRejectedValueOnce(new Error('boom'));
+        watchTournament(T_ID, () => {});
+        fake.channels[0].setStatus('CHANNEL_ERROR');
+        await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+        expect(load).toHaveBeenCalledTimes(2);
     });
 
     it('a load that finishes after the unsubscribe is not delivered', async () => {
