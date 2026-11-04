@@ -4,10 +4,14 @@
 import { Entity, WeaponType } from '../../types';
 import { WOUND_HEALTH } from '../../constants';
 import type { DamageSource } from './deathKind';
+import { hasArmor } from './armor';
 
-/** A railgun hit on a fighter with any armor wounds; without armor (also a wounded one) it kills as before. */
+/**
+ * A railgun hit on a fighter with armor (1 or more, what the HUD shows) wounds; without armor
+ * (also a wounded one) it kills as before.
+ */
 export const shouldWound = (target: Entity, source: DamageSource): boolean =>
-    source.weapon === WeaponType.RAILGUN && target.armor > 0 && !source.bleed;
+    source.weapon === WeaponType.RAILGUN && hasArmor(target) && !source.bleed;
 
 /**
  * Burn all armor, cap health at WOUND_HEALTH (never heals) and credit the bleed to `attackerId`;

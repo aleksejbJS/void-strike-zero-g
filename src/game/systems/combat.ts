@@ -11,6 +11,7 @@ import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
 import { shouldWound, inflictWound, killCredit } from './wound';
+import { absorbArmor } from './armor';
 import { emitFlag } from './flagEvents';
 import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
@@ -92,11 +93,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     // Bleeding is plain health loss: no flag bonus, armor, knockback or damage number
     const holdingHTF = !source.bleed && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
     let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
-    if (target.armor > 0 && !source.bleed) {
-        const absorb = Math.min(target.armor, dmg * 0.66);
-        target.armor -= absorb;
-        dmg -= absorb;
-    }
+    if (!source.bleed) dmg = absorbArmor(target, dmg);
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 

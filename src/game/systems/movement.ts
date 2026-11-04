@@ -27,7 +27,7 @@ import { jetpackTrail } from './effects';
 
 export interface MovementInput {
     inputX: number;       // -1, 0, or 1
-    isFlying: boolean;    // wants to use jetpack
+    isFlying: boolean;    // wants to use jetpack (ignored while the hook is attached)
     wantsJump: boolean;   // W or Space held
     wantsDown: boolean;   // S held while flying
     wantsReel: boolean;   // W held while grapple active
@@ -49,19 +49,22 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
         p.vel.y = 0.1;
     }
 
+    // On the hook W/Space only reels in: the jetpack stays off and refills (humans and bots alike)
+    const flying = input.isFlying && !p.grapple.active;
+
     // --- 2. Player/Bot horizontal input ---
     if (p.isGrounded) {
         // A wounded fighter (lost a leg) can only hop at crawl speed
         const speed = p.isProne || p.wound ? PRONE_SPEED : p.isCrouching ? CROUCH_SPEED : MOVE_SPEED;
         p.vel.x += input.inputX * speed;
-    } else if (!input.isFlying) {
+    } else if (!flying) {
         // Air strafe — weak control without jetpack
         p.vel.x += input.inputX * AIR_STRAFE_FORCE;
     }
 
     // --- 3. Jetpack — directional thrust ---
     // Flag travels in snapshots so other clients can draw this player's flame
-    p.jetpackOn = input.isFlying && p.jetpackFuel > 0;
+    p.jetpackOn = flying && p.jetpackFuel > 0;
     if (p.jetpackOn) {
         let thrustX = 0;
         let thrustY = JETPACK_FORCE_UP;
@@ -88,8 +91,8 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
         if (state) jetpackTrail(state, p, thrustX, fuelMult >= 1);
     }
 
-    // Fuel recharge — on ground or hanging on the grapple, never in free flight
-    if ((p.isGrounded || p.grapple.active) && !input.isFlying) {
+    // Fuel recharge — on the ground when not thrusting, and the whole time the hook is attached
+    if ((p.isGrounded && !flying) || p.grapple.active) {
         p.jetpackFuel = Math.min(p.maxFuel, p.jetpackFuel + JETPACK_RECHARGE);
     }
 

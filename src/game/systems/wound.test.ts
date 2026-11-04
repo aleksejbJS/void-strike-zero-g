@@ -53,6 +53,13 @@ describe('railgun wound', () => {
         expect(target.wound).toBeUndefined();
     });
 
+    it('kills through an invisible sliver of armor (below 1)', () => {
+        const { state, shooter, target } = duel(100, 0.3);
+        beam(state, shooter);
+        expect(target.dead).toBe(true);
+        expect(target.wound).toBeUndefined();
+    });
+
     it('second beam without armor kills', () => {
         const { state, shooter, target } = duel(100, 100);
         beam(state, shooter);
