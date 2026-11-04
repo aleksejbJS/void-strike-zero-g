@@ -17,28 +17,33 @@ interface FrameProps {
     children: React.ReactNode;
 }
 
-export const TournamentFrame: React.FC<FrameProps> = ({ title, onBack, children }) => {
+/** "‹ Back" in hazard yellow, at the top left of every tournament screen. */
+export const BackButton: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { t } = useTranslation();
     return (
-        <div className="h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
-            <div className="mx-auto flex min-h-full max-w-[760px] flex-col gap-5 px-4 pb-8 pt-6 sm:px-10 lg:pt-10 phone:gap-2 phone:px-3 phone:pb-2 phone:pt-2">
-                <header className="flex flex-col gap-2 phone:flex-row phone:items-center phone:gap-4">
-                    <button type="button" onClick={onBack} className={`flex items-center gap-1.5 self-start text-[15px] font-semibold text-bay-hazard hover:text-bay-chalk ${focusRing}`}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M15 18l-6-6 6-6" />
-                        </svg>
-                        {t('tournament.back')}
-                    </button>
-                    <h1 className="m-0 font-display text-[44px] font-black uppercase leading-none sm:text-[56px] phone:text-2xl">{title}</h1>
-                </header>
-                <section className="flex flex-col gap-4 overflow-hidden rounded bg-bay-panel px-5 pb-5 phone:gap-2 phone:px-3 phone:pb-3">
-                    <div aria-hidden="true" className="hazard-stripes -mx-5 h-2 phone:-mx-3" />
-                    {children}
-                </section>
-            </div>
-        </div>
+        <button type="button" onClick={onBack} className={`flex shrink-0 items-center gap-1.5 self-start text-[15px] font-semibold text-bay-hazard hover:text-bay-chalk ${focusRing}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+            {t('tournament.back')}
+        </button>
     );
 };
+
+export const TournamentFrame: React.FC<FrameProps> = ({ title, onBack, children }) => (
+    <div className="h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
+        <div className="mx-auto flex min-h-full max-w-[760px] flex-col gap-5 px-4 pb-8 pt-6 sm:px-10 lg:pt-10 phone:gap-2 phone:px-3 phone:pb-2 phone:pt-2">
+            <header className="flex flex-col gap-2 phone:flex-row phone:items-center phone:gap-4">
+                <BackButton onBack={onBack} />
+                <h1 className="m-0 font-display text-[44px] font-black uppercase leading-none sm:text-[56px] phone:text-2xl">{title}</h1>
+            </header>
+            <section className="flex flex-col gap-4 overflow-hidden rounded bg-bay-panel px-5 pb-5 phone:gap-2 phone:px-3 phone:pb-3">
+                <div aria-hidden="true" className="hazard-stripes -mx-5 h-2 phone:-mx-3" />
+                {children}
+            </section>
+        </div>
+    </div>
+);
 
 /** The message key of each tournament error code (also used by the duel's error banner). */
 export const ERROR_KEYS: Record<TournamentErrorCode, keyof TranslationKeys> = {

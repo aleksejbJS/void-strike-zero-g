@@ -90,9 +90,12 @@ describe('TournamentScreens', () => {
         expect(screen.getByRole('alert')).toHaveTextContent('This tournament no longer exists.');
     });
 
-    it('the watch view is a placeholder whose Back returns to the tournament', async () => {
+    it('the watch view says when no match is live, and Back returns to the tournament', async () => {
+        vi.mocked(loadSnapshot).mockResolvedValue(snap('running'));
         await renderAt(s => s.actions.openWatch(T_ID));
+        expect(screen.getByText('No match is live right now.')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+        await act(async () => {}); // the bracket loads its snapshot
         expect(store.state.tournamentNav).toEqual({ view: 'tournament', id: T_ID });
     });
 });

@@ -1,6 +1,6 @@
 // Router of the tournament screens (uiStore.tournamentNav): the list, one tournament, and watching it.
-// One tournament shows its lobby before the start and its bracket once running (or finished). The watch
-// screen is a placeholder until it exists.
+// One tournament shows its lobby before the start and its bracket once running (or finished). Over all of
+// them, the "Achievement unlocked" toast (a Champion unlock happens on the bracket).
 
 import React from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -11,6 +11,9 @@ import { ErrorLine, TournamentFrame, ghostButton } from './TournamentFrame';
 import { TournamentList } from './TournamentList';
 import { TournamentLobby } from './TournamentLobby';
 import { BracketScreen } from './BracketScreen';
+import { AchievementToast } from '../hud/Achievements';
+import { useAchievementToast } from './useAchievementToast';
+import { WatchScreen } from './watch/WatchScreen';
 
 interface Props {
     /** Opens the setup screen: a guest without a name picks one there first. */
@@ -48,9 +51,8 @@ const TournamentView: React.FC<{ id: string } & Props> = ({ id, onCustomize }) =
     return <TournamentFrame title={t('tournament.menu')} onBack={actions.openTournaments}>{body}</TournamentFrame>;
 };
 
-export const TournamentScreens: React.FC<Props> = ({ onCustomize }) => {
-    const { t } = useTranslation();
-    const { state, actions } = useUIStore();
+const Route: React.FC<Props> = ({ onCustomize }) => {
+    const { state } = useUIStore();
     const nav = state.tournamentNav;
     if (!nav) return null;
 
@@ -59,11 +61,22 @@ export const TournamentScreens: React.FC<Props> = ({ onCustomize }) => {
             return <TournamentList onCustomize={onCustomize} />;
         case 'tournament':
             return <TournamentView key={nav.id} id={nav.id} onCustomize={onCustomize} />;
-        case 'watch': // the split-screen watch screen replaces this
-            return (
-                <TournamentFrame title={t('tournament.menu')} onBack={() => actions.openTournament(nav.id)}>
-                    <Note>{t('tournament.placeholder.watch')}</Note>
-                </TournamentFrame>
-            );
+        case 'watch':
+            return <WatchScreen key={nav.id} id={nav.id} />;
     }
+};
+
+export const TournamentScreens: React.FC<Props> = ({ onCustomize }) => {
+    const { t } = useTranslation();
+    const achievement = useAchievementToast();
+    return (
+        <>
+            <Route onCustomize={onCustomize} />
+            {achievement && (
+                <div className="pointer-events-none fixed right-4 top-4 z-[80]">
+                    <AchievementToast t={t} achievement={achievement} />
+                </div>
+            )}
+        </>
+    );
 };

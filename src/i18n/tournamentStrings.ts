@@ -1,4 +1,5 @@
-// UI strings for tournaments: the menu entry, the list, the create form, the lobby, the bracket and the duel.
+// UI strings for tournaments: the menu entry, the list, the create form, the lobby, the bracket, the duel and
+// the watch screen.
 // Merged into the main translation table in locales.ts.
 
 import { Language } from '../types';
@@ -60,7 +61,14 @@ const en = {
     'tournament.end.backIn': 'Back to bracket in {0} s',
     'tournament.end.toBracket': 'Back to bracket',
     'tournament.net.backToBracket': 'Press Esc to return to the bracket',
-    'tournament.placeholder.watch': 'Watching matches is not available yet.',
+    'tournament.watch.none': 'No match is live right now.',
+    'tournament.watch.tile': '{0} vs {1}',
+    'tournament.watch.pick': 'Watch {0} vs {1}',
+    'tournament.watch.connecting': 'Connecting…',
+    'tournament.watch.full': 'No spectator seats left',
+    'tournament.watch.ended': 'Match over',
+    'tournament.watch.hostLeft': 'The host left',
+    'tournament.watch.collapse': 'Click or press Esc to see all matches',
     'tournament.setup.next': 'Pick a name, then back to the tournament',
     'tournament.setup.continue': 'Continue',
     'tournament.error.not_open': 'Sign-up for this tournament is closed.',
@@ -133,7 +141,14 @@ export const tournamentStrings: Record<Language, TournamentKeys> = {
         'tournament.end.backIn': 'Назад к сетке через {0} с',
         'tournament.end.toBracket': 'К сетке',
         'tournament.net.backToBracket': 'Нажмите Esc, чтобы вернуться к сетке',
-        'tournament.placeholder.watch': 'Просмотр матчей пока недоступен.',
+        'tournament.watch.none': 'Сейчас ни один матч не идёт.',
+        'tournament.watch.tile': '{0} против {1}',
+        'tournament.watch.pick': 'Смотреть: {0} против {1}',
+        'tournament.watch.connecting': 'Подключение…',
+        'tournament.watch.full': 'Мест для зрителей нет',
+        'tournament.watch.ended': 'Матч окончен',
+        'tournament.watch.hostLeft': 'Хост вышел',
+        'tournament.watch.collapse': 'Клик или Esc — все матчи',
         'tournament.setup.next': 'Выберите имя и возвращайтесь к турниру',
         'tournament.setup.continue': 'Продолжить',
         'tournament.error.not_open': 'Запись на этот турнир закрыта.',
