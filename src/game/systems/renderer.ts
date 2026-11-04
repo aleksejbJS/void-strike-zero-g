@@ -8,6 +8,7 @@ import { ParticleView } from '../render/effects/particleView';
 import { ProjectileView } from '../render/projectiles/projectileView';
 import { BeamView } from '../render/projectiles/beamView';
 import { SmokeView } from '../render/effects/smokeView';
+import { CoverView } from '../render/cover/coverView';
 import { smokeSilhouette } from '../render/smokeVisibility';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
 import { createParticles } from './effectSpawn';
@@ -434,9 +435,13 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
         gfx.position.set(d.pos.x, d.pos.y); gfx.rotation = d.rotation; gfx.alpha = d.alpha;
     });
 
+    // Cover: the bottom of the game layer, so pickups, fighters, projectiles and effects all draw over it
+    const now = Date.now();
+    cache.coverView ??= new CoverView(gameLayer);
+    cache.coverView.sync(state.cover ?? [], now, view.zoom);
+
     // Pickups
     for (const [id, obj] of cache.pickups.entries()) { if (!state.pickups.find(p => p.id === id)) { gameLayer.removeChild(obj); obj.destroy({ children: true, context: true }); cache.pickups.delete(id); } }
-    const now = Date.now();
     state.pickups.forEach(p => {
         let obj = cache.pickups.get(p.id);
         if (!obj) { obj = createPickupVisual(p, cache); gameLayer.addChild(obj); cache.pickups.set(p.id, obj); }

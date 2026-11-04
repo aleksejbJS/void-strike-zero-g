@@ -38,6 +38,7 @@ export type GameEvent =
 
 export type DeathEvent = Extract<GameEvent, { type: 'DEATH' }>;
 export type LimbEvent = Extract<GameEvent, { type: 'LIMB' }>;
+export type CoverEvent = Extract<GameEvent, { type: 'COVER' }>;
 
 /** Colors of the body parts that fly apart on death, and the build whose parts they keep (none: the default build). `jet`: the jetpack. */
 export interface RagdollColors { head: string; torso: string; arm: string; leg: string; jet?: string; build?: FighterBuild }

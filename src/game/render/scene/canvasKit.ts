@@ -79,7 +79,7 @@ export const glow = (ctx: CanvasRenderingContext2D, x: number, y: number, r: num
     ctx.restore();
 };
 
-const DISPLAY_FONT = '"Big Shoulders Display", "Fira Sans Extra Condensed", "Arial Narrow", sans-serif';
+export const DISPLAY_FONT ='"Big Shoulders Display", "Fira Sans Extra Condensed", "Arial Narrow", sans-serif';
 
 /** Stencilled lettering: thin bridges cut through the letters, like spray-painted signage. */
 export const stencil = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, alpha: number) => {

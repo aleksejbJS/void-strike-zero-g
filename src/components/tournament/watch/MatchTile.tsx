@@ -7,6 +7,7 @@ import { PeerSocket } from '../../../game/net/peerSocket';
 import { SpectatorSession } from '../../../game/net/spectatorSession';
 import { createMatchView, MatchView } from '../../../game/render/matchView/matchView';
 import { playSound } from '../../../game/systems/audio';
+import { playCoverSoundEvent } from '../../../game/systems/coverAudio';
 import { WeaponType } from '../../../types';
 import { emptyWatchState } from './watchState';
 
@@ -91,7 +92,9 @@ export const MatchTile: React.FC<MatchTileProps> = ({ peerId, audible, expanded,
             },
             onEnded: giveUp,
             onSound: e => {
-                if (e.type === 'SOUND' && audibleRef.current) playSound(e.sound as SoundName, e.subtype as WeaponType | undefined);
+                if (e.type !== 'SOUND' || !audibleRef.current) return;
+                if (e.sound === 'cover') playCoverSoundEvent(e.subtype, false);
+                else playSound(e.sound as SoundName, e.subtype as WeaponType | undefined);
             },
         });
 
