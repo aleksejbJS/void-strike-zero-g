@@ -36,6 +36,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         { version: '0.4.24', date: 'Nov 4, 2026', points: [
             'The smoke launcher got its own picture: a grey launcher with a smoke drum and a puff at the muzzle, on the map, in your hands and in the HUD',
         ] },
+        { version: '0.4.23', date: 'Nov 4, 2026', points: [
+            'The jetpack now refills while you hang on your hook, as fast as on the ground',
+        ] },
         { version: '0.4.22', date: 'Nov 3, 2026', groups: [
             { title: 'Accounts & profile', points: [
                 'Protect your nickname with a password: nobody else can take it, and your achievements, fighter level and fighter look follow you to any device. You can also log in on the character screen',
@@ -202,6 +205,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ru: [
         { version: '0.4.24', date: '04.11.2026', points: [
             'У дымового гранатомёта появилась своя картинка: серый гранатомёт с дымовым барабаном и облачком у дула — на карте, в руках и в HUD',
+        ] },
+        { version: '0.4.23', date: '04.11.2026', points: [
+            'Джетпак теперь заправляется, пока вы висите на крюке, так же быстро, как на земле',
         ] },
         { version: '0.4.22', date: '03.11.2026', groups: [
             { title: 'Аккаунты и профиль', points: [

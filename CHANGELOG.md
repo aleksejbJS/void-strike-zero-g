@@ -7,6 +7,11 @@
 - New pictures made from the grenade launcher render (`granat.png`): the body in gunmetal grey, the coloured grenades in the drum turned into white smoke canisters. `assets/items/smoke_launcher.png` (with a smoke puff at the muzzle) lies on the map; `assets/hud/smoke_launcher.png` (240×103, cropped exactly like `hud/grenade_launcher.png`, so the grip points still fit) is held by fighters and shown in the HUD
 - `withSharedPictures` still lends the grenade launcher's pictures, now for the map sprite too, if the smoke launcher's own fail to load. Removed `smokeLauncherPickup.ts` and `hud/smoke_launcher.svg`; asset bundle bumped to `game-assets-v14`
 
+## Version 0.4.23 (2026-11-04)
+
+### 🪝 Jetpack Refills on the Hook
+- The jetpack tank refilled only on the ground (`isGrounded`), so hanging on your own hook left it empty. It now also refills while the grapple is attached (`grapple.active`), at the same `JETPACK_RECHARGE` rate, and still not while thrusting (`movement.ts`). The rule lives in the shared Force Pipeline, so it applies offline, online and to bots alike
+
 ## Version 0.4.22 (2026-11-03)
 
 ### 🔒 Accounts and Profile
