@@ -9,7 +9,7 @@ export const WEAPON_ICON: Record<WeaponType, string> = {
     [WeaponType.SHOTGUN]: assetUrl('assets/hud/shotgun.png'),
     [WeaponType.ROCKET_LAUNCHER]: assetUrl('assets/hud/rocket_launcher.png'),
     [WeaponType.GRENADE_LAUNCHER]: assetUrl('assets/hud/grenade_launcher.png'),
-    [WeaponType.SMOKE_LAUNCHER]: assetUrl('assets/hud/smoke_launcher.svg'),
+    [WeaponType.SMOKE_LAUNCHER]: assetUrl('assets/hud/smoke_launcher.png'),
     [WeaponType.PLASMA_GUN]: assetUrl('assets/hud/plasma_gun.png'),
     [WeaponType.RAILGUN]: assetUrl('assets/hud/railgun.png'),
     [WeaponType.CHAINSAW]: assetUrl('assets/hud/chainsaw.png'),
