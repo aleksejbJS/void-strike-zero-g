@@ -9,6 +9,7 @@ import { FIXED_STEP_MS } from './fixedStep';
 import { BotMemory, reactionDelay } from './botMemory';
 import { canSee, centerOf, muzzleOf } from './botSenses';
 import { hungerShieldLeft } from './hungerRound';
+import { spawnShieldLeft } from './spawnShield';
 import { knownPos } from './botSearch';
 
 // Bodies move velocity × this many px per tick (Matter measures velocity per 60 Hz frame);
@@ -42,6 +43,12 @@ export const aimAndFire = (state: GameState, bot: Entity, target: Entity, mem: B
     const shield = hungerShieldLeft(state, now);
     if (shield > 0) {
         if (mem.fireAllowedAt < now + shield) mem.fireAllowedAt = now + shield + reactionDelay();
+        return true;
+    }
+    // Target just back from a death can't be hurt yet: hold fire, let the reaction time run.
+    // Not tied to the planned end: if the target fires, its shield drops and the bot answers soon.
+    if (spawnShieldLeft(target, now) > 0) {
+        if (mem.fireAllowedAt <= now) mem.fireAllowedAt = now + reactionDelay();
         return true;
     }
     if (now < mem.fireAllowedAt) return true;

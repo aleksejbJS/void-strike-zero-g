@@ -117,6 +117,7 @@ export interface Entity {
   jetpackOn?: boolean; // Jetpack thrusting this tick (lets other clients draw the flame)
   hungerOutTimer?: number;
   wound?: Wound; // lost a leg to a railgun through armor (missing from older hosts: whole)
+  spawnShieldUntil?: number; // can't be hurt before this timestamp, right after a respawn (spawnShield.ts)
 }
 
 export interface Projectile {
