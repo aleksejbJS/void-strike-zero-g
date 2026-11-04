@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from '@testing-library/react';
 import { matchSeen, reportResult } from '../../tournament/tournamentApi';
 import { duelState, makeRun, renderMatch, ticket } from './tournamentMatchTestKit';
+import { forgetRunHistory, isNoShow } from '../tournament/runHistory';
 
 const endTournamentMatch = vi.fn();
 vi.mock('../../store/uiStore', () => ({ useUIStore: () => ({ actions: { endTournamentMatch } }) }));
@@ -14,6 +15,7 @@ const guest = () => makeRun({ role: 'guest', peerId: 'peer-h', side: 'b' });
 
 beforeEach(() => {
     vi.useFakeTimers();
+    forgetRunHistory();
     endTournamentMatch.mockReset();
     vi.mocked(matchSeen).mockReset().mockResolvedValue(undefined);
     vi.mocked(reportResult).mockReset().mockResolvedValue(undefined);
@@ -51,6 +53,7 @@ describe('useTournamentMatch: guest', () => {
         await advance(1_000);
         expect(endTournamentMatch).toHaveBeenCalledTimes(1);
         expect(warned).toHaveBeenCalledWith(expect.stringContaining('[tournament]'));
+        expect(isNoShow('m1', 'peer-h')).toBe(true); // useMyTurn stops heartbeating that match
     });
 
     it('joining before 30 s cancels the join deadline', async () => {
@@ -62,6 +65,7 @@ describe('useTournamentMatch: guest', () => {
             act(() => result.current.signals.snapshot());
         }
         expect(endTournamentMatch).not.toHaveBeenCalled();
+        expect(isNoShow('m1', 'peer-h')).toBe(false);
     });
 
     it('a lost connection goes back to the bracket at once', () => {

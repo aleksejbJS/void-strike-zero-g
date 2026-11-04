@@ -5,6 +5,7 @@
 import type { Entity, GameState } from '../../types';
 import type { TournamentMatchRun } from '../../store/tournamentSlice';
 import { matchSeen, publishHost, reportResult, resolveStale } from '../../tournament/tournamentApi';
+import { markNoShow } from '../tournament/runHistory';
 
 export const HEARTBEAT_MS = 10_000; // matchSeen while connected (resolve_stale counts 60 s of silence)
 export const BACK_TO_BRACKET_MS = 8_000; // after the end screen appears
@@ -56,7 +57,9 @@ export class TournamentMatchFlow {
         if (this.connectedAt === null) {
             if (now < this.joinDeadline) return;
             console.warn('[tournament] could not join the host within 30 s, going back to the bracket');
-            this.finish(); // the stale rules settle the match
+            // A no-show for this host peer id: the bracket stops heartbeating it, so the host wins by the stale rule
+            if (this.deps.run.peerId) markNoShow(this.deps.run.matchId, this.deps.run.peerId);
+            this.finish();
             return;
         }
         if (now - this.lastBeatAt >= HEARTBEAT_MS) {

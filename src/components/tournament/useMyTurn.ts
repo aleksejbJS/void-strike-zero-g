@@ -7,27 +7,27 @@ import { myTurn, type MyTurn } from '../../game/tournament/myTurn';
 import { useUIStore } from '../../store/uiStore';
 import { matchSeen } from '../../tournament/tournamentApi';
 import type { MatchRow, SeatTicket, TournamentSnapshot } from '../../tournament/types';
+import { isNoShow, markStarted, wasStarted } from './runHistory';
 
 const HEARTBEAT_MS = 10_000;
 
-// Runs started in this page session. A finished (or abandoned) duel is never started again, even when a stale
-// snapshot still shows its match as ready. A guest may join the same match again only under a NEW host peer
-// id: the host reloaded and opened a fresh room.
-const startedRuns = new Set<string>();
-
-/** Test helper: a fresh page session. */
-export const forgetStartedRuns = (): void => startedRuns.clear();
-
+// A finished (or abandoned) duel is never started again in this page session, even when a stale snapshot still
+// shows its match as ready. A guest may join the same match again only under a NEW host peer id: the host
+// reloaded and opened a fresh room.
 const runKey = (turn: MyTurn): string | null => {
     if (turn.kind === 'host') return `host:${turn.match.id}`;
     if (turn.kind === 'join') return `join:${turn.match.id}:${turn.peerId}`;
     return null;
 };
 
-/** My latest match while it is not settled: ready (to play, or played and left unsettled) or waiting for its other seat. */
+/**
+ * My latest match while it is not settled: ready (to play, or played and left unsettled) or waiting for its
+ * other seat. Not a match whose current host I could not join in time: there I count as a no-show.
+ */
 const openMatchOf = (s: TournamentSnapshot, seat: number): MatchRow | null => {
     const latest = s.matches.filter(m => m.seatA === seat || m.seatB === seat).sort((x, y) => y.round - x.round)[0];
-    return latest && latest.status !== 'done' ? latest : null;
+    if (!latest || latest.status === 'done' || isNoShow(latest.id, latest.hostPeerId)) return null;
+    return latest;
 };
 
 export interface MyTurnState {
@@ -43,11 +43,11 @@ export const useMyTurn = (snapshot: TournamentSnapshot, ticket: SeatTicket | nul
     // Start my duel: once per kind and match (and host peer id), never twice in a page session
     const key = runKey(turn);
     // Judged when the key first shows up, before the effect below records a fresh start
-    const alreadyPlayed = useMemo(() => key !== null && startedRuns.has(key), [key]);
+    const alreadyPlayed = useMemo(() => key !== null && wasStarted(key), [key]);
     useEffect(() => {
-        if (!ticket || key === null || startedRuns.has(key)) return;
+        if (!ticket || key === null || wasStarted(key)) return;
         if (turn.kind !== 'host' && turn.kind !== 'join') return;
-        startedRuns.add(key);
+        markStarted(key);
         const side = turn.match.seatA === ticket.seat ? 'a' : 'b';
         if (turn.kind === 'host') {
             actions.startTournamentMatch({ ticket, matchId: turn.match.id, role: 'host', withBot: turn.withBot, side });

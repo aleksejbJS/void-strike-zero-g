@@ -5,7 +5,8 @@ import { UIProvider, useUIStore } from '../../store/uiStore';
 import { matchSeen } from '../../tournament/tournamentApi';
 import type { SeatTicket, TournamentSnapshot } from '../../tournament/types';
 import { makeSnapshot, publishHost, settle } from '../../game/tournament/bracketFixtures';
-import { forgetStartedRuns, useMyTurn } from './useMyTurn';
+import { useMyTurn } from './useMyTurn';
+import { forgetRunHistory, markNoShow } from './runHistory';
 
 vi.mock('../../tournament/tournamentApi', () => ({ matchSeen: vi.fn() }));
 
@@ -24,7 +25,7 @@ const mount = (snap: TournamentSnapshot, ticket: SeatTicket | null) => {
 beforeEach(() => {
     (localStorage.getItem as Mock).mockReset().mockReturnValue(null);
     vi.mocked(matchSeen).mockReset().mockResolvedValue(undefined);
-    forgetStartedRuns();
+    forgetRunHistory();
 });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -103,6 +104,36 @@ describe('useMyTurn', () => {
         expect(matchSeen).toHaveBeenCalledWith('m-0-0', seat(1));
         act(() => { vi.advanceTimersByTime(10_000); });
         expect(matchSeen).toHaveBeenCalledTimes(2);
+    });
+
+    it('sends no heartbeat for a match whose host it could not join (a no-show for that peer id)', () => {
+        vi.useFakeTimers();
+        const stale = publishHost(makeSnapshot(4), 0, 0, 'peer-1');
+        const first = mount(stale, seat(1)); // joins as the guest
+        markNoShow('m-0-0', 'peer-1'); // the 30 s join watchdog fired in the duel
+        act(() => store.actions.endTournamentMatch());
+        first.unmount();
+        vi.mocked(matchSeen).mockClear();
+        mount(stale, seat(1));
+        act(() => { vi.advanceTimersByTime(30_000); });
+        expect(store.state.tournamentMatch).toBeNull();
+        expect(matchSeen).not.toHaveBeenCalled();
+    });
+
+    it('after a no-show, a new host peer id allows a fresh join, and heartbeats resume after it', () => {
+        vi.useFakeTimers();
+        const first = mount(publishHost(makeSnapshot(4), 0, 0, 'peer-1'), seat(1));
+        markNoShow('m-0-0', 'peer-1');
+        act(() => store.actions.endTournamentMatch());
+        first.unmount();
+        const view = mount(publishHost(makeSnapshot(4), 0, 0, 'peer-1'), seat(1));
+        view.update(publishHost(makeSnapshot(4), 0, 0, 'peer-2')); // the host reloaded
+        expect(store.state.tournamentMatch).toMatchObject({ role: 'guest', peerId: 'peer-2' });
+        act(() => store.actions.endTournamentMatch()); // joined, then the host went silent
+        view.unmount();
+        vi.mocked(matchSeen).mockClear();
+        mount(publishHost(makeSnapshot(4), 0, 0, 'peer-2'), seat(1));
+        expect(matchSeen).toHaveBeenCalledWith('m-0-0', seat(1));
     });
 
     it('sends no heartbeat once the tournament is finished', () => {

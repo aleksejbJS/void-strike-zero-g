@@ -7,7 +7,7 @@ import { matchSeen } from '../../tournament/tournamentApi';
 import type { TournamentSnapshot } from '../../tournament/types';
 import { makeSnapshot, publishHost, settle } from '../../game/tournament/bracketFixtures';
 import { BracketScreen } from './BracketScreen';
-import { forgetStartedRuns } from './useMyTurn';
+import { forgetRunHistory } from './runHistory';
 
 vi.mock('../../tournament/tournamentApi', () => ({ matchSeen: vi.fn() }));
 vi.mock('../../tournament/seatStore', () => ({ ticketFor: vi.fn() }));
@@ -23,7 +23,7 @@ const cells = (column: string) => within(screen.getByRole('list', { name: column
 beforeEach(() => {
     (localStorage.getItem as Mock).mockReset().mockReturnValue(null);
     vi.mocked(matchSeen).mockReset().mockResolvedValue(undefined);
-    forgetStartedRuns();
+    forgetRunHistory();
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
