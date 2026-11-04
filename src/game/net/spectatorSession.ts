@@ -11,6 +11,8 @@ import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/p
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRejected, Snapshot, WatchAccepted } from './protocol';
 import { toLocalClock } from './clock';
+import { applyCoverStatus } from '../cover/coverNet';
+import type { Cover } from '../cover/coverTypes';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { ProjectileCatchUp } from './projectileCatchUp';
 import { SessionSocket } from './sessionSocket';
@@ -45,6 +47,7 @@ export class SpectatorSession {
     private rejected = false;
     private ended = false;
     private platforms: GameState['platforms'] | null = null; // from the host, not yet in a state
+    private cover: Cover[] | null = null; // likewise
     private latest: Snapshot | null = null;
     private effects: GameEvent[] = [];
 
@@ -65,6 +68,7 @@ export class SpectatorSession {
         this.socket.on(MSG.WATCHING, (info: WatchAccepted) => {
             this.watching = true;
             this.platforms = info.platforms;
+            this.cover = info.cover ?? [];
             this.receive(info.snapshot);
             callbacks.onWatching(info);
         });
@@ -84,6 +88,10 @@ export class SpectatorSession {
         if (this.platforms) {
             state.platforms = this.platforms;
             this.platforms = null;
+        }
+        if (this.cover) {
+            state.cover = this.cover;
+            this.cover = null;
         }
         if (this.latest) {
             this.applySnapshot(state, this.latest);
@@ -127,8 +135,9 @@ export class SpectatorSession {
 
     private applySnapshot(state: GameState, snap: Snapshot) {
         toLocalClock(snap, Date.now() - snap.serverTime);
-        const { serverTime: _serverTime, players, ...shared } = snap;
+        const { serverTime: _serverTime, players, coverStatus, ...shared } = snap;
         Object.assign(state, shared);
+        applyCoverStatus(state.cover ?? [], coverStatus);
         // A newer host may send parts this version does not know: drawing one would throw
         for (const p of players) if (p.build) p.build = sanitizeBuild(p.build, presetBuild(p.skinId));
         state.players = players;

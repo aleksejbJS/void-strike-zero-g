@@ -4,6 +4,7 @@ import { gameEvents, GameEvent } from '../systems/events';
 import { presetBuild } from '../build/buildPresets';
 import { Team } from '../../types';
 import { setup, watching, watchInfo, snapshotOf, at } from './spectatorTestKit';
+import type { Cover } from '../cover/coverTypes';
 
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -119,5 +120,40 @@ describe('SpectatorSession: tick', () => {
         state.camera.x = 0;
         session.tick(state, performance.now() + 500);
         expect(state.camera.x).toBeLessThan(0);
+    });
+});
+
+const watchingCover = (cover: Cover[]) => {
+    const ctx = setup();
+    const info = { ...watchInfo(), cover };
+    ctx.socket.fire('connect');
+    ctx.socket.fire(MSG.WATCHING, info);
+    ctx.session.tick(ctx.state, performance.now() + 500);
+    return { ...ctx, info };
+};
+
+describe('SpectatorSession: cover', () => {
+    const crates = () => [
+        { id: 'c1', kind: 'wood' as const, pos: { x: 100, y: 400 }, hp: 150 },
+        { id: 'c2', kind: 'barrel' as const, pos: { x: 300, y: 400 }, hp: 80 },
+    ];
+
+    it('takes the layout from the host reply and applies the status of each snapshot', () => {
+        const { socket, session, state, info } = watchingCover(crates());
+        expect(state.cover!.map(c => c.id)).toEqual(['c1', 'c2']);
+
+        socket.fire(MSG.SNAPSHOT, { ...snapshotOf([]), coverStatus: [{ id: 'c1', hp: 0, returnsAt: Date.now() + 30000 }, { id: 'ghost', hp: 0 }] });
+        session.tick(state, performance.now() + 600);
+
+        expect(state.cover![0].hp).toBe(0);
+        expect(state.cover![0].returnsAt).toBeGreaterThan(Date.now());
+        expect(state.cover![1].hp).toBe(80);
+        expect('coverStatus' in state).toBe(false);
+        expect(info.cover).toBe(state.cover);
+    });
+
+    it('a host without cover leaves the tile with an empty list', () => {
+        const { state } = watching([at('a', 100)]);
+        expect(state.cover ?? []).toEqual([]);
     });
 });

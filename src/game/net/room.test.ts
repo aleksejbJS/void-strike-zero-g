@@ -176,6 +176,15 @@ describe('GameRoom — cover', () => {
         expect((room as any).physics.bodies.get(ids[0])).toBe(before); // kept, not rebuilt
     });
 
+    it('refuses an id that is a platform or a cover id (a peer picks its own id)', () => {
+        const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 8 });
+        rooms.push(room);
+        const before = room.state.players.length;
+        for (const id of [room.state.cover![0].id, room.state.platforms[0].id]) expect(room.join(id, join)).toEqual({ ok: false, reason: 'invalid' });
+        expect(room.state.players.length).toBe(before);
+        expect(room.join('some-peer', join)).toEqual({ ok: true });
+    });
+
     it('drops the body of a piece that breaks', () => {
         const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 8 });
         rooms.push(room);

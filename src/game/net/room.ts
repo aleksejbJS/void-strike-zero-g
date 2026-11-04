@@ -55,6 +55,8 @@ export class GameRoom {
     }
 
     join(id: string, req: JoinRequest): JoinResult {
+        // A peer picks its own id: one equal to a platform or cover id would orphan that static body
+        if (this.state.platforms.some(p => p.id === id) || (this.state.cover ?? []).some(c => c.id === id)) return { ok: false, reason: 'invalid' };
         if (this.state.players.some(p => p.id === id)) return { ok: false, reason: 'already_joined' };
         const humans = this.state.players.filter(p => p.type === 'player').length;
         if (humans >= this.config.maxPlayers) return { ok: false, reason: 'full' };

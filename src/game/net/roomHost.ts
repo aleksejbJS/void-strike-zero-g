@@ -55,13 +55,7 @@ export class RoomHost {
 
             this.joined.add(id);
             this.lastInputAt.set(id, now);
-            const accepted: JoinAccepted = {
-                id,
-                mode: this.room.state.mode,
-                map: this.room.state.currentMap,
-                platforms: this.room.state.platforms,
-                snapshot: this.room.snapshot(now),
-            };
+            const accepted: JoinAccepted = { id, ...this.world(now) };
             link.send(MSG.JOINED, accepted);
         } else if (event === MSG.WATCH) {
             // Players and existing spectators stay as they are; only a fresh link can start watching
@@ -75,12 +69,7 @@ export class RoomHost {
                 return;
             }
             this.spectators.add(id);
-            const accepted: WatchAccepted = {
-                mode: this.room.state.mode,
-                map: this.room.state.currentMap,
-                platforms: this.room.state.platforms,
-                snapshot: this.room.snapshot(now),
-            };
+            const accepted: WatchAccepted = this.world(now);
             link.send(MSG.WATCHING, accepted);
         } else if (event === MSG.INPUT && this.joined.has(id)) {
             const input = validateInput(data, now);
@@ -108,6 +97,12 @@ export class RoomHost {
                 link.send(MSG.SNAPSHOT, snapshot);
             }
         }
+    }
+
+    /** What a new link needs to draw the world. Cover is copied: the client mutates its pieces, the room's must not follow. */
+    private world(now: number): WatchAccepted {
+        const { mode, currentMap, platforms, cover } = this.room.state;
+        return { mode, map: currentMap, platforms, cover: cover?.map(c => ({ ...c })), snapshot: this.room.snapshot(now) };
     }
 
     /**

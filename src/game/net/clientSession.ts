@@ -13,6 +13,7 @@ import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/p
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { toLocalClock } from './clock';
+import { applyCoverStatus } from '../cover/coverNet';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { ProjectileCatchUp } from './projectileCatchUp';
@@ -64,9 +65,10 @@ export class ClientSession {
         this.socket.on(MSG.EVENTS, (events: GameEvent[]) => callbacks.onEvents(events));
     }
 
-    /** Use the server's map: rebuild local collision world with platforms + our own body only. */
+    /** Use the server's map: rebuild local collision world with platforms, cover and our own body only. */
     setupWorld(state: GameState, info: JoinAccepted) {
         state.platforms = info.platforms;
+        state.cover = info.cover ?? []; // never built locally online; bodies come from the sync in predict
         this.applySnapshot(state, info.snapshot);
         this.physics.clear();
         state.platforms.forEach(p => this.physics.addPlatform(p));
@@ -145,8 +147,9 @@ export class ClientSession {
 
     private applySnapshot(state: GameState, snap: Snapshot) {
         toLocalClock(snap, Date.now() - snap.serverTime);
-        const { serverTime: _serverTime, players, ...shared } = snap;
+        const { serverTime: _serverTime, players, coverStatus, ...shared } = snap;
         Object.assign(state, shared);
+        applyCoverStatus(state.cover ?? [], coverStatus);
         // A newer host may send parts this version does not know: drawing one would throw
         for (const p of players) if (p.build) p.build = sanitizeBuild(p.build, presetBuild(p.skinId));
 
