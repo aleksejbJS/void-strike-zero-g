@@ -8,7 +8,7 @@
 - **Duel match.** A new hidden `GameMode.DUEL` on a new `MapId.PIT` runs in the existing `GameRoom`. It is first to 10, uses a fixed loadout, has no auto-restart, and adds sudden death.
 - **Spectators.** Spectators are a new connection role in `RoomHost`: they get snapshots and events only, never an entity.
 - **Coordination.** All tournament coordination happens in Postgres: tables plus `security definer` RPCs. Every bracket transition is one transaction, so the browsers never race each other.
-  - Browsers only read, through Realtime, and call RPCs that carry a per-seat secret.
+  - Browsers only read (Realtime on `tournaments` and `tournament_matches`, plain selects for seats) and call RPCs that carry a per-seat secret.
 - **Watching.** The split screen is a stand-alone watch screen. Each tile owns its own Pixi `Application`, `GameState` and `SpectatorSession`. `GameCanvas` is left untouched apart from the tournament-match hook.
 
 **Tech Stack:** TypeScript, React 19, Pixi.js 8, Matter.js, PeerJS, Supabase (Postgres, PostgREST RPC, Realtime) and Vitest. SQL tests run with `psql` against a throwaway local cluster (`pg_ctl` is installed).
@@ -272,7 +272,7 @@ export const MatchTile: React.FC<{ peerId: string; audible: boolean; expanded: b
 - RLS is enabled on all three tables.
   - `select` is granted to `anon` and `authenticated`. For seats, use column-level grants that **exclude** `secret_hash`.
   - There are no insert, update or delete grants. All writes go through the RPCs below, which are `security definer` with `set search_path = public`.
-- Realtime: add the three tables to `supabase_realtime`, guarded so that the publication is skipped when it does not exist (local test cluster).
+- Realtime: add only `tournaments` and `tournament_matches` to `supabase_realtime`, guarded so that the publication is skipped when it does not exist (local test cluster). `tournament_seats` stays out, because it holds the seat secrets; every seat change bumps `tournaments.updated_at` instead.
 
 **RPCs:**
 - Secrets are 32 random bytes, returned hex-encoded once, and stored as `digest(secret,'sha256')`.
@@ -351,7 +351,7 @@ export class TournamentError extends Error { constructor(readonly code: Tourname
   - Functions: `saveTicket(t)`, `ticketFor(tournamentId): SeatTicket | null`, `forgetTicket(tournamentId)`.
   - Storage failures are logged and fall back to memory, following the `achievements.ts` storage shim.
 - `tournamentFeed.ts`:
-  - `watchTournament(id, onSnapshot: (s: TournamentSnapshot) => void): () => void` subscribes to `postgres_changes` on the three tables, filtered by `tournament_id` (and `id` for `tournaments`).
+  - `watchTournament(id, onSnapshot: (s: TournamentSnapshot) => void): () => void` subscribes to `postgres_changes` on `tournaments` (filtered by `id`) and `tournament_matches` (filtered by `tournament_id`). Seats are not in Realtime: a seat change bumps `tournaments.updated_at`, and the reload reads the seats with a normal select.
   - On any change it reloads with `loadSnapshot`, debounced by 200 ms.
   - If the channel reports `CHANNEL_ERROR` or `TIMED_OUT`, it falls back to polling every 5 s.
   - The returned function unsubscribes and clears timers.
@@ -601,7 +601,7 @@ export const layoutFor = (tiles: number, phone: boolean): WatchLayout; // 1→1�
 **Files:**
 - Modify:
   - `src/components/menu/patchNotes.ts` and `CHANGELOG.md`: the next free `0.4.x`. Check `git fetch && git show origin/main:src/components/menu/patchNotes.ts` first. The patch note has 3–5 points, EN and RU.
-  - `docs/supabase-setup.md`: a "Tournaments" section with the owner steps. Run `supabase/migrations/20261104000000_tournaments.sql` in the SQL Editor, then confirm that Realtime is on for the three tables (Database → Publications → `supabase_realtime`).
+  - `docs/supabase-setup.md`: a "Tournaments" section with the owner steps. Run `supabase/migrations/20261104000000_tournaments.sql` in the SQL Editor, then confirm that Realtime is on for ONLY `tournaments` and `tournament_matches` (Database → Publications → `supabase_realtime`) and that `tournament_seats` is off.
   - The spec status becomes `approved 2026-11-04`.
 - [ ] **Step 1:** Run `npm test && npx tsc --noEmit && npm run lint && bash scripts/test-sql.sh && npm run build`. Expect everything green.
 - [ ] **Step 2:** Run `find src -name '*.ts*' -newer docs/plans/2026-11-04-tournament-plan.md | xargs wc -l | awk '$1>200'`. Expect no output, except the pre-existing `GameCanvas.tsx`.

@@ -33,6 +33,14 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.25', date: 'Nov 4, 2026', groups: [
+            { title: 'Tournaments', points: [
+                'A new Tournaments button in the menu: a knockout of 1-on-1 duels for up to 8 players. Create one and share the link, or sign up for an open one; the creator presses Start and empty seats are filled by bots',
+                'Duels are first to 10 kills on a new small arena, The Pit, with the same weapons for both fighters. All matches of a round are played at the same time',
+                'Knocked out? Watch several running matches at once in a split screen, and click a match to open it full screen',
+                'Three new achievements: Champion, Finalist and Flawless',
+            ] },
+        ] },
         { version: '0.4.24', date: 'Nov 4, 2026', points: [
             'The smoke launcher got its own picture: a grey launcher with a smoke drum and a puff at the muzzle, on the map, in your hands and in the HUD',
         ] },
@@ -203,6 +211,14 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.25', date: '04.11.2026', groups: [
+            { title: 'Турниры', points: [
+                'В меню появилась кнопка «Турниры»: турнир на вылет из дуэлей один на один до 8 игроков. Создайте свой и поделитесь ссылкой или запишитесь в открытый; создатель нажимает «Старт», а пустые места занимают боты',
+                'Дуэль идёт до 10 убийств на новой небольшой арене «Яма», оружие у обоих бойцов одинаковое. Все матчи раунда играются одновременно',
+                'Вылетели? Смотрите сразу несколько идущих матчей на разделённом экране, а клик по матчу открывает его на весь экран',
+                'Три новых достижения: Champion, Finalist и Flawless',
+            ] },
+        ] },
         { version: '0.4.24', date: '04.11.2026', points: [
             'У дымового гранатомёта появилась своя картинка: серый гранатомёт с дымовым барабаном и облачком у дула — на карте, в руках и в HUD',
         ] },

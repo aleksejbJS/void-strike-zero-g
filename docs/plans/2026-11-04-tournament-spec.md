@@ -1,6 +1,6 @@
 # Tournament Mode Spec
 
-Status: draft 2026-11-04 (builder-checked, waiting for owner approval)
+Status: approved 2026-11-04
 
 ## Problem
 
@@ -234,6 +234,6 @@ A new menu entry, **Tournaments**.
 
 - One feature branch and PR, one `0.4.x` version, and a short grouped patch note
   (see the release process).
-- Before merge, the owner runs the new Supabase migration and enables Realtime on the new tables,
-  if Realtime is used.
+- Before merge, the owner runs the new Supabase migration. It puts `tournaments` and `tournament_matches` into
+  Realtime itself; the owner only checks that, and must NOT enable `tournament_seats` (it holds the seat secrets).
 - The PR must include the exact SQL and owner steps, as `docs/supabase-setup.md` does for accounts.
