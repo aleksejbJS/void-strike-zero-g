@@ -1,11 +1,19 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.28 (unreleased)
+## Version 0.4.29 (2026-11-04)
 
 ### 🖱️ Mouse-Wheel Weapon Switching
 - The mouse wheel cycles through the weapon slots: down = next, up = previous, empty slots are skipped and the ends wrap round. It goes through the same `selectWeapon` as keys 1–7, so online play needs no server change. `src/game/input/wheelWeapon.ts` (`wheelStep`, `cycleWeaponIndex`, `createWheelGate`, `attachWheelWeapon`) with tests
 - One gesture = one switch: a wheel event less than 150 ms after the previous one is ignored, so a trackpad swipe with its momentum tail switches once. Pinch-zoom (ctrl+wheel) and mostly horizontal swipes are ignored
 - The menu's controls legend shows `1–7 or Mouse wheel` (EN/RU)
+
+## Version 0.4.28 (2026-11-04)
+
+### 🛡️ Spawn Shield
+- Spec: `docs/plans/2026-11-04-spawn-shield-spec.md`. A fighter brought back after a death gets `spawnShieldUntil = now + 2000` (`systems/spawnShield.ts`, granted in the respawn branch of `physics.ts`). While it lasts `applyDamage` ignores the hit completely (no HP/armor loss, knockback, railgun wound or damage number); falling out of the map (`amount >= 9999`) still kills. Any shot (`fireWeapon` spending ammo) ends it at once. No shield on the first spawn or a Hunger Games round restart
+- Bots: `pickTarget` prefers a visible enemy that can be hurt over a nearer shielded one, and `aimAndFire` holds fire at a shielded target while the reaction time runs (not tied to the planned end, so a shielded player who shoots gets an answer soon)
+- Online: the field travels in snapshots as is; `toLocalClock` shifts it to the client's clock. Render: `render/spawnShieldBlink.ts` flickers the player container between alpha 0.35 and 0.85 every 120 ms
+- Bot benchmark: the 2 s shield costs about 5% of kills (20 Deathmatch seeds: average 8.4 → 8.0, single seeds 4–11), so the Deathmatch floor is 4 kills a minute instead of 6
 
 ## Version 0.4.27 (2026-11-04)
 

@@ -6,6 +6,7 @@ import { distance, normalize, checkPointInRect } from '../utils/math';
 import { isTeammate } from './combat';
 import { BotMemory, reactionDelay } from './botMemory';
 import { smokeHides } from './smoke';
+import { spawnShieldLeft } from './spawnShield';
 
 // Re-picking a target only this often also works as the bot's reaction time
 const BOT_SCAN_INTERVAL_MS = 200;
@@ -36,14 +37,16 @@ export const canSee = (state: GameState, bot: Entity, other: Entity, now = Date.
     && botHasLineOfSight(state, muzzleOf(bot), centerOf(other))
     && !smokeHides(state, muzzleOf(bot), centerOf(other), now);
 
-/** Nearest enemy the bot can see; if none is visible, the nearest one to head towards,
- *  preferring one smoke does not hide (a wall does not hide where it is). */
+/** Nearest enemy the bot can see (one that can be hurt beats one under spawn protection);
+ *  if none is visible, the nearest one to head towards, preferring one smoke does not hide
+ *  (a wall does not hide where it is). */
 const pickTarget = (state: GameState, bot: Entity, now: number): { target: Entity | null; visible: boolean } => {
     const enemies = state.players
         .filter(o => !o.dead && isEnemy(bot, o))
         .map(o => ({ o, d: distance(bot.pos, o.pos) }))
         .sort((a, b) => a.d - b.d);
-    const visible = enemies.find(({ o }) => canSee(state, bot, o, now));
+    const seen = enemies.filter(({ o }) => canSee(state, bot, o, now));
+    const visible = seen.find(({ o }) => spawnShieldLeft(o, now) <= 0) ?? seen[0];
     const unhidden = visible ? undefined : enemies.find(({ o }) => !smokeHides(state, muzzleOf(bot), centerOf(o), now));
     return { target: (visible ?? unhidden ?? enemies[0])?.o ?? null, visible: !!visible };
 };
