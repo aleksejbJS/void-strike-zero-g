@@ -36,7 +36,7 @@ export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeap
 
     updateRoute(state, bot, mem.nav, graph, moveTarget, now);
     let controls = steer(state, bot, mem.nav, graph, moveTarget, now);
-    controls = combatMoves(state, bot, mem.nav, mem.moves, graph, target, mem.targetVisible, controls, now);
+    controls = combatMoves(state, bot, mem.nav, mem.moves, graph, target, mem.targetVisible, controls, now, mem.state);
 
     // At the goal with a visible enemy overhead: jetpack up for a shot
     const enemyAbove = target && mem.targetVisible && target.pos.y < bot.pos.y - SHOOT_UP_PX;

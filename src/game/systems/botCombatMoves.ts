@@ -1,6 +1,6 @@
 // Moving in a fight: strafe bursts instead of standing still, a jetpack hop after a hit,
-// crouching behind a crate when under fire, and when nearly dead, a hook (or jetpack)
-// escape to another surface away from the enemy.
+// crouching behind a crate when under fire (briefly, and not while busy with something more
+// urgent), and when nearly dead, a hook (or jetpack) escape to another surface away from the enemy.
 
 import { Entity, GameState, Team, WeaponType } from '../../types';
 import { HIT_MIN_HP } from '../../constants';
@@ -10,11 +10,15 @@ import { nodeAt } from './botPathfinder';
 import { BotControls, BotMoves, BotNav } from './botNavState';
 import { takeEdge, zoneFilter } from './botRoute';
 import { findCoverSpot } from './botCover';
+import type { BotState } from './botMemory';
 
 const DODGE_MS = 220, DODGE_COOLDOWN_MS = 2500;
 const ESCAPE_HEALTH = 0.3, ESCAPE_RANGE = 350, ESCAPE_COOLDOWN_MS = 8000, ESCAPE_LOCK_MS = 3000;
 const EDGE_MARGIN = 40;
 const UNDER_FIRE_MS = 1500, AT_SPOT_X = 6;
+const COVER_STAY_MS = 2500, COVER_COOLDOWN_MS = 3000;
+// Goals that matter more than hiding: carrying or chasing an objective, escorting, a medkit or the zone
+const NO_COVER_STATES: ReadonlySet<BotState> = new Set(['flag-run', 'defend', 'retreat']);
 
 export const preferredRange = (bot: Entity) =>
     bot.weapon.type === WeaponType.SHOTGUN || bot.weapon.type === WeaponType.CHAINSAW ? 120 : 320;
@@ -45,6 +49,22 @@ const takeCover = (
     return Math.abs(dx) > AT_SPOT_X ? { inputX: Math.sign(dx), wantsDown: false } : { inputX: 0, wantsDown: true };
 };
 
+/** Cover when free to take it, for at most COVER_STAY_MS at a time (then a cooldown, so a bot under
+ *  steady fire still moves on). Never while busy: an urgent goal, a wound to heal, an escape move. */
+const coverMove = (
+    state: GameState, bot: Entity, here: NavNode | null, nav: BotNav, moves: BotMoves,
+    target: Entity, targetVisible: boolean, botState: BotState, now: number,
+) => {
+    const busy = NO_COVER_STATES.has(botState) || !!bot.wound || now < nav.lockedUntil;
+    const cover = busy || now < moves.coverReadyAt ? null : takeCover(state, bot, here, moves, target, targetVisible, now);
+    if (!cover) { moves.coverSince = null; return null; }
+    moves.coverSince ??= now;
+    if (now - moves.coverSince < COVER_STAY_MS) return cover;
+    moves.coverSince = null;
+    moves.coverReadyAt = now + COVER_COOLDOWN_MS;
+    return null;
+};
+
 /** An edge off this surface that leads away from the enemy: hook first, else jetpack. */
 const escapeRoute = (state: GameState, graph: NavGraph, here: NavNode, bot: Entity, target: Entity) => {
     const allowed = zoneFilter(state);
@@ -55,7 +75,7 @@ const escapeRoute = (state: GameState, graph: NavGraph, here: NavNode, bot: Enti
 
 export const combatMoves = (
     state: GameState, bot: Entity, nav: BotNav, moves: BotMoves, graph: NavGraph,
-    target: Entity | null, targetVisible: boolean, controls: BotControls, now: number,
+    target: Entity | null, targetVisible: boolean, controls: BotControls, now: number, botState: BotState,
 ): BotControls => {
     // A drop smaller than HIT_MIN_HP is bleeding, not a hit: a wounded bot must not hop every few seconds
     const hit = moves.lastHealth - bot.health > HIT_MIN_HP;
@@ -78,7 +98,7 @@ export const combatMoves = (
     }
 
     // Under fire with a crate nearby: get behind it (no hop: crouching there is the dodge)
-    const cover = takeCover(state, bot, here, moves, target, targetVisible, now);
+    const cover = coverMove(state, bot, here, nav, moves, target, targetVisible, botState, now);
     if (cover) return { ...controls, ...cover, isFlying: false };
     if (!targetVisible) return controls;
 
