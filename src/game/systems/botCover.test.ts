@@ -121,6 +121,27 @@ describe('barrelToShoot', () => {
         expect(barrelToShoot(self.state, self.bot)).toBeNull();
     });
 
+    // The barrel's centre is 23 px above the floor: x 122 is 179.5 px from it (past the 170 px blast,
+    // inside the 20 px margin), x 106 is 195.4 px (past the margin)
+    it('keeps a teammate 20 px clear of the blast', () => {
+        const withMate = (mateX: number) => {
+            const s = barrelSetup();
+            s.bot.team = Team.RED;
+            s.enemy.team = Team.BLUE;
+            s.state.players.push({ ...makeBot('mate', Team.RED, mateX, FLOOR_Y) } as unknown as Entity);
+            return barrelToShoot(s.state, s.bot);
+        };
+        expect(withMate(122)).toBeNull();
+        expect(withMate(106)?.id).toBe('keg');
+    });
+
+    it('keeps the bot itself 20 px clear of the blast', () => {
+        const near = barrelSetup(122);
+        expect(barrelToShoot(near.state, near.bot)).toBeNull();
+        const clear = barrelSetup(106);
+        expect(barrelToShoot(clear.state, clear.bot)?.id).toBe('keg');
+    });
+
     it('refuses with no enemy in the radius, or a barrel it cannot see', () => {
         const lonely = barrelSetup();
         lonely.enemy.pos.x = 600;
