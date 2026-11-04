@@ -15,6 +15,8 @@ const BARREL_KEEP_OFF = 120;  // px: never hide this close to an intact barrel
 const BARREL_SAFE_MARGIN = 20; // px past the blast radius a teammate (or the bot) must be
 
 const isCrate = (c: Cover) => c.kind === 'wood' || c.kind === 'metal';
+/** A melee weapon: shooting at cover from range does nothing, so the bot goes for the target itself. */
+const melee = (bot: Entity) => bot.weapon.type === WeaponType.CHAINSAW;
 /** The bot stands right beside this piece (the crate it hides behind). */
 const besideBot = (bot: Entity, c: Cover) =>
     Math.abs(c.pos.y - bot.pos.y) < 4 && Math.abs(c.pos.x - bot.pos.x) <= COVER_SPECS[c.kind].w / 2 + SPOT_GAP + 8;
@@ -44,8 +46,9 @@ export const findCoverSpot = (state: GameState, bot: Entity, threat: Entity): Ve
 /** The piece to shoot down on the way to `target`: the first intact one on the line from the muzzle to
  *  where the bot aims at the target. Wood and glass always; metal only for a rocket or grenade launcher.
  *  A railgun beam goes through wood and glass, so it ignores them (and it cannot break metal). Barrels
- *  are barrelToShoot's call, and the crate the bot hides behind is never shot down. */
+ *  are barrelToShoot's call, and the crate the bot hides behind is never shot down. Never with a chainsaw. */
 export const coverToShoot = (state: GameState, bot: Entity, target: Entity): Cover | null => {
+    if (melee(bot)) return null;
     const rail = bot.weapon.type === WeaponType.RAILGUN;
     const explosive = bot.weapon.type === WeaponType.ROCKET_LAUNCHER || bot.weapon.type === WeaponType.GRENADE_LAUNCHER;
     const hit = firstCoverOnSegment(state, muzzleOf(bot), aimPointOf(state, bot, target), c => !(rail && (c.kind === 'wood' || c.kind === 'glass')));
@@ -55,8 +58,9 @@ export const coverToShoot = (state: GameState, bot: Entity, target: Entity): Cov
 };
 
 /** An intact barrel in plain view with an enemy inside its blast, and no teammate, nor the bot itself,
- *  within the blast plus a margin (a barrel hurts everyone at full damage). */
+ *  within the blast plus a margin (a barrel hurts everyone at full damage). Never with a chainsaw. */
 export const barrelToShoot = (state: GameState, bot: Entity, now = Date.now()): Cover | null => {
+    if (melee(bot)) return null;
     const muzzle = muzzleOf(bot);
     for (const barrel of intactCover(state)) {
         if (barrel.kind !== 'barrel') continue;

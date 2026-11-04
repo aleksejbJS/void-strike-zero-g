@@ -89,6 +89,12 @@ describe('coverToShoot', () => {
         expect(coverToShoot(state, bot, threat)).toBeNull();
     });
 
+    it('never with a chainsaw: it cannot reach the cover from here', () => {
+        const { state, bot, threat } = setup([piece('crate', 'wood', 150, FLOOR_Y)]);
+        armWith(bot, WeaponType.CHAINSAW);
+        expect(coverToShoot(state, bot, threat)).toBeNull();
+    });
+
     it('is null with nothing in the way', () => {
         const { state, bot, threat } = setup([piece('aside', 'wood', -150, FLOOR_Y)]);
         expect(coverToShoot(state, bot, threat)).toBeNull();
@@ -123,6 +129,12 @@ describe('barrelToShoot', () => {
 
     // The barrel's centre is 23 px above the floor: x 122 is 179.5 px from it (past the 170 px blast,
     // inside the 20 px margin), x 106 is 195.4 px (past the margin)
+    it('never with a chainsaw: it cannot set a barrel off from range', () => {
+        const { state, bot } = barrelSetup();
+        armWith(bot, WeaponType.CHAINSAW);
+        expect(barrelToShoot(state, bot)).toBeNull();
+    });
+
     it('keeps a teammate 20 px clear of the blast', () => {
         const withMate = (mateX: number) => {
             const s = barrelSetup();
