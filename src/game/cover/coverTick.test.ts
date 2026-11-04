@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GameMode, Team } from '../../types';
+import { GameMode, ItemType, Pickup, Team } from '../../types';
 import { createMockPlayer, createMockState } from '../../test/mocks';
 import { gameEvents, GameEvent } from '../systems/events';
 import { updatePhysics } from '../systems/physics';
@@ -67,6 +67,29 @@ describe('tickCover: return', () => {
 
         tickCover(state, DUE);
 
+        expect(isIntact(c)).toBe(true);
+    });
+
+    // A dropped flag or intel must never end up inside the crate (nobody could pick it up again)
+    it.each([ItemType.FLAG, ItemType.INTEL])('a dropped %s on the spot delays the return the same way', type => {
+        const c = brokenCrate();
+        const state = stateWith(c);
+        const item: Pickup = { id: 'it', type, team: Team.NONE, pos: { x: 540, y: 400 }, active: true, respawnTime: 0, value: 0 };
+        state.pickups.push(item); // its box reaches 5 px (intel) or 25 px (flag) into the crate's spot
+        tickCover(state, DUE);
+        expect(c.hp).toBe(0);
+        expect(c.returnsAt).toBe(DUE + COVER_RETRY_MS);
+
+        item.active = false; // picked up
+        tickCover(state, DUE + COVER_RETRY_MS);
+        expect(isIntact(c)).toBe(true);
+    });
+
+    it('other pickups on the spot do not delay it', () => {
+        const c = brokenCrate();
+        const state = stateWith(c);
+        state.pickups.push({ id: 'hp', type: ItemType.HEALTH, pos: { x: 500, y: 400 }, active: true, respawnTime: 0, value: 25 });
+        tickCover(state, DUE);
         expect(isIntact(c)).toBe(true);
     });
 

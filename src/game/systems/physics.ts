@@ -2,6 +2,7 @@ import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectil
 import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL, ROCKET_MOTOR_TICKS } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
+import { pickupRect } from '../utils/pickupRect';
 import { updateBotAI } from './bot';
 import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
@@ -214,10 +215,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
         // Item Collection (ALL entities)
         state.pickups.forEach(item => {
-            // Item hitbox: flags are tall (pole + cloth), others are small cubes
-            const itemW = item.type === ItemType.FLAG ? 80 : 40;
-            const itemH = item.type === ItemType.FLAG ? 100 : 40;
-            const itemRect = { x: item.pos.x - itemW / 2, y: item.pos.y - itemH, w: itemW, h: itemH };
+            const itemRect = pickupRect(item);
             const playerRect = { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height };
 
             if (item.active && checkRectOverlap(itemRect, playerRect)) {
