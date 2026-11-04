@@ -16,8 +16,10 @@ const recorder = (id: string) => {
 };
 
 const rooms: GameRoom[] = [];
+// No bots: their AI emits random sounds/effects during the ticks, which made exact message lists flaky.
+// Every event the tests rely on is emitted by the test itself.
 const makeHost = () => {
-    const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 2 });
+    const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 2, bots: 0 });
     rooms.push(room);
     return new RoomHost(room);
 };
@@ -37,7 +39,7 @@ const watcher = (host: RoomHost, id: string) => {
 describe('RoomHost spectators', () => {
     it('answers WATCH with the world, then streams snapshots, without adding an entity', () => {
         const host = makeHost();
-        const before = host.room.state.players.length;
+        expect(host.room.state.players).toHaveLength(0);
         const w = watcher(host, 'w1');
 
         expect(w.sent).toHaveLength(1);
@@ -49,7 +51,7 @@ describe('RoomHost spectators', () => {
 
         host.update(SNAPSHOT_TICK_MS);
         expect(w.events()).toEqual([MSG.WATCHING, MSG.SNAPSHOT]);
-        expect(host.room.state.players).toHaveLength(before);
+        expect(host.room.state.players).toHaveLength(0);
         expect(host.room.state.players.some(p => p.id === 'w1')).toBe(false);
     });
 
