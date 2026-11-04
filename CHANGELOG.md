@@ -8,6 +8,17 @@
 ### 🪝 Hook Reels, Jetpack Rests
 - While the grapple is attached, W/Space only reel in: the jetpack does not fire (no thrust, no flame, `jetpackOn` false, no fuel spent) and the tank refills the whole time the hook is attached, even while W is held (before, a reeling player also thrust and burned fuel). `movement.ts` computes `flying = input.isFlying && !p.grapple.active` once and uses it for thrust, `jetpackOn`, air strafe and recharge, so the rule is shared by offline play, the server, client prediction and bots
 
+## Version 0.4.26 (2026-11-04)
+
+### 🛡️ Account Hardening
+- Spec: `docs/plans/2026-11-04-account-hardening-spec.md`. **Owner step before merging:** run `supabase/migrations/20261105000000_account_hardening.sql` in the Supabase SQL Editor (`docs/supabase-setup.md`, last section)
+- Lost sessions: a device-owner marker (`accountOwner`, `src/account/deviceOwner.ts`) is written when a login completes and removed on logout. A start-up that finds no usable session while the marker names an account keeps the local progress as that account's pending progress (`pendingStore`) and leaves a clean guest; a genuine guest (no marker) is never touched, and an offline start with a known session stays logged in as before. `completeLogin` also sets a previous owner's progress aside before another account logs in. While logged in, Supabase `SIGNED_OUT` (`AccountApi.onSessionEnded`, `accountSession.ts`) runs the logout steps without a second server sign-out
+- Log in: when the nickname cannot be read after a successful sign-in, the nickname from the sign-up metadata is used; without one the fresh session is ended again (`signOut({ scope: 'local' })`, or removed from storage) before the error, so a reload cannot log the player in silently
+- Start while accounts load: the button waits (busy) up to 3 s for the start-up; logged in → account nickname, guest → taken-name check, still loading → starts with a warning. A Start waiting when a restored login re-creates the screen carries over to the new screen
+- Nickname whitelist for new names (sign-up and guest names): A-Z, a-z, А-Я, а-я, Ё, ё, digits, space, `_`, `-`, no Latin+Cyrillic mix. Log-in keeps the 0.4.22 rules (`validateExistingNickname`) so existing accounts still work; keys and e-mails are unchanged. The sign-up trigger repeats the whitelist (contract test extended). A broken guest name blocks Start with a hint under the name field (EN/RU)
+- The account e-mail is locked: a `before update of email on auth.users` trigger (`prevent_email_change`) rejects any change, so nobody can move their account onto another nickname's address
+- Account windows (`useModalLayer`): the page behind the account window and the logout question is `inert`; Esc and focus return are shared. The account links are disabled while Start is busy, a name check that answers while a window is open never launches the match, and the window is keyed on its request. A login / logout refused because an earlier one is still finishing says so (new `AccountError` code `busy`) instead of "no connection"
+
 ## Version 0.4.25 (2026-11-04)
 
 ### 🏆 Tournaments

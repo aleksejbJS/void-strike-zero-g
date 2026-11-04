@@ -37,6 +37,12 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
             'Fixed: a railgun beam no longer just wounds a fighter whose armor shows 0; a tiny leftover of armor now counts as none',
             'On the hook, W and Space only reel you in: the jetpack stays off and refills the whole time you hang',
         ] },
+        { version: '0.4.26', date: 'Nov 4, 2026', points: [
+            'Safer accounts: if your login expires, your progress waits on this device for your next login and never goes to another account',
+            'New nicknames may use only Latin or Russian letters, digits, "_", "-" and spaces, so nobody can register a look-alike of your name. The same rule applies to guest names; existing accounts keep their names',
+            'Start now waits a moment while accounts are still loading, so you never start a match under someone else\'s nickname',
+            'While an account window is open, nothing behind it can be clicked or reached with Tab',
+        ] },
         { version: '0.4.25', date: 'Nov 4, 2026', groups: [
             { title: 'Tournaments', points: [
                 'A new Tournaments button in the menu: a knockout of 1-on-1 duels for up to 8 players. Create one and share the link, or sign up for an open one; the creator presses Start and empty seats are filled by bots',
@@ -219,6 +225,12 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         { version: '0.4.27', date: '04.11.2026', points: [
             'Исправлено: луч рельсы больше не просто ранит бойца, у которого броня показывает 0; крошечный остаток брони теперь не считается',
             'На крюке W и пробел только подтягивают вас: джетпак не включается и заправляется всё время, пока вы висите',
+        ] },
+        { version: '0.4.26', date: '04.11.2026', points: [
+            'Аккаунты надёжнее: если вход истёк, прогресс ждёт на этом устройстве вашего следующего входа и никогда не уходит в другой аккаунт',
+            'Новые ники — только латинские или русские буквы, цифры, «_», «-» и пробелы: зарегистрировать двойника вашего ника из похожих букв нельзя. То же правило действует для имени гостя; старые аккаунты сохраняют свои ники',
+            'Кнопка «Старт» теперь ждёт, пока загружаются аккаунты, поэтому матч не начнётся под чужим ником',
+            'Пока открыто окно аккаунта, ничего за ним нельзя нажать или выбрать клавишей Tab',
         ] },
         { version: '0.4.25', date: '04.11.2026', groups: [
             { title: 'Турниры', points: [

@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccountError } from '../../../account/accountError';
-import { validateNickname } from '../../../account/nickname';
+import { validateExistingNickname, validateNickname } from '../../../account/nickname';
 import { useAccount } from '../../../account/useAccount';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { accountErrorMessage, isPasswordTooShort, nicknameMessage, passwordMessage } from './accountMessages';
@@ -31,7 +31,8 @@ export function useAccountForm(onClose: () => void) {
 
     const submit = async (tab: AccountTab, nickname: string, password: string): Promise<void> => {
         if (running.current) return;
-        const nickProblem = validateNickname(nickname);
+        // A new account must follow today's rules; an existing one may carry a name from the wider old rules.
+        const nickProblem = (tab === 'signup' ? validateNickname : validateExistingNickname)(nickname);
         if (nickProblem) { setError(nicknameMessage(t, nickProblem)); return; }
         if (isPasswordTooShort(password)) { setError(passwordMessage(t)); return; }
 

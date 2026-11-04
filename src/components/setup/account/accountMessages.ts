@@ -23,6 +23,7 @@ const ERROR_KEYS: Record<AccountErrorCode, Key> = {
     weak_password: 'ac.err.weak_password',
     rate_limited: 'ac.err.rate_limited',
     network: 'ac.err.network',
+    busy: 'ac.err.busy',
 };
 
 /** The rule a nickname broke, with the limits filled in. */

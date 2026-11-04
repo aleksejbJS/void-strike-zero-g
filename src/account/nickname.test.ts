@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     NICK_MIN, NICK_MAX, GUEST_DEFAULT_NAME,
-    normalizeNickname, nicknameKey, validateNickname, nicknameToEmail,
+    guestNameProblem, normalizeNickname, nicknameKey, validateExistingNickname, validateNickname, nicknameToEmail,
 } from './nickname';
 
 describe('nickname limits', () => {
@@ -75,8 +75,8 @@ describe('validateNickname', () => {
         expect(validateNickname('Ё'.repeat(12))).toBeNull(); // 24 bytes
         const at31 = 'Ａ'.repeat(10) + 'b'; // 10 x 3 + 1 = 31 bytes
         const at32 = 'Ａ'.repeat(10) + 'bc'; // 32 bytes
-        expect(validateNickname(at31)).toBeNull();
-        expect(validateNickname(at32)).toBe('bad_chars');
+        expect(validateExistingNickname(at31)).toBeNull(); // the wider rules: only the byte limit stops it
+        expect(validateExistingNickname(at32)).toBe('bad_chars');
         expect(nicknameToEmail(at31).split('@')[0].length).toBeLessThanOrEqual(64);
     });
 
@@ -98,8 +98,60 @@ describe('validateNickname', () => {
         expect(validateNickname('Alex_99')).toBeNull();
         expect(validateNickname('Big  Al')).toBeNull();
         expect(validateNickname('x-ray 7')).toBeNull();
-        expect(validateNickname('Élan')).toBeNull();
         expect(validateNickname('123')).toBeNull();
+        expect(validateNickname('Ёлка')).toBeNull();
+        expect(validateNickname('ЁЖИК ёжик')).toBeNull();
+    });
+});
+
+describe('validateNickname whitelist (new names)', () => {
+    it.each([
+        ['Élan', 'accented Latin'],
+        ['Ａlex', 'fullwidth Latin'],
+        ['ᴀlex', 'small capital'],
+        ['Αlex', 'Greek capital alpha'],
+        ['Al\u200Bex', 'zero-width space'],
+        ['Їжак', 'Ukrainian Cyrillic'],
+        ['Ꙁмей', 'Cyrillic Extended-B'],
+    ])('rejects %j (%s)', name => {
+        expect(validateNickname(name)).toBe('bad_chars');
+    });
+
+    it('still reports mixed Latin and Cyrillic letters as such', () => {
+        expect(validateNickname('Аlex')).toBe('mixed_scripts');
+    });
+});
+
+describe('validateExistingNickname (log-in of older accounts)', () => {
+    it('keeps accepting names registered under the wider rules', () => {
+        expect(validateExistingNickname('Élan')).toBeNull();
+        expect(validateExistingNickname('Їжак')).toBeNull();
+        expect(validateExistingNickname('Ａlex')).toBeNull();
+    });
+
+    it('applies the other rules as before', () => {
+        expect(validateExistingNickname('Al')).toBe('too_short');
+        expect(validateExistingNickname('Аlex')).toBe('mixed_scripts');
+        expect(validateExistingNickname('Alex!')).toBe('bad_chars');
+        expect(validateExistingNickname('Bot 3')).toBe('reserved');
+    });
+
+    it('keeps the e-mail encoding of those names unchanged', () => {
+        expect(nicknameToEmail('Élan')).toBe('nc3a96c616e@players.invalid');
+    });
+});
+
+describe('guestNameProblem', () => {
+    it.each(['', '   ', 'Anonymous', ' anonymous '])('allows %j (the default name)', name => {
+        expect(guestNameProblem(name)).toBeNull();
+    });
+
+    it('applies the nickname rules to any other guest name', () => {
+        expect(guestNameProblem('Zed')).toBeNull();
+        expect(guestNameProblem('Al')).toBe('too_short');
+        expect(guestNameProblem('Ａlex')).toBe('bad_chars');
+        expect(guestNameProblem('Аlex')).toBe('mixed_scripts');
+        expect(guestNameProblem('Bot 3')).toBe('reserved');
     });
 });
 

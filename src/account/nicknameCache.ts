@@ -3,14 +3,14 @@
 // reached at start-up. It never logs anyone in on its own: it is read only for an existing session.
 
 import { readStored, writeStored } from '../store/playerStorage';
-import { validateNickname } from './nickname';
+import { validateExistingNickname } from './nickname';
 
 const NICK_PREFIX = 'accountNick:';
 const nickKey = (userId: string): string => `${NICK_PREFIX}${userId}`;
 
-/** True for a value that can be shown as an account nickname. */
+/** True for a value that can be shown as an account nickname (older accounts' names included). */
 export const isUsableNickname = (value: unknown): value is string =>
-    typeof value === 'string' && validateNickname(value) === null;
+    typeof value === 'string' && validateExistingNickname(value) === null;
 
 export function cacheNickname(userId: string, nickname: string): void {
     writeStored(nickKey(userId), nickname);

@@ -3,6 +3,7 @@
 
 import { PLAYER_KEYS, writeStored } from '../store/playerStorage';
 import type { AccountApi, AccountUser } from './accountApi';
+import { clearDeviceOwner, readDeviceOwner, setAsideForAccount, setDeviceOwner } from './deviceOwner';
 import { clearLocalSnapshot, readLocalSnapshot, writeLocalSnapshot } from './localSnapshot';
 import { cacheNickname } from './nicknameCache';
 import { savePending, takePending } from './pendingStore';
@@ -14,6 +15,14 @@ import type { Sync } from './sync';
  * be reached leaves the progress marked unsent, to be pushed later, and the player stays logged in.
  */
 export async function completeLogin(sync: Sync, user: AccountUser, reloadPlayer: () => void): Promise<void> {
+    // 0. The device still holds another account's progress (its session died without a logout here): keep
+    //    it for that account and start from a clean guest, so it never leaks into this one.
+    const owner = readDeviceOwner();
+    if (owner !== null && owner !== user.id) {
+        console.warn(`[account] this device still held the progress of user ${owner}; kept it for that account's next login`);
+        setAsideForAccount(owner);
+    }
+
     // 1. Progress this account could not send before its last logout here. Merged and marked unsent before
     //    any network call, so a push that fails now cannot lose it (the dirty flag survives).
     const pending = takePending(user.id);
@@ -24,8 +33,10 @@ export async function completeLogin(sync: Sync, user: AccountUser, reloadPlayer:
 
     // 2. Logged in, the player's name is the account nickname. Also remembered per account, so a later
     //    start-up without the cloud can keep this session logged in under the right name.
+    //    The device now holds this account's progress (see deviceOwner).
     writeStored(PLAYER_KEYS.name, user.nickname);
     cacheNickname(user.id, user.nickname);
+    setDeviceOwner(user.id);
 
     // 3. Cloud -> local (also pushes back whatever the cloud lacks, e.g. the guest's progress).
     try {
@@ -53,6 +64,8 @@ export interface LogOutSteps {
      * before the session itself is ended: stop pushing for this user and show the guest.
      */
     becomeGuest: () => void;
+    /** The session already ended by itself (e.g. revoked): skip the logout request, there is nothing to end. */
+    sessionGone?: boolean;
 }
 
 /**
@@ -61,14 +74,16 @@ export interface LogOutSteps {
  * anything earned while it runs is ordinary guest progress, not lost account progress.
  * Never rejects, so logging out always completes locally.
  */
-export async function logOutFlow({ api, sync, userId, reloadPlayer, becomeGuest }: LogOutSteps): Promise<void> {
+export async function logOutFlow({ api, sync, userId, reloadPlayer, becomeGuest, sessionGone = false }: LogOutSteps): Promise<void> {
     const ok = await sync.flush(userId);
     // hasPending also catches a change made while that push was in flight (it is not in what was saved).
     if (!ok || sync.hasPending(userId)) savePending(userId, readLocalSnapshot());
     sync.dispose();
     clearLocalSnapshot();
+    clearDeviceOwner();
     reloadPlayer();
     becomeGuest();
+    if (sessionGone) return;
 
     try {
         await api.logOut();
