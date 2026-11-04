@@ -29,9 +29,11 @@ export const generateAssets = async (): Promise<Record<string, Texture>> => {
     }
 };
 
-// The smoke launcher is "the same grenade launcher, only smoke": fighters hold the grenade launcher's picture
+// The smoke launcher is "the same grenade launcher, only smoke": if its own pictures fail to load,
+// it borrows the grenade launcher's so it is never drawn empty
 export const withSharedPictures = (textures: Record<string, Texture>): Record<string, Texture> => {
     if (!textures.held_smoke_launcher && textures.held_grenade_launcher) textures.held_smoke_launcher = textures.held_grenade_launcher;
+    if (!textures.weapon_smoke_launcher && textures.weapon_grenade_launcher) textures.weapon_smoke_launcher = textures.weapon_grenade_launcher;
     return textures;
 };
 
@@ -67,6 +69,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         weapon_railgun: assetUrl('assets/items/railgun.png'),
         weapon_machine_gun: assetUrl('assets/items/machinegun.png'),
         weapon_grenade_launcher: assetUrl('assets/items/granat.png'),
+        weapon_smoke_launcher: assetUrl('assets/items/smoke_launcher.png'),
         weapon_chainsaw: assetUrl('assets/items/chainsaw.png'),
         weapon_plasma_gun: assetUrl('assets/items/plasma_gun.png'),
         // Trimmed pictures for weapons held by fighters (grip points in render/fighter/weaponGrips.ts)
@@ -75,6 +78,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         held_rocket_launcher: assetUrl('assets/hud/rocket_launcher.png'),
         held_railgun: assetUrl('assets/hud/railgun.png'),
         held_grenade_launcher: assetUrl('assets/hud/grenade_launcher.png'),
+        held_smoke_launcher: assetUrl('assets/hud/smoke_launcher.png'),
         held_plasma_gun: assetUrl('assets/hud/plasma_gun.png'),
         held_chainsaw: assetUrl('assets/hud/chainsaw.png'),
         jetpack: assetUrl('assets/items/jetpack.png'),
@@ -83,7 +87,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
     };
 
     // Bump bundle name to force reload when manifest changes
-    const bundleName = 'game-assets-v13';
+    const bundleName = 'game-assets-v14';
     const fallbackBundleName = 'game-assets-v10-fallback';
 
     try {

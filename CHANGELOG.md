@@ -1,5 +1,12 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.24 (2026-11-04)
+
+### 🌫️ Smoke Launcher Picture
+- The smoke launcher had no picture of its own: on the map it was drawn from a few grey shapes (`render/smokeLauncherPickup.ts`), which read as an unclear blob next to the rendered weapon sprites; fighters held the green grenade launcher; the HUD used a flat cartoon SVG
+- New pictures made from the grenade launcher render (`granat.png`): the body in gunmetal grey, the coloured grenades in the drum turned into white smoke canisters. `assets/items/smoke_launcher.png` (with a smoke puff at the muzzle) lies on the map; `assets/hud/smoke_launcher.png` (240×103, cropped exactly like `hud/grenade_launcher.png`, so the grip points still fit) is held by fighters and shown in the HUD
+- `withSharedPictures` still lends the grenade launcher's pictures, now for the map sprite too, if the smoke launcher's own fail to load. Removed `smokeLauncherPickup.ts` and `hud/smoke_launcher.svg`; asset bundle bumped to `game-assets-v14`
+
 ## Version 0.4.22 (2026-11-03)
 
 ### 🔒 Accounts and Profile
