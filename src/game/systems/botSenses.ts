@@ -7,6 +7,7 @@ import { isTeammate } from './combat';
 import { BotMemory, reactionDelay } from './botMemory';
 import { smokeHides } from './smoke';
 import { spawnShieldLeft } from './spawnShield';
+import { sightBlocks } from '../cover/coverGeometry';
 
 // Re-picking a target only this often also works as the bot's reaction time
 const BOT_SCAN_INTERVAL_MS = 200;
@@ -14,10 +15,13 @@ const MUZZLE_HEIGHT = 50; // same origin as fireWeapon
 
 export const muzzleOf = (e: Entity): Vector2 => ({ x: e.pos.x, y: e.pos.y - MUZZLE_HEIGHT });
 export const centerOf = (e: Entity): Vector2 => ({ x: e.pos.x, y: e.pos.y - e.height / 2 });
+const HEAD_SHARE = 0.85; // the head sits this far up the body
+const headOf = (e: Entity): Vector2 => ({ x: e.pos.x, y: e.pos.y - e.height * HEAD_SHARE });
 
 export const isEnemy = (bot: Entity, other: Entity) => other.id !== bot.id && !isTeammate(bot, other);
 
-export const botHasLineOfSight = (state: GameState, from: Vector2, to: Vector2) => {
+/** No platform between the two points (cover not counted), and `to` within aiming distance. */
+export const platformsClear = (state: GameState, from: Vector2, to: Vector2) => {
     const dir = normalize({ x: to.x - from.x, y: to.y - from.y });
     const cur = { ...from };
     let dist = 0;
@@ -31,10 +35,22 @@ export const botHasLineOfSight = (state: GameState, from: Vector2, to: Vector2) 
     return false;
 };
 
-/** Walls and smoke both block sight; a bot standing in smoke still sees out of it. */
+/** Platforms and intact cover that blocks sight (everything but glass) hide what is behind them. */
+export const botHasLineOfSight = (state: GameState, from: Vector2, to: Vector2) =>
+    platformsClear(state, from, to) && !sightBlocks(state, from, to);
+
+/** Where the bot aims at `other`: its middle, or its head when cover hides only the middle
+ *  (a fighter standing behind a crate, or the bot shooting over the crate it hides behind). */
+export const aimPointOf = (state: GameState, bot: Entity, other: Entity): Vector2 => {
+    const muzzle = muzzleOf(bot), middle = centerOf(other), head = headOf(other);
+    return sightBlocks(state, muzzle, middle) && !sightBlocks(state, muzzle, head) ? head : middle;
+};
+
+/** Walls, cover and smoke all block sight; a bot standing in smoke still sees out of it. */
 export const canSee = (state: GameState, bot: Entity, other: Entity, now = Date.now()) =>
     distance(bot.pos, other.pos) < BOT_AIM_DISTANCE
-    && botHasLineOfSight(state, muzzleOf(bot), centerOf(other))
+    && platformsClear(state, muzzleOf(bot), centerOf(other))
+    && !sightBlocks(state, muzzleOf(bot), aimPointOf(state, bot, other))
     && !smokeHides(state, muzzleOf(bot), centerOf(other), now);
 
 /** Nearest enemy the bot can see (one that can be hurt beats one under spawn protection);

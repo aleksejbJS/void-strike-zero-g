@@ -15,12 +15,14 @@ import { blockEdge, updateRoute } from './botRoute';
 import { steer } from './botSteering';
 import { combatMoves } from './botCombatMoves';
 import { BotControls, IDLE } from './botNavState';
+import { applyStance } from './stance';
 
 export { clearBotMemory } from './botMemory';
 export { botHasLineOfSight } from './botSenses';
 export type { BotControls } from './botNavState';
 
 const SHOOT_UP_PX = 100; // a visible enemy this far above: jetpack up to get a shot
+const STAND_AFTER_SHOT_MS = 300; // behind cover: stay up this long after a shot before ducking again
 
 export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeaponCallback: (bot: Entity, target: Vector2) => void, _mode?: GameMode): BotControls => {
     if (bot.dead) return IDLE;
@@ -48,10 +50,18 @@ export const updateBotAI = (bot: Entity, state: GameState, now: number, fireWeap
     }
     if (now < mem.unstickUntil && bot.jetpackFuel > 0 && !bot.grapple.active) controls = { ...controls, isFlying: true };
 
+    // Crouched behind cover, the bot stands up to fire (the shot leaves from standing height)
+    let fired = false;
+    const fireStanding = (b: Entity, at: Vector2) => {
+        if (b.isCrouching) applyStance(b, { wantsDown: false, wantsProne: false });
+        fired = true;
+        fireWeaponCallback(b, at);
+    };
     // No target, or one hidden in smoke that the bot never saw: look where it is going
-    if (!target || !aimAndFire(state, bot, target, mem, now, fireWeaponCallback)) {
+    if (!target || !aimAndFire(state, bot, target, mem, now, fireStanding)) {
         bot.aim = undefined;
         if (controls.inputX !== 0) bot.facingRight = controls.inputX > 0;
     }
-    return controls;
+    const crouch = !!controls.wantsDown && !controls.isFlying && !fired && now - bot.lastFired > STAND_AFTER_SHOT_MS;
+    return { ...controls, wantsDown: crouch };
 };
