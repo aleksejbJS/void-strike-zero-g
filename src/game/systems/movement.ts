@@ -88,8 +88,8 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
         if (state) jetpackTrail(state, p, thrustX, fuelMult >= 1);
     }
 
-    // Fuel recharge — ONLY on ground (Soldat-style)
-    if (p.isGrounded && !input.isFlying) {
+    // Fuel recharge — on ground or hanging on the grapple, never in free flight
+    if ((p.isGrounded || p.grapple.active) && !input.isFlying) {
         p.jetpackFuel = Math.min(p.maxFuel, p.jetpackFuel + JETPACK_RECHARGE);
     }
 

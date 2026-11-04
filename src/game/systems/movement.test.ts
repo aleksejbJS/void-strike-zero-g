@@ -69,7 +69,7 @@ describe('Force Pipeline — movement.ts', () => {
         expect(p.vel.y).toBeLessThan(0);
     });
 
-    it('should recharge fuel only on ground', () => {
+    it('should recharge fuel on ground but not in free flight', () => {
         const p = makePlayer({ isGrounded: true, jetpackFuel: 50 });
         applyMovement(p, noInput);
         expect(p.jetpackFuel).toBeGreaterThan(50);
@@ -77,6 +77,23 @@ describe('Force Pipeline — movement.ts', () => {
         const p2 = makePlayer({ isGrounded: false, jetpackFuel: 50 });
         applyMovement(p2, noInput);
         expect(p2.jetpackFuel).toBe(50);
+    });
+
+    it('should recharge fuel at the ground rate while hanging on the grapple', () => {
+        const grapple = { active: true, pos: { x: 100, y: 100 }, length: 200 };
+        const hanging = makePlayer({ isGrounded: false, jetpackFuel: 50, grapple });
+        const grounded = makePlayer({ isGrounded: true, jetpackFuel: 50 });
+        applyMovement(hanging, noInput);
+        applyMovement(grounded, noInput);
+        expect(hanging.jetpackFuel).toBeGreaterThan(50);
+        expect(hanging.jetpackFuel).toBe(grounded.jetpackFuel);
+    });
+
+    it('should not recharge fuel on the grapple while thrusting', () => {
+        const grapple = { active: true, pos: { x: 100, y: 100 }, length: 200 };
+        const p = makePlayer({ isGrounded: false, jetpackFuel: 50, grapple });
+        applyMovement(p, { ...noInput, isFlying: true, wantsJump: true });
+        expect(p.jetpackFuel).toBeLessThan(50);
     });
 
     it('should apply ground friction', () => {

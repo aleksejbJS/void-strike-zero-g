@@ -1,5 +1,10 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.23 (2026-11-04)
+
+### 🪝 Jetpack Refills on the Hook
+- The jetpack tank refilled only on the ground (`isGrounded`), so hanging on your own hook left it empty. It now also refills while the grapple is attached (`grapple.active`), at the same `JETPACK_RECHARGE` rate, and still not while thrusting (`movement.ts`). The rule lives in the shared Force Pipeline, so it applies offline, online and to bots alike
+
 ## Version 0.4.22 (2026-11-03)
 
 ### 🔒 Accounts and Profile
