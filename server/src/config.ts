@@ -20,7 +20,7 @@ export interface ServerConfig {
   };
 }
 
-const ONLINE_MODES = Object.values(GameMode);
+const ONLINE_MODES = Object.values(GameMode).filter(m => m !== GameMode.DUEL); // DUEL is tournament-only
 
 const parseEnum = <T extends string>(value: string | undefined, allowed: readonly T[], fallback: T, name: string): T => {
   if (!value) return fallback;

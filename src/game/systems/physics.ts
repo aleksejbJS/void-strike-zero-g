@@ -19,6 +19,7 @@ import { applyStance, clampProneAim } from './stance';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
+import { duelLoadout, duelSpawnPoint } from './duelRules';
 import { spawnSmoke, updateSmokes } from './smoke';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
@@ -53,9 +54,13 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             if (now > p.respawnTimer) {
                 p.dead = false; p.health = 100; p.armor = 0;
                 p.maxFuel = DEFAULT_MAX_FUEL; p.jetpackFuel = DEFAULT_MAX_FUEL;
-                p.pos = getSpawnPoint(p.team); p.vel = { x: 0, y: 0 };
+                p.pos = state.mode === GameMode.DUEL ? duelSpawnPoint(state, p.id) : getSpawnPoint(p.team);
+                p.vel = { x: 0, y: 0 };
                 if (state.mode === GameMode.GUN_GAME) {
                     applyGunGameLoadout(p, p.gunLevel || 0);
+                } else if (state.mode === GameMode.DUEL) {
+                    p.inventory = duelLoadout();
+                    p.weapon = p.inventory[0];
                 } else {
                     p.inventory = [{ ...WEAPONS_DATA[WeaponType.MACHINE_GUN] }];
                     p.weapon = p.inventory[0];

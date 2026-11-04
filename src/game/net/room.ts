@@ -12,6 +12,7 @@ import { JoinRequest, JoinRejected, Snapshot, buildSnapshot } from './protocol';
 import { createRoomState, createBots, createJoinedPlayer, spawnPointFor, pickTeam, resetHungerRound, resetMatch } from './roomSetup';
 import { isHungerRoundOver } from '../systems/hungerRound';
 import { isMatchOver } from '../systems/matchRound';
+import { duelSpawnPoint } from '../systems/duelRules';
 
 const MAX_BODY_SPEED_X = 15;
 
@@ -19,6 +20,10 @@ export interface RoomConfig {
     mode: GameMode;
     map: MapId;
     maxPlayers: number;
+    /** Bots at the start; defaults to the mode's usual number (none in a duel). */
+    bots?: number;
+    /** Start the next match after the results screen (default true); a tournament duel stays on its result. */
+    restartMatches?: boolean;
 }
 
 export type JoinResult = { ok: true } | { ok: false; reason: JoinRejected['reason'] };
@@ -34,7 +39,7 @@ export class GameRoom {
     constructor(private readonly config: RoomConfig) {
         this.spawnPoint = spawnPointFor(config.mode);
         this.state = createRoomState(config.mode, config.map);
-        this.state.players.push(...createBots(config.mode));
+        this.state.players.push(...createBots(config.mode, config.bots));
         this.state.platforms.forEach(p => this.physics.addPlatform(p));
         this.state.players.forEach(p => this.physics.addPlayer(p));
         // The event bus is global: one room per process (true for the Node server)
@@ -49,6 +54,8 @@ export class GameRoom {
         const team = pickTeam(this.state);
         const player = createJoinedPlayer(id, req, this.state.mode, team);
         const hunger = this.state.mode === GameMode.HUNGER_GAMES;
+        const duel = this.state.mode === GameMode.DUEL;
+        if (duel) player.pos = duelSpawnPoint(this.state, id); // opposite side from the opponent
         if (hunger) {
             // A round is in progress: watch until the next one (spec phase 2, H1)
             player.dead = true;
@@ -57,7 +64,8 @@ export class GameRoom {
 
         // Take a bot's slot (same team in team modes) to keep the match size stable.
         // Hunger Games keeps its fighters; bots make room at the next round instead.
-        const botIndex = hunger ? -1 : this.state.players.findIndex(p => p.type === 'bot' && p.team === team);
+        // A duel's bot is the opponent, so it stays.
+        const botIndex = hunger || duel ? -1 : this.state.players.findIndex(p => p.type === 'bot' && p.team === team);
         if (botIndex !== -1) {
             this.physics.removeBody(this.state.players[botIndex].id);
             this.state.players[botIndex] = player;
@@ -106,7 +114,7 @@ export class GameRoom {
             resetHungerRound(this.state, Date.now());
             this.syncBodies();
         }
-        if (isMatchOver(this.state, Date.now())) {
+        if (this.config.restartMatches !== false && isMatchOver(this.state, Date.now())) {
             resetMatch(this.state);
             this.syncBodies();
         }

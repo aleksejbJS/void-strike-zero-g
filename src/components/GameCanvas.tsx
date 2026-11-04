@@ -818,7 +818,7 @@ export default function GameCanvas() {
                 keys.current[e.code] = true;
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const num = parseInt(e.key);
-                if (!isNaN(num) && num >= 1 && num <= 6) selectWeapon(num - 1);
+                if (!isNaN(num) && num >= 1 && num <= 7) selectWeapon(num - 1);
                 if (e.code === 'F3') {
                     e.preventDefault();
                     debugVisibleRef.current = !debugVisibleRef.current;

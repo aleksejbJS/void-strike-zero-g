@@ -11,6 +11,7 @@ export const SCORE_LIMIT: Partial<Record<GameMode, number>> = {
     [GameMode.CTF]: 3,
     [GameMode.HOLD_THE_FLAG]: 60,
     [GameMode.INFILTRATION]: 3,
+    [GameMode.DUEL]: 10,
 };
 
 export const hasMatchLimits = (mode: GameMode) => SCORE_LIMIT[mode] !== undefined;
@@ -39,6 +40,7 @@ export const updateMatch = (state: GameState, now: number) => {
     if (best >= SCORE_LIMIT[state.mode]!) {
         state.matchEndReason = 'score';
     } else if (now - state.matchStartedAt >= MATCH_TIME_LIMIT) {
+        if (state.mode === GameMode.DUEL && winner === null) return; // sudden death: the next kill decides
         state.matchEndReason = 'time';
     } else {
         return;
