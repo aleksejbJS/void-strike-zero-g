@@ -9,7 +9,6 @@ import { ProjectileView } from '../render/projectiles/projectileView';
 import { BeamView } from '../render/projectiles/beamView';
 import { SmokeView } from '../render/effects/smokeView';
 import { smokeSilhouette } from '../render/smokeVisibility';
-import { drawSmokeLauncherPickup } from '../render/smokeLauncherPickup';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
 import { createParticles } from './effectSpawn';
 import { hudHealth } from './hudHealth';
@@ -346,8 +345,6 @@ const updatePickupVisual = (c: Container, item: Pickup, cache: any) => {
             g.circle(13, -11, 8).fill(color);
             g.circle(13, -11, 5).fill(0x84cc16);
             g.rect(-12, -13, 4, 4).fill(0x1e293b);
-        } else if (item.subtype === WeaponType.SMOKE_LAUNCHER) {
-            drawSmokeLauncherPickup(g, color);
         } else if (item.subtype === WeaponType.CHAINSAW) {
             // Chainsaw blade and handle
             g.rect(-20, -14, 34, 8).fill(0x7f1d1d);
