@@ -22,7 +22,9 @@ export interface MatchTileProps {
 }
 
 /** A host that never answers (closed tab, broker trouble) must not keep the tile waiting forever. */
-export const WATCH_ANSWER_TIMEOUT_MS = 15_000;
+export const WATCH_ANSWER_TIMEOUT_MS = 30_000;
+/** PeerJS may never report a host tab that closed; a host that sends nothing for this long is gone. */
+export const WATCH_SILENCE_TIMEOUT_MS = 5_000;
 
 type SoundName = Parameters<typeof playSound>[0];
 
@@ -59,24 +61,35 @@ export const MatchTile: React.FC<MatchTileProps> = ({ peerId, audible, expanded,
         let linkOpen = true;
         let frame = 0;
         let lastScoreKey = '';
+        let matchOver = false; // from the last snapshot received, drawn or not
 
         // The session latches its end, and a link that reconnects must not bring it back: close it for good
         const closeLink = () => {
             if (!linkOpen) return;
             linkOpen = false;
-            clearTimeout(watchdog);
+            clearTimeout(deadline);
             session.dispose();
         };
-        const watchdog = setTimeout(() => { closeLink(); setStatus('host_left'); }, WATCH_ANSWER_TIMEOUT_MS);
+        // A host closes the link after the final whistle too; only a finished match is "ended"
+        const giveUp = () => {
+            closeLink();
+            setStatus(matchOver ? 'ended' : 'host_left');
+        };
+        // First the wait for an answer, then (from the first snapshot on) the wait for the next snapshot
+        let deadline = setTimeout(giveUp, WATCH_ANSWER_TIMEOUT_MS);
         const session = new SpectatorSession(new PeerSocket(peerId), {
-            onWatching: () => { clearTimeout(watchdog); setStatus('live'); },
+            onWatching: () => setStatus('live'),
+            onSnapshot: snapshot => {
+                matchOver = !!snapshot.matchEndsAt;
+                clearTimeout(deadline);
+                deadline = setTimeout(giveUp, WATCH_SILENCE_TIMEOUT_MS);
+            },
             onRejected: reason => {
                 closeLink();
                 if (reason !== 'spectators_full') console.warn(`[tournament] host refused to show match ${peerId}: ${reason}`);
                 setStatus(reason === 'spectators_full' ? 'full' : 'host_left');
             },
-            // A host closes the link after the final whistle too; only a finished match is "ended"
-            onEnded: () => { closeLink(); setStatus(state.matchEndsAt ? 'ended' : 'host_left'); },
+            onEnded: giveUp,
             onSound: e => {
                 if (e.type === 'SOUND' && audibleRef.current) playSound(e.sound as SoundName, e.subtype as WeaponType | undefined);
             },

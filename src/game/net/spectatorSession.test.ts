@@ -22,6 +22,15 @@ describe('SpectatorSession: joining', () => {
         expect(state.players.map(p => p.id)).toEqual(['a']);
     });
 
+    it('tells the caller about every snapshot as it arrives, before any tick', () => {
+        const { socket, cb, info } = watching();
+        expect(cb.onSnapshot).toHaveBeenCalledWith(info.snapshot);
+        const next = { ...snapshotOf([at('a', 10)]), matchEndsAt: Date.now() + 5000 };
+        socket.fire(MSG.SNAPSHOT, next);
+        expect(cb.onSnapshot).toHaveBeenCalledTimes(2);
+        expect(cb.onSnapshot).toHaveBeenLastCalledWith(next);
+    });
+
     it('reports a rejection', () => {
         const { socket, cb } = setup();
         socket.fire(MSG.JOIN_REJECTED, { reason: 'spectators_full' });

@@ -24,6 +24,8 @@ export interface SpectatorCallbacks {
     onEnded: (why: 'disconnected' | 'connection_error') => void;
     /** The caller decides whether this tile is audible. */
     onSound: (e: GameEvent) => void;
+    /** A snapshot arrived (the first one comes with WATCHING); it reaches `state` on the next tick. */
+    onSnapshot?: (snapshot: Snapshot) => void;
 }
 
 // Matches no fighter id, so interpolation moves every player
@@ -46,7 +48,7 @@ export class SpectatorSession {
     private latest: Snapshot | null = null;
     private effects: GameEvent[] = [];
 
-    constructor(private readonly socket: SessionSocket, callbacks: SpectatorCallbacks) {
+    constructor(private readonly socket: SessionSocket, private readonly callbacks: SpectatorCallbacks) {
         this.socket.on('connect', () => this.socket.emit(MSG.WATCH, {}));
         // onEnded fires at most once; a rejection already told the caller why the link closes
         const end = (why: 'disconnected' | 'connection_error') => {
@@ -110,6 +112,7 @@ export class SpectatorSession {
     private receive(snapshot: Snapshot) {
         this.buffer.push(snapshot, performance.now());
         this.latest = snapshot;
+        this.callbacks.onSnapshot?.(snapshot);
     }
 
     private queueEffect(e: GameEvent) {

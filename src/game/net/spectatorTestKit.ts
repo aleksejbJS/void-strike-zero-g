@@ -34,7 +34,7 @@ export const at = (id: string, x: number, score = 0): Entity => ({ ...createMock
 
 export const setup = () => {
     const socket = new FakeSocket();
-    const cb = { onWatching: vi.fn(), onRejected: vi.fn(), onEnded: vi.fn(), onSound: vi.fn() } satisfies SpectatorCallbacks;
+    const cb = { onWatching: vi.fn(), onRejected: vi.fn(), onEnded: vi.fn(), onSound: vi.fn(), onSnapshot: vi.fn() } satisfies SpectatorCallbacks;
     const session = new SpectatorSession(socket, cb);
     return { socket, cb, session, state: createMockState(GameMode.DEATHMATCH) };
 };

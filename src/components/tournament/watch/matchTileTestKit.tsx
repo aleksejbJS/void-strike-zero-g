@@ -46,6 +46,9 @@ export const hostAccepts = (players: Entity[] = [], matchEndsAt?: number) => act
     socket.fire(MSG.WATCHING, { ...info, snapshot: { ...info.snapshot, matchEndsAt } });
 });
 
-export const hostSends = (players: Entity[]) => act(() => { lastSocket().fire(MSG.SNAPSHOT, snapshotOf(players)); });
+/** A live snapshot from the host; `matchEndsAt` marks a match that is over. */
+export const hostSends = (players: Entity[], matchEndsAt?: number) => act(() => {
+    lastSocket().fire(MSG.SNAPSHOT, { ...snapshotOf(players), matchEndsAt });
+});
 
 export const fire = (event: string, data?: unknown) => act(() => { lastSocket().fire(event, data); });
