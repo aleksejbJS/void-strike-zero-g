@@ -11,24 +11,24 @@ describe('ProfileScreen content', () => {
     const cardNames = () => cards().map(card => card.querySelector('b')?.textContent);
     const chip = (name: string) => within(screen.getByRole('group', { name: 'Achievement categories' })).getByRole('button', { name });
 
-    it('lists all 17 achievements under All', async () => {
+    it('lists all 20 achievements under All', async () => {
         await mountProfile(h);
-        expect(ACHIEVEMENTS).toHaveLength(17);
-        expect(cards()).toHaveLength(17);
+        expect(ACHIEVEMENTS).toHaveLength(20);
+        expect(cards()).toHaveLength(20);
         expect(chip('All')).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('filters by category: Special is exactly Veteran and Perfectionist, All brings everything back', async () => {
+    it('filters by category: Special is Veteran, Perfectionist and the three tournament ones, All brings everything back', async () => {
         await mountProfile(h);
         fireEvent.click(chip('Special'));
-        expect(cardNames().sort()).toEqual(['Perfectionist', 'Veteran']);
+        expect(cardNames().sort()).toEqual(['Champion', 'Finalist', 'Flawless', 'Perfectionist', 'Veteran']);
         expect(chip('Special')).toHaveAttribute('aria-pressed', 'true');
         expect(chip('All')).toHaveAttribute('aria-pressed', 'false');
 
         fireEvent.click(chip('Combat'));
         expect(cards()).toHaveLength(ACHIEVEMENTS.filter(a => a.category === 'combat').length);
         fireEvent.click(chip('All'));
-        expect(cards()).toHaveLength(17);
+        expect(cards()).toHaveLength(20);
     });
 
     it('shows a locked card with its progress, an unlocked card with its reward', async () => {
@@ -93,7 +93,7 @@ describe('ProfileScreen content', () => {
         h.store.fighterXp = '120';
         await mountProfile(h);
         expect(screen.getByText('Level 3 · 30 XP to the next part')).toBeInTheDocument();
-        expect(screen.getByText('2/17').previousElementSibling).toHaveTextContent('Achievements');
+        expect(screen.getByText('2/20').previousElementSibling).toHaveTextContent('Achievements');
         expect(screen.getByText('60').previousElementSibling).toHaveTextContent('Achievement XP');
     });
 
@@ -110,13 +110,13 @@ describe('ProfileScreen content', () => {
             achievements: { veteran: { progress: 1, unlocked: true, unlockedAt: 5 } }, xp: 400, look: null,
         });
         const { account } = await mountProfile(h);
-        expect(screen.getByText('0/17')).toBeInTheDocument();
+        expect(screen.getByText('0/20')).toBeInTheDocument();
         expect(screen.queryByText(/^Title:/)).not.toBeInTheDocument();
 
         h.api.logIn.mockResolvedValue(ALEX);
         await act(async () => { await account().logIn('Alex', 'secret1'); });
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Alex');
-        expect(screen.getByText('1/17')).toBeInTheDocument();
+        expect(screen.getByText('1/20')).toBeInTheDocument();
         expect(screen.getByText('Title: Veteran')).toBeInTheDocument();
         expect(screen.getByText('Level 9 · 50 XP to the next part')).toBeInTheDocument();
     });

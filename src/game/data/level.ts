@@ -1,4 +1,5 @@
 import { GameMode, ItemType, Platform, Pickup, Team, WeaponType, MapId } from '../../types';
+import { PIT_PICKUPS, PIT_PLATFORMS, PIT_WAYPOINTS } from './pitMap';
 
 const BLUE_FLAG_POS = { x: -350, y: 470 };
 const RED_FLAG_POS = { x: 2350, y: 470 };
@@ -198,7 +199,9 @@ export const getPlatforms = (mode?: GameMode, mapId?: MapId): Platform[] => {
   let plats: Omit<Platform, 'id'>[] = [];
 
   // Only Deathmatch can switch maps; other modes stay on legacy layouts.
-  if (mode === GameMode.DEATHMATCH) {
+  if (mode === GameMode.DUEL) {
+    plats = PIT_PLATFORMS;
+  } else if (mode === GameMode.DEATHMATCH) {
     if (mapId === MapId.TUNNELS) plats = getTunnelMapPlatforms();
     else plats = getDeathmatchPlatforms();
   } else if (mode === GameMode.HUNGER_GAMES) {
@@ -216,6 +219,8 @@ export const getPlatforms = (mode?: GameMode, mapId?: MapId): Platform[] => {
 };
 
 export const getWaypoints = (mode?: GameMode): { x: number; y: number }[] => {
+  if (mode === GameMode.DUEL) return PIT_WAYPOINTS.map(w => ({ ...w }));
+
   const plats = getPlatforms(mode);
   const mids = plats.map(p => ({ x: p.x + p.w / 2, y: p.y - 20 }));
 
@@ -310,6 +315,9 @@ export const getWaypoints = (mode?: GameMode): { x: number; y: number }[] => {
 };
 
 export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
+  // The Pit (duel): health, armor and ammo only; copies, because a match mutates its pickups
+  if (mode === GameMode.DUEL) return PIT_PICKUPS.map(p => ({ ...p, pos: { ...p.pos } }));
+
   // Gun Game: no weapon pickups at all
   if (mode === GameMode.GUN_GAME) {
     return [

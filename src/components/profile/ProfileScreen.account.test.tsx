@@ -70,7 +70,7 @@ describe('ProfileScreen account area', () => {
         await mountProfile(h);
         expect(protectButton()).not.toBeInTheDocument();
         expect(logOutButton()).not.toBeInTheDocument();
-        expect(screen.getAllByRole('listitem')).toHaveLength(17);
+        expect(screen.getAllByRole('listitem')).toHaveLength(20);
     });
 
     it('Log out asks first, and Cancel changes nothing', async () => {
@@ -93,7 +93,7 @@ describe('ProfileScreen account area', () => {
         expect(logOutButton()).not.toBeInTheDocument();
         expect(protectButton()).toBeInTheDocument();
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Anonymous');
-        expect(screen.getByText('0/17')).toBeInTheDocument();
+        expect(screen.getByText('0/20')).toBeInTheDocument();
         expect(screen.queryByText(/^Title:/)).not.toBeInTheDocument();
     });
 

@@ -27,9 +27,10 @@ const Chevron: React.FC<{ dir: 'l' | 'r' }> = ({ dir }) => (
     </svg>
 );
 
-interface Props { onContinue: () => void; onBack: () => void; onOpenProfile?: () => void }
+// forTournament: opened from a tournament screen to pick a name; Start saves and goes back there, no match
+interface Props { onContinue: () => void; onBack: () => void; onOpenProfile?: () => void; forTournament?: boolean }
 
-const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => {
+const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile, forTournament = false }) => {
     const { state, actions } = useUIStore();
     const { t, language } = useTranslation();
     const [name, setName] = useState(state.playerName);
@@ -48,7 +49,7 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => 
         if (saveLookIfChanged({ build, skinId: preset.id, colors: { ...colors, player: colors.torso } })) notifyProgressChanged();
         actions.selectSkin(preset.id);
         actions.setPlayerCustomization(playerName, colors);
-        actions.startGame(state.selectedMode);
+        if (!forTournament) actions.startGame(state.selectedMode);
         onContinue();
     };
     const gate = useStartGate(name, start);
@@ -60,9 +61,9 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => 
 
     const mode = MODE_INFO[language][state.selectedMode].name;
     const mapLabel = t(state.selectedMap === MapId.TUNNELS ? 'hb.mapTunnels' : state.selectedMap === MapId.HUNGER ? 'hb.mapHunger' : 'hb.mapDefault').toLowerCase();
-    const next = state.networkMode === NetworkMode.CLIENT ? t('cs.nextJoin')
+    const next = forTournament ? t('tournament.setup.next') : state.networkMode === NetworkMode.CLIENT ? t('cs.nextJoin')
         : t(state.networkMode === NetworkMode.HOST ? 'cs.nextHost' : 'cs.nextOffline', mode, mapLabel);
-    const startLabel = t(state.networkMode === NetworkMode.CLIENT ? 'cs.startJoin' : state.networkMode === NetworkMode.HOST ? 'cs.startHost' : 'cs.startOffline');
+    const startLabel = forTournament ? t('tournament.setup.continue') : t(state.networkMode === NetworkMode.CLIENT ? 'cs.startJoin' : state.networkMode === NetworkMode.HOST ? 'cs.startHost' : 'cs.startOffline');
     const styleName = t(`cs.style.${preset.style}` as 'cs.style.human');
     const arrowClass = `flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded bg-bay-steel hover:bg-bay-plate phone:h-9 phone:w-9 ${focusRing}`;
 
@@ -73,7 +74,7 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile }) => 
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between phone:flex-row phone:items-center">
                     <div className="flex flex-col gap-2.5 phone:flex-row phone:items-center phone:gap-4">
                         <button type="button" onClick={onBack} className={`flex items-center gap-1.5 self-start text-[15px] font-semibold text-bay-hazard hover:text-bay-chalk ${focusRing}`}>
-                            <Chevron dir="l" />{t('cs.backToMenu')}
+                            <Chevron dir="l" />{t(forTournament ? 'cs.back' : 'cs.backToMenu')}
                         </button>
                         <h1 className="m-0 font-display text-[52px] font-black uppercase leading-[0.9] sm:text-[76px] short:text-[56px] phone:text-2xl">{t('cs.title')}</h1>
                     </div>

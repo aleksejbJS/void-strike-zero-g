@@ -5,6 +5,7 @@ import { AdConfig, AdPlaceConfig, DEFAULT_REFRESH_SEC, emptyAdConfig, validateAd
 import { STATION_AD_PLACES } from '../../game/render/scene/adPlaces';
 import { MINE_AD_PLACES } from '../../game/render/scene/themes/mineTheme';
 import { ARENA_AD_PLACES } from '../../game/render/scene/themes/arenaTheme';
+import { PIT_AD_PLACES } from '../../game/render/scene/themes/pitTheme';
 
 const DRAFT_KEY = 'void-strike.ads-draft';
 
@@ -28,9 +29,11 @@ const DESCRIPTIONS: Record<string, { name: string; where: string }> = {
     'arena.screen-a': { name: 'Большой экран над трибунами', where: 'Голодные игры: трибуны, центр арены' },
     'arena.screen-b': { name: 'Большой экран над трибунами', where: 'Голодные игры: трибуны, правее центра' },
     'arena.ribbon': { name: 'Светодиодная лента', where: 'Голодные игры: фермы, левая часть арены' },
+    'pit.wall-poster-a': { name: 'Световой короб на стене', where: 'Яма (турнир): стена, левая часть арены' },
+    'pit.wall-poster-b': { name: 'Световой короб на стене', where: 'Яма (турнир): стена, правее центра' },
 };
 
-export const AD_PLACES: PlaceInfo[] = [...STATION_AD_PLACES, ...MINE_AD_PLACES, ...ARENA_AD_PLACES].map(p => ({
+export const AD_PLACES: PlaceInfo[] = [...STATION_AD_PLACES, ...MINE_AD_PLACES, ...ARENA_AD_PLACES, ...PIT_AD_PLACES].map(p => ({
     id: p.id,
     size: p.size,
     kind: p.kind,

@@ -68,6 +68,9 @@ export const COLLECTING_ACHIEVEMENTS: Achievement[] = [
   }
 ];
 
+/** Paid by tournaments only: Perfectionist does not ask for them (it predates them). */
+export const TOURNAMENT_ACHIEVEMENT_IDS: readonly string[] = ['tournament_champion', 'tournament_finalist', 'tournament_flawless'];
+
 // Special achievements
 export const SPECIAL_ACHIEVEMENTS: Achievement[] = [
   {
@@ -93,5 +96,42 @@ export const SPECIAL_ACHIEVEMENTS: Achievement[] = [
     progress: 0,
     maxProgress: 36000, // 10 hours in seconds
     reward: { xp: 500, title: 'Veteran' }
+  },
+  // Tournament achievements: awarded by src/tournament/awardTournament.ts, judged from a bracket
+  {
+    id: 'tournament_champion',
+    name: 'Champion',
+    description: 'Win a tournament',
+    icon: '🏆',
+    rarity: 'legendary',
+    category: 'special',
+    unlocked: false,
+    progress: 0,
+    maxProgress: 1,
+    reward: { xp: 1000 }
+  },
+  {
+    id: 'tournament_finalist',
+    name: 'Finalist',
+    description: 'Reach a tournament final',
+    icon: '🥈',
+    rarity: 'epic',
+    category: 'special',
+    unlocked: false,
+    progress: 0,
+    maxProgress: 1,
+    reward: { xp: 400 }
+  },
+  {
+    id: 'tournament_flawless',
+    name: 'Flawless',
+    description: 'Win a tournament match 10:0',
+    icon: '🧊',
+    rarity: 'rare',
+    category: 'special',
+    unlocked: false,
+    progress: 0,
+    maxProgress: 1,
+    reward: { xp: 300 }
   }
 ];

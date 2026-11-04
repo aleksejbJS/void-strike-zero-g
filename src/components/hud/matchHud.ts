@@ -6,6 +6,8 @@ import type { Translate } from '../menu/types';
 
 export interface MatchHud {
     timeLeftSec: number | null;
+    /** A duel tied at the time limit: the next kill decides, the clock shows "Sudden death" instead of 0:00. */
+    suddenDeath?: boolean;
     goal: string;
     result: null | {
         title: string;
@@ -26,6 +28,7 @@ export const buildMatchHud = (state: GameState, now: number, t: Translate): Matc
         goal: t(goalKey(state.mode), SCORE_LIMIT[state.mode]),
         result: null,
     };
+    if (state.mode === GameMode.DUEL && left === 0) hud.suddenDeath = true;
     if (!state.matchEndsAt) return hud;
 
     const w = state.matchWinner;

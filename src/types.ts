@@ -13,6 +13,7 @@ export enum GameMode {
   HOLD_THE_FLAG = 'HOLD_THE_FLAG',
   INFILTRATION = 'INFILTRATION',
   HUNGER_GAMES = 'HUNGER_GAMES',
+  DUEL = 'DUEL', // tournament-only 1v1 on The Pit; not offered in the mode menu
 }
 
 export enum Team {
@@ -238,7 +239,8 @@ export interface GameState {
 export enum MapId {
   DEFAULT = 'default',
   TUNNELS = 'tunnels',
-  HUNGER = 'hunger'
+  HUNGER = 'hunger',
+  PIT = 'pit',
 }
 
 export enum NetworkMode {

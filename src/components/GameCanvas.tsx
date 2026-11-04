@@ -50,6 +50,9 @@ import { addShake, explosionShake } from '../game/render/screenShake';
 import { spawnPointFor } from '../game/net/roomSetup';
 import { currentBuild } from '../game/build/currentBuild';
 import { useMatchRewards } from './hud/useMatchRewards';
+import { useTournamentMatch } from './hud/useTournamentMatch';
+import { openTournamentNet } from './hud/tournamentNet';
+import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
@@ -106,6 +109,8 @@ export default function GameCanvas() {
         hungerWinnerId: null
     });
     const reward = useMatchRewards(gameState, localIdRef); // XP for the match that just ended
+    const tournamentRun = state.tournamentMatch; // a tournament duel: always online, see useTournamentMatch
+    const tourney = useTournamentMatch(gameState, localIdRef, tournamentRun);
 
     const visualCache = useRef({
         players: new Map(),
@@ -361,12 +366,24 @@ export default function GameCanvas() {
         let redrawMap: (() => void) | null = null;
         let mapLook: MapLook | null = null;
         let ads: AdsController | null = null;
-        const isOnline = state.networkMode !== NetworkMode.OFFLINE;
+        const isOnline = state.networkMode !== NetworkMode.OFFLINE || tournamentRun !== null;
         if (isOnline) {
             setNetError(null);
             let socket: SessionSocket;
             let targetLabel: string;
-            if (state.networkMode === NetworkMode.HOST) {
+            if (tournamentRun) {
+                // The host seat runs the duel's room here; the guest joins the host's published peer id
+                const net = openTournamentNet(tournamentRun, {
+                    onInviteReady: tourney.signals.inviteReady,
+                    onError: message => setNetError(`${t('net.hostError')} (${message})`),
+                    onSnapshot: tourney.signals.snapshot,
+                    onRejoinReady: tourney.signals.rejoinReady,
+                    onRejoinFailed: tourney.signals.disconnected,
+                });
+                hostRef.current = net.host;
+                socket = net.socket;
+                targetLabel = t(tournamentRun.role === 'host' ? 'net.yourGame' : 'net.hostedGame');
+            } else if (state.networkMode === NetworkMode.HOST) {
                 // This browser runs the room; we join it like everyone else, minus the network
                 const host = new HostSession(
                     { mode: gameMode, map: effectiveMapFor(gameMode, state.selectedMap), maxPlayers: BROWSER_HOST_MAX_PLAYERS },
@@ -395,7 +412,7 @@ export default function GameCanvas() {
                 legColor: state.legColor,
                 jetpackColor: state.jetpackColor,
                 build: currentBuild(),
-            }, physicsEngine.current, {
+            }, physicsEngine.current, withTournamentSignals({
                 onJoined: info => {
                     localIdRef.current = info.id;
                     session.setupWorld(gameState.current, info);
@@ -408,7 +425,7 @@ export default function GameCanvas() {
                 onConnectionError: message => setNetError(`${t('net.cannotConnect')} ${targetLabel} (${message})`),
                 onDisconnected: () => setNetError(t('net.disconnected')),
                 onEvents: events => events.forEach(e => gameEvents.emit(e)),
-            });
+            }, tournamentRun ? tourney.signals : null));
             sessionRef.current = session;
         }
 
@@ -818,15 +835,16 @@ export default function GameCanvas() {
                 keys.current[e.code] = true;
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const num = parseInt(e.key);
-                if (!isNaN(num) && num >= 1 && num <= 6) selectWeapon(num - 1);
+                if (!isNaN(num) && num >= 1 && num <= 7) selectWeapon(num - 1);
                 if (e.code === 'F3') {
                     e.preventDefault();
                     debugVisibleRef.current = !debugVisibleRef.current;
                     if (!debugVisibleRef.current) setDebugStats(null);
                 }
                 if (e.code === 'Escape') {
-                    // Works before joining too (e.g. server unreachable)
-                    actions.finishGame(local?.score ?? 0);
+                    // Works before joining too (e.g. server unreachable). A tournament duel asks twice (forfeit)
+                    if (tournamentRun) tourney.signals.escape();
+                    else actions.finishGame(local?.score ?? 0);
                 }
                 // Shift key can also activate grappling hook (convenient for trackpad users)
                 if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = true;
@@ -943,7 +961,7 @@ export default function GameCanvas() {
         ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue')
             : objective.timeMs !== undefined ? formatClock(Math.ceil(objective.timeMs / 1000)) : undefined)
         : null;
-    /** Keys 1–6 and the touch weapon row: switch locally at once, and tell the host when online. */
+    /** Keys 1–7 and the touch weapon row: switch locally at once, and tell the host when online. */
     const selectWeapon = (index: number) => {
         const local = gameState.current.players.find(p => p.id === localIdRef.current);
         const weapon = local?.inventory[index];
@@ -969,7 +987,7 @@ export default function GameCanvas() {
                 flagBanner={flagBanner}
                 match={matchHud}
                 onLeave={leaveGame}
-                connection={{ visible: (state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || !!netError, error: netError }}
+                connection={{ visible: ((state.networkMode !== NetworkMode.OFFLINE || !!tournamentRun) && !onlineMode) || !!(netError ?? tourney.error) || tourney.reconnecting, error: netError ?? tourney.error }}
                 debug={debugStats}
                 inviteLink={inviteLink}
                 recentAchievement={recentAchievement}
@@ -996,6 +1014,7 @@ export default function GameCanvas() {
                     winner: gunGameWinner,
                 } : null}
                 reward={reward}
+                tournament={tournamentRun ? { backInSec: tourney.backInSec, forfeitArmed: tourney.forfeitArmed, reconnecting: tourney.reconnecting } : null}
                 mobile={isMobile ? {
                     sticks: touchSticks,
                     hookDown,

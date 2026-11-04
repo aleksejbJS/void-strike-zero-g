@@ -81,4 +81,10 @@ describe('validateInput', () => {
         expect(res.keys).toEqual({ KeyA: true });
         expect(res.mouse).toEqual({ x: 10000, y: -5000 });
     });
+
+    it('accepts all seven duel weapon slots and nothing beyond', () => {
+        expect(validateInput({ ...goodInput, weaponIndex: 6 }, 0)!.weaponIndex).toBe(6);
+        expect(validateInput({ ...goodInput, weaponIndex: 7 }, 0)!.weaponIndex).toBeUndefined();
+        expect(validateInput({ ...goodInput, weaponIndex: -1 }, 0)!.weaponIndex).toBeUndefined();
+    });
 });

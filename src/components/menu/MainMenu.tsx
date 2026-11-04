@@ -13,6 +13,7 @@ import { ControlsLegend } from './ControlsLegend';
 import { ProfileButton } from './ProfileButton';
 import { WhatsNew } from './WhatsNew';
 import { ADS_ADMIN_HASH, canSeeAdSettings } from '../ads/adminAccess';
+import { getSupabase } from '../../account/supabaseClient';
 import type { Translate } from './types';
 
 /** Maps a mode can be played on, first one is the default. */
@@ -30,6 +31,7 @@ const MainMenu: React.FC<{ onCustomize: () => void; onOpenProfile: () => void }>
     const [newsOpen, setNewsOpen] = useState(false);
     const closeNews = useCallback(() => setNewsOpen(false), []);
     const [showAdSettings] = useState(canSeeAdSettings);
+    const [tournamentsAvailable] = useState(() => getSupabase() !== null); // tournaments live in Supabase
 
     // Returning from a game: show the mode that was played
     useEffect(() => setMode(state.selectedMode), [state.selectedMode]);
@@ -85,6 +87,7 @@ const MainMenu: React.FC<{ onCustomize: () => void; onOpenProfile: () => void }>
                         onPlay={() => go(NetworkMode.OFFLINE, null)}
                         onCreateGame={() => go(NetworkMode.HOST, null)}
                         onJoin={target => go(NetworkMode.CLIENT, target)}
+                        onTournaments={tournamentsAvailable ? actions.openTournaments : undefined}
                     />
                 </main>
 

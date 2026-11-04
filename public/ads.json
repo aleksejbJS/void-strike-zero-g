@@ -12,6 +12,8 @@
     "mine.led-panel": {"enabled": false, "size": "728x90", "code": ""},
     "arena.screen-a": {"enabled": false, "size": "300x250", "code": ""},
     "arena.screen-b": {"enabled": false, "size": "300x250", "code": ""},
-    "arena.ribbon": {"enabled": false, "size": "728x90", "code": ""}
+    "arena.ribbon": {"enabled": false, "size": "728x90", "code": ""},
+    "pit.wall-poster-a": {"enabled": false, "size": "300x250", "code": ""},
+    "pit.wall-poster-b": {"enabled": false, "size": "300x250", "code": ""}
   }
 }

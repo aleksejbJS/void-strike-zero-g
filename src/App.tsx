@@ -4,10 +4,13 @@ import GameCanvas from './components/GameCanvas';
 import MainMenu from './components/menu/MainMenu';
 import PlayerCustomization from './components/setup/CharacterSetup';
 import { ProfileScreen } from './components/profile/ProfileScreen';
+import { TournamentScreens } from './components/tournament/TournamentScreens';
 import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
 import { ADS_ADMIN_HASH, rememberAdminFlag } from './components/ads/adminAccess';
 import { exitFullscreen } from './components/fullscreen';
+
+const TOURNAMENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Hidden ads admin page, loaded only when someone opens #ads-admin
 const AdsAdmin = lazy(() => import('./components/ads/AdsAdmin').then(m => ({ default: m.AdsAdmin })));
@@ -36,6 +39,12 @@ const App: React.FC = () => {
   React.useEffect(() => {
     rememberAdminFlag(window.location.search);
     const params = new URLSearchParams(window.location.search);
+    // ?tournament=<id>: a friend's invite to a tournament
+    const tournamentId = params.get('tournament');
+    if (tournamentId !== null) {
+      if (TOURNAMENT_ID.test(tournamentId)) actions.openTournament(tournamentId);
+      else console.warn('[tournament] ignoring an invite link with a malformed id:', tournamentId);
+    }
     // ?host=<id>: invite to a browser-hosted game; ?game=<address>: a dedicated server
     const hostId = params.get('host');
     const target = hostId ? `${PEER_PREFIX}${hostId}` : params.get('game');
@@ -56,12 +65,17 @@ const App: React.FC = () => {
     return <GameCanvas />;
   }
 
+  // From a tournament screen, the setup screen only picks the name and look, then goes back there
+  const inTournament = state.tournamentNav !== null;
   const screen = showingCustomization ? (
     <PlayerCustomization
+      forTournament={inTournament}
       onContinue={() => setShowingCustomization(false)}
       onBack={() => setShowingCustomization(false)}
       onOpenProfile={() => setShowingProfile(true)}
     />
+  ) : inTournament ? (
+    <TournamentScreens onCustomize={() => setShowingCustomization(true)} />
   ) : (
     <MainMenu onCustomize={() => setShowingCustomization(true)} onOpenProfile={() => setShowingProfile(true)} />
   );

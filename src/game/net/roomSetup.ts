@@ -4,17 +4,22 @@ import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../type
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
+import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks } from '../build/botLooks';
 import { JoinRequest } from './protocol';
 
 export const isTeamMode = (mode: GameMode) =>
     mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
 
-/** Spawn point for the room's mode (Hunger Games scatters fighters over its arena). */
+/**
+ * Spawn point for the room's mode (Hunger Games scatters fighters over its arena).
+ * A duel starts on the left spawn; later spawns pick the side away from the opponent (duelSpawnPoint).
+ */
 export const spawnPointFor = (mode: GameMode) => (team: Team) =>
     mode === GameMode.HUNGER_GAMES ? hungerSpawnPoint()
-        : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
-            : getSpawnPoint(team);
+        : mode === GameMode.DUEL ? duelSpawnByIndex(0)
+            : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
+                : getSpawnPoint(team);
 
 // CTF: each team respawns on the floor behind its base, ~700 px from its flag. Respawning on
 // the flag itself put defenders on top of a carrier 3 s after they died, so captures almost
@@ -55,13 +60,17 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
 const startingWeapon = (mode: GameMode) =>
     ({ ...WEAPONS_DATA[mode === GameMode.GUN_GAME ? GUN_GAME_LADDER[0] : WeaponType.MACHINE_GUN] });
 
+/** A duel starts with the full fixed loadout; every other mode with one weapon. */
+const startingInventory = (mode: GameMode) => mode === GameMode.DUEL ? duelLoadout() : [startingWeapon(mode)];
+
 const baseEntity = (mode: GameMode, team: Team) => {
-    const weapon = startingWeapon(mode);
+    const inventory = startingInventory(mode);
+    const weapon = inventory[0];
     return {
         pos: spawnPointFor(mode)(team), vel: { x: 0, y: 0 }, width: 30, height: 72,
         isGrounded: false, isCrouching: false, health: 100, maxHealth: 100, armor: 0, maxArmor: 100,
         jetpackFuel: DEFAULT_MAX_FUEL, maxFuel: DEFAULT_MAX_FUEL, dead: false, respawnTimer: 0, team,
-        facingRight: true, weapon, inventory: [weapon], lastFired: 0, score: 0,
+        facingRight: true, weapon, inventory, lastFired: 0, score: 0,
         gunLevel: mode === GameMode.GUN_GAME ? 0 : undefined,
         gunProgress: mode === GameMode.GUN_GAME ? 0 : undefined,
         grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE,
@@ -71,9 +80,12 @@ const baseEntity = (mode: GameMode, team: Team) => {
     };
 };
 
+/** How many bots a room starts with when its config doesn't say (a duel starts empty). */
+const defaultBotCount = (mode: GameMode) =>
+    mode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE : isTeamMode(mode) ? 6 : mode === GameMode.DUEL ? 0 : 3;
+
 /** Team bots wear their team colour; free-for-all bots each get their own look. */
-export const createBots = (mode: GameMode): Entity[] => {
-    const count = mode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE : isTeamMode(mode) ? 6 : 3;
+export const createBots = (mode: GameMode, count: number = defaultBotCount(mode)): Entity[] => {
     const ffaLooks = isTeamMode(mode) ? [] : ffaBotLooks(count);
     return Array.from({ length: count }, (_, i) => {
         let team = Team.NONE;
@@ -132,10 +144,11 @@ export const resetHungerRound = (state: GameState, now: number) => {
 
 /** Fresh start for every player (keeping identity, team and input tracking), pickups and shots. */
 const respawnEveryone = (state: GameState) => {
-    for (const p of state.players) {
+    state.players.forEach((p, i) => {
         const { lastProcessedInput, aim } = p;
         Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
-    }
+        if (state.mode === GameMode.DUEL) p.pos = duelSpawnByIndex(i); // the fighters start on opposite sides
+    });
     state.projectiles = [];
     state.beams = [];
     state.smokes = [];

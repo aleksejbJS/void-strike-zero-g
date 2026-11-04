@@ -2,12 +2,17 @@ import React, { createContext, useContext, useMemo, useReducer } from 'react';
 import { GameMode, KillMessage, Weapon, WeaponType, NetworkMode, MapId } from '../types';
 import { WEAPONS_DATA } from '../constants';
 import { PLAYER_KEYS, StoredPlayer, loadStoredPlayer, writeStored } from './playerStorage';
+import {
+  TournamentAction, TournamentActions, TournamentUIState, endTournamentMatch, reduceTournament, tournamentActions, tournamentInitialState,
+} from './tournamentSlice';
+
+export type { TournamentMatchRun, TournamentNav } from './tournamentSlice';
 
 export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number; bleeding?: boolean };
 type ScoresState = { red: number; blue: number };
 export type PlayerScore = { id: string; name: string; score: number; isPlayer: boolean; isLocal?: boolean; gunLevel?: number; gunProgress?: number; gunTotalLevels?: number };
 
-interface UIState {
+interface UIState extends TournamentUIState {
   isPlaying: boolean;
   selectedSkin: string;
   selectedMode: GameMode;
@@ -33,7 +38,7 @@ interface UIState {
 
 type KillFeedUpdater = KillMessage[] | ((prev: KillMessage[]) => KillMessage[]);
 
-interface UIActions {
+interface UIActions extends TournamentActions {
   startGame: (mode: GameMode) => void;
   finishGame: (score: number) => void;
   setStats: (stats: StatsState) => void;
@@ -66,6 +71,7 @@ const initialState: UIState = {
   networkMode: NetworkMode.OFFLINE,
   gameId: null,
   selectedMap: MapId.DEFAULT,
+  ...tournamentInitialState,
 };
 
 type Action =
@@ -83,7 +89,8 @@ type Action =
   | { type: 'setPlayerCustomization'; payload: { name: string; colors: { torso: string; head: string; arms: string; legs: string; jetpack: string } } }
   | { type: 'setNetworkState'; payload: { mode: NetworkMode; gameId: string | null } }
   | { type: 'selectMap'; payload: MapId }
-  | { type: 'reloadPlayer'; payload: StoredPlayer };
+  | { type: 'reloadPlayer'; payload: StoredPlayer }
+  | TournamentAction;
 
 const reducer = (state: UIState, action: Action): UIState => {
   switch (action.type) {
@@ -104,6 +111,8 @@ const reducer = (state: UIState, action: Action): UIState => {
         killFeed: [],
       };
     case 'finishGame':
+      // Escape in a tournament duel goes back to its tournament, not to the menu
+      if (state.tournamentMatch) return endTournamentMatch(state);
       return { ...state, lastScore: action.payload, isPlaying: false };
     case 'setStats':
       return { ...state, stats: action.payload };
@@ -147,7 +156,7 @@ const reducer = (state: UIState, action: Action): UIState => {
     case 'reloadPlayer':
       return { ...state, ...action.payload };
     default:
-      return state;
+      return reduceTournament(state, action);
   }
 };
 
@@ -178,6 +187,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     selectMap: mapId => dispatch({ type: 'selectMap', payload: mapId }),
     // Re-reads name, skin and colours from storage (after a cloud pull rewrote them)
     reloadPlayer: () => dispatch({ type: 'reloadPlayer', payload: loadStoredPlayer() }),
+    ...tournamentActions(dispatch),
   }), []);
 
   return <UIContext.Provider value={{ state, actions }}>{children}</UIContext.Provider>;

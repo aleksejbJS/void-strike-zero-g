@@ -1,5 +1,5 @@
-// Picks how a map is drawn: the station (default map), the asteroid mine (Tunnels) or the
-// show arena (Hunger Games).
+// Picks how a map is drawn: the station (default map), the asteroid mine (Tunnels), the
+// show arena (Hunger Games) or The Pit (tournament duels).
 
 import { Container, Graphics } from 'pixi.js';
 import { GameMode, GameState, MapId, Vector2 } from '../../../types';
@@ -9,13 +9,14 @@ import { SceneTheme } from './sceneTheme';
 import { stationTheme } from './themes/stationTheme';
 import { mineTheme } from './themes/mineTheme';
 import { arenaTheme } from './themes/arenaTheme';
+import { pitTheme } from './themes/pitTheme';
 
-export type MapTheme = 'station' | 'mine' | 'arena';
+export type MapTheme = 'station' | 'mine' | 'arena' | 'pit';
 
 export const themeFor = (mode: GameMode, map: MapId): MapTheme =>
-    mode === GameMode.HUNGER_GAMES ? 'arena' : map === MapId.TUNNELS ? 'mine' : 'station';
+    mode === GameMode.DUEL ? 'pit' : mode === GameMode.HUNGER_GAMES ? 'arena' : map === MapId.TUNNELS ? 'mine' : 'station';
 
-const THEMES: Record<MapTheme, () => SceneTheme> = { station: stationTheme, mine: mineTheme, arena: arenaTheme };
+const THEMES: Record<MapTheme, () => SceneTheme> = { station: stationTheme, mine: mineTheme, arena: arenaTheme, pit: pitTheme };
 
 interface LegacyLayers {
     platformLayer: Graphics;

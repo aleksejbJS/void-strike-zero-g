@@ -7,12 +7,16 @@ import type { FighterBuild } from '../build/buildParts';
 
 export const SNAPSHOT_RATE = 30; // snapshots per second sent to clients
 export const MAX_NAME_LENGTH = 16;
+/** Watch-only connections allowed per room (they never take a player slot). */
+export const SPECTATOR_CAP = 6;
 
 // Socket message names
 export const MSG = {
     JOIN: 'join',
     JOINED: 'joined',
     JOIN_REJECTED: 'joinRejected',
+    WATCH: 'watch',
+    WATCHING: 'watching',
     INPUT: 'input',
     SNAPSHOT: 'snapshot',
     EVENTS: 'events',
@@ -47,8 +51,16 @@ export interface JoinAccepted {
     snapshot: Snapshot;
 }
 
+/** What a spectator gets for WATCH: the world, but no entity id. */
+export interface WatchAccepted {
+    mode: GameMode;
+    map: MapId;
+    platforms: GameState['platforms'];
+    snapshot: Snapshot;
+}
+
 export interface JoinRejected {
-    reason: 'invalid' | 'full' | 'already_joined';
+    reason: 'invalid' | 'full' | 'already_joined' | 'spectators_full';
 }
 
 export type EventBatch = GameEvent[];

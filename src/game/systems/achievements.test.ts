@@ -139,7 +139,7 @@ describe('Achievement System', () => {
       modes: ['flag_capturer', 'king_of_hill', 'survivor'],
       movement: ['acrobatic', 'hook_master', 'speed_demon'],
       collecting: ['collector', 'hoarder'],
-      special: ['perfectionist', 'veteran'],
+      special: ['perfectionist', 'veteran', 'tournament_champion', 'tournament_finalist', 'tournament_flawless'],
     };
 
     test('every achievement has one of the 5 categories', () => {

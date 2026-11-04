@@ -12,7 +12,7 @@ const FALLBACK_COLOR = '#3b82f6';
 const ALLOWED_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'Walk', 'KeyZ'];
 const WORLD_MIN = -5000;
 const WORLD_MAX = 10000;
-const MAX_WEAPON_SLOTS = 6;
+const MAX_WEAPON_SLOTS = 7;
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 

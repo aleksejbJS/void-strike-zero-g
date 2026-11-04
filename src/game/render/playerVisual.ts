@@ -17,7 +17,8 @@ const AIM_HEIGHT_CROUCHED = 29;
 const AIM_HEIGHT_PRONE = 8;
 
 const views = new WeakMap<Container, FighterView>();
-const animator = new FighterAnimator();
+// The game screen's fighters. A watched match passes its own animator (matchViewCache) instead.
+const pageAnimator = new FighterAnimator();
 
 export const createPlayerVisual = (p: Entity): Container => {
     const c = new Container();
@@ -31,7 +32,7 @@ export const createPlayerVisual = (p: Entity): Container => {
     return c;
 };
 
-export const forgetPlayerVisual = (id: string) => animator.forget(id);
+export const forgetPlayerVisual = (id: string, animator: FighterAnimator = pageAnimator) => animator.forget(id);
 
 const aimOf = (p: Entity, camera: Vector2, mouse: Vector2, screenW: number, screenH: number, isLocal: boolean) => {
     if (isLocal) {
@@ -48,6 +49,7 @@ const aimOf = (p: Entity, camera: Vector2, mouse: Vector2, screenW: number, scre
 export const updatePlayerVisual = (
     c: Container, p: Entity, camera: Vector2, mouse: Vector2, screenW: number, screenH: number,
     textures: Record<string, Texture | undefined>, isLocal: boolean, game: GameState, now = Date.now(),
+    animator: FighterAnimator = pageAnimator,
 ) => {
     // Another fighter in smoke is hidden whole: body, rope, carried flag and jetpack flame all
     // hang off this container. Your own stays drawn under the cloud; SmokeView outlines it.
