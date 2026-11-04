@@ -1,5 +1,6 @@
-// The strip on top of the watch screen: the whole bracket in small, a tick box on each live match to pick
-// the ones on screen, and the live score of the watched ones (the others only say LIVE).
+// The strip on top of the watch screen: the whole bracket in small (one row per round, rounds side by side, so
+// it stays one compact line on a laptop), a tick box on each live match to pick the ones on screen, and the live
+// score of the watched ones (the others only say LIVE).
 
 import React from 'react';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -58,9 +59,9 @@ export const WatchStrip: React.FC<Props> = ({ columns, size, ...rest }) => {
             {columns.map((cells, round) => {
                 const heading = t(`tournament.col.${roundName(round, size)}`);
                 return (
-                    <div key={round} className="flex shrink-0 flex-col gap-1">
-                        <h3 className="m-0 font-display text-xs font-extrabold uppercase tracking-wide text-bay-dust">{heading}</h3>
-                        <ol aria-label={heading} className="m-0 flex list-none flex-col gap-1 p-0 phone:flex-row">
+                    <div key={round} className="flex shrink-0 flex-col gap-0.5">
+                        <h3 className="m-0 font-display text-xs font-extrabold uppercase leading-4 tracking-wide text-bay-dust">{heading}</h3>
+                        <ol aria-label={heading} className="m-0 flex list-none flex-row flex-wrap gap-1 p-0">
                             {cells.map(cell => <StripMatch key={cell.match.id} cell={cell} {...rest} />)}
                         </ol>
                     </div>

@@ -43,6 +43,8 @@ describe('WatchScreen strip', () => {
 
         fireEvent.click(screen.getByRole('checkbox', { name: 'Watch P2 vs P3' }));
         expect(shownPeers()).toEqual(['peer-0', 'peer-1']);
+        // The score of the unticked tile was dropped: the new tile has not reported one yet
+        expect(within(stripMatch('P2 vs P3')).getByText('LIVE')).toBeInTheDocument();
     });
 
     it('shows the final score of a decided match and no checkbox for it', () => {

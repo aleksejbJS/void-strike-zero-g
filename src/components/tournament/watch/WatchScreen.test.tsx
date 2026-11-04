@@ -109,4 +109,14 @@ describe('WatchScreen', () => {
         swipe(200, 300);
         expect(shownPeers()).toEqual(['peer-0']);
     });
+
+    it('a swipe does nothing on a desktop', () => {
+        feed(threeLive());
+        renderWatch();
+        const area = screen.getByTestId('watch-tiles');
+        fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 100 }] });
+        fireEvent.touchEnd(area, { changedTouches: [{ clientX: 100, clientY: 100 }] });
+        expect(shownPeers()).toEqual(['peer-0', 'peer-1', 'peer-2']);
+        expect(audiblePeers()).toEqual(['peer-0']);
+    });
 });

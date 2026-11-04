@@ -4,6 +4,7 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { UIProvider, useUIStore } from '../../../store/uiStore';
+import type { TileStatus } from './MatchTile';
 import { tiles } from './fakeMatchTile';
 import { WatchScreen } from './WatchScreen';
 
@@ -24,3 +25,7 @@ export const audiblePeers = () => screen.queryAllByTestId('tile').filter(t => t.
 /** Report a live score from a tile, as MatchTile.onScore does. */
 export const reportScore = (peerId: string, players: { name: string; score: number }[]) =>
     act(() => { tiles.get(peerId)?.onScore?.(players); });
+
+/** Report a tile status, as MatchTile.onStatus does. */
+export const reportStatus = (peerId: string, status: TileStatus) =>
+    act(() => { tiles.get(peerId)?.onStatus?.(status); });

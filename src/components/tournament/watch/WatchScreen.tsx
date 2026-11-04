@@ -2,6 +2,7 @@
 // A click expands a tile to the whole screen (click again or Esc to return); exactly one tile plays sound.
 // Tiles that are not on screen are unmounted, not hidden: each one holds a WebGL context, a frame loop and a
 // spectator seat on its host, which a hidden tile would keep for nothing (returning to the grid reconnects them).
+// A tile whose host left is retried while its match is live (useTileStates).
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -9,9 +10,9 @@ import { useUIStore } from '../../../store/uiStore';
 import { bracketColumns, type BracketCell } from '../../../game/tournament/bracketView';
 import { useTournament } from '../../../tournament/useTournament';
 import { BackButton, ErrorLine } from '../TournamentFrame';
-import type { TileScore, TileStatus } from './MatchTile';
 import { liveScore } from './liveScore';
 import { useIsPhone, useSwipe } from './usePhoneWatch';
+import { useTileStates } from './useTileStates';
 import { audibleTile, layoutFor, liveCells, MAX_TILES, watchedCells } from './watchLayout';
 import { WatchStrip } from './WatchStrip';
 import { WatchTile } from './WatchTile';
@@ -31,8 +32,6 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
     const [unticked, setUnticked] = useState<ReadonlySet<string>>(() => new Set());
     const [expanded, setExpanded] = useState<string | null>(null);
     const [lastClicked, setLastClicked] = useState<string | null>(null);
-    const [scores, setScores] = useState<Record<string, TileScore[]>>({});
-    const [statuses, setStatuses] = useState<Record<string, TileStatus>>({});
 
     const live = useMemo(() => (snapshot ? liveCells(snapshot) : []), [snapshot]);
     const watched = watchedCells(live, unticked);
@@ -43,6 +42,8 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
     const shown = phone ? watched.filter(c => c.match.id === soundId)
         : openId ? watched.filter(c => c.match.id === openId) : watched;
     const { cols, rows } = layoutFor(shown.length, phone);
+    const tileStates = useTileStates(watched.map(tileKey), shown.map(tileKey), openId ?? '');
+    const { scores, statuses } = tileStates;
 
     useEffect(() => {
         if (openId === null) return undefined;
@@ -70,7 +71,7 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
 
     const back = () => actions.openTournament(id);
     const header = !openId && (
-        <header className="flex shrink-0 items-start gap-4 border-b-2 border-bay-plate bg-bay-panel px-4 py-2 phone:gap-2 phone:px-2 phone:py-1">
+        <header className="flex shrink-0 items-center gap-4 border-b-2 border-bay-plate bg-bay-panel px-4 py-1.5 phone:gap-2 phone:px-2 phone:py-1">
             <BackButton onBack={back} />
             {snapshot ? (
                 <WatchStrip columns={bracketColumns(snapshot)} size={snapshot.tournament.size ?? 8} watched={new Set(ids)}
@@ -89,12 +90,12 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
                     const key = tileKey(cell);
                     const matchId = cell.match.id;
                     return (
-                        <WatchTile key={key} cell={cell} peerId={cell.match.hostPeerId ?? ''}
+                        <WatchTile key={tileStates.mountKey(key)} cell={cell} peerId={cell.match.hostPeerId ?? ''}
                             audible={matchId === soundId && !state.isMuted} expanded={matchId === openId}
                             status={statuses[key]} score={liveScore(cell, scores[key])}
                             onToggle={() => toggleExpand(matchId)}
-                            onStatus={s => setStatuses(prev => ({ ...prev, [key]: s }))}
-                            onScore={players => setScores(prev => ({ ...prev, [key]: players }))} />
+                            onStatus={s => tileStates.setStatus(key, s)}
+                            onScore={players => tileStates.setScore(key, players)} />
                     );
                 })}
             </main>
