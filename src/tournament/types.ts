@@ -23,6 +23,7 @@ export interface SeatRow {
     isBot: boolean;
     bracketPos: number | null; // shuffled at start
     joinedAt: string;
+    seenAt: string | null; // last lobby heartbeat (lobby_seen); null for bots
 }
 
 export interface MatchRow {

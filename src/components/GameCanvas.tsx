@@ -52,6 +52,7 @@ import { currentBuild } from '../game/build/currentBuild';
 import { useMatchRewards } from './hud/useMatchRewards';
 import { useTournamentMatch } from './hud/useTournamentMatch';
 import { openTournamentNet } from './hud/tournamentNet';
+import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
@@ -376,6 +377,8 @@ export default function GameCanvas() {
                     onInviteReady: tourney.signals.inviteReady,
                     onError: message => setNetError(`${t('net.hostError')} (${message})`),
                     onSnapshot: tourney.signals.snapshot,
+                    onRejoinReady: tourney.signals.rejoinReady,
+                    onRejoinFailed: tourney.signals.disconnected,
                 });
                 hostRef.current = net.host;
                 socket = net.socket;
@@ -409,21 +412,20 @@ export default function GameCanvas() {
                 legColor: state.legColor,
                 jetpackColor: state.jetpackColor,
                 build: currentBuild(),
-            }, physicsEngine.current, {
+            }, physicsEngine.current, withTournamentSignals({
                 onJoined: info => {
                     localIdRef.current = info.id;
                     session.setupWorld(gameState.current, info);
                     setOnlineMode(info.mode);
                     redrawMap?.();
-                    tourney.signals.joined();
                 },
                 onRejected: reason => setNetError(
                     reason === 'full' ? t('net.serverFull') : reason === 'invalid' ? t('net.joinInvalid') : t('net.alreadyJoined')
                 ),
                 onConnectionError: message => setNetError(`${t('net.cannotConnect')} ${targetLabel} (${message})`),
-                onDisconnected: () => { setNetError(t('net.disconnected')); tourney.signals.disconnected(); },
+                onDisconnected: () => setNetError(t('net.disconnected')),
                 onEvents: events => events.forEach(e => gameEvents.emit(e)),
-            });
+            }, tournamentRun ? tourney.signals : null));
             sessionRef.current = session;
         }
 
@@ -840,8 +842,9 @@ export default function GameCanvas() {
                     if (!debugVisibleRef.current) setDebugStats(null);
                 }
                 if (e.code === 'Escape') {
-                    // Works before joining too (e.g. server unreachable)
-                    actions.finishGame(local?.score ?? 0);
+                    // Works before joining too (e.g. server unreachable). A tournament duel asks twice (forfeit)
+                    if (tournamentRun) tourney.signals.escape();
+                    else actions.finishGame(local?.score ?? 0);
                 }
                 // Shift key can also activate grappling hook (convenient for trackpad users)
                 if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = true;
@@ -984,7 +987,7 @@ export default function GameCanvas() {
                 flagBanner={flagBanner}
                 match={matchHud}
                 onLeave={leaveGame}
-                connection={{ visible: ((state.networkMode !== NetworkMode.OFFLINE || !!tournamentRun) && !onlineMode) || !!(netError ?? tourney.error), error: netError ?? tourney.error }}
+                connection={{ visible: ((state.networkMode !== NetworkMode.OFFLINE || !!tournamentRun) && !onlineMode) || !!(netError ?? tourney.error) || tourney.reconnecting, error: netError ?? tourney.error }}
                 debug={debugStats}
                 inviteLink={inviteLink}
                 recentAchievement={recentAchievement}
@@ -1011,7 +1014,7 @@ export default function GameCanvas() {
                     winner: gunGameWinner,
                 } : null}
                 reward={reward}
-                tournament={tournamentRun ? { backInSec: tourney.backInSec } : null}
+                tournament={tournamentRun ? { backInSec: tourney.backInSec, forfeitArmed: tourney.forfeitArmed, reconnecting: tourney.reconnecting } : null}
                 mobile={isMobile ? {
                     sticks: touchSticks,
                     hookDown,

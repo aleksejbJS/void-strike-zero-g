@@ -1,14 +1,14 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { act, render } from '@testing-library/react';
-import { UIProvider, useUIStore } from '../../store/uiStore';
-import { matchSeen } from '../../tournament/tournamentApi';
-import type { SeatTicket, TournamentSnapshot } from '../../tournament/types';
-import { makeSnapshot, publishHost, settle } from '../../game/tournament/bracketFixtures';
+import { UIProvider, useUIStore } from '../../../store/uiStore';
+import { matchSeen } from '../../../tournament/tournamentApi';
+import type { SeatTicket, TournamentSnapshot } from '../../../tournament/types';
+import { makeSnapshot, publishHost, settle } from '../../../game/tournament/bracketFixtures';
 import { useMyTurn } from './useMyTurn';
 import { forgetRunHistory, markNoShow } from './runHistory';
 
-vi.mock('../../tournament/tournamentApi', () => ({ matchSeen: vi.fn() }));
+vi.mock('../../../tournament/tournamentApi', () => ({ matchSeen: vi.fn() }));
 
 let store: ReturnType<typeof useUIStore>;
 const Probe: React.FC<{ snap: TournamentSnapshot; ticket: SeatTicket | null }> = ({ snap, ticket }) => {

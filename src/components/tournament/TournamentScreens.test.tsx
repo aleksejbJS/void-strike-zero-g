@@ -12,7 +12,9 @@ vi.mock('../../tournament/tournamentApi', () => ({
     loadSnapshot: vi.fn(), resolveStale: vi.fn(), listOpen: vi.fn(), loadListDetails: vi.fn(), matchSeen: vi.fn(),
 }));
 vi.mock('../../tournament/tournamentFeed', () => ({ watchTournament: () => () => {} }));
-vi.mock('../../tournament/seatStore', () => ({ saveTicket: vi.fn(), ticketFor: () => null, forgetTicket: vi.fn() }));
+vi.mock('../../tournament/seatStore', () => ({
+    saveTicket: vi.fn(), ticketFor: () => null, forgetTicket: vi.fn(), heldTickets: () => [], onTicketsChanged: () => () => {},
+}));
 
 const T_ID = '11111111-1111-4111-8111-111111111111';
 const snap = (status: TournamentStatus): TournamentSnapshot => ({

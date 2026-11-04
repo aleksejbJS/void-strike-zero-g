@@ -3,6 +3,7 @@ import { act } from '@testing-library/react';
 import { matchSeen, publishHost, reportResult, resolveStale } from '../../tournament/tournamentApi';
 import { TournamentError } from '../../tournament/types';
 import { duelState, fighter, makeRun, renderMatch, ticket } from './tournamentMatchTestKit';
+import { forgetReports } from '../tournament/autopilot/reportOutbox';
 
 const endTournamentMatch = vi.fn();
 vi.mock('../../store/uiStore', () => ({ useUIStore: () => ({ actions: { endTournamentMatch } }) }));
@@ -14,6 +15,7 @@ const advance = async (ms: number) => { await act(async () => { await vi.advance
 
 beforeEach(() => {
     vi.useFakeTimers();
+    forgetReports();
     endTournamentMatch.mockReset();
     for (const f of [matchSeen, publishHost, reportResult, resolveStale]) vi.mocked(f).mockReset().mockResolvedValue(undefined);
 });

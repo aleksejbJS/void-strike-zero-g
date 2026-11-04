@@ -2,7 +2,8 @@
 // A click expands a tile to the whole screen (click again or Esc to return); exactly one tile plays sound.
 // Tiles that are not on screen are unmounted, not hidden: each one holds a WebGL context, a frame loop and a
 // spectator seat on its host, which a hidden tile would keep for nothing (returning to the grid reconnects them).
-// A tile whose host left is retried while its match is live (useTileStates).
+// A tile whose host left is retried while its match is live (useTileStates). When my own duel is about to
+// start, a banner says so (the autopilot under the tournament screens starts it).
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -16,6 +17,7 @@ import { useTileStates } from './useTileStates';
 import { audibleTile, layoutFor, liveCells, MAX_TILES, watchedCells } from './watchLayout';
 import { WatchStrip } from './WatchStrip';
 import { WatchTile } from './WatchTile';
+import { MyMatchBanner } from './MyMatchBanner';
 
 /** A host that reloads publishes a new peer id: that is a new link, so a new tile. */
 const tileKey = (cell: BracketCell) => `${cell.match.id}:${cell.match.hostPeerId}`;
@@ -83,6 +85,7 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
     return (
         <div className="flex h-viewport flex-col overflow-hidden bg-bay-ink font-body text-bay-chalk">
             {header}
+            {snapshot && <MyMatchBanner snapshot={snapshot} />}
             <main data-testid="watch-tiles" {...(phone ? swipe : {})}
                 className={`grid min-h-0 flex-1 gap-1 p-1 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-1'} ${rows === 2 ? 'grid-rows-2' : 'grid-rows-1'}`}>
                 {snapshot && shown.length === 0 && <Note>{t('tournament.watch.none')}</Note>}

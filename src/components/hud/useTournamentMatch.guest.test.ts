@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from '@testing-library/react';
 import { matchSeen, reportResult } from '../../tournament/tournamentApi';
 import { duelState, makeRun, renderMatch, ticket } from './tournamentMatchTestKit';
-import { forgetRunHistory, isNoShow } from '../tournament/runHistory';
+import { forgetRunHistory, isNoShow } from '../tournament/autopilot/runHistory';
 
 const endTournamentMatch = vi.fn();
 vi.mock('../../store/uiStore', () => ({ useUIStore: () => ({ actions: { endTournamentMatch } }) }));
@@ -32,23 +32,27 @@ describe('useTournamentMatch: guest', () => {
         expect(matchSeen).toHaveBeenCalledWith('m1', ticket);
     });
 
-    it('treats 5 s without a snapshot as a vanished host and goes back to the bracket', async () => {
+    it('treats 5 s without a snapshot as a lost link: reconnects instead of leaving', async () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const rejoin = vi.fn();
         const { result } = renderMatch(guest(), duelState(0, 0));
+        act(() => result.current.signals.rejoinReady(rejoin));
         act(() => result.current.signals.joined());
         for (let i = 0; i < 10; i++) {
             await advance(1_000);
             act(() => result.current.signals.snapshot());
         }
-        expect(endTournamentMatch).not.toHaveBeenCalled();
+        expect(rejoin).not.toHaveBeenCalled();
         await advance(5_500);
-        expect(endTournamentMatch).toHaveBeenCalledTimes(1);
+        expect(rejoin).toHaveBeenCalledTimes(1);
+        expect(result.current.reconnecting).toBe(true);
+        expect(endTournamentMatch).not.toHaveBeenCalled();
     });
 
-    it('gives up on a host it cannot join within 30 s', async () => {
+    it('gives up on a host it cannot join within 50 s', async () => {
         const warned = vi.spyOn(console, 'warn').mockImplementation(() => {});
         renderMatch(guest(), duelState(0, 0));
-        await advance(29_500);
+        await advance(49_500);
         expect(endTournamentMatch).not.toHaveBeenCalled();
         await advance(1_000);
         expect(endTournamentMatch).toHaveBeenCalledTimes(1);
@@ -56,9 +60,17 @@ describe('useTournamentMatch: guest', () => {
         expect(isNoShow('m1', 'peer-h')).toBe(true); // useMyTurn stops heartbeating that match
     });
 
-    it('joining before 30 s cancels the join deadline', async () => {
+    it('a link lost before joining is a no-show too', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
         const { result } = renderMatch(guest(), duelState(0, 0));
-        await advance(20_000);
+        act(() => result.current.signals.disconnected());
+        expect(endTournamentMatch).toHaveBeenCalledTimes(1);
+        expect(isNoShow('m1', 'peer-h')).toBe(true);
+    });
+
+    it('joining before 50 s cancels the join deadline', async () => {
+        const { result } = renderMatch(guest(), duelState(0, 0));
+        await advance(40_000);
         act(() => result.current.signals.joined());
         for (let i = 0; i < 20; i++) {
             await advance(1_000);
@@ -68,9 +80,10 @@ describe('useTournamentMatch: guest', () => {
         expect(isNoShow('m1', 'peer-h')).toBe(false);
     });
 
-    it('a lost connection goes back to the bracket at once', () => {
-        const { result } = renderMatch(guest(), duelState(0, 0));
+    it('a lost connection after the end screen goes back to the bracket at once', async () => {
+        const { result, gameState } = renderMatch(guest(), duelState(7, 10));
         act(() => result.current.signals.joined());
+        gameState.current.matchEndsAt = Date.now() + 10_000;
         act(() => result.current.signals.disconnected());
         expect(endTournamentMatch).toHaveBeenCalledTimes(1);
     });

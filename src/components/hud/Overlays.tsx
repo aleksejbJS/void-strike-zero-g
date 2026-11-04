@@ -14,11 +14,22 @@ export const DeathOverlay: React.FC<{ t: Translate; respawnMs: number }> = ({ t,
     </div>
 );
 
-export const ConnectionOverlay: React.FC<{ t: Translate; error: string | null; inTournament?: boolean }> = ({ t, error, inTournament }) => (
+interface ConnectionProps { t: Translate; error: string | null; inTournament?: boolean; reconnecting?: boolean }
+
+export const ConnectionOverlay: React.FC<ConnectionProps> = ({ t, error, inTournament, reconnecting }) => (
     <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center">
         <div role={error ? 'alert' : 'status'} className={`${PANEL} max-w-md px-6 py-4 text-center font-body`}>
-            <div className={error ? 'font-semibold text-bay-signal' : ''}>{error ?? t('net.connecting')}</div>
+            <div className={error ? 'font-semibold text-bay-signal' : ''}>{error ?? t(reconnecting ? 'tournament.match.reconnecting' : 'net.connecting')}</div>
             {error && <div className="mt-2 text-sm text-bay-dust">{t(inTournament ? 'tournament.net.backToBracket' : 'net.backToMenu')}</div>}
+        </div>
+    </div>
+);
+
+/** A tournament duel after the first Esc: a second one within 2 s forfeits the match. */
+export const ForfeitHint: React.FC<{ t: Translate }> = ({ t }) => (
+    <div className="pointer-events-none absolute left-1/2 top-24 z-[60] -translate-x-1/2">
+        <div role="alert" className={`${PANEL} px-5 py-2 font-display text-lg font-extrabold uppercase text-bay-hazard`}>
+            {t('tournament.match.forfeitHint')}
         </div>
     </div>
 );

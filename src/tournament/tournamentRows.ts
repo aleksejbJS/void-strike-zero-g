@@ -5,7 +5,7 @@
 import type { DecidedBy, MatchRow, MatchStatus, SeatRow, TournamentRow, TournamentStatus } from './types';
 
 export const TOURNAMENT_COLUMNS = 'id, name, status, size, creator_seat, created_at, started_at, finished_at, champion_seat';
-export const SEAT_COLUMNS = 'seat, nickname, is_bot, bracket_pos, joined_at';
+export const SEAT_COLUMNS = 'seat, nickname, is_bot, bracket_pos, joined_at, seen_at';
 export const MATCH_COLUMNS =
     'id, round, slot, seat_a, seat_b, host_seat, host_peer_id, status, score_a, score_b, winner_seat, decided_by, ready_at';
 
@@ -27,6 +27,7 @@ export interface SeatDbRow {
     is_bot: boolean;
     bracket_pos: number | null;
     joined_at: string;
+    seen_at: string | null;
 }
 
 export interface MatchDbRow {
@@ -63,6 +64,7 @@ export const toSeat = (r: SeatDbRow): SeatRow => ({
     isBot: r.is_bot,
     bracketPos: r.bracket_pos,
     joinedAt: r.joined_at,
+    seenAt: r.seen_at,
 });
 
 export const toMatch = (r: MatchDbRow): MatchRow => ({

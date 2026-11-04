@@ -13,6 +13,7 @@ let memoryRaw: string | null = null;
 // True after a write that storage refused: what it still holds is older than memoryRaw, so memoryRaw wins.
 let storageBehind = false;
 const warned = new Set<string>();
+const listeners = new Set<() => void>();
 
 function warnOnce(topic: string, message: string, detail: unknown): void {
     if (warned.has(topic)) return;
@@ -81,6 +82,7 @@ function readAll(): Tickets {
 
 export function saveTicket(ticket: SeatTicket): void {
     writeRaw(JSON.stringify({ ...readAll(), [ticket.tournamentId]: ticket }));
+    listeners.forEach(listener => listener());
 }
 
 export function ticketFor(tournamentId: string): SeatTicket | null {
@@ -90,4 +92,16 @@ export function ticketFor(tournamentId: string): SeatTicket | null {
 export function forgetTicket(tournamentId: string): void {
     const { [tournamentId]: _forgotten, ...rest } = readAll();
     writeRaw(JSON.stringify(rest));
+    listeners.forEach(listener => listener());
+}
+
+/** Every ticket this browser holds, oldest sign-up first. */
+export function heldTickets(): SeatTicket[] {
+    return Object.values(readAll());
+}
+
+/** Calls `listener` after every save or forget in this page; returns the unsubscribe. */
+export function onTicketsChanged(listener: () => void): () => void {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
 }

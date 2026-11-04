@@ -1,6 +1,7 @@
 // Router of the tournament screens (uiStore.tournamentNav): the list, one tournament, and watching it.
-// One tournament shows its lobby before the start and its bracket once running (or finished). Over all of
-// them, the "Achievement unlocked" toast (a Champion unlock happens on the bracket).
+// One tournament shows its lobby before the start and its bracket once running (or finished). Under all of
+// them runs the autopilot (my lobby heartbeat, my duel's start, queued results), over all of them the
+// "Achievement unlocked" toast (a Champion unlock happens on the bracket).
 
 import React from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -14,6 +15,8 @@ import { BracketScreen } from './BracketScreen';
 import { AchievementToast } from '../hud/Achievements';
 import { useAchievementToast } from './useAchievementToast';
 import { WatchScreen } from './watch/WatchScreen';
+import { TournamentAutopilot } from './autopilot/TournamentAutopilot';
+import { isLobbyExpired } from '../../game/tournament/startRule';
 
 interface Props {
     /** Opens the setup screen: a guest without a name picks one there first. */
@@ -33,7 +36,9 @@ const TournamentView: React.FC<{ id: string } & Props> = ({ id, onCustomize }) =
             if (error.message === TOURNAMENT_NOT_FOUND) return <p role="alert" className="m-0 text-[15px] font-semibold text-bay-signal">{t('tournament.notFound')}</p>;
             return <ErrorLine code={error.code} />;
         }
-        switch (snapshot.tournament.status) {
+        // A lobby nobody started within 30 min can no longer start: it is expired, whatever its row says
+        const status = isLobbyExpired(snapshot.tournament, Date.now()) ? 'expired' : snapshot.tournament.status;
+        switch (status) {
             case 'lobby':
                 return <TournamentLobby snapshot={snapshot} onCustomize={onCustomize} />;
             case 'expired':
@@ -71,6 +76,7 @@ export const TournamentScreens: React.FC<Props> = ({ onCustomize }) => {
     const achievement = useAchievementToast();
     return (
         <>
+            <TournamentAutopilot />
             <Route onCustomize={onCustomize} />
             {achievement && (
                 <div className="pointer-events-none fixed right-4 top-4 z-[80]">

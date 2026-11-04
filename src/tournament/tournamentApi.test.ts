@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getSupabase } from '../account/supabaseClient';
 import { failed, makeFakeTournamentSupabase, ok } from '../test/fakeTournamentSupabase';
 import {
-    createTournament, joinTournament, leaveTournament, matchSeen, publishHost, reportResult, resolveStale, startTournament,
+    createTournament, joinTournament, leaveTournament, lobbySeen, matchSeen, publishHost, reportResult, resolveStale, startTournament,
 } from './tournamentApi';
 import { TournamentError, type SeatTicket } from './types';
 
@@ -39,12 +39,14 @@ describe('RPC wrappers send the exact parameter names', () => {
         expect(result).toEqual({ tournamentId: T_ID, seat: 2, secret: SECRET });
     });
 
-    it('leaveTournament and startTournament send p_id, p_seat, p_secret', async () => {
+    it('leaveTournament, startTournament and lobbySeen send p_id, p_seat, p_secret', async () => {
         await leaveTournament(ticket);
         await startTournament(ticket);
+        await lobbySeen(ticket);
         const ids = { p_id: T_ID, p_seat: 3, p_secret: SECRET };
         expect(fake.rpc).toHaveBeenNthCalledWith(1, 'leave_tournament', ids);
         expect(fake.rpc).toHaveBeenNthCalledWith(2, 'start_tournament', ids);
+        expect(fake.rpc).toHaveBeenNthCalledWith(3, 'lobby_seen', ids);
     });
 
     it('matchSeen sends p_match, p_seat, p_secret', async () => {

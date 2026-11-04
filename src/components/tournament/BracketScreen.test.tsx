@@ -7,7 +7,7 @@ import { matchSeen } from '../../tournament/tournamentApi';
 import type { TournamentSnapshot } from '../../tournament/types';
 import { makeSnapshot, publishHost, settle } from '../../game/tournament/bracketFixtures';
 import { BracketScreen } from './BracketScreen';
-import { forgetRunHistory } from './runHistory';
+import { forgetRunHistory, markStarted } from './autopilot/runHistory';
 
 vi.mock('../../tournament/tournamentApi', () => ({ matchSeen: vi.fn() }));
 vi.mock('../../tournament/seatStore', () => ({ ticketFor: vi.fn() }));
@@ -83,7 +83,9 @@ describe('BracketScreen', () => {
     it('does not promise a start for a match this page already played (e.g. left with Escape)', () => {
         show(makeSnapshot(4, { bots: [1] }), 0);
         expect(screen.getByRole('status')).toHaveTextContent('Your match is starting…');
+        expect(store.state.tournamentMatch).toBeNull(); // the bracket only shows; the autopilot starts duels
         cleanup();
+        markStarted('host:m-0-0'); // the autopilot ran this duel
         show(makeSnapshot(4, { bots: [1] }), 0); // back on the bracket, the row still says ready
         expect(screen.getByRole('status')).toHaveTextContent('Waiting for the result of your match…');
     });

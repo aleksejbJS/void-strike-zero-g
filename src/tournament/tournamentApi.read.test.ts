@@ -12,7 +12,7 @@ const tournamentRow = {
     id: T_ID, name: 'Friday cup', status: 'running', size: 4, creator_seat: 0,
     created_at: '2026-11-04T11:00:00Z', started_at: '2026-11-04T11:10:00Z', finished_at: null, champion_seat: null,
 };
-const seatRow = { seat: 1, nickname: 'Bea', is_bot: false, bracket_pos: 2, joined_at: '2026-11-04T11:01:00Z' };
+const seatRow = { seat: 1, nickname: 'Bea', is_bot: false, bracket_pos: 2, joined_at: '2026-11-04T11:01:00Z', seen_at: '2026-11-04T11:02:00Z' };
 const matchRow = {
     id: 'm1', round: 0, slot: 1, seat_a: 1, seat_b: null, host_seat: 1, host_peer_id: 'peer-1', status: 'ready',
     score_a: 0, score_b: 0, winner_seat: null, decided_by: null, ready_at: '2026-11-04T11:11:00Z',
@@ -72,14 +72,14 @@ describe('loadSnapshot', () => {
 
         const byTable = (name: string) => fake.queries.find((q) => q.table === name)!.calls;
         const seatSelect = byTable('tournament_seats').find(([m]) => m === 'select');
-        expect(seatSelect?.[1]).toBe('seat, nickname, is_bot, bracket_pos, joined_at');
+        expect(seatSelect?.[1]).toBe('seat, nickname, is_bot, bracket_pos, joined_at, seen_at');
         expect(seatSelect?.[1]).not.toContain('*');
         expect(byTable('tournament_seats')).toContainEqual(['eq', 'tournament_id', T_ID]);
         expect(byTable('tournament_matches')).toContainEqual(['eq', 'tournament_id', T_ID]);
         expect(byTable('tournaments')).toContainEqual(['eq', 'id', T_ID]);
 
         expect(snapshot.tournament).toMatchObject({ id: T_ID, status: 'running', size: 4, startedAt: '2026-11-04T11:10:00Z' });
-        expect(snapshot.seats).toEqual([{ seat: 1, nickname: 'Bea', isBot: false, bracketPos: 2, joinedAt: '2026-11-04T11:01:00Z' }]);
+        expect(snapshot.seats).toEqual([{ seat: 1, nickname: 'Bea', isBot: false, bracketPos: 2, joinedAt: '2026-11-04T11:01:00Z', seenAt: '2026-11-04T11:02:00Z' }]);
         expect(snapshot.matches[0]).toEqual({
             id: 'm1', round: 0, slot: 1, seatA: 1, seatB: null, hostSeat: 1, hostPeerId: 'peer-1', status: 'ready',
             scoreA: 0, scoreB: 0, winnerSeat: null, decidedBy: null, readyAt: '2026-11-04T11:11:00Z',

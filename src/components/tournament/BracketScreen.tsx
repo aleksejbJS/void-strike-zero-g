@@ -1,5 +1,5 @@
 // A running or finished tournament: the bracket (quarterfinal, semifinal, final, trophy), a banner about my
-// part in it, and Watch. useMyTurn starts my duel by itself when it is ready.
+// part in it, and Watch. The autopilot (TournamentAutopilot) starts my duel by itself when it is ready.
 
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -12,7 +12,7 @@ import { bracketColumns, roundName } from '../../game/tournament/bracketView';
 import type { MyTurn } from '../../game/tournament/myTurn';
 import { BracketMatch } from './BracketMatch';
 import { ghostButton } from './TournamentFrame';
-import { useMyTurn } from './useMyTurn';
+import { myTurnState } from './autopilot/useMyTurn';
 
 const BANNERS: Partial<Record<MyTurn['kind'], keyof TranslationKeys>> = {
     champion: 'tournament.banner.champion',
@@ -31,7 +31,7 @@ export const BracketScreen: React.FC<{ snapshot: TournamentSnapshot }> = ({ snap
     const { actions } = useUIStore();
     const { tournament, seats, matches } = snapshot;
     const ticket = useMemo(() => ticketFor(tournament.id), [tournament.id]);
-    const { turn, alreadyPlayed } = useMyTurn(snapshot, ticket);
+    const { turn, alreadyPlayed } = myTurnState(snapshot, ticket);
     const mySeat = ticket?.seat ?? null;
 
     // Champion, Finalist and Flawless are judged from every new snapshot; awardTournament pays each one once

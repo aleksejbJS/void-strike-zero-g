@@ -18,7 +18,7 @@ const lobby = (nicknames: string[], creatorSeat = 0): TournamentSnapshot => ({
         id: T_ID, name: 'Friday grinder', status: 'lobby', size: null, creatorSeat,
         createdAt: '', startedAt: null, finishedAt: null, championSeat: null,
     },
-    seats: nicknames.map((nickname, seat) => ({ seat, nickname, isBot: false, bracketPos: null, joinedAt: '' })),
+    seats: nicknames.map((nickname, seat) => ({ seat, nickname, isBot: false, bracketPos: null, joinedAt: '', seenAt: null })),
     matches: [],
 });
 const ticket = (seat: number): SeatTicket => ({ tournamentId: T_ID, seat, secret: `s${seat}` });

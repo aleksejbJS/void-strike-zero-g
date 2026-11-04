@@ -14,7 +14,9 @@ vi.mock('./components/setup/CharacterPreview', () => ({ CharacterPreview: () => 
 vi.mock('./components/setup/builder/usePartThumbnails', () => ({ usePartThumbnails: () => ({}) }));
 vi.mock('./tournament/tournamentApi', () => ({ loadSnapshot: vi.fn(), joinTournament: vi.fn(), resolveStale: vi.fn() }));
 vi.mock('./tournament/tournamentFeed', () => ({ watchTournament: () => () => {} }));
-vi.mock('./tournament/seatStore', () => ({ saveTicket: vi.fn(), ticketFor: () => null, forgetTicket: vi.fn() }));
+vi.mock('./tournament/seatStore', () => ({
+    saveTicket: vi.fn(), ticketFor: () => null, forgetTicket: vi.fn(), heldTickets: () => [], onTicketsChanged: () => () => {},
+}));
 
 const T_ID = '11111111-1111-4111-8111-111111111111';
 const snapshot: TournamentSnapshot = {
@@ -22,7 +24,7 @@ const snapshot: TournamentSnapshot = {
         id: T_ID, name: 'Friday grinder', status: 'lobby', size: null, creatorSeat: 0,
         createdAt: '', startedAt: null, finishedAt: null, championSeat: null,
     },
-    seats: [{ seat: 0, nickname: 'Kolya', isBot: false, bracketPos: null, joinedAt: '' }],
+    seats: [{ seat: 0, nickname: 'Kolya', isBot: false, bracketPos: null, joinedAt: '', seenAt: null }],
     matches: [],
 };
 

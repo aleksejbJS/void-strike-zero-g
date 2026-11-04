@@ -29,6 +29,12 @@ describe('myTurn: my match is ready', () => {
         expect(myTurn(ready4(), 1)).toMatchObject({ kind: 'wait-host' });
     });
 
+    it('waits instead of guessing when the opponent seat is missing from a torn snapshot', () => {
+        const snap = makeSnapshot(4, { bots: [1] });
+        const torn = { ...snap, seats: snap.seats.filter(x => x.seat !== 1) };
+        expect(myTurn(torn, 0)).toEqual({ kind: 'wait-round' });
+    });
+
     it('keeps hosting after the host reloaded (peer id already published)', () => {
         expect(myTurn(publishHost(ready4(), 0, 0, 'peer-old'), 0).kind).toBe('host');
     });

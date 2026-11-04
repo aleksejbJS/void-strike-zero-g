@@ -1,5 +1,6 @@
 // A tournament before its start: the 8 seats, the rules, the invite link, and Sign up / Leave / Start.
-// Start is for the creator only, and needs at least 2 humans.
+// Start is for the creator, or for a stand-in when the creator went silent (startRule.ts), and needs at
+// least 2 humans. The autopilot keeps this browser's seat present meanwhile (lobby_seen).
 
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -7,6 +8,7 @@ import { useUIStore } from '../../store/uiStore';
 import { forgetTicket, ticketFor } from '../../tournament/seatStore';
 import { leaveTournament, startTournament } from '../../tournament/tournamentApi';
 import { TournamentError, type SeatTicket, type TournamentSnapshot } from '../../tournament/types';
+import { mayStart } from '../../game/tournament/startRule';
 import { LobbySeats } from './LobbySeats';
 import { ErrorLine, ghostButton, primaryButton } from './TournamentFrame';
 import { useSignUp } from './useSignUp';
@@ -49,6 +51,8 @@ export const TournamentLobby: React.FC<Props> = ({ snapshot, onCustomize }) => {
 
     const humans = seats.filter(s => !s.isBot).length;
     const isCreator = ticket !== null && ticket.seat === tournament.creatorSeat;
+    // The snapshot is re-read every 15 s in the lobby, so this follows the creator's presence
+    const canStart = mayStart(snapshot, ticket?.seat ?? null, Date.now());
 
     const start = () => {
         if (ticket) void call.run(() => startTournament(ticket)); // the feed then shows the running tournament
@@ -84,7 +88,7 @@ export const TournamentLobby: React.FC<Props> = ({ snapshot, onCustomize }) => {
 
             <div className="flex flex-wrap items-center gap-2">
                 <button type="button" className={ghostButton} onClick={copyLink}>{t('tournament.lobby.copyLink')}</button>
-                {isCreator && (
+                {canStart && (
                     <button type="button" className={primaryButton} disabled={humans < MIN_HUMANS || call.busy} onClick={start}>
                         {t('tournament.lobby.start')}
                     </button>
@@ -101,8 +105,9 @@ export const TournamentLobby: React.FC<Props> = ({ snapshot, onCustomize }) => {
 
             {copy === 'copied' && <p role="status" className="m-0 text-sm text-bay-hazard">{t('tournament.lobby.copied')}</p>}
             {copy === 'failed' && <p className="m-0 select-all break-all text-sm text-bay-chalk">{t('tournament.lobby.copyFailed', link)}</p>}
-            {isCreator && humans < MIN_HUMANS && <p className="m-0 text-sm text-bay-dust">{t('tournament.error.not_enough_players')}</p>}
-            {ticket && !isCreator && <p className="m-0 text-sm text-bay-dust">{t('tournament.lobby.waitStart')}</p>}
+            {canStart && humans < MIN_HUMANS && <p className="m-0 text-sm text-bay-dust">{t('tournament.error.not_enough_players')}</p>}
+            {canStart && !isCreator && <p className="m-0 text-sm text-bay-hazard">{t('tournament.lobby.standIn')}</p>}
+            {ticket && !canStart && <p className="m-0 text-sm text-bay-dust">{t('tournament.lobby.waitStart')}</p>}
             <ErrorLine code={call.error} />
         </>
     );

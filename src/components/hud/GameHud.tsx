@@ -11,7 +11,7 @@ import { WeaponBar, AmmoPanel } from './WeaponBar';
 import { Scoreboard, TeamScore, KillFeed } from './ScoreHud';
 import { HudButtons, AchievementToast, AchievementsPanel, InviteToggle } from './Achievements';
 import { HungerHud, HungerHudState, GunGameHud, GunGameStatus } from './ModeHud';
-import { DeathOverlay, ConnectionOverlay, InviteBanner, DebugStats } from './Overlays';
+import { DeathOverlay, ConnectionOverlay, ForfeitHint, InviteBanner, DebugStats } from './Overlays';
 import { MobileHud, MobileControls } from './mobile/MobileHud';
 import { formatClock } from './format';
 import { MatchResult } from './MatchResult';
@@ -46,7 +46,8 @@ export interface GameHudProps {
     gunGame: { status: GunGameStatus | null; winner: string | null } | null;
     reward: Reward | null; // XP for the match that just ended; null while play goes on
     mobile: MobileControls | null; // touch device: the phone HUD and twin sticks instead of the desktop pieces
-    tournament?: { backInSec: number } | null; // a tournament duel: Esc and the end screen lead back to the bracket
+    /** A tournament duel: Esc and the end screen lead back to the bracket; Esc twice forfeits; a guest reconnects. */
+    tournament?: { backInSec: number; forfeitArmed?: boolean; reconnecting?: boolean } | null;
 }
 
 const isTeamMode = (mode: GameMode) => mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -76,7 +77,8 @@ export const GameHud: React.FC<GameHudProps> = p => {
             {p.inviteLink && inviteOpen && <InviteBanner t={t} link={p.inviteLink} onClose={() => setInviteOpen(false)} />}
             {p.debug && <DebugStats fps={p.debug.fps} tps={p.debug.tps} />}
             {stats.dead && mode !== GameMode.HUNGER_GAMES && <DeathOverlay t={t} respawnMs={stats.respawn} />}
-            {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} inTournament={!!p.tournament} />}
+            {p.connection.visible && <ConnectionOverlay t={t} error={p.connection.error} inTournament={!!p.tournament} reconnecting={!!p.tournament?.reconnecting} />}
+            {p.tournament?.forfeitArmed && <ForfeitHint t={t} />}
             {p.match?.result && <MatchResult t={t} result={p.match.result} ranking={p.playerScores} reward={p.reward} onLeave={p.onLeave} tournament={p.tournament} />}
             {p.achievementsOpen && <AchievementsPanel t={t} onClose={p.onAchievementsClose} />}
         </div>

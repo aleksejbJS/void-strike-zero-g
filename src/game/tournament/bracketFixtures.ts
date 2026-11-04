@@ -24,7 +24,7 @@ const waitingMatch = (round: number, slot: number): MatchRow => ({
 export const makeSnapshot = (size: 4 | 8, options: SnapshotOptions = {}): TournamentSnapshot => {
     const bots = options.bots ?? [];
     const seats: SeatRow[] = Array.from({ length: size }, (_, seat) => ({
-        seat, nickname: `P${seat}`, isBot: bots.includes(seat), bracketPos: seat, joinedAt: '2026-11-04T10:00:00Z',
+        seat, nickname: `P${seat}`, isBot: bots.includes(seat), bracketPos: seat, joinedAt: '2026-11-04T10:00:00Z', seenAt: null,
     }));
     const matches: MatchRow[] = [];
     for (let round = 0, count = size / 2; count >= 1; round++, count /= 2) {

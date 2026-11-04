@@ -83,6 +83,11 @@ export async function startTournament(t: SeatTicket): Promise<void> {
     await rpc('start_tournament', seatParams(t));
 }
 
+/** Lobby heartbeat: "I am still here" (a silent creator can be stood in for at the start). */
+export async function lobbySeen(t: SeatTicket): Promise<void> {
+    await rpc('lobby_seen', seatParams(t));
+}
+
 /** Heartbeat of a fighter: "I am still here" (feeds resolveStale). */
 export async function matchSeen(matchId: string, t: SeatTicket): Promise<void> {
     await rpc('match_seen', matchParams(matchId, t));

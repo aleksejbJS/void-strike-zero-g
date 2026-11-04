@@ -9,7 +9,7 @@ import { forgetAwarded } from '../../tournament/awardTournament';
 import type { TournamentSnapshot } from '../../tournament/types';
 import { makeSnapshot, settle } from '../../game/tournament/bracketFixtures';
 import { BracketScreen } from './BracketScreen';
-import { forgetRunHistory } from './runHistory';
+import { forgetRunHistory } from './autopilot/runHistory';
 
 vi.mock('../../tournament/tournamentApi', () => ({ matchSeen: vi.fn() }));
 vi.mock('../../tournament/seatStore', () => ({ ticketFor: vi.fn() }));

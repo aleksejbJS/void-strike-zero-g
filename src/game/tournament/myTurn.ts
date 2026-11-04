@@ -18,8 +18,10 @@ const SPECTATOR: MyTurn = { kind: 'spectator' };
 const readyTurn = (s: TournamentSnapshot, match: MatchRow, mySeat: number): MyTurn => {
     if (match.hostSeat === mySeat) {
         const otherSeat = match.seatA === mySeat ? match.seatB : match.seatA;
-        const withBot = s.seats.find(x => x.seat === otherSeat)?.isBot ?? false;
-        return { kind: 'host', match, withBot };
+        const other = s.seats.find(x => x.seat === otherSeat);
+        // A torn snapshot (seats read before the match): do not guess bot or human, wait for the next one
+        if (!other) return { kind: 'wait-round' };
+        return { kind: 'host', match, withBot: other.isBot };
     }
     if (match.hostPeerId !== null) return { kind: 'join', match, peerId: match.hostPeerId };
     return { kind: 'wait-host', match };
@@ -31,6 +33,7 @@ const readyTurn = (s: TournamentSnapshot, match: MatchRow, mySeat: number): MyTu
  * - 'expired' is a spectator for everyone: the tournament is gone, there is nothing to play or wait for.
  * - A null seat, a seat that is not at this tournament, or a seat on no match is a spectator.
  * - My latest match decides: ready -> host/join/wait-host; lost -> eliminated; won the final -> champion;
+ *   a ready match whose other seat is missing from the snapshot (torn read) -> wait-round until the next one;
  *   won an earlier round (or my next match still waits for its other seat) -> wait-round.
  * - A finished tournament never asks to play: a match row that still looks open there is stale -> spectator.
  */
