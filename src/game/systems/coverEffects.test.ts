@@ -71,6 +71,11 @@ describe('applyCoverEvent', () => {
         expect(state.particles[0]).toMatchObject({ type: 'flash', color: '#ffc21a' });
     });
 
+    it.each(['hit', 'break', 'restore'] as const)('ignores a %s event of a kind this build does not know (a newer host)', action => {
+        expect(() => applyCoverEvent(state, event('spikes' as CoverKind, action))).not.toThrow();
+        expect(state.particles).toEqual([]);
+    });
+
     it('applyEffectEvent hands COVER events over', () => {
         applyEffectEvent(state, event('metal', 'break'));
         expect(state.particles.length).toBeGreaterThan(0);

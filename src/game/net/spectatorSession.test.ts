@@ -149,7 +149,15 @@ describe('SpectatorSession: cover', () => {
         expect(state.cover![0].returnsAt).toBeGreaterThan(Date.now());
         expect(state.cover![1].hp).toBe(80);
         expect('coverStatus' in state).toBe(false);
-        expect(info.cover).toBe(state.cover);
+        expect(state.cover![0]).toBe(info.cover[0]); // the host's pieces, not copies
+    });
+
+    it('leaves out pieces of a kind this build does not know (a newer host)', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { state } = watchingCover([{ id: 'x', kind: 'spikes', pos: { x: 0, y: 400 }, hp: 5 } as unknown as Cover, ...crates()]);
+        expect(warn).toHaveBeenCalledOnce();
+        warn.mockRestore();
+        expect(state.cover!.map(c => c.id)).toEqual(['c1', 'c2']);
     });
 
     it('a host without cover leaves the tile with an empty list', () => {

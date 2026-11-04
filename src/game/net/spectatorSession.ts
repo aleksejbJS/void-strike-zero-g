@@ -11,7 +11,7 @@ import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/p
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRejected, Snapshot, WatchAccepted } from './protocol';
 import { toLocalClock } from './clock';
-import { applyCoverStatus } from '../cover/coverNet';
+import { applyCoverStatus, knownCover } from '../cover/coverNet';
 import type { Cover } from '../cover/coverTypes';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { ProjectileCatchUp } from './projectileCatchUp';
@@ -68,7 +68,7 @@ export class SpectatorSession {
         this.socket.on(MSG.WATCHING, (info: WatchAccepted) => {
             this.watching = true;
             this.platforms = info.platforms;
-            this.cover = info.cover ?? [];
+            this.cover = knownCover(info.cover);
             this.receive(info.snapshot);
             callbacks.onWatching(info);
         });

@@ -3,7 +3,7 @@
 // materials' from the cover art. A barrel's break adds nothing here: its blast brings its own effects.
 
 import type { GameState } from '../../types';
-import { COVER_SPECS, CoverKind } from '../cover/coverTypes';
+import { COVER_SPECS, CoverKind, isKnownCoverKind } from '../cover/coverTypes';
 import type { CoverEvent } from './events';
 import { createParticles } from './effectSpawn';
 
@@ -96,6 +96,8 @@ const LOOKS: Record<CoverKind, { hit: Recipe; break: Recipe }> = {
 
 /** Turn one COVER event into particles. A piece coming back flashes in the hologram's yellow. */
 export const applyCoverEvent = (state: GameState, e: CoverEvent): void => {
+    // A kind from a newer host: its piece was left out of the layout (knownCover), so its event is too
+    if (!isKnownCoverKind(e.kind)) return;
     if (e.action === 'restore') {
         createParticles(state, e.x, e.y, 1, HOLOGRAM, 'flash', { size: 36, decay: 0.08, vel: STILL });
         return;

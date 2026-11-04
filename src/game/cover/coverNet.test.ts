@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { GameMode, MapId } from '../../types';
 import { GameRoom } from '../net/room';
 import { RoomHost } from '../net/roomHost';
@@ -9,7 +9,8 @@ import { MatterPhysicsEngine } from '../physics/MatterEngine';
 import { DEFAULT_BUILD } from '../build/buildParts';
 import { createMockPlayer, createMockState } from '../../test/mocks';
 import { Team } from '../../types';
-import { applyCoverStatus, coverStatusOf } from './coverNet';
+import { applyCoverStatus, coverStatusOf, knownCover } from './coverNet';
+import type { Cover } from './coverTypes';
 import { piece, stateWithCover } from './coverTestKit';
 
 const join = { name: 'Alex', color: '#ff0000', headColor: '#ff0000', torsoColor: '#ff0000', armColor: '#ff0000', legColor: '#ff0000', jetpackColor: '#ff0000', skinId: 'classic', build: DEFAULT_BUILD };
@@ -62,6 +63,20 @@ describe('applyCoverStatus', () => {
         const a = { ...piece('a', 'barrel', 0, 0), fuseAt: 5, creditId: 'p1' };
         applyCoverStatus([a], [{ id: 'a', hp: 10 }]);
         expect(a).toMatchObject({ fuseAt: 5, creditId: 'p1' });
+    });
+});
+
+describe('knownCover', () => {
+    it('drops pieces of a kind this build does not know (a newer host)', () => {
+        const spikes = { id: 's', kind: 'spikes', pos: { x: 0, y: 0 }, hp: 10 } as unknown as Cover;
+        const crate = piece('c', 'wood', 0, 0);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        expect(knownCover([spikes, crate])).toEqual([crate]);
+        expect(warn).toHaveBeenCalledOnce();
+        expect(knownCover(undefined)).toEqual([]);
+        expect(knownCover([crate])).toEqual([crate]);
+        expect(warn).toHaveBeenCalledOnce(); // nothing left out, nothing to say
+        warn.mockRestore();
     });
 });
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ClientSession } from './clientSession';
 import { EmitterSocket } from './sessionSocket';
 import { JoinAccepted, MSG } from './protocol';
@@ -47,5 +47,23 @@ describe('client prediction with cover', () => {
         state.cover![0].hp = 0;
         session.tick(state, controls, 1);
         expect(physics.bodies.has('crate')).toBe(false);
+    });
+});
+
+describe('client with a layout from a newer host', () => {
+    it('leaves out pieces of a kind it does not know instead of crashing', () => {
+        const physics = new MatterPhysicsEngine();
+        const session = new ClientSession(new TestSocket(), {} as any, physics, callbacks);
+        const state = createMockState(GameMode.DEATHMATCH);
+        const cover = [{ id: 'spikes', kind: 'spikes', pos: { x: 300, y: 400 }, hp: 10 }, { id: 'crate', kind: 'wood', pos: { x: 500, y: 400 }, hp: 150 }];
+        const info = { id: 'me', mode: GameMode.DEATHMATCH, map: 'arena', platforms: [], cover, snapshot: snapshot() } as unknown as JoinAccepted;
+        session.localId = 'me';
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        session.setupWorld(state, info);
+        expect(warn).toHaveBeenCalledOnce();
+        warn.mockRestore();
+        expect(() => session.tick(state, controls, 0)).not.toThrow();
+        expect(state.cover!.map(c => c.id)).toEqual(['crate']);
+        expect(physics.bodies.has('crate')).toBe(true);
     });
 });

@@ -21,6 +21,9 @@ export const COVER_SPECS: Record<CoverKind, CoverSpec> = {
     barrel: { w: 32, h: 46, hp: 80, blocksSight: true, stopsRail: true },
 };
 
+/** True for a kind this build knows (a newer host may send kinds an older client has no spec or look for). */
+export const isKnownCoverKind = (kind: string): kind is CoverKind => Object.prototype.hasOwnProperty.call(COVER_SPECS, kind);
+
 /** One piece of cover. `pos` follows the game convention: (centerX, bottomY). */
 export interface Cover {
     id: string;

@@ -13,7 +13,7 @@ import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/p
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { toLocalClock } from './clock';
-import { applyCoverStatus } from '../cover/coverNet';
+import { applyCoverStatus, knownCover } from '../cover/coverNet';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { ProjectileCatchUp } from './projectileCatchUp';
@@ -68,7 +68,7 @@ export class ClientSession {
     /** Use the server's map: rebuild local collision world with platforms, cover and our own body only. */
     setupWorld(state: GameState, info: JoinAccepted) {
         state.platforms = info.platforms;
-        state.cover = info.cover ?? []; // never built locally online; bodies come from the sync in predict
+        state.cover = knownCover(info.cover); // never built locally online; bodies come from the sync in predict
         this.applySnapshot(state, info.snapshot);
         this.physics.clear();
         state.platforms.forEach(p => this.physics.addPlatform(p));
