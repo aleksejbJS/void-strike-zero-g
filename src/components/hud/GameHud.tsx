@@ -55,7 +55,8 @@ export const GameHud: React.FC<GameHudProps> = p => {
     const [inviteOpen, setInviteOpen] = useState(true);
     const invite: InviteToggle | undefined = p.inviteLink ? { open: inviteOpen, onToggle: () => setInviteOpen(o => !o) } : undefined;
     const activeWeapon = p.inventory.find(w => w.type === p.activeWeapon);
-    const clock = p.match?.timeLeftSec != null ? formatClock(p.match.timeLeftSec) : undefined;
+    const clock = p.match?.suddenDeath ? t('tournament.suddenDeath')
+        : p.match?.timeLeftSec != null ? formatClock(p.match.timeLeftSec) : undefined;
 
     return (
         <div className="font-body text-bay-chalk">

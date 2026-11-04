@@ -1,6 +1,6 @@
 // Router of the tournament screens (uiStore.tournamentNav): the list, one tournament, and watching it.
-// One tournament shows its lobby before the start. The bracket (running / finished) and the watch screen
-// are placeholders until they exist.
+// One tournament shows its lobby before the start and its bracket once running (or finished). The watch
+// screen is a placeholder until it exists.
 
 import React from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -10,6 +10,7 @@ import { useTournament } from '../../tournament/useTournament';
 import { ErrorLine, TournamentFrame, ghostButton } from './TournamentFrame';
 import { TournamentList } from './TournamentList';
 import { TournamentLobby } from './TournamentLobby';
+import { BracketScreen } from './BracketScreen';
 
 interface Props {
     /** Opens the setup screen: a guest without a name picks one there first. */
@@ -39,13 +40,8 @@ const TournamentView: React.FC<{ id: string } & Props> = ({ id, onCustomize }) =
                         <button type="button" className={`${ghostButton} self-start`} onClick={actions.openTournaments}>{t('tournament.toList')}</button>
                     </>
                 );
-            default: // running and finished: the bracket screen replaces this
-                return (
-                    <>
-                        <h2 className="m-0 font-display text-[28px] font-extrabold uppercase leading-tight phone:text-lg">{snapshot.tournament.name}</h2>
-                        <Note>{t('tournament.placeholder.bracket')}</Note>
-                    </>
-                );
+            default: // running and finished
+                return <BracketScreen snapshot={snapshot} />;
         }
     })();
 

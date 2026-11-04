@@ -32,6 +32,7 @@ const readyTurn = (s: TournamentSnapshot, match: MatchRow, mySeat: number): MyTu
  * - A null seat, a seat that is not at this tournament, or a seat on no match is a spectator.
  * - My latest match decides: ready -> host/join/wait-host; lost -> eliminated; won the final -> champion;
  *   won an earlier round (or my next match still waits for its other seat) -> wait-round.
+ * - A finished tournament never asks to play: a match row that still looks open there is stale -> spectator.
  */
 export const myTurn = (s: TournamentSnapshot, mySeat: number | null): MyTurn => {
     const { status, championSeat } = s.tournament;
@@ -46,6 +47,7 @@ export const myTurn = (s: TournamentSnapshot, mySeat: number | null): MyTurn => 
     const latest = mine[mine.length - 1];
     if (!latest) return SPECTATOR;
 
+    if (latest.status !== 'done' && status === 'finished') return SPECTATOR;
     if (latest.status === 'ready') return readyTurn(s, latest, mySeat);
     if (latest.status === 'waiting') return { kind: 'wait-round' };
     if (latest.winnerSeat !== mySeat) return { kind: 'eliminated' };

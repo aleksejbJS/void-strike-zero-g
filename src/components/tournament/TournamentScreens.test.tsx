@@ -9,7 +9,7 @@ import { TournamentError, type TournamentSnapshot, type TournamentStatus } from 
 import { TournamentScreens } from './TournamentScreens';
 
 vi.mock('../../tournament/tournamentApi', () => ({
-    loadSnapshot: vi.fn(), resolveStale: vi.fn(), listOpen: vi.fn(), loadListDetails: vi.fn(),
+    loadSnapshot: vi.fn(), resolveStale: vi.fn(), listOpen: vi.fn(), loadListDetails: vi.fn(), matchSeen: vi.fn(),
 }));
 vi.mock('../../tournament/tournamentFeed', () => ({ watchTournament: () => () => {} }));
 vi.mock('../../tournament/seatStore', () => ({ saveTicket: vi.fn(), ticketFor: () => null, forgetTicket: vi.fn() }));
@@ -61,10 +61,19 @@ describe('TournamentScreens', () => {
         expect(store.state.tournamentNav).toEqual({ view: 'list' });
     });
 
-    it('shows a placeholder for a running tournament (the bracket comes later)', async () => {
+    it('shows the bracket of a running tournament', async () => {
         vi.mocked(loadSnapshot).mockResolvedValue(snap('running'));
         await renderAt(s => s.actions.openTournament(T_ID));
-        expect(screen.getByText('The tournament is under way.')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Friday grinder' })).toBeInTheDocument();
+        expect(screen.getByRole('list', { name: 'Champion' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Watch' })).toBeInTheDocument();
+    });
+
+    it('shows the bracket of a finished tournament too, without Watch', async () => {
+        vi.mocked(loadSnapshot).mockResolvedValue(snap('finished'));
+        await renderAt(s => s.actions.openTournament(T_ID));
+        expect(screen.getByRole('list', { name: 'Champion' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Watch' })).not.toBeInTheDocument();
     });
 
     it('an expired tournament says so and leads back to the list', async () => {

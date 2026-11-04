@@ -80,6 +80,12 @@ describe('myTurn: after a match', () => {
         expect(myTurn(snap, 4)).toMatchObject({ kind: 'wait-host' });
     });
 
+    it('published-then-settled match → wait-round for the winner seat, eliminated for the loser seat', () => {
+        const snap = settle(publishHost(ready4(), 0, 0, 'peer-done'), 0, 0, 0, 10, 7);
+        expect(myTurn(snap, 0)).toEqual({ kind: 'wait-round' });
+        expect(myTurn(snap, 1)).toEqual({ kind: 'eliminated' });
+    });
+
     it('a walkover loss is an elimination too', () => {
         expect(myTurn(settle(ready4(), 0, 0, 1, 0, 0, 'walkover'), 0)).toEqual({ kind: 'eliminated' });
     });
@@ -109,6 +115,13 @@ describe('myTurn: no ticket, lobby, expired', () => {
     it('a seat that is on no match is a spectator', () => {
         const snap = patchMatch(ready4(), 0, 0, { seatA: null });
         expect(myTurn(snap, 0)).toEqual({ kind: 'spectator' });
+    });
+
+    it('a finished tournament never asks to host, join or wait for a host, even with a stale ready match', () => {
+        const stale = publishHost(ready4(), 0, 1, 'peer-stale');
+        const finished = { ...stale, tournament: { ...stale.tournament, status: 'finished' as const, championSeat: 0 } };
+        for (const seat of [1, 2, 3]) expect(['host', 'join', 'wait-host']).not.toContain(myTurn(finished, seat).kind);
+        expect(myTurn(finished, 0)).toEqual({ kind: 'champion' });
     });
 
     it('a finished tournament shows the champion and everyone else as eliminated', () => {

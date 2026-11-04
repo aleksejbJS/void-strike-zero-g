@@ -13,6 +13,8 @@ export interface TournamentMatchRun {
     role: 'host' | 'guest';
     peerId?: string;
     withBot: boolean;
+    /** My side of the match: 'a' when my seat is the match's seatA (the host reports scores as A, B). */
+    side: 'a' | 'b';
 }
 
 export interface TournamentUIState {
@@ -20,6 +22,8 @@ export interface TournamentUIState {
     tournamentNav: TournamentNav | null;
     /** Set while this browser plays its tournament duel. */
     tournamentMatch: TournamentMatchRun | null;
+    /** The menu's mode and map from before the duel, restored when it ends (DUEL is not in the menu). */
+    tournamentReturn: { mode: GameMode; map: MapId } | null;
 }
 
 export interface TournamentActions {
@@ -36,7 +40,7 @@ export type TournamentAction =
     | { type: 'startTournamentMatch'; payload: TournamentMatchRun }
     | { type: 'endTournamentMatch' };
 
-export const tournamentInitialState: TournamentUIState = { tournamentNav: null, tournamentMatch: null };
+export const tournamentInitialState: TournamentUIState = { tournamentNav: null, tournamentMatch: null, tournamentReturn: null };
 
 /** The fields of the whole UI state that a tournament match changes. */
 interface MatchFields extends TournamentUIState {
@@ -52,7 +56,11 @@ interface MatchFields extends TournamentUIState {
 export function endTournamentMatch<S extends MatchFields>(state: S): S {
     if (!state.tournamentMatch) return state;
     const id = state.tournamentMatch.ticket.tournamentId;
-    return { ...state, isPlaying: false, tournamentMatch: null, tournamentNav: { view: 'tournament', id } };
+    const back = state.tournamentReturn ?? { mode: state.selectedMode, map: state.selectedMap };
+    return {
+        ...state, isPlaying: false, tournamentMatch: null, tournamentNav: { view: 'tournament', id },
+        selectedMode: back.mode, selectedMap: back.map, tournamentReturn: null,
+    };
 }
 
 export function reduceTournament<S extends MatchFields>(state: S, action: TournamentAction): S {
@@ -63,6 +71,7 @@ export function reduceTournament<S extends MatchFields>(state: S, action: Tourna
             // Like startGame: a fresh match, here always a duel on the Pit
             return {
                 ...state, isPlaying: true, selectedMode: GameMode.DUEL, selectedMap: MapId.PIT, tournamentMatch: action.payload,
+                tournamentReturn: state.tournamentReturn ?? { mode: state.selectedMode, map: state.selectedMap },
                 lastScore: null, scores: { red: 0, blue: 0 }, killFeed: [],
             };
         case 'endTournamentMatch':

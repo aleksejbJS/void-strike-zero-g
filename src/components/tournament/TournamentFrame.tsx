@@ -40,7 +40,8 @@ export const TournamentFrame: React.FC<FrameProps> = ({ title, onBack, children 
     );
 };
 
-const ERROR_KEYS: Record<TournamentErrorCode, keyof TranslationKeys> = {
+/** The message key of each tournament error code (also used by the duel's error banner). */
+export const ERROR_KEYS: Record<TournamentErrorCode, keyof TranslationKeys> = {
     not_open: 'tournament.error.not_open',
     full: 'tournament.error.full',
     not_creator: 'tournament.error.not_creator',

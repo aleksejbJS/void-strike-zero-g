@@ -50,6 +50,8 @@ import { addShake, explosionShake } from '../game/render/screenShake';
 import { spawnPointFor } from '../game/net/roomSetup';
 import { currentBuild } from '../game/build/currentBuild';
 import { useMatchRewards } from './hud/useMatchRewards';
+import { useTournamentMatch } from './hud/useTournamentMatch';
+import { openTournamentNet } from './hud/tournamentNet';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { nextId } from '../game/utils/id';
@@ -106,6 +108,8 @@ export default function GameCanvas() {
         hungerWinnerId: null
     });
     const reward = useMatchRewards(gameState, localIdRef); // XP for the match that just ended
+    const tournamentRun = state.tournamentMatch; // a tournament duel: always online, see useTournamentMatch
+    const tourney = useTournamentMatch(gameState, localIdRef, tournamentRun);
 
     const visualCache = useRef({
         players: new Map(),
@@ -361,12 +365,22 @@ export default function GameCanvas() {
         let redrawMap: (() => void) | null = null;
         let mapLook: MapLook | null = null;
         let ads: AdsController | null = null;
-        const isOnline = state.networkMode !== NetworkMode.OFFLINE;
+        const isOnline = state.networkMode !== NetworkMode.OFFLINE || tournamentRun !== null;
         if (isOnline) {
             setNetError(null);
             let socket: SessionSocket;
             let targetLabel: string;
-            if (state.networkMode === NetworkMode.HOST) {
+            if (tournamentRun) {
+                // The host seat runs the duel's room here; the guest joins the host's published peer id
+                const net = openTournamentNet(tournamentRun, {
+                    onInviteReady: tourney.signals.inviteReady,
+                    onError: message => setNetError(`${t('net.hostError')} (${message})`),
+                    onSnapshot: tourney.signals.snapshot,
+                });
+                hostRef.current = net.host;
+                socket = net.socket;
+                targetLabel = t(tournamentRun.role === 'host' ? 'net.yourGame' : 'net.hostedGame');
+            } else if (state.networkMode === NetworkMode.HOST) {
                 // This browser runs the room; we join it like everyone else, minus the network
                 const host = new HostSession(
                     { mode: gameMode, map: effectiveMapFor(gameMode, state.selectedMap), maxPlayers: BROWSER_HOST_MAX_PLAYERS },
@@ -401,12 +415,13 @@ export default function GameCanvas() {
                     session.setupWorld(gameState.current, info);
                     setOnlineMode(info.mode);
                     redrawMap?.();
+                    tourney.signals.joined();
                 },
                 onRejected: reason => setNetError(
                     reason === 'full' ? t('net.serverFull') : reason === 'invalid' ? t('net.joinInvalid') : t('net.alreadyJoined')
                 ),
                 onConnectionError: message => setNetError(`${t('net.cannotConnect')} ${targetLabel} (${message})`),
-                onDisconnected: () => setNetError(t('net.disconnected')),
+                onDisconnected: () => { setNetError(t('net.disconnected')); tourney.signals.disconnected(); },
                 onEvents: events => events.forEach(e => gameEvents.emit(e)),
             });
             sessionRef.current = session;
@@ -943,7 +958,7 @@ export default function GameCanvas() {
         ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue')
             : objective.timeMs !== undefined ? formatClock(Math.ceil(objective.timeMs / 1000)) : undefined)
         : null;
-    /** Keys 1–6 and the touch weapon row: switch locally at once, and tell the host when online. */
+    /** Keys 1–7 and the touch weapon row: switch locally at once, and tell the host when online. */
     const selectWeapon = (index: number) => {
         const local = gameState.current.players.find(p => p.id === localIdRef.current);
         const weapon = local?.inventory[index];
@@ -969,7 +984,7 @@ export default function GameCanvas() {
                 flagBanner={flagBanner}
                 match={matchHud}
                 onLeave={leaveGame}
-                connection={{ visible: (state.networkMode !== NetworkMode.OFFLINE && !onlineMode) || !!netError, error: netError }}
+                connection={{ visible: ((state.networkMode !== NetworkMode.OFFLINE || !!tournamentRun) && !onlineMode) || !!(netError ?? tourney.error), error: netError ?? tourney.error }}
                 debug={debugStats}
                 inviteLink={inviteLink}
                 recentAchievement={recentAchievement}

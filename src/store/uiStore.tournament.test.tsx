@@ -10,7 +10,7 @@ const Spy: React.FC = () => { store = useUIStore(); return null; };
 
 const T_ID = '11111111-1111-4111-8111-111111111111';
 const run: TournamentMatchRun = {
-    ticket: { tournamentId: T_ID, seat: 2, secret: 'abc' }, matchId: 'm1', role: 'host', withBot: false,
+    ticket: { tournamentId: T_ID, seat: 2, secret: 'abc' }, matchId: 'm1', role: 'host', withBot: false, side: 'a',
 };
 
 beforeEach(() => {
@@ -69,6 +69,25 @@ describe('uiStore tournament match', () => {
         act(() => store.actions.startGame(GameMode.DEATHMATCH));
         act(() => store.actions.finishGame(7));
         expect(store.state).toMatchObject({ isPlaying: false, lastScore: 7, tournamentNav: null, tournamentMatch: null });
+    });
+
+    it('endTournamentMatch restores the mode and map the menu had before the duel', () => {
+        render(<UIProvider><Spy /></UIProvider>);
+        act(() => store.actions.selectMode(GameMode.CTF));
+        act(() => store.actions.selectMap(MapId.TUNNELS));
+        act(() => store.actions.startTournamentMatch(run));
+        expect(store.state.selectedMode).toBe(GameMode.DUEL);
+        act(() => store.actions.endTournamentMatch());
+        expect(store.state).toMatchObject({ selectedMode: GameMode.CTF, selectedMap: MapId.TUNNELS });
+    });
+
+    it('Escape (finishGame) in a duel restores the menu mode too', () => {
+        render(<UIProvider><Spy /></UIProvider>);
+        act(() => store.actions.selectMode(GameMode.GUN_GAME));
+        act(() => store.actions.startTournamentMatch(run));
+        act(() => store.actions.finishGame(3));
+        expect(store.state.selectedMode).toBe(GameMode.GUN_GAME);
+        expect(store.state.selectedMap).toBe(MapId.DEFAULT);
     });
 
     it('endTournamentMatch without a run changes nothing', () => {
