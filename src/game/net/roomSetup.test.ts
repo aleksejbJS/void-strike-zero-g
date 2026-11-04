@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { GameMode, MapId, Team } from '../../types';
-import { createBots, createRoomState, resetMatch } from './roomSetup';
+import { createBots, createRoomState, resetHungerRound, resetMatch } from './roomSetup';
 import { spawnSmoke } from '../systems/smoke';
+import { duelSpawnByIndex } from '../systems/duelRules';
+import { createMockPlayer } from '../../test/mocks';
+import { damageCover } from '../cover/coverDamage';
+import { isIntact } from '../cover/coverGeometry';
+import { COVER_SPECS, Cover } from '../cover/coverTypes';
 
 describe('createBots looks', () => {
     it.each([GameMode.DEATHMATCH, GameMode.GUN_GAME, GameMode.HUNGER_GAMES])(
@@ -30,5 +35,41 @@ describe('resetMatch', () => {
         resetMatch(state);
 
         expect(state.smokes).toEqual([]);
+    });
+});
+
+describe('resets and cover', () => {
+    const NOW = 1_000_000;
+    type Room = ReturnType<typeof createRoomState>;
+    const resets: [GameMode, (s: Room) => void][] = [
+        [GameMode.DEATHMATCH, s => resetMatch(s)],
+        [GameMode.HUNGER_GAMES, s => resetHungerRound(s, NOW)],
+    ];
+
+    it.each(resets)('%s reset brings back every broken piece', (mode, reset) => {
+        const state = createRoomState(mode, MapId.DEFAULT);
+        expect(state.cover?.length).toBeGreaterThan(0);
+        for (const c of state.cover ?? []) damageCover(state, c, 10_000, 'p1', NOW);
+        expect(state.cover?.some(isIntact)).toBe(false);
+
+        reset(state);
+
+        for (const c of state.cover ?? []) {
+            expect(c.hp).toBe(COVER_SPECS[c.kind].hp);
+            expect(c.returnsAt).toBeUndefined();
+        }
+    });
+
+    it('a reset with a crate on a spawn point lifts the fighter', () => {
+        const state = createRoomState(GameMode.DUEL, MapId.DEFAULT);
+        const spawn = duelSpawnByIndex(0);
+        const crate: Cover = { id: 'c', kind: 'wood', pos: { ...spawn }, hp: 0, returnsAt: NOW }; // broken now, whole after the reset
+        state.cover = [crate];
+        state.players.push(createMockPlayer('p1', Team.NONE));
+
+        resetMatch(state);
+
+        expect(isIntact(crate)).toBe(true);
+        expect(state.players[0].pos).toEqual({ x: spawn.x, y: spawn.y - COVER_SPECS.wood.h });
     });
 });

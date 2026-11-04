@@ -13,6 +13,7 @@ import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/p
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
 import { toLocalClock } from './clock';
+import { applyCoverStatus, knownCover } from '../cover/coverNet';
 import { LocalPrediction } from './prediction';
 import { SnapshotBuffer, interpolateRemotePlayers } from './interpolation';
 import { ProjectileCatchUp } from './projectileCatchUp';
@@ -64,9 +65,10 @@ export class ClientSession {
         this.socket.on(MSG.EVENTS, (events: GameEvent[]) => callbacks.onEvents(events));
     }
 
-    /** Use the server's map: rebuild local collision world with platforms + our own body only. */
+    /** Use the server's map: rebuild local collision world with platforms, cover and our own body only. */
     setupWorld(state: GameState, info: JoinAccepted) {
         state.platforms = info.platforms;
+        state.cover = knownCover(info.cover); // never built locally online; bodies come from the sync in predict
         this.applySnapshot(state, info.snapshot);
         this.physics.clear();
         state.platforms.forEach(p => this.physics.addPlatform(p));
@@ -127,11 +129,11 @@ export class ClientSession {
         if (!this.physics.bodies.has(local.id)) this.physics.addPlayer(local);
         // A snapshot may have moved us (respawn, snap): the body must start from there, or the
         // step below reads back where we died and we play on there while the server has us elsewhere
-        this.physics.syncFromGameState({ players: [local] });
+        this.physics.syncFromGameState({ players: [local], cover: state.cover });
 
         // Same order as the server tick: step, read back, apply input, push
         this.physics.step(FIXED_STEP_MS);
-        this.physics.syncGameState({ players: [local], platforms: state.platforms });
+        this.physics.syncGameState({ players: [local], platforms: state.platforms, cover: state.cover });
         const c = readControls(local, controls.keys);
         applyStance(local, c);
         const aim = clampProneAim(local, controls.aim);
@@ -139,14 +141,15 @@ export class ClientSession {
         updateGrapple(state, local, controls.hookPressed, aim);
         applyPlayerMovement(state, local, c, state);
         this.prediction.applyCorrection(local);
-        this.physics.syncFromGameState({ players: [local] });
+        this.physics.syncFromGameState({ players: [local], cover: state.cover });
         this.prediction.record(this.sequence, local.pos);
     }
 
     private applySnapshot(state: GameState, snap: Snapshot) {
         toLocalClock(snap, Date.now() - snap.serverTime);
-        const { serverTime: _serverTime, players, ...shared } = snap;
+        const { serverTime: _serverTime, players, coverStatus, ...shared } = snap;
         Object.assign(state, shared);
+        applyCoverStatus(state.cover ?? [], coverStatus);
         // A newer host may send parts this version does not know: drawing one would throw
         for (const p of players) if (p.build) p.build = sanitizeBuild(p.build, presetBuild(p.skinId));
 
@@ -170,10 +173,10 @@ export class ClientSession {
             return merged;
         });
 
-        // Only platforms and our own player have bodies on the client
-        const platformIds = new Set(state.platforms.map(p => p.id));
+        // Only platforms, cover and our own player have bodies on the client
+        const staticIds = new Set([...state.platforms, ...(state.cover ?? [])].map(p => p.id));
         for (const id of [...this.physics.bodies.keys()]) {
-            if (id !== this.localId && !platformIds.has(id)) this.physics.removeBody(id);
+            if (id !== this.localId && !staticIds.has(id)) this.physics.removeBody(id);
         }
     }
 }

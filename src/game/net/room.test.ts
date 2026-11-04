@@ -155,3 +155,45 @@ describe('GameRoom — match end', () => {
         expect(room.state.matchStartedAt).toBeDefined(); // the new match clock starts on the next tick
     });
 });
+
+describe('GameRoom — cover', () => {
+    const coverBodies = (room: GameRoom) => [...(room as any).physics.bodies.keys()].filter((id: string) => id.startsWith('cover_'));
+
+    it('makes intact cover solid and keeps it solid across a match restart', () => {
+        const room = new GameRoom({ mode: GameMode.CTF, map: MapId.DEFAULT, maxPlayers: 8 });
+        rooms.push(room);
+        const ids = room.state.cover!.map(c => c.id);
+        expect(ids.length).toBeGreaterThan(0);
+        room.tick();
+        expect(coverBodies(room).sort()).toEqual([...ids].sort());
+        const before = (room as any).physics.bodies.get(ids[0]);
+
+        room.state.scores[Team.BLUE] = 3;
+        room.tick(); // match over
+        room.state.matchEndsAt = Date.now() - 1;
+        room.tick(); // next match starts, bodies are re-synced
+        expect(coverBodies(room).sort()).toEqual([...ids].sort());
+        expect((room as any).physics.bodies.get(ids[0])).toBe(before); // kept, not rebuilt
+    });
+
+    it('refuses an id that is a platform or a cover id (a peer picks its own id)', () => {
+        const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 8 });
+        rooms.push(room);
+        const before = room.state.players.length;
+        for (const id of [room.state.cover![0].id, room.state.platforms[0].id]) expect(room.join(id, join)).toEqual({ ok: false, reason: 'invalid' });
+        expect(room.state.players.length).toBe(before);
+        expect(room.join('some-peer', join)).toEqual({ ok: true });
+    });
+
+    it('drops the body of a piece that breaks', () => {
+        const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 8 });
+        rooms.push(room);
+        room.tick();
+        const piece = room.state.cover![0];
+        piece.hp = 0;
+        room.tick();
+        expect(coverBodies(room)).not.toContain(piece.id);
+        expect(coverBodies(room).length).toBe(room.state.cover!.length - 1);
+    });
+});
+

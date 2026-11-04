@@ -11,6 +11,7 @@ import { ProjectileView } from '../../../game/render/projectiles/projectileView'
 import { ParticleView } from '../../../game/render/effects/particleView';
 import { BeamView } from '../../../game/render/projectiles/beamView';
 import { SmokeView } from '../../../game/render/effects/smokeView';
+import { CoverView } from '../../../game/render/cover/coverView';
 import { STAGE_H, STAGE_W, toStage, VIEW_CENTER, VIEW_SCALE } from './previewWorld';
 
 const OFF_SCREEN = { x: -100, y: -100 }; // the renderer draws a cursor at the mouse
@@ -43,6 +44,7 @@ export const createPreviewRenderer = (app: Application, state: GameState, textur
         floatingTexts: new Map(),
         beamView: null as BeamView | null,
         smokeView: null as SmokeView | null,
+        coverView: null as CoverView | null, // syncVisuals makes one even though a preview has no cover; it must let go of the shared pictures
         textures,
     };
     const look: MapLook = createMapLook({ stage: app.stage, world }, world, { platformLayer, backgroundLayer, cache }, undefined, { ads: false });
@@ -72,6 +74,7 @@ export const createPreviewRenderer = (app: Application, state: GameState, textur
         },
         destroy() {
             look.destroy();
+            cache.coverView?.clear();
             state.players.forEach(p => forgetPlayerVisual(p.id));
         },
     };

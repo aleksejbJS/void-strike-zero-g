@@ -4,6 +4,7 @@ import { WEAPONS_DATA } from '../../constants';
 import { WeaponType } from '../../types';
 import type { Translate } from '../menu/types';
 import type { TranslationKeys } from '../../i18n/locales';
+import { BARREL_KILL_NAME } from '../../game/cover/coverTypes';
 
 const KEYS: Record<WeaponType, keyof TranslationKeys> = {
     [WeaponType.MACHINE_GUN]: 'weapon.machineGun',
@@ -16,7 +17,10 @@ const KEYS: Record<WeaponType, keyof TranslationKeys> = {
     [WeaponType.CHAINSAW]: 'weapon.chainsaw',
 };
 
-const BY_NAME = new Map(Object.values(WEAPONS_DATA).map(w => [w.name, KEYS[w.type]]));
+const BY_NAME = new Map<string, keyof TranslationKeys>([
+    ...Object.values(WEAPONS_DATA).map(w => [w.name, KEYS[w.type]] as const),
+    [BARREL_KILL_NAME, 'weapon.barrel'], // a barrel kill in the feed: the barrel is no weapon, so no WeaponType
+]);
 
 /** Unknown names (e.g. "Environment") are shown as they are. */
 export const weaponLabel = (t: Translate, name: string) => {

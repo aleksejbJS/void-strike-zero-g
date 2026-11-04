@@ -7,6 +7,7 @@ import type { ProjectileView } from '../projectiles/projectileView';
 import type { ParticleView } from '../effects/particleView';
 import type { BeamView } from '../projectiles/beamView';
 import type { SmokeView } from '../effects/smokeView';
+import type { CoverView } from '../cover/coverView';
 import type { CorpseView } from '../ragdoll/corpseView';
 
 export const newVisualCache = (textures: Record<string, Texture>) => ({
@@ -18,6 +19,7 @@ export const newVisualCache = (textures: Record<string, Texture>) => ({
     floatingTexts: new Map<string, Container>(),
     beamView: null as BeamView | null,
     smokeView: null as SmokeView | null,
+    coverView: null as CoverView | null,
     corpses: new Map<string, CorpseView>(),
     textures,
     animator: new FighterAnimator(),

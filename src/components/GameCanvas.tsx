@@ -21,12 +21,15 @@ import { clearMarks } from '../game/systems/marks';
 import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
 import { SmokeView } from '../game/render/effects/smokeView';
+import { CoverView } from '../game/render/cover/coverView';
 import type { CorpseView } from '../game/render/ragdoll/corpseView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
 import { ffaBotLooks } from '../game/build/botLooks';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
+import { getCoverLayout } from '../game/cover/coverLayout';
+import { liftOutOfCover } from '../game/cover/coverSpawn';
 import { useUIStore } from '../store/uiStore';
 import { GameHud } from './hud/GameHud';
 import { objectiveFor, Objective } from './hud/objective';
@@ -45,6 +48,7 @@ import { Achievement } from '../game/systems/achievements';
 import { useTranslation } from '../i18n/useTranslation';
 import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
+import { playCoverSoundEvent } from '../game/systems/coverAudio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
 import { addShake, explosionShake } from '../game/render/screenShake';
@@ -122,6 +126,7 @@ export default function GameCanvas() {
         floatingTexts: new Map(),
         beamView: null as BeamView | null,
         smokeView: null as SmokeView | null,
+        coverView: null as CoverView | null,
         corpses: new Map<string, CorpseView>(),
         textures: {} as Record<string, Texture>,
     });
@@ -245,6 +250,7 @@ export default function GameCanvas() {
         const effectiveMap = effectiveMapFor(gameMode, state.selectedMap);
         gameState.current.currentMap = effectiveMap;
         gameState.current.platforms = getPlatforms(gameMode, effectiveMap);
+        gameState.current.cover = getCoverLayout(gameMode, effectiveMap);
 
         physicsEngine.current.clear();
         gameState.current.platforms.forEach(p => physicsEngine.current.addPlatform(p));
@@ -319,7 +325,10 @@ export default function GameCanvas() {
                 });
             }
 
-            gameState.current.players.forEach(p => physicsEngine.current.addPlayer(p));
+            gameState.current.players.forEach(p => {
+                liftOutOfCover(gameState.current, p); // a random spawn can land inside a crate
+                physicsEngine.current.addPlayer(p);
+            });
         }
 
         // Pickups
@@ -522,7 +531,8 @@ export default function GameCanvas() {
                         victimColor: event.victimColor
                     }]);
                 } else if (event.type === 'SOUND') {
-                    playSound(event.sound as any, event.subtype as any, isMutedRef.current);
+                    if (event.sound === 'cover') playCoverSoundEvent(event.subtype, isMutedRef.current);
+                    else playSound(event.sound as any, event.subtype as any, isMutedRef.current);
                 } else if (event.type === 'FLAG') {
                     setFlagBanner({ id: nextId('fb_'), kind: event.kind, action: event.action, team: event.team });
                 } else {
@@ -550,6 +560,8 @@ export default function GameCanvas() {
                 visualCache.current.beamView = null;
                 visualCache.current.smokeView?.clear();
                 visualCache.current.smokeView = null;
+                visualCache.current.coverView?.clear();
+                visualCache.current.coverView = null;
                 visualCache.current.pickups.clear();
                 visualCache.current.decals.clear();
                 visualCache.current.floatingTexts.clear();
@@ -939,6 +951,8 @@ export default function GameCanvas() {
             visualCache.current.beamView = null;
             visualCache.current.smokeView?.clear();
             visualCache.current.smokeView = null;
+            visualCache.current.coverView?.clear();
+            visualCache.current.coverView = null;
             visualCache.current.pickups.clear();
             visualCache.current.decals.clear();
             sessionRef.current?.dispose();

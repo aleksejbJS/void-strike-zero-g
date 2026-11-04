@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { WeaponType } from '../../types';
-import { DamageSource, DeathKind, GIB_OVERKILL, SHOTGUN_POINT_BLANK, deathKind } from './deathKind';
+import { DamageSource, DeathKind, GIB_OVERKILL, SHOTGUN_POINT_BLANK, deathKind, isSplash } from './deathKind';
 
 const cases: [string, DamageSource, number, DeathKind][] = [
     ['no weapon (zone, fall) falls', {}, 50, 'fall'],
@@ -22,10 +22,21 @@ const cases: [string, DamageSource, number, DeathKind][] = [
     ['railgun cuts', { weapon: WeaponType.RAILGUN }, 0, 'cut'],
     ['railgun cuts regardless of overkill', { weapon: WeaponType.RAILGUN }, 200, 'cut'],
     ['chainsaw gibs', { weapon: WeaponType.CHAINSAW }, 0, 'gib'],
+    ['barrel blast edge throws', { barrel: true }, 1, 'thrown'],
+    ['barrel blast with big overkill gibs', { barrel: true }, GIB_OVERKILL, 'gib'],
 ];
 
 describe('deathKind', () => {
     it.each(cases)('%s', (_name, source, overkill, expected) => {
         expect(deathKind(source, overkill)).toBe(expected);
+    });
+});
+
+describe('isSplash', () => {
+    it('a barrel blast is a splash, a direct rocket hit is not', () => {
+        expect(isSplash({ barrel: true })).toBe(true);
+        expect(isSplash({ weapon: WeaponType.ROCKET_LAUNCHER })).toBe(true);
+        expect(isSplash({ weapon: WeaponType.ROCKET_LAUNCHER, direct: true })).toBe(false);
+        expect(isSplash({ weapon: WeaponType.MACHINE_GUN })).toBe(false);
     });
 });

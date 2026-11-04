@@ -38,7 +38,8 @@ const edgeMove = (state: GameState, bot: Entity, nav: BotNav, graph: NavGraph, e
 /** On the goal's surface (or the closest one reachable): walk to the goal, staying on it,
  *  and hop up to it if it floats overhead (pickups hang in the air on some maps). */
 const arrive = (bot: Entity, here: NavNode, goal: Vector2): BotControls => {
-    const x = Math.min(Math.max(goal.x, here.x0 + 10), here.x1 - 10);
+    // Clamp to the surface itself, no inset: a pickup at the very edge must still come within reach
+    const x = Math.min(Math.max(goal.x, here.x0), here.x1);
     const inputX = Math.abs(x - bot.pos.x) > ARRIVE_X ? Math.sign(x - bot.pos.x) : 0;
     const overhead = goal.y < here.y - REACH_UP && goal.y >= here.y - HOP_RISE && Math.abs(goal.x - bot.pos.x) < ARRIVE_X * 2;
     // Take off only with a decent tank (else it never refills), keep going once airborne

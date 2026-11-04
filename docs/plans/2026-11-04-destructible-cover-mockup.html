@@ -1,0 +1,961 @@
+<title>Разрушаемые укрытия</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600&family=Fira+Sans+Extra+Condensed:wght@600;700;800&family=Fira+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one steel column like the game's menu; boards of canvases, mapped to real world units. */
+:root {
+  color-scheme: dark;
+  --ink: #1A1D21;     /* page ground */
+  --deep: #0E1116;    /* canvas wells */
+  --panel: #22262C;   /* boards */
+  --plate: #3C434D;   /* rules, platform fill */
+  --edge: #4A525E;
+  --hazard: #FFC21A;  /* the one accent: hazard tape */
+  --signal: #FF4D2E;  /* danger: barrels */
+  --chalk: #ECE9E2;   /* text */
+  --dust: #B7B2A8;    /* secondary text */
+  --display: "Big Shoulders Display", "Fira Sans Extra Condensed", "Arial Narrow", sans-serif;
+  --body: Barlow, "Fira Sans", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ink); color: var(--chalk); font-family: var(--body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+.tape { height: 10px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 10px, var(--ink) 10px 20px); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); }
+header { display: flex; flex-direction: column; gap: 12px; padding-top: 32px; }
+.eyebrow { font-family: var(--display); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--hazard); font-size: 14px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 7vw, 84px); line-height: .92; margin: 0; text-transform: uppercase; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 4vw, 40px); line-height: 1; margin: 0; text-transform: uppercase; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.05; margin: 0; text-transform: uppercase; letter-spacing: .02em; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--dust); font-size: 18px; }
+section { display: flex; flex-direction: column; gap: 20px; }
+.sec-head { display: flex; flex-direction: column; gap: 8px; }
+.note { color: var(--dust); font-size: 14px; }
+.chip { display: inline-block; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 8px; border: 1px solid var(--edge); color: var(--dust); }
+.chip.prop { border-color: var(--hazard); color: var(--hazard); }
+
+/* Hero scene */
+.stage { background: var(--deep); border: 1px solid var(--plate); }
+.stage canvas { display: block; width: 100%; height: auto; }
+.stage-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--plate); }
+.caption { font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: .02em; min-width: 0; }
+.caption b { color: var(--hazard); font-weight: 800; margin-right: 8px; }
+button { font: inherit; cursor: pointer; }
+.btn { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; background: var(--hazard); color: var(--ink); border: 0; padding: 7px 14px; }
+.btn.ghost { background: transparent; color: var(--chalk); border: 1px solid var(--edge); }
+.btn:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
+
+/* Materials board */
+.board { overflow-x: auto; border: 1px solid var(--plate); background: var(--panel); }
+.grid { display: grid; grid-template-columns: 200px repeat(5, minmax(150px, 1fr)); min-width: 980px; }
+.grid > div { border-bottom: 1px solid var(--plate); border-right: 1px solid var(--plate); min-width: 0; }
+.grid > div:nth-child(6n) { border-right: 0; }
+.colhead { padding: 10px 12px; font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--dust); }
+.colhead span { display: block; color: var(--hazard); font-size: 12px; }
+.mat { padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+.mat dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 14px; }
+.mat dt { color: var(--dust); }
+.mat dd { margin: 0; font-variant-numeric: tabular-nums; }
+.mat p { font-size: 13px; color: var(--dust); }
+.cell canvas { display: block; width: 100%; height: auto; background: var(--deep); }
+
+/* Cover heights */
+.split { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; align-items: center; }
+.split .stage canvas { aspect-ratio: 760 / 250; }
+.facts { display: flex; flex-direction: column; gap: 14px; }
+.fact { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: baseline; }
+.fact .num { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; color: var(--hazard); font-variant-numeric: tabular-nums; }
+.fact .num small { font-size: 14px; color: var(--dust); }
+
+/* Weapon table */
+.tablewrap { overflow-x: auto; border: 1px solid var(--plate); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; background: var(--panel); font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--plate); font-size: 14px; vertical-align: top; }
+th { font-family: var(--display); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dust); font-size: 13px; }
+td .t { display: block; color: var(--dust); font-size: 12px; }
+td.fast { box-shadow: inset 3px 0 0 #6fcf7f; }
+td.mid { box-shadow: inset 3px 0 0 var(--hazard); }
+td.slow { box-shadow: inset 3px 0 0 var(--signal); }
+td.none { color: var(--edge); }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--dust); }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+
+/* Maps */
+.maps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--plate); display: flex; flex-direction: column; }
+figure svg { display: block; width: 100%; height: auto; background: var(--deep); }
+figcaption { padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; }
+figcaption h3 { font-size: 20px; }
+.counts { display: flex; gap: 12px; font-size: 13px; color: var(--dust); font-variant-numeric: tabular-nums; }
+.counts span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 5px; vertical-align: 0; background: var(--c); }
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.rule { border-top: 3px solid var(--hazard); padding-top: 10px; font-size: 15px; }
+
+/* Bots */
+.bots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; }
+.bot { display: flex; flex-direction: column; gap: 4px; }
+.bot h3 { font-size: 19px; }
+.bot p { color: var(--dust); font-size: 15px; }
+
+/* Patch notes */
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.patch { background: var(--panel); border: 1px solid var(--plate); display: flex; flex-direction: column; }
+.patch header { padding: 12px 14px 0; flex-direction: row; justify-content: space-between; align-items: center; gap: 8px; }
+.patch pre { margin: 0; padding: 12px 14px 16px; white-space: pre-wrap; font-family: var(--body); font-size: 15px; line-height: 1.55; color: var(--chalk); }
+.copied { color: var(--hazard); font-size: 13px; min-height: 1em; }
+
+@media (max-width: 760px) {
+  .split, .maps, .rules, .bots, .notes { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="tape" aria-hidden="true"></div>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Void Strike: Zero-G · макет к патчу</div>
+    <h1>Разрушаемые укрытия</h1>
+    <p class="lede">Деревянные и металлические ящики, стеклянные перегородки и взрывные бочки на всех картах. Здесь показано, как они выглядят, как ломаются и где стоят. Все числа — предложения, каждое меняется одной строкой.</p>
+  </header>
+
+  <section aria-labelledby="s-scene">
+    <div class="sec-head">
+      <h2 id="s-scene">Как это выглядит в бою</h2>
+      <p class="note">Сцена в масштабе игры: боец 72 px, ящик 46 px. Ролик ускорен: возврат укрытий показан за 2 секунды вместо 35.</p>
+    </div>
+    <div class="stage">
+      <canvas id="hero" width="1800" height="660" style="aspect-ratio: 900 / 330" aria-label="Анимация: враг разбивает деревянный ящик, в ответ подрывают бочку рядом с ним, взрыв разбивает стекло"></canvas>
+      <div class="stage-bar">
+        <div class="caption" id="caption" aria-live="polite"><b>1</b>Враг стреляет по ящику — появляются трещины</div>
+        <button class="btn ghost" id="heroBtn" type="button">Пауза</button>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-mat">
+    <div class="sec-head">
+      <h2 id="s-mat">Материалы и стадии поломки</h2>
+      <p class="note">Полоски HP над укрытиями не показываем: сколько оно ещё продержится, видно по трещинам. Стадии меняются на 66% и 33% HP. Последняя колонка — укрытие, которое скоро вернётся: жёлтый контур за 2 секунды до появления, чтобы никто не оказался внутри ящика.</p>
+    </div>
+    <div class="board">
+      <div class="grid" id="matGrid">
+        <div class="colhead">Материал</div>
+        <div class="colhead">Целый<span>100–67% HP</span></div>
+        <div class="colhead">Трещины<span>66–34% HP</span></div>
+        <div class="colhead">Разбит<span>33–1% HP</span></div>
+        <div class="colhead">Разрушен<span>0 HP · обломки</span></div>
+        <div class="colhead">Возвращается<span>через 35 с</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-h">
+    <div class="sec-head">
+      <h2 id="s-h">Высота укрытия</h2>
+    </div>
+    <div class="split">
+      <div class="stage"><canvas id="heights" width="1520" height="500" style="aspect-ratio: 760 / 250" aria-label="Высоты: стоящий боец стреляет поверх ящика, присевший полностью скрыт, стекло выше роста"></canvas></div>
+      <div class="facts">
+        <div class="fact"><div class="num">46<small> px</small></div><p>Высота ящика и бочки. Присевший боец (45 px) за ними скрыт полностью.</p></div>
+        <div class="fact"><div class="num">50<small> px</small></div><p>На этой высоте стоящий боец держит ствол, то есть стреляет поверх ящика. Встал — стреляешь, присел — спрятан.</p></div>
+        <div class="fact"><div class="num">90<small> px</small></div><p>Высота стекла: выше бойца (72 px), поэтому за ним не пригнуться. Врага видно, но достать нельзя, пока стекло цело.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-w">
+    <div class="sec-head">
+      <h2 id="s-w">Чем ломать</h2>
+      <p class="note">Посчитано по настоящему урону и скорострельности оружия в игре. Моё предложение: взрывы бьют по укрытиям втрое сильнее, иначе металл пришлось бы долбить восемью ракетами. Цифры для взрывов даны при прямом попадании.</p>
+    </div>
+    <div class="tablewrap"><table id="weaponTable"></table></div>
+    <div class="legend">
+      <span><i style="background:#6fcf7f"></i>быстрее 1 с</span>
+      <span><i style="background:var(--hazard)"></i>1–4 с</span>
+      <span><i style="background:var(--signal)"></i>дольше 4 с</span>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-maps">
+    <div class="sec-head">
+      <h2 id="s-maps">Расстановка на картах</h2>
+      <p class="note">Карты нарисованы по настоящим координатам платформ из игры. Значки укрытий увеличены в 2,5 раза, иначе на карте их не видно. Карта «Capture the Flag» используется ещё и в Gun Game.</p>
+    </div>
+    <div class="rules">
+      <div class="rule">Укрытия ставлю на открытые площадки, где сейчас негде спрятаться, и на края платформ, обращённые к центру.</div>
+      <div class="rule">Карты симметричны, расстановка тоже: ни одна команда не получает лишнего укрытия.</div>
+      <div class="rule">Бочки стоят там, где сходятся пути, и не ближе 400 px к флагам и точкам появления. В узкие туннели ничего не ставлю, чтобы не перекрыть проход.</div>
+    </div>
+    <div class="maps" id="maps"></div>
+  </section>
+
+  <section aria-labelledby="s-bots">
+    <div class="sec-head"><h2 id="s-bots">Как боты понимают укрытия</h2></div>
+    <div class="bots">
+      <div class="bot"><h3>Видят их как стены</h3><p>Сквозь дерево и металл бот не видит врага. Сквозь стекло видит, но знает, что стрелять в стекло бесполезно, пока оно цело.</p></div>
+      <div class="bot"><h3>Прячутся</h3><p>Под огнём бот ищет ближайший ящик между собой и врагом, приседает за ним и встаёт, чтобы выстрелить.</p></div>
+      <div class="bot"><h3>Простреливают</h3><p>Если враг сидит за деревом или стеклом, бот ломает укрытие. В металл стреляет только ракетами и гранатами, рельсотроном бьёт сквозь дерево.</p></div>
+      <div class="bot"><h3>Подрывают бочки</h3><p>Если враг стоит рядом с бочкой, бот стреляет в бочку. Сам возле бочек не задерживается и не прячется за ними.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-notes">
+    <div class="sec-head">
+      <h2 id="s-notes">Текст для патча</h2>
+      <p class="note">Черновик в нашем коротком формате. Номер версии поставим при выпуске.</p>
+    </div>
+    <div class="notes">
+      <div class="patch">
+        <header><span class="chip">RU</span><button class="btn ghost" type="button" data-copy="pn-ru">Скопировать</button></header>
+        <pre id="pn-ru">Разрушаемые укрытия
+• На всех картах, кроме турнирной арены для дуэлей, появились ящики, стеклянные перегородки и взрывные бочки.
+• Деревянный ящик разбивается быстро, металлический держится долго. Стекло прозрачное, но останавливает пули, пока не разобьётся.
+• Если прострелить бочку, она взорвётся и ранит всех рядом.
+• Сломанные укрытия возвращаются через 35 секунд.
+• Боты прячутся за ящиками, простреливают укрытия и подрывают бочки.</pre>
+        <div class="copied" id="pn-ru-msg" aria-live="polite"></div>
+      </div>
+      <div class="patch">
+        <header><span class="chip">EN</span><button class="btn ghost" type="button" data-copy="pn-en">Copy</button></header>
+        <pre id="pn-en">Destructible cover
+• Crates, glass panels and explosive barrels on every map except the tournament duel arena.
+• Wooden crates break fast, metal ones hold for long. Glass is see-through but stops bullets until it shatters.
+• Shoot a barrel and it blows up everyone nearby.
+• Broken cover comes back after 35 seconds.
+• Bots take cover, shoot through it and set off barrels.</pre>
+        <div class="copied" id="pn-en-msg" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- canvas kit: ported from src/game/render/scene/canvasKit.ts so cover matches the baked map art ---------- */
+const HAZ = '#FFC21A';
+const SIZE = { wood: { w: 50, h: 46, hp: 150 }, metal: { w: 50, h: 46, hp: 500 }, glass: { w: 16, h: 90, hp: 60 }, barrel: { w: 32, h: 46, hp: 80 } };
+const rnd = (seed) => { let s = seed >>> 0 || 1; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+const makeCanvas = (w, h, res = 1) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.ceil(w * res)); canvas.height = Math.max(1, Math.ceil(h * res));
+  const ctx = canvas.getContext('2d'); ctx.scale(res, res);
+  return { canvas, ctx };
+};
+const noiseCache = new Map();
+const noise = (w, h, cell, seed, octaves = 4) => {
+  const key = `${w}x${h}:${cell}:${seed}:${octaves}`;
+  if (noiseCache.has(key)) return noiseCache.get(key);
+  const { canvas, ctx } = makeCanvas(w, h);
+  ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, w, h);
+  const r = rnd(seed);
+  for (let i = 0; i < octaves; i++) {
+    const gw = Math.max(2, Math.ceil(w / (cell / 2 ** i))), gh = Math.max(2, Math.ceil(h / (cell / 2 ** i)));
+    const grid = makeCanvas(gw, gh), img = grid.ctx.createImageData(gw, gh);
+    for (let p = 0; p < img.data.length; p += 4) { const v = r() * 255; img.data[p] = img.data[p + 1] = img.data[p + 2] = v; img.data[p + 3] = 255; }
+    grid.ctx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.globalAlpha = 0.5 / 2 ** i; ctx.drawImage(grid.canvas, 0, 0, w, h);
+  }
+  ctx.globalAlpha = 1; noiseCache.set(key, canvas);
+  return canvas;
+};
+const overlayNoise = (ctx, cell, seed, alpha, mode = 'overlay') => {
+  const { width, height } = ctx.canvas, src = noise(width, height, cell, seed, cell < 30 ? 3 : 4), tmp = makeCanvas(width, height);
+  tmp.ctx.drawImage(src, 0, 0); tmp.ctx.globalCompositeOperation = 'destination-in'; tmp.ctx.drawImage(ctx.canvas, 0, 0);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = mode; ctx.globalAlpha = alpha; ctx.drawImage(tmp.canvas, 0, 0); ctx.restore();
+};
+/** Grain: noise squeezed along one axis (wood fibres, brushed steel). */
+const streaks = (c, x, y, w, h, seed, alpha, vertical = false, mode = 'overlay') => {
+  const n = vertical ? noise(Math.ceil(w * 3), 10, 3, seed, 2) : noise(10, Math.ceil(h * 3), 3, seed, 2);
+  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.globalCompositeOperation = mode; c.globalAlpha = alpha; c.drawImage(n, x, y, w, h); c.restore();
+};
+const bolts = (c, x0, x1, y, step, r = 1.3) => {
+  for (let x = x0; x < x1; x += step) {
+    c.fillStyle = 'rgba(0,0,0,0.55)'; c.beginPath(); c.arc(x + 0.6, y + 0.6, r + 0.4, 0, 7); c.fill();
+    c.fillStyle = 'rgba(190,205,220,0.6)'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(x - r * 0.5, y - r * 0.5, r * 0.5, r * 0.5);
+  }
+};
+const wornHazard = (c, x, y, w, h, seed, step = 16) => {
+  const r = rnd(seed);
+  c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+  c.fillStyle = '#16181b'; c.fillRect(x, y, w, h); c.fillStyle = '#d9a514';
+  for (let i = x - 30; i < x + w + 30; i += step) { c.beginPath(); c.moveTo(i, y + h); c.lineTo(i + h, y); c.lineTo(i + h + step / 2.3, y); c.lineTo(i + step / 2.3, y + h); c.fill(); }
+  c.globalCompositeOperation = 'source-atop';
+  for (let i = 0; i < w / 5; i++) { c.fillStyle = `rgba(40,42,46,${0.5 + r() * 0.5})`; c.fillRect(x + r() * w, y + r() * h, 0.6 + r() * 3, 0.6 + r() * 1.6); }
+  c.restore();
+};
+const stencil = (c, text, x, y, size, color, alpha) => {
+  const font = `900 ${size}px "Big Shoulders Display", "Fira Sans Extra Condensed", "Arial Narrow", sans-serif`;
+  c.save(); c.font = font; const width = Math.ceil(c.measureText(text).width) + 4; c.restore();
+  const paint = makeCanvas(width, Math.ceil(size * 1.2), 6);
+  paint.ctx.font = font; paint.ctx.fillStyle = color; paint.ctx.fillText(text, 0, size);
+  paint.ctx.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < text.length * 2; i++) paint.ctx.fillRect(i * size * 0.32 + size * 0.12, 0, size * 0.05, size * 1.2);
+  c.save(); c.globalAlpha = alpha; c.drawImage(paint.canvas, x - width / 2, y - size, width, size * 1.2); c.restore();
+};
+const poly = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); };
+const jaggedPts = (cx, cy, n, r0, r1, R, sy = 0.9) => Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2, r = r0 + R() * (r1 - r0); return [cx + Math.cos(a) * r, cy + Math.sin(a) * r * sy]; });
+const glow = (c, x, y, r, color, sy = 1, mode) => {
+  c.save(); if (mode) c.globalCompositeOperation = mode; c.translate(x, y); c.scale(1, sy);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, r); g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.restore();
+};
+const lin = (c, x0, y0, x1, y1, stops) => { const g = c.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+/** Light comes from the upper left, like the station windows: lit top/left edge, dark bottom/right. */
+const bevel = (c, x, y, w, h, lit = 'rgba(255,255,255,.28)', dark = 'rgba(0,0,0,.45)', t = 1) => {
+  c.fillStyle = lit; c.fillRect(x, y, w, t); c.fillRect(x, y, t, h);
+  c.fillStyle = dark; c.fillRect(x, y + h - t, w, t); c.fillRect(x + w - t, y, t, h);
+};
+/** A crack that follows the grain (mostly sideways), with a lit lower lip so it reads as a split. */
+const split = (c, x, y, len, R, spread = 0.35, dark = 'rgba(20,10,4,.95)', lip = 'rgba(235,190,130,.55)') => {
+  const pts = [[x, y]]; let a = (R() < 0.5 ? 0 : Math.PI) + (R() - 0.5) * spread, px = x, py = y;
+  for (let k = 0; k < 4; k++) { a += (R() - 0.5) * spread; const s = (len / 4) * (0.6 + R() * 0.8); px += Math.cos(a) * s; py += Math.sin(a) * s; pts.push([px, py]); }
+  const path = (dy) => { c.beginPath(); pts.forEach(([qx, qy], i) => (i ? c.lineTo(qx, qy + dy) : c.moveTo(qx, qy + dy))); c.stroke(); };
+  c.lineWidth = 0.7; c.strokeStyle = lip; path(0.7); c.lineWidth = 1; c.strokeStyle = dark; path(0);
+};
+const radial = (c, x, y, n, len, R, colorA, colorB) => {
+  for (let b = 0; b < n; b++) {
+    let a = (b / n) * Math.PI * 2 + R() * 0.5, px = x, py = y; const pts = [[px, py]];
+    for (let k = 0; k < 3; k++) { a += (R() - 0.5) * 0.7; const s = (len / 3) * (0.6 + R() * 0.8); px += Math.cos(a) * s; py += Math.sin(a) * s; pts.push([px, py]); }
+    [[colorA, 1.1, 0.5], [colorB, 0.7, 0]].forEach(([col, lw, d]) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); pts.forEach(([qx, qy], i) => (i ? c.lineTo(qx + d, qy + d) : c.moveTo(qx + d, qy + d))); c.stroke(); });
+  }
+};
+const contact = (c, cx, fy, rx) => glow(c, cx, fy, rx, 'rgba(0,0,0,.7)', 0.16);
+
+/* ---------- backdrop: station wall panels and a deck, baked once per canvas ---------- */
+const bakeBackdrop = (W, H, fy, res, seed = 4, lamp) => {
+  const { canvas, ctx: c } = makeCanvas(W, H, res);
+  c.fillStyle = '#141920'; c.fillRect(0, 0, W, H);
+  const R = rnd(seed);
+  for (let x = -20; x < W; x += 64) for (let y = -10; y < fy; y += 92) {
+    const v = 22 + R() * 6; c.fillStyle = `rgb(${v - 4},${v + 1},${v + 8})`; c.fillRect(x + 1, y + 1, 62, 90);
+    bevel(c, x + 1, y + 1, 62, 90, 'rgba(255,255,255,.05)', 'rgba(0,0,0,.45)', 1.5);
+    bolts(c, x + 6, x + 60, y + 6, 52, 1);
+    if (R() < 0.25) { c.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 0; k < 4; k++) c.fillRect(x + 18, y + 30 + k * 6, 28, 2.5); }
+  }
+  for (let i = 0; i < W / 18; i++) { const sx = R() * W, sy = R() * fy, len = 20 + R() * 70; c.fillStyle = lin(c, 0, sy, 0, sy + len, [[0, 'rgba(5,7,9,.35)'], [1, 'rgba(5,7,9,0)']]); c.fillRect(sx, sy, 1 + R() * 2, len); }
+  if (lamp) lamp.forEach(([lx, ly, lr]) => { glow(c, lx, ly, lr, 'rgba(255,200,120,.16)', 1, 'lighter'); });
+  // deck: same recipe as the game's thin decks
+  const dh = Math.min(30, H - fy);
+  c.fillStyle = lin(c, 0, fy, 0, fy + dh, [[0, '#3b4554'], [1, '#232a33']]); c.fillRect(0, fy, W, dh);
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, fy + dh * 0.45, W, 1.2);
+  for (let sx = 64; sx < W; sx += 64) { c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(sx, fy + 4, 1.2, dh - 11); }
+  bolts(c, 8, W - 4, fy + 7, 32);
+  wornHazard(c, 0, fy + dh - 7, W, 7, seed);
+  c.fillStyle = lin(c, 0, 0, W, 0, [[0, '#a9b8c9'], [0.35, '#7d8a9a'], [1, '#556170']]); c.fillRect(0, fy, W, 3);
+  c.fillStyle = lin(c, 0, fy + dh, 0, H, [[0, 'rgba(0,0,0,.6)'], [1, 'rgba(0,0,0,.9)']]); c.fillRect(0, fy + dh, W, H - fy - dh);
+  overlayNoise(c, 14, 23 + seed, 0.35);
+  return canvas;
+};
+
+/* ---------- respawn hologram (drawn live, it blinks) ---------- */
+const holo = (c, shape, x, y, w, h, prog = 0.75, alpha = 1) => {
+  c.save(); c.globalAlpha *= alpha;
+  const path = () => { c.beginPath(); shape === 'round' ? c.roundRect(x, y, w, h, 4) : c.rect(x, y, w, h); };
+  path(); c.fillStyle = 'rgba(255,194,26,.08)'; c.fill();
+  c.save(); path(); c.clip(); c.fillStyle = 'rgba(255,194,26,.22)'; for (let yy = y; yy < y + h; yy += 2.5) c.fillRect(x, yy, w, 0.8); c.restore();
+  glow(c, x + w / 2, y + h / 2, Math.max(w, h) * 0.8, 'rgba(255,194,26,.12)', 1, 'lighter');
+  c.setLineDash([4, 3]); c.lineWidth = 1.2; c.strokeStyle = HAZ; path(); c.stroke(); c.setLineDash([]);
+  const cx = x + w / 2, cy = y - 11;
+  c.lineWidth = 2; c.strokeStyle = 'rgba(255,194,26,.25)'; c.beginPath(); c.arc(cx, cy, 5.5, 0, 7); c.stroke();
+  c.strokeStyle = HAZ; c.beginPath(); c.arc(cx, cy, 5.5, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); c.stroke();
+  c.restore();
+};
+/* ---------- wood crate ---------- */
+const WOOD = ['#a8733e', '#9b6735', '#b27d46'];
+const board = (c, x, y, w, h, col, seed, vertical = false) => {
+  c.fillStyle = lin(c, x, y, vertical ? x + w : x, vertical ? y : y + h, [[0, col], [1, '#6e4521']]); c.fillRect(x, y, w, h);
+  streaks(c, x, y, w, h, seed, 0.55, vertical, 'multiply');
+  bevel(c, x, y, w, h, 'rgba(255,228,185,.35)', 'rgba(25,12,4,.55)', 0.8);
+};
+const woodDebris = (c, cx, fy, R, opt = {}) => {
+  if (opt.dust !== false) glow(c, cx, fy - 10, 56, 'rgba(170,140,105,.22)', 0.55);
+  contact(c, cx, fy, 40);
+  const pts = [[cx - 25, fy]]; for (let i = 0; i <= 8; i++) pts.push([cx - 25 + i * 6.25, fy - 3 - R() * 8]); pts.push([cx + 25, fy]);
+  c.save(); poly(c, pts); c.clip(); board(c, cx - 25, fy - 12, 50, 12, '#8a5a2e', 3); c.restore();
+  c.fillStyle = '#e2b27c'; for (let i = 1; i < pts.length - 1; i++) c.fillRect(pts[i][0] - 0.5, pts[i][1], 1, 1.2);
+  if (opt.pieces === false) return;
+  for (let i = 0; i < 10; i++) {
+    const px = cx + (R() - 0.5) * 108, len = 9 + R() * 20, th = 3.5 + R() * 2.4;
+    c.save(); c.translate(px, fy - th / 2); c.rotate((R() - 0.5) * 0.25);
+    contact(c, 0, th / 2, len * 0.6);
+    board(c, -len / 2, -th / 2, len, th, WOOD[i % 3], 10 + i);
+    c.fillStyle = '#e2b27c'; poly(c, [[len / 2, -th / 2], [len / 2 + 3, -th / 4], [len / 2, th / 2]]); c.fill();
+    c.restore();
+  }
+  for (let i = 0; i < 2; i++) {
+    const px = cx + (i ? 14 : -18) + R() * 6, len = 20 + R() * 8;
+    c.save(); c.translate(px, fy); c.rotate((i ? 1 : -1) * (0.45 + R() * 0.35));
+    board(c, -2.7, -len, 5.4, len, WOOD[i], 30 + i, true);
+    c.fillStyle = '#e2b27c'; poly(c, [[-2.7, -len], [2.7, -len], [0.5, -len - 5]]); c.fill();
+    c.restore();
+  }
+  c.fillStyle = '#e2b27c';
+  for (let i = 0; i < 10; i++) { const px = cx + (R() - 0.5) * 96; poly(c, [[px, fy], [px + 3 + R() * 3, fy], [px + 1, fy - 2 - R() * 3]]); c.fill(); }
+};
+const drawWood = (c, cx, fy, st, seed = 3) => {
+  const R = rnd(seed), { w, h } = SIZE.wood, x = cx - w / 2, y = fy - h;
+  if (st === 3) return woodDebris(c, cx, fy, R);
+  contact(c, cx, fy, 36);
+  c.save();
+  if (st === 2) { c.translate(cx, fy); c.rotate(-0.03); c.translate(-cx, -fy); }
+  c.fillStyle = '#24160a'; c.fillRect(x, y, w, h);
+  for (let i = 0; i < 3; i++) board(c, x + 5, y + 5 + i * 12.4, w - 10, 11.6, WOOD[i], seed * 7 + i);
+  c.save(); c.beginPath(); c.rect(x + 5, y + 5, w - 10, h - 10); c.clip();
+  const ang = Math.atan2(-(h - 10), w - 10), len = Math.hypot(w - 10, h - 10) + 8;
+  c.translate(cx, fy - h / 2); c.rotate(ang);
+  c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 3; c.shadowOffsetY = 1.5;
+  board(c, -len / 2, -4, len, 8, '#8f5d2f', seed + 40);
+  c.restore();
+  board(c, x, y, w, 5, '#87582c', seed + 50); board(c, x, y + h - 5, w, 5, '#7d5128', seed + 51);
+  board(c, x, y + 5, 5, h - 10, '#84562b', seed + 52, true); board(c, x + w - 5, y + 5, 5, h - 10, '#7a4f27', seed + 53, true);
+  [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]].forEach(([bx, by, sx, sy]) => {
+    c.fillStyle = lin(c, bx, by, bx + sx * 9, by + sy * 9, [[0, '#9aa6b4'], [1, '#4a535e']]);
+    c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + sx * 10, by); c.lineTo(bx + sx * 10, by + sy * 2.6); c.lineTo(bx + sx * 2.6, by + sy * 2.6); c.lineTo(bx + sx * 2.6, by + sy * 10); c.lineTo(bx, by + sy * 10); c.closePath(); c.fill();
+    bolts(c, bx + sx * 5.5, bx + sx * 5.5 + 1, by + sy * 1.3, 10, 0.7);
+  });
+  stencil(c, 'VS-ZG', cx, y + 30.5, 7, '#2a1708', 0.55);
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(x, y + h - 8, w, 8);
+  if (st >= 1) {
+    [[x + 13, y + 14], [x + 35, y + 29], [x + 21, y + 34], [x + 41, y + 13]].forEach(([hx, hy]) => {
+      c.fillStyle = '#e3b37c'; c.beginPath(); c.arc(hx, hy, 2.3, 0, 7); c.fill();
+      c.fillStyle = '#140b04'; c.beginPath(); c.arc(hx + 0.2, hy + 0.2, 1.4, 0, 7); c.fill();
+    });
+    c.fillStyle = '#1b1007'; poly(c, [[x + w - 16, y], [x + w, y], [x + w, y + 13], [x + w - 5, y + 8], [x + w - 10, y + 5]]); c.fill();
+    c.strokeStyle = '#e8b780'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(x + w - 16, y); c.lineTo(x + w - 10, y + 5); c.lineTo(x + w - 5, y + 8); c.lineTo(x + w, y + 13); c.stroke();
+    split(c, x + 14, y + 16, 18, R); split(c, x + 30, y + 30, 14, R); split(c, x + 9, y + 40, 12, R);
+  }
+  if (st >= 2) {
+    const hole = jaggedPts(x + 28, y + 20, 12, 6, 13, R);
+    c.save(); poly(c, hole); c.clip();
+    c.fillStyle = lin(c, 0, y + 8, 0, y + 33, [[0, '#0d0703'], [1, '#2b190b']]); c.fillRect(x, y, w, h);
+    c.fillStyle = 'rgba(120,75,35,.35)'; for (let k = 0; k < 3; k++) c.fillRect(x, y + 11 + k * 8, w, 0.8);
+    c.restore();
+    c.fillStyle = '#e2b27c';
+    hole.forEach(([px, py], i) => { if (i % 2) return; const a = Math.atan2(py - (y + 20), px - (x + 28)); poly(c, [[px, py], [px + Math.cos(a + 1.6) * 2.2, py + Math.sin(a + 1.6) * 2.2], [px - Math.cos(a) * 5, py - Math.sin(a) * 5]]); c.fill(); });
+    c.strokeStyle = 'rgba(232,183,128,.8)'; c.lineWidth = 0.8; poly(c, hole); c.stroke();
+    split(c, x + 28, y + 20, 26, R, 0.3); split(c, x + 22, y + 26, 20, R, 0.3);
+    c.fillStyle = '#160d06'; poly(c, [[x, y + h - 16], [x + 10, y + h - 11], [x + 14, y + h], [x, y + h]]); c.fill();
+    c.strokeStyle = '#e8b780'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x, y + h - 16); c.lineTo(x + 10, y + h - 11); c.lineTo(x + 14, y + h); c.stroke();
+    c.save(); c.translate(x + 7, y + 4); c.rotate(-0.4); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 2; c.shadowOffsetY = 2;
+    board(c, 0, -3, 23, 5.5, '#b27d46', seed + 60); c.restore();
+    c.fillStyle = '#e2b27c'; c.save(); c.translate(x + 7, y + 4); c.rotate(-0.4); poly(c, [[23, -3], [27, -1], [23, 2.5]]); c.fill(); c.restore();
+  }
+  c.restore();
+};
+
+/* ---------- metal crate ---------- */
+const metalDebris = (c, cx, fy, R, opt = {}) => {
+  glow(c, cx, fy, 66, 'rgba(0,0,0,.6)', 0.2);
+  glow(c, cx, fy - 18, 46, 'rgba(0,0,0,.3)');
+  const pts = [[cx - 26, fy]]; for (let i = 0; i <= 7; i++) pts.push([cx - 26 + i * 7.4, fy - 4 - R() * 8]); pts.push([cx + 26, fy]);
+  c.save(); poly(c, pts); c.clip(); c.fillStyle = lin(c, 0, fy - 12, 0, fy, [[0, '#59636f'], [1, '#2b3038']]); c.fillRect(cx - 26, fy - 12, 52, 12); c.restore();
+  c.strokeStyle = 'rgba(220,228,236,.6)'; c.lineWidth = 0.6; c.beginPath(); pts.slice(1, -1).forEach(([px, py], i) => (i ? c.lineTo(px, py) : c.moveTo(px, py))); c.stroke();
+  if (opt.pieces !== false) {
+    for (let i = 0; i < 7; i++) {
+      const px = cx + (R() - 0.5) * 104, s = 7 + R() * 9;
+      c.save(); c.translate(px, fy - 3); c.rotate((R() - 0.5) * 0.45); contact(c, 0, 3, s * 1.2);
+      const shape = [[-s, 2.5], [s * 0.8, 3], [s, -2 - R() * 4], [-s * 0.3, -4 - R() * 5]];
+      poly(c, shape); c.fillStyle = lin(c, 0, -8, 0, 3, [[0, '#7b8694'], [1, '#353c45']]); c.fill();
+      c.strokeStyle = 'rgba(225,232,240,.6)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(...shape[3]); c.lineTo(...shape[2]); c.stroke();
+      c.restore();
+    }
+    c.save(); c.translate(cx + 22, fy - 2.5); c.rotate(-0.22); wornHazard(c, -11, -3, 22, 5.5, 8, 9); c.restore();
+    c.save(); c.translate(cx - 32, fy - 2); c.rotate(0.1); c.fillStyle = lin(c, 0, -2, 0, 2, [[0, '#8d98a6'], [1, '#3e4651']]); c.fillRect(-11, -2.2, 23, 4.4); c.restore();
+    for (let i = 0; i < 7; i++) glow(c, cx + (R() - 0.5) * 64, fy - 2 - R() * 7, 2.5 + R() * 2, 'rgba(255,150,60,.9)', 1, 'lighter');
+  }
+  if (opt.smoke !== false) for (let i = 0; i < 3; i++) glow(c, cx + (i - 1) * 6 + R() * 4, fy - 20 - i * 16, 14 + i * 6, 'rgba(120,124,130,.3)');
+};
+const dent = (c, dx, dy, r) => {
+  c.fillStyle = 'rgba(0,0,0,.4)'; c.beginPath(); c.ellipse(dx, dy, r, r * 0.78, 0, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 1; c.beginPath(); c.arc(dx, dy, r * 0.9, Math.PI * 0.95, Math.PI * 1.7); c.stroke();
+  c.strokeStyle = 'rgba(235,242,250,.55)'; c.lineWidth = 0.9; c.beginPath(); c.arc(dx, dy, r * 0.85, Math.PI * -0.05, Math.PI * 0.7); c.stroke();
+};
+const drawMetal = (c, cx, fy, st, seed = 5) => {
+  const R = rnd(seed), { w, h } = SIZE.metal, x = cx - w / 2, y = fy - h;
+  if (st === 3) return metalDebris(c, cx, fy, R);
+  contact(c, cx, fy, 38);
+  c.save();
+  c.fillStyle = lin(c, x, y, x, y + h, [[0, '#7c8795'], [0.5, '#525b67'], [1, '#353c45']]); c.fillRect(x, y, w, h);
+  streaks(c, x, y, w, h, seed + 2, 0.45, false, 'overlay');
+  const px = x + 6, py = y + 6, pw = w - 12, ph = h - 17;
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(px, py, pw, ph);
+  bevel(c, px, py, pw, ph, 'rgba(0,0,0,.5)', 'rgba(220,230,240,.25)', 1);
+  for (let i = 0; i < 4; i++) {
+    const rx = px + 3 + i * 9.6;
+    c.fillStyle = lin(c, rx, 0, rx + 6, 0, [[0, '#a3aebb'], [0.4, '#7a8592'], [1, '#3c444e']]); c.fillRect(rx, py + 2, 6, ph - 4);
+    c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(rx + 6, py + 2, 1, ph - 4);
+  }
+  c.save(); c.fillStyle = 'rgba(20,24,28,.75)'; c.fillRect(cx - 9, y + 15, 18, 11); c.restore();
+  stencil(c, '07', cx, y + 24.5, 10, '#e8e4da', 0.85);
+  wornHazard(c, x + 3, y + h - 10, w - 6, 7, seed, 10);
+  c.strokeStyle = '#1c2026'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, w - 2, h - 2);
+  c.fillStyle = lin(c, x, 0, x + w, 0, [[0, '#b9c6d5'], [0.35, '#8a97a7'], [1, '#5b6776']]); c.fillRect(x, y, w, 2.2);
+  c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(x, y, 1.4, h);
+  c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(x + w - 1.6, y, 1.6, h);
+  [[x, y], [x + w - 8, y], [x, y + h - 8], [x + w - 8, y + h - 8]].forEach(([qx, qy]) => {
+    c.fillStyle = lin(c, qx, qy, qx + 8, qy + 8, [[0, '#59626d'], [1, '#22272e']]); c.fillRect(qx, qy, 8, 8);
+    bevel(c, qx, qy, 8, 8, 'rgba(255,255,255,.3)', 'rgba(0,0,0,.6)', 0.8); bolts(c, qx + 4, qx + 5, qy + 4, 10, 1);
+  });
+  c.strokeStyle = 'rgba(210,220,230,.55)'; c.lineWidth = 0.6;
+  for (let i = 0; i < 9; i++) { const ex = x + R() * w, ey = R() < 0.5 ? y + 2 + R() * 3 : y + h - 11 - R() * 2; c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex + 2 + R() * 4, ey + (R() - 0.5)); c.stroke(); }
+  if (st >= 1) {
+    dent(c, x + 20, y + 15, 4.6); dent(c, x + 34, y + 29, 3.6); dent(c, x + 9, y + 28, 3);
+    for (let i = 0; i < 8; i++) { const sx = x + 7 + R() * 36, sy = y + 7 + R() * 24; glow(c, sx, sy, 1.8, 'rgba(255,255,255,.9)', 1, 'lighter'); c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(sx - 0.4, sy - 0.4, 0.8, 0.8); }
+    glow(c, x + 39, y + 14, 12, 'rgba(6,6,6,.55)');
+  }
+  if (st >= 2) {
+    const hx = x + 25, hy = y + 18, hole = jaggedPts(hx, hy, 11, 5, 12, R);
+    glow(c, hx, hy, 18, 'rgba(0,0,0,.5)');
+    poly(c, hole); c.fillStyle = '#07090c'; c.fill();
+    glow(c, hx + 1, hy + 2, 7, 'rgba(255,120,40,.55)', 1, 'lighter');
+    hole.forEach(([qx, qy], i) => {
+      if (i % 3) return; const a = Math.atan2(qy - hy, qx - hx), L = 5 + R() * 3;
+      const p = [[qx, qy], [qx + Math.cos(a + 1.3) * 3.2, qy + Math.sin(a + 1.3) * 3.2], [qx + Math.cos(a) * L, qy + Math.sin(a) * L]];
+      poly(c, p); c.fillStyle = lin(c, qx, qy, p[2][0], p[2][1], [[0, '#cfd8e2'], [1, '#5b6776']]); c.fill();
+    });
+    c.strokeStyle = 'rgba(230,238,246,.85)'; c.lineWidth = 0.8; poly(c, hole); c.stroke();
+    poly(c, [[x, y], [x + 14, y], [x, y + 12]]); c.fillStyle = lin(c, x, y, x + 7, y + 6, [[0, '#c3cdd8'], [1, '#6f7a88']]); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x + 14, y); c.lineTo(x, y + 12); c.stroke();
+    c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x + 6, y + 36); c.quadraticCurveTo(x + 20, y + 31, x + 32, y + 37); c.stroke();
+    for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (R() - 0.5) * 2.4, sx = hx + Math.cos(a) * 8, sy = hy + Math.sin(a) * 8, L = 3 + R() * 5; c.strokeStyle = '#ffc26a'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + Math.cos(a) * L, sy + Math.sin(a) * L); c.stroke(); }
+    glow(c, cx + 4, y - 10, 18, 'rgba(120,124,130,.34)');
+  }
+  c.restore();
+};
+
+/* ---------- glass panel ---------- */
+const rail = (c, cx, y, w, h) => {
+  c.fillStyle = lin(c, 0, y, 0, y + h, [[0, '#59626d'], [1, '#22272e']]); c.fillRect(cx - w / 2, y, w, h);
+  c.fillStyle = lin(c, cx - w / 2, 0, cx + w / 2, 0, [[0, '#b9c6d5'], [1, '#5b6776']]); c.fillRect(cx - w / 2, y, w, 1.4);
+  c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(cx + w / 2 - 1, y, 1, h);
+  bolts(c, cx - w / 2 + 3.5, cx + w / 2, y + h / 2 + 0.3, w - 7, 0.8);
+};
+const glassDebris = (c, cx, fy, R, opt = {}) => {
+  contact(c, cx, fy, 20);
+  c.fillStyle = 'rgba(160,225,250,.55)';
+  const pts = [[cx - 8, fy - 7]]; for (let i = 0; i <= 6; i++) pts.push([cx - 8 + i * 2.67, fy - 9 - R() * 14]); pts.push([cx + 8, fy - 7]);
+  poly(c, pts); c.fill(); c.strokeStyle = 'rgba(225,250,255,.9)'; c.lineWidth = 0.6; c.stroke();
+  rail(c, cx, fy - 7, 28, 7);
+  if (opt.pieces === false) return;
+  c.save(); c.translate(cx + 28, fy - 3); c.rotate(0.05); contact(c, 0, 3, 18); rail(c, 0, -3, 28, 6); c.restore();
+  for (let i = 0; i < 22; i++) {
+    const px = cx + (R() - 0.5) * 100, s = 1.5 + R() * 3.8;
+    c.fillStyle = `rgba(175,232,255,${0.4 + R() * 0.5})`; poly(c, [[px, fy], [px + s, fy], [px + s * (R() - 0.2), fy - s * (0.5 + R())]]); c.fill();
+  }
+  for (let i = 0; i < 6; i++) glow(c, cx + (R() - 0.5) * 90, fy - 1.5, 2.4, 'rgba(255,255,255,.95)', 1, 'lighter');
+};
+const drawGlass = (c, cx, fy, st, seed = 7) => {
+  const R = rnd(seed), { w, h } = SIZE.glass, x = cx - w / 2, top = fy - h;
+  if (st === 3) return glassDebris(c, cx, fy, R);
+  contact(c, cx, fy, 22);
+  c.save();
+  const shape = st >= 2 ? [[x, fy - 7], [x + w, fy - 7], [x + w, top + 6], [x + 7, top + 6], [x + 3, top + 20], [x + 5, top + 27], [x, top + 31]] : [[x, fy - 7], [x + w, fy - 7], [x + w, top + 6], [x, top + 6]];
+  poly(c, shape); c.fillStyle = lin(c, x, 0, x + w, 0, [[0, 'rgba(120,200,240,.30)'], [0.5, 'rgba(165,225,250,.20)'], [1, 'rgba(100,180,230,.34)']]); c.fill();
+  c.save(); poly(c, shape); c.clip();
+  [[top + 18, 14, 0.32], [top + 46, 6, 0.2]].forEach(([yy, bw, a]) => { c.fillStyle = lin(c, x, yy + 12, x + w, yy, [[0, 'rgba(255,255,255,0)'], [0.5, `rgba(255,255,255,${a})`], [1, 'rgba(255,255,255,0)']]); poly(c, [[x, yy + 14], [x + w, yy], [x + w, yy + bw], [x, yy + 14 + bw]]); c.fill(); });
+  c.fillStyle = 'rgba(255,210,140,.25)'; c.fillRect(x, top + 62, w, 0.8);
+  wornHazard(c, x, fy - 30, w, 3.2, seed, 6); c.globalAlpha = 1;
+  c.fillStyle = 'rgba(255,255,255,.35)'; for (let i = 0; i < 8; i++) c.fillRect(x + R() * w, top + 8 + R() * (h - 16), 0.6, 0.6);
+  if (st >= 1) [[cx - 2, top + 58], [cx + 3, top + 36]].forEach(([hx, hy]) => { radial(c, hx, hy, 7, 9, R, 'rgba(0,30,45,.45)', 'rgba(245,253,255,.95)'); c.strokeStyle = 'rgba(245,253,255,.9)'; c.lineWidth = 0.6; c.beginPath(); c.arc(hx, hy, 3, 0, 7); c.stroke(); glow(c, hx, hy, 2.5, 'rgba(255,255,255,1)', 1, 'lighter'); });
+  if (st >= 2) {
+    const ox = cx, oy = top + 50;
+    radial(c, ox, oy, 10, 62, R, 'rgba(0,30,45,.45)', 'rgba(245,253,255,.9)');
+    [6, 13, 23, 34].forEach((r) => { c.strokeStyle = 'rgba(245,253,255,.75)'; c.lineWidth = 0.6; c.beginPath(); for (let i = 0; i <= 10; i++) { const a = (i / 10) * Math.PI * 2, rr = r * (0.8 + R() * 0.4); i ? c.lineTo(ox + Math.cos(a) * rr, oy + Math.sin(a) * rr) : c.moveTo(ox + Math.cos(a) * rr, oy + Math.sin(a) * rr); } c.stroke(); });
+    c.fillStyle = 'rgba(230,250,255,.18)'; poly(c, [[ox, oy], [x + w, oy - 14], [x + w, oy + 6]]); c.fill();
+  }
+  c.restore();
+  c.strokeStyle = 'rgba(205,243,255,.9)'; c.lineWidth = 1; poly(c, shape); c.stroke();
+  c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x + w - 1.6, top + 6, 1.6, h - 13);
+  rail(c, cx, top, 28, 6); rail(c, cx, fy - 7, 28, 7);
+  if (st >= 2) { for (let i = 0; i < 7; i++) { const px = cx + (R() - 0.5) * 36; c.fillStyle = 'rgba(175,232,255,.85)'; poly(c, [[px, fy], [px + 3, fy], [px + 1, fy - 3]]); c.fill(); } }
+  c.restore();
+};
+
+/* ---------- explosive barrel ---------- */
+const CYL = [[0, '#4e0e08'], [0.18, '#9c2a1c'], [0.36, '#d8442f'], [0.46, '#f07a62'], [0.56, '#cc3b28'], [0.8, '#8a2316'], [1, '#420b06']];
+const barrelBody = (c, x, y, w, h) => { c.fillStyle = lin(c, x, 0, x + w, 0, CYL); c.beginPath(); c.roundRect(x, y, w, h, 3); c.fill(); };
+const hoop = (c, x, y, w) => {
+  c.fillStyle = lin(c, x, 0, x + w, 0, [[0, '#2f0805'], [0.4, '#a5321f'], [0.5, '#e0715a'], [1, '#2f0805']]);
+  c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + w / 2, y + 2.4, x + w, y); c.lineTo(x + w, y + 3.4); c.quadraticCurveTo(x + w / 2, y + 5.8, x, y + 3.4); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(255,190,170,.45)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + w / 2, y + 2.4, x + w, y); c.stroke();
+};
+const barrelDebris = (c, cx, fy, R, opt = {}) => {
+  glow(c, cx, fy, 86, 'rgba(0,0,0,.8)', 0.2);
+  glow(c, cx, fy - 32, 64, 'rgba(0,0,0,.45)');
+  const x = cx - 16, pts = [[x, fy]]; for (let i = 0; i <= 8; i++) pts.push([x + i * 4, fy - 5 - R() * 11]); pts.push([x + 32, fy]);
+  c.save(); poly(c, pts); c.clip(); barrelBody(c, x, fy - 17, 32, 17); c.fillStyle = 'rgba(10,4,2,.45)'; c.fillRect(x, fy - 17, 32, 17); hoop(c, x, fy - 5, 32); c.restore();
+  c.strokeStyle = 'rgba(255,170,90,.7)'; c.lineWidth = 0.6; c.beginPath(); pts.slice(1, -1).forEach(([px, py], i) => (i ? c.lineTo(px, py) : c.moveTo(px, py))); c.stroke();
+  [[x, -1], [x + 32, 1]].forEach(([bx, s]) => { poly(c, [[bx, fy - 7], [bx + s * 10, fy - 14], [bx + s * 8, fy - 3]]); c.fillStyle = lin(c, bx, 0, bx + s * 10, 0, [[0, '#8e2418'], [1, '#3a0905']]); c.fill(); });
+  if (opt.pieces !== false) for (let i = 0; i < 8; i++) glow(c, cx + (R() - 0.5) * 84, fy - 1.5 - R() * 3, 2 + R() * 2, 'rgba(255,140,50,.95)', 1, 'lighter');
+  if (opt.smoke !== false) for (let i = 0; i < 3; i++) glow(c, cx + (i - 1) * 5 + R() * 5, fy - 24 - i * 18, 16 + i * 7, 'rgba(95,95,100,.34)');
+};
+const drawBarrel = (c, cx, fy, st, seed = 9) => {
+  const R = rnd(seed), { w, h } = SIZE.barrel, x = cx - w / 2, y = fy - h;
+  if (st === 3) return barrelDebris(c, cx, fy, R);
+  contact(c, cx, fy, 26);
+  c.save();
+  if (st >= 1) { c.fillStyle = lin(c, cx, 0, cx + 26, 0, [[0, 'rgba(25,8,4,.92)'], [1, 'rgba(25,8,4,.6)']]); c.beginPath(); c.ellipse(cx + 13, fy - 0.4, 14, 2.3, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(255,220,180,.35)'; c.fillRect(cx + 6, fy - 1.3, 10, 0.7); }
+  barrelBody(c, x, y, w, h);
+  c.fillStyle = '#3a0a06'; c.fillRect(x, y + h - 3, w, 3);
+  hoop(c, x, y + 11, w); hoop(c, x, y + 31, w);
+  c.save(); c.beginPath(); c.roundRect(x, y, w, h, 3); c.clip();
+  for (let i = 0; i < 9; i++) {
+    const ex = R() < 0.5 ? x + R() * 5 : x + w - 5 + R() * 5, ey = y + 4 + R() * (h - 8), s = 1 + R() * 2.6;
+    c.fillStyle = '#80858c'; poly(c, [[ex, ey], [ex + s, ey + s * 0.3], [ex + s * 0.7, ey + s], [ex - s * 0.2, ey + s * 0.6]]); c.fill();
+  }
+  c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(x + w * 0.44, y + 3, 1.6, h - 6);
+  c.restore();
+  c.fillStyle = '#3a0905'; c.beginPath(); c.ellipse(cx, y + 1.8, 16, 3.2, 0, 0, 7); c.fill();
+  c.fillStyle = lin(c, x, 0, x + w, 0, [[0, '#6a140d'], [0.45, '#b9442f'], [1, '#5a110a']]); c.beginPath(); c.ellipse(cx, y + 1.6, 13.5, 2.3, 0, 0, 7); c.fill();
+  c.fillStyle = '#2b3038'; c.beginPath(); c.ellipse(cx + 7, y + 1.4, 2.6, 1.1, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(cx + 5.5, y + 0.9, 1.4, 0.6);
+  c.save(); c.translate(cx, y + 22.5); c.rotate(Math.PI / 4); c.fillStyle = '#e8b514'; c.fillRect(-6, -6, 12, 12); c.strokeStyle = '#16191d'; c.lineWidth = 0.8; c.strokeRect(-4.6, -4.6, 9.2, 9.2); c.restore();
+  c.fillStyle = '#16191d'; c.beginPath(); c.moveTo(cx, y + 17.8); c.bezierCurveTo(cx + 3.4, y + 21, cx + 2.6, y + 26, cx, y + 26.2); c.bezierCurveTo(cx - 2.6, y + 26, cx - 3.2, y + 22, cx - 0.6, y + 20.4); c.bezierCurveTo(cx - 0.4, y + 22, cx + 0.6, y + 22.6, cx, y + 17.8); c.fill();
+  stencil(c, 'FUEL', cx, y + 41, 6, '#f3e9dc', 0.7);
+  if (st >= 1) {
+    dent(c, x + 8, y + 7, 3.4); dent(c, x + 23, y + 27, 2.8);
+    c.fillStyle = '#140503'; c.beginPath(); c.arc(x + 26, y + 38, 1.4, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(25,8,4,.9)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x + 26, y + 39); c.quadraticCurveTo(x + 27, fy - 3, x + 28, fy); c.stroke();
+    c.strokeStyle = 'rgba(255,210,170,.35)'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(x + 26.6, y + 40); c.quadraticCurveTo(x + 27.4, fy - 3, x + 28.3, fy - 0.6); c.stroke();
+  }
+  if (st >= 2) {
+    c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x + w - 3, y + 21); c.lineTo(x + w - 9, y + 17); c.lineTo(x + w - 13, y + 19); c.moveTo(x + w - 3, y + 21); c.lineTo(x + w - 8, y + 26); c.stroke();
+    poly(c, jaggedPts(x + w - 3, y + 21, 7, 1.8, 3.6, R)); c.fillStyle = '#140503'; c.fill();
+    glow(c, x + w - 3, y + 21, 5, 'rgba(255,200,90,.9)', 1, 'lighter');
+  }
+  c.restore();
+};
+/* live parts of a venting barrel: heat glow and the fire jet flicker every frame */
+const barrelVent = (c, cx, fy, t) => {
+  const x = cx - 16, y = fy - 46, w = 32;
+  glow(c, cx, fy - 22, 46 + Math.sin(t * 18) * 4, 'rgba(255,70,30,.34)', 1, 'lighter');
+  const L = 22 + Math.sin(t * 31) * 4, wob = Math.sin(t * 22) * 2;
+  c.save(); c.globalCompositeOperation = 'lighter';
+  c.fillStyle = lin(c, x + w, 0, x + w + L, 0, [[0, 'rgba(255,248,200,1)'], [0.3, 'rgba(255,176,46,.95)'], [1, 'rgba(255,80,20,0)']]);
+  poly(c, [[x + w - 2, y + 19.5], [x + w + L, y + 15.5 + wob], [x + w + L, y + 27 + wob], [x + w - 2, y + 22.8]]); c.fill();
+  c.fillStyle = lin(c, x + w, 0, x + w + L * 0.5, 0, [[0, 'rgba(255,255,255,.95)'], [1, 'rgba(255,220,120,0)']]);
+  poly(c, [[x + w - 1, y + 20.4], [x + w + L * 0.5, y + 19.6 + wob * 0.5], [x + w + L * 0.5, y + 22.8 + wob * 0.5], [x + w - 1, y + 22]]); c.fill();
+  c.restore();
+};
+
+const DRAW = { wood: drawWood, metal: drawMetal, glass: drawGlass, barrel: drawBarrel };
+
+/* ---------- sprite bake: draw once at screen resolution, add grain and a soft cast shadow on the wall ---------- */
+const PADX = 66, PADT = 58, PADB = 10, spriteCache = new Map();
+const sprite = (type, st, seed, res) => {
+  const key = `${type}:${st}:${seed}:${res}`;
+  if (spriteCache.has(key)) return spriteCache.get(key);
+  const { w, h } = SIZE[type], W = w + PADX * 2, H = h + PADT + PADB;
+  const a = makeCanvas(W, H, res);
+  a.ctx.translate(PADX + w / 2, PADT + h);
+  DRAW[type](a.ctx, 0, 0, st, seed);
+  overlayNoise(a.ctx, type === 'glass' ? 40 : 10, 31 + seed, type === 'glass' ? 0.12 : 0.35);
+  const b = makeCanvas(W, H, 1);
+  b.canvas.width = a.canvas.width; b.canvas.height = a.canvas.height;
+  b.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (st < 3) { b.ctx.shadowColor = type === 'glass' ? 'rgba(0,0,0,.22)' : 'rgba(0,0,0,.5)'; b.ctx.shadowBlur = 5 * res; b.ctx.shadowOffsetX = 7 * res; b.ctx.shadowOffsetY = -3 * res; }
+  b.ctx.drawImage(a.canvas, 0, 0);
+  const sp = { canvas: b.canvas, ax: PADX + w / 2, ay: PADT + h, w: W, h: H };
+  spriteCache.set(key, sp);
+  return sp;
+};
+const drawSprite = (c, type, st, seed, res, cx, fy, t = 0) => {
+  const sp = sprite(type, st, seed, res);
+  c.drawImage(sp.canvas, cx - sp.ax, fy - sp.ay, sp.w, sp.h);
+  if (type === 'barrel' && st === 2) barrelVent(c, cx, fy, t);
+};
+const holoFor = (c, type, cx, fy, prog, alpha) => {
+  const { w, h } = SIZE[type];
+  holo(c, type === 'barrel' ? 'round' : 'rect', cx - w / 2, fy - h, w, h, prog, alpha);
+};
+
+/* ---------- fighter stand-in (scale reference; the real game draws its own fighters) ---------- */
+const fighter = (c, x, fy, h, face, col) => {
+  c.save(); c.translate(x, fy); c.scale(face, 1);
+  const crouch = h < 60, legs = crouch ? 13 : 27, torsoTop = crouch ? 31 : 55, headR = crouch ? 7.5 : 8.5, headY = h - headR;
+  contact(c, 0, 0, 16);
+  c.fillStyle = lin(c, -8, 0, 8, 0, [[0, '#2b323c'], [1, '#14181e']]);
+  if (crouch) { c.fillRect(-9, -legs, 7, legs); c.fillRect(2, -legs + 3, 9, legs - 3); c.fillRect(-11, -4, 10, 4); }
+  else { c.fillRect(-8, -legs, 6, legs); c.fillRect(2, -legs, 6, legs); c.fillStyle = '#0e1116'; c.fillRect(-9, -3, 8, 3); c.fillRect(1, -3, 9, 3); }
+  c.fillStyle = lin(c, -16, 0, -8, 0, [[0, '#59626d'], [1, '#2b3038']]); c.beginPath(); c.roundRect(-16, -torsoTop + 3, 8, 19, 2); c.fill();
+  c.fillStyle = '#16191d'; c.fillRect(-15, -torsoTop + 22, 6, 3);
+  c.fillStyle = lin(c, -9, 0, 9, 0, [[0, col], [0.55, col], [1, 'rgba(0,0,0,.55)']]);
+  c.beginPath(); c.roundRect(-9, -torsoTop, 18, torsoTop - legs + 2, 4); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(-8, -torsoTop + 1, 1.2, torsoTop - legs - 2);
+  c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(-9, -legs - 2, 18, 3);
+  const hg = c.createRadialGradient(-3, -headY - 3, 1, 0, -headY, headR); hg.addColorStop(0, '#ffffff'); hg.addColorStop(0.25, col); hg.addColorStop(1, 'rgba(0,0,0,.6)');
+  c.fillStyle = col; c.beginPath(); c.arc(0, -headY, headR, 0, 7); c.fill(); c.fillStyle = hg; c.globalAlpha = 0.6; c.beginPath(); c.arc(0, -headY, headR, 0, 7); c.fill(); c.globalAlpha = 1;
+  c.fillStyle = lin(c, 0, -headY - 4, 0, -headY + 3, [[0, '#2a3440'], [1, '#07090c']]); c.beginPath(); c.roundRect(1, -headY - 3.5, headR, 6.5, 3); c.fill();
+  c.fillStyle = 'rgba(160,230,255,.75)'; c.fillRect(4, -headY - 2.4, 3.4, 1.1);
+  const my = crouch ? 35 : 50;
+  c.fillStyle = lin(c, 0, -my - 2, 0, -my + 2, [[0, '#4a525e'], [1, '#0e1116']]); c.fillRect(2, -my - 2.2, 25, 4.4); c.fillStyle = '#0e1116'; c.fillRect(6, -my + 1, 4, 5); c.fillRect(24, -my - 3, 2, 1.5);
+  c.restore();
+};
+const DPR = Math.min(3, Math.max(2, window.devicePixelRatio || 1));
+
+/* ---------- materials board ---------- */
+const MATS = [
+  { key: 'wood', name: 'Деревянный ящик', hp: 150, size: '50 × 46', note: 'Быстрое укрытие. Бензопила режет его меньше чем за секунду, рельсотрон пробивает насквозь.' },
+  { key: 'metal', name: 'Металлический ящик', hp: 500, size: '50 × 46', note: 'Надёжная защита. Быстро ломается только ракетами и гранатами, рельсотрон в нём застревает.' },
+  { key: 'glass', name: 'Стеклянная перегородка', hp: 60, size: '16 × 90', note: 'Сквозь стекло всё видно, но пули оно держит, пока не разобьётся. Разбивается со звоном. Рельсотрон бьёт сквозь стекло.' },
+  { key: 'barrel', name: 'Взрывная бочка', hp: 80, size: '32 × 46', note: 'Взрыв: урон до 90 в радиусе 170 px, как у ракеты. Ломает соседние укрытия и подрывает другие бочки. Убийство засчитывается тому, кто её подорвал. На последней стадии шипит и горит — видно, что вот-вот рванёт.' },
+];
+(() => {
+  const grid = document.getElementById('matGrid'), CW = 200, CH = 190, FLOOR = 166, Z = 1.5, res = DPR * Z;
+  const back = bakeBackdrop(CW, CH, FLOOR, DPR, 6);
+  MATS.forEach((m, mi) => {
+    const info = document.createElement('div'); info.className = 'mat';
+    info.innerHTML = `<h3>${m.name}</h3><dl><dt>HP</dt><dd>${m.hp}</dd><dt>Размер</dt><dd>${m.size} px</dd></dl><p>${m.note}</p>`;
+    grid.appendChild(info);
+    for (let st = 0; st < 5; st++) {
+      const cell = document.createElement('div'); cell.className = 'cell';
+      const cv = document.createElement('canvas'); cv.width = CW * DPR; cv.height = CH * DPR;
+      cv.setAttribute('aria-label', `${m.name}: ${['целый', 'трещины', 'разбит', 'разрушен', 'возвращается'][st]}`);
+      cell.appendChild(cv); grid.appendChild(cell);
+      const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      c.drawImage(back, 0, 0, CW, CH);
+      c.save(); c.translate(CW / 2, FLOOR); c.scale(Z, Z);
+      if (st === 4) holoFor(c, m.key, 0, 0, 0.75, 1);
+      else drawSprite(c, m.key, st, 11 + mi * 7, res, 0, 0, 0.35);
+      c.restore();
+    }
+  });
+})();
+
+/* ---------- cover heights ---------- */
+(() => {
+  const cv = document.getElementById('heights'), W = 760, H = 250, fy = 200, k = 1.6, res = DPR * k;
+  cv.width = W * DPR; cv.height = H * DPR;
+  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.drawImage(bakeBackdrop(W, H, fy, DPR, 8), 0, 0, W, H);
+  const line = (y, label, color) => {
+    c.save(); c.setLineDash([5, 4]); c.strokeStyle = color; c.lineWidth = 1; c.beginPath(); c.moveTo(14, fy - y * k); c.lineTo(W - 14, fy - y * k); c.stroke(); c.setLineDash([]);
+    c.font = '700 13px "Big Shoulders Display", "Fira Sans Extra Condensed", sans-serif'; c.fillStyle = color; c.textAlign = 'left'; c.fillText(label, 16, fy - y * k - 5); c.restore();
+  };
+  c.save(); c.translate(0, fy); c.scale(k, k);
+  fighter(c, 50, 0, 72, 1, '#4f7fd6'); drawSprite(c, 'wood', 0, 3, res, 100, 0);
+  fighter(c, 215, 0, 45, 1, '#4f7fd6'); drawSprite(c, 'metal', 0, 5, res, 256, 0);
+  drawSprite(c, 'glass', 0, 7, res, 395, 0); fighter(c, 435, 0, 72, -1, '#d6714f');
+  c.restore();
+  line(46, '46 · ящик', 'rgba(210,205,196,.85)'); line(50, '50 · ствол стоя', HAZ); line(90, '90 · стекло', 'rgba(170,232,255,.9)');
+  c.save(); c.translate(0, fy); c.scale(k, k);
+  c.strokeStyle = 'rgba(255,194,26,.95)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(77, -50); c.lineTo(160, -50); c.stroke();
+  glow(c, 164, -50, 4, 'rgba(255,220,120,1)', 1, 'lighter');
+  c.restore();
+  c.font = '700 13px "Big Shoulders Display", "Fira Sans Extra Condensed", sans-serif'; c.fillStyle = '#ECE9E2'; c.textAlign = 'center';
+  [[130, 'СТОЯ — СТРЕЛЯЕТ ПОВЕРХ'], [380, 'ПРИСЕЛ — СКРЫТ'], [645, 'СТЕКЛО — ВИДНО, НО НЕ ДОСТАТЬ']].forEach(([x, t]) => c.fillText(t, x, fy + 42));
+})();
+
+/* ---------- weapon table ---------- */
+(() => {
+  const EXPL = 3; // explosions hit cover three times harder (proposal)
+  const W = [
+    ['Пулемёт', 6, 100], ['Дробовик', 30, 900, '6 дробин × 5'], ['Плазменная пушка', 14, 120], ['Ракетница', 65 * EXPL, 1000, 'взрыв ×3'],
+    ['Гранатомёт', 60 * EXPL, 800, 'взрыв ×3'], ['Рельсотрон', 200, 1500, 'rail'], ['Бензопила', 30, 140, 'saw'], ['Дымовой гранатомёт', 0, 1500],
+  ];
+  const keys = ['wood', 'metal', 'glass', 'barrel'], names = ['Дерево · 150', 'Металл · 500', 'Стекло · 60', 'Бочка · 80'];
+  const fmt = (s) => s.toFixed(1).replace('.', ',');
+  let html = '<thead><tr><th>Оружие</th>' + names.map((n) => `<th>${n}</th>`).join('') + '</tr></thead><tbody>';
+  W.forEach(([name, dmg, rate, tag]) => {
+    html += `<tr><td>${name}${tag && tag.length > 4 ? `<span class="t">${tag}</span>` : ''}</td>`;
+    keys.forEach((k) => {
+      if (!dmg) { html += '<td class="none">не ломает</td>'; return; }
+      const n = Math.ceil(SIZE[k].hp / dmg), secs = ((n - 1) * rate) / 1000;
+      const cls = secs < 1 ? 'fast' : secs <= 4 ? 'mid' : 'slow';
+      const extra = tag === 'rail' ? (k === 'wood' || k === 'glass' ? 'насквозь' : k === 'metal' ? 'застревает' : '') : '';
+      const unit = tag === 'saw' ? (n === 1 ? 'касание' : n < 5 ? 'касания' : 'касаний') : n === 1 ? 'выстрел' : n < 5 ? 'выстрела' : 'выстрелов';
+      html += `<td class="${cls}">${n} ${unit}<span class="t">${n === 1 ? 'сразу' : fmt(secs) + ' с'}${extra ? ' · ' + extra : ''}</span></td>`;
+    });
+    html += '</tr>';
+  });
+  document.getElementById('weaponTable').innerHTML = html + '</tbody>';
+})();
+/* ---------- maps: real platform coordinates from src/game/data/level.ts ---------- */
+const CTF = [[-1500,800,5000,200],[-1500,-1500,200,2500],[3300,-1500,200,2500],[800,600,400,40],[900,400,200,20],[800,-200,400,30],[100,300,150,30],[200,-100,200,30],[-500,500,300,30],[1750,300,150,30],[1600,-100,200,30],[2200,500,300,30]];
+const MAPS = [
+  { name: 'Deathmatch · Default', plats: [[-2000,900,6000,200],[-2000,-1500,200,2600],[3800,-1500,200,2600],[-1200,700,400,40],[-1400,500,350,35],[-1100,300,300,30],[-1300,100,250,30],[-1500,-100,400,35],[-400,650,350,35],[-600,400,300,30],[-300,150,250,30],[600,700,800,40],[800,500,400,35],[700,250,600,35],[900,0,200,30],[600,-250,400,30],[2050,650,350,35],[2300,400,300,30],[2150,150,250,30],[2800,700,400,40],[3050,500,350,35],[2700,300,300,30],[3050,100,250,30],[2600,-100,400,35],[200,400,150,25],[1650,400,150,25],[400,100,120,25],[1480,100,120,25],[100,750,200,30],[1700,750,200,30]],
+    objs: [['wood',-850,700],['wood',2850,700],['wood',700,700],['wood',1300,700],['wood',400,900],['wood',1600,900],['metal',1000,900],['metal',-1130,-100],['metal',2630,-100],['glass',720,250],['glass',1280,250],['barrel',-500,900],['barrel',2500,900],['barrel',1000,500]] },
+  { name: 'Deathmatch · Tunnels', plats: [[-2000,900,6000,200],[-2000,-1000,6000,200],[-2000,-800,200,1700],[3800,-800,200,1700],[600,200,800,400],[500,350,1000,40],[500,200,1000,40],[-1000,600,800,40],[-1000,450,800,40],[-1200,100,800,40],[-1200,-50,800,40],[2200,600,600,40],[2400,400,600,40],[2200,200,600,40],[-100,-200,40,800],[100,-200,40,800],[1900,-200,40,800],[2100,-200,40,800],[800,-400,400,40],[-600,-600,300,40],[2600,-600,300,40]],
+    objs: [['wood',-1400,900],['wood',3400,900],['wood',700,200],['wood',1300,200],['wood',2450,400],['wood',2750,200],['wood',-230,450],['metal',1000,900],['metal',1000,-400],['metal',-430,-50],['glass',-320,-600],['glass',2620,-600],['barrel',20,900],['barrel',2020,900],['barrel',2750,600]] },
+  { name: 'Hunger Games', plats: [[-3000,1400,9000,600],[-3000,-2000,200,4000],[5800,-2000,200,4000],[-3000,-2000,9000,180],[-400,1200,1600,60],[1000,900,800,50],[-800,900,800,50],[-2000,1300,500,50],[-2400,800,400,50],[-2000,300,500,50],[-2300,-200,400,50],[2800,1300,500,50],[3200,800,400,50],[2800,300,500,50],[3100,-200,400,50],[-600,-600,400,50],[2000,-650,400,50],[700,-900,500,50],[-1200,500,260,40],[1400,400,260,40],[400,600,260,40],[2200,600,260,40]],
+    objs: [['wood',-1000,1400],['wood',2200,1400],['wood',-300,1200],['wood',1100,1200],['wood',-1550,300],['wood',2850,300],['metal',-1950,-200],['metal',3150,-200],['metal',950,-900],['metal',-1750,1300],['metal',3050,1300],['glass',-40,900],['glass',1040,900],['barrel',1500,1400],['barrel',400,1200],['barrel',530,600],['barrel',-2200,800],['barrel',3400,800]] },
+  { name: 'Capture the Flag · Gun Game', plats: CTF, marks: [['flagB',-350,500],['flagR',2350,500]],
+    objs: [['wood',300,800],['wood',1700,800],['wood',-800,800],['wood',2800,800],['wood',1000,-200],['metal',-230,500],['metal',2230,500],['glass',820,600],['glass',1180,600],['barrel',1000,800]] },
+  { name: 'Hold the Flag', plats: [...CTF,[850,550,500,50],[980,420,40,30],[700,500,100,20],[1580,500,100,20],[600,300,80,200],[1720,300,80,200]], marks: [['flagY',1000,420]],
+    objs: [['wood',300,800],['wood',1700,800],['wood',880,550],['wood',1320,550],['wood',640,300],['wood',1760,300],['wood',1000,-200],['metal',-230,500],['metal',2230,500],['barrel',1000,800]] },
+  { name: 'Infiltration', plats: [[-2000,800,5200,200],[2600,200,500,40],[2500,400,400,30],[2600,600,500,30],[2600,0,300,30],[2800,-200,250,30],[1400,500,400,40],[1600,300,260,30],[1200,150,200,30],[800,350,220,30],[-1400,400,400,40],[-1200,200,220,30],[-800,500,260,30],[-600,300,220,30]], marks: [['intel',2800,0],['exit',-1100,100]],
+    objs: [['metal',2630,600],['metal',2530,400],['metal',2630,200],['glass',2610,0],['wood',1420,500],['wood',1780,500],['wood',830,350],['wood',0,800],['wood',1100,800],['wood',2000,800],['barrel',1600,800],['barrel',3050,600],['barrel',600,800]] },
+];
+const ICON = { wood: ['#a5713f', '#573519'], metal: ['#8a96a6', '#22272e'], glass: ['rgba(150,225,255,.6)', '#bdeeff'], barrel: ['#d24a35', '#5a110a'] };
+const LABEL = { wood: 'дерево', metal: 'металл', glass: 'стекло', barrel: 'бочки' };
+const mapsEl = document.getElementById('maps'), K = 2.5;
+MAPS.forEach((m) => {
+  const inner = m.plats.filter(([, , w, h]) => w < 4000 && h < 1500);
+  const xs = inner.flatMap(([x, , w]) => [x, x + w]), ys = inner.flatMap(([, y, , h]) => [y, y + h]);
+  m.objs.forEach(([t, x, y]) => { xs.push(x); ys.push(y - SIZE[t].h * K); });
+  const floor = m.plats.filter(([, y, w]) => w >= 4000 && y > 0).map(([, y]) => y)[0];
+  const x0 = Math.min(...xs) - 260, x1 = Math.max(...xs) + 260, y0 = Math.min(...ys) - 180, y1 = (floor ?? Math.max(...ys)) + 110;
+  let s = `<svg viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" role="img" aria-label="Карта ${m.name}: расстановка укрытий">`;
+  s += `<defs><clipPath id="cl"><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"/></clipPath></defs>`;
+  m.plats.forEach(([x, y, w, h]) => { s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#3C434D"/><rect x="${x}" y="${y}" width="${w}" height="12" fill="#FFC21A" opacity=".75"/>`; });
+  (m.marks || []).forEach(([t, x, y]) => {
+    if (t === 'intel') s += `<g><rect x="${x - 26}" y="${y - 70}" width="52" height="52" fill="none" stroke="#ECE9E2" stroke-width="8" transform="rotate(45 ${x} ${y - 44})"/><text x="${x}" y="${y - 110}" fill="#ECE9E2" font-size="70" text-anchor="middle" font-family="Big Shoulders Display, Fira Sans Extra Condensed, sans-serif" font-weight="700">ИНТЕЛ</text></g>`;
+    else if (t === 'exit') s += `<g><rect x="${x - 100}" y="${y - 100}" width="200" height="200" fill="none" stroke="#6fcf7f" stroke-width="8" stroke-dasharray="24 16"/><text x="${x}" y="${y + 170}" fill="#6fcf7f" font-size="64" text-anchor="middle" font-family="Big Shoulders Display, Fira Sans Extra Condensed, sans-serif" font-weight="700">ВЫХОД</text></g>`;
+    else { const col = { flagB: '#4f8bff', flagR: '#ff5a4a', flagY: '#FFC21A' }[t]; s += `<g><rect x="${x - 4}" y="${y - 160}" width="8" height="160" fill="#ECE9E2"/><path d="M${x + 4} ${y - 160} L${x + 90} ${y - 128} L${x + 4} ${y - 96} Z" fill="${col}"/></g>`; }
+  });
+  const counts = { wood: 0, metal: 0, glass: 0, barrel: 0 };
+  m.objs.forEach(([t, x, y]) => {
+    counts[t]++; const { w, h } = SIZE[t], W2 = w * K, H2 = h * K, [f, st] = ICON[t];
+    s += `<rect x="${x - W2 / 2}" y="${y - H2}" width="${W2}" height="${H2}" rx="${t === 'barrel' ? 14 : 0}" fill="${f}" stroke="${st}" stroke-width="10"><title>${LABEL[t]}</title></rect>`;
+    if (t === 'barrel') s += `<rect x="${x - W2 / 2}" y="${y - H2 * 0.62}" width="${W2}" height="12" fill="#5a110a"/>`;
+    if (t === 'metal') s += `<rect x="${x - W2 / 2 + 6}" y="${y - 26}" width="${W2 - 12}" height="16" fill="#FFC21A"/>`;
+  });
+  s += '</svg>';
+  const fig = document.createElement('figure');
+  fig.innerHTML = s + `<figcaption><h3>${m.name}</h3><div class="counts">${Object.keys(counts).map((k) => `<span style="--c:${ICON[k][0]}">${counts[k]} ${LABEL[k]}</span>`).join('')}</div></figcaption>`;
+  mapsEl.appendChild(fig);
+});
+
+/* ---------- hero scene ---------- */
+(() => {
+  const cv = document.getElementById('hero');
+  const LW = 900, LH = 330, Z = 1.3, FY = 240, LOOP = 11.6, res = DPR * Z;
+  cv.width = LW * DPR; cv.height = LH * DPR;
+  const c = cv.getContext('2d');
+  const capEl = document.getElementById('caption'), btn = document.getElementById('heroBtn');
+  const PHASES = [[0, 'Враг стреляет по ящику — появляются трещины'], [3.2, 'Ящик разбит: укрытия больше нет'], [3.6, 'Ответный огонь по бочке рядом с врагом'], [4.95, 'Бочка взрывается: ранит всех в радиусе 170 px и бьёт стекло'], [8.4, 'Через 35 секунд всё возвращается (в ролике быстрее)']];
+  const BLUE = { x: 150 }, RED = { x: 470 }, CRATE = 205, BARREL = 522, GLASS = 578;
+  const back = bakeBackdrop(LW, LH, FY * Z, DPR, 4, [[CRATE * Z, 40, 230], [BARREL * Z, 40, 260]]);
+  const lamp = (x) => {
+    c.save(); c.globalCompositeOperation = 'lighter';
+    c.fillStyle = lin(c, 0, 18, 0, FY * Z, [[0, 'rgba(255,214,150,.22)'], [1, 'rgba(255,214,150,0)']]);
+    poly(c, [[x - 8, 18], [x + 8, 18], [x + 120, FY * Z], [x - 120, FY * Z]]); c.fill();
+    c.restore();
+    c.fillStyle = '#2b3038'; c.fillRect(x - 14, 8, 28, 9); c.fillStyle = '#ffe3a8'; c.fillRect(x - 10, 16, 20, 2.5);
+    glow(c, x, 18, 26, 'rgba(255,220,160,.6)', 0.5, 'lighter');
+    c.fillStyle = '#1b2027'; c.fillRect(x - 1, 0, 2, 8);
+  };
+  let S;
+  const reset = () => {
+    S = { t: 0, crate: 150, barrel: 80, glass: true, red: { x: RED.x, y: 0, vx: 0, vy: 0, rot: 0, vr: 0, a: 1 }, parts: [], shots: [], boom: -1, shake: 0, phase: -1 };
+    for (let i = 0; i < 26; i++) S.shots.push({ t0: 0.4 + i * 0.1, x0: RED.x - 26, y0: -50, x1: CRATE + 25, y1: -14 - ((i * 7) % 24), from: 'red', done: false });
+    for (let i = 0; i < 14; i++) S.shots.push({ t0: 3.62 + i * 0.1, x0: BLUE.x + 26, y0: -50, x1: BARREL - 16, y1: -12 - ((i * 5) % 26), from: 'blue', done: false });
+  };
+  const R = rnd(42);
+  const add = (p) => S.parts.push(Object.assign({ vx: 0, vy: 0, rot: 0, vr: 0, life: 6, max: 6, g: 1, floor: true, h: 4 }, p));
+  const breakCrate = () => {
+    for (let i = 0; i < 14; i++) add({ k: 'plank', x: CRATE + (R() - 0.5) * 40, y: -10 - R() * 36, vx: -60 - R() * 160 + (R() < 0.3 ? 200 : 0), vy: -120 - R() * 260, vr: (R() - 0.5) * 14, w: 8 + R() * 18, h: 3.5 + R() * 2, col: WOOD[i % 3], life: 5.4 });
+    for (let i = 0; i < 10; i++) add({ k: 'smoke', x: CRATE + (R() - 0.5) * 40, y: -20 - R() * 20, vx: (R() - 0.5) * 40, vy: -20 - R() * 20, g: -0.02, floor: false, r: 10 + R() * 10, col: '170,140,105', life: 1.6, max: 1.6 });
+  };
+  const explode = () => {
+    S.boom = S.t; S.shake = 0.4; S.barrel = 0;
+    for (let i = 0; i < 22; i++) add({ k: 'fire', x: BARREL + (R() - 0.5) * 30, y: -20 - R() * 30, vx: (R() - 0.5) * 420, vy: -80 - R() * 340, g: 0.25, floor: false, r: 7 + R() * 11, life: 0.6 + R() * 0.45, max: 1 });
+    for (let i = 0; i < 18; i++) add({ k: 'smoke', x: BARREL + (R() - 0.5) * 50, y: -30 - R() * 40, vx: (R() - 0.5) * 60, vy: -30 - R() * 40, g: -0.03, floor: false, r: 16 + R() * 18, col: '62,62,68', life: 3.4, max: 3.4 });
+    for (let i = 0; i < 10; i++) add({ k: 'plank', x: BARREL, y: -24, vx: (R() - 0.5) * 520, vy: -200 - R() * 300, vr: (R() - 0.5) * 18, w: 5 + R() * 8, h: 3 + R() * 2, col: i % 2 ? '#a92c1e' : '#6a140d', life: 5 });
+    for (let i = 0; i < 28; i++) add({ k: 'spark', x: BARREL, y: -24, vx: (R() - 0.5) * 900, vy: -100 - R() * 500, g: 0.5, floor: false, life: 0.4 + R() * 0.35, max: 0.75 });
+    if (S.glass) { S.glass = false; for (let i = 0; i < 28; i++) add({ k: 'shard', x: GLASS + (R() - 0.5) * 12, y: -10 - R() * 80, vx: 60 + R() * 260, vy: -60 - R() * 200, vr: (R() - 0.5) * 20, w: 2 + R() * 4, h: 3, life: 5 }); }
+    Object.assign(S.red, { vx: -40, vy: -420, vr: -6 });
+  };
+  const step = (dt) => {
+    S.t += dt;
+    S.shots.forEach((s) => {
+      if (s.done || S.t < s.t0 + 0.12) return;
+      s.done = true;
+      if ((s.from === 'red' && S.crate <= 0) || (s.from === 'blue' && S.barrel <= 0)) return;
+      for (let i = 0; i < 3; i++) add({ k: s.from === 'red' ? 'chip' : 'spark', x: s.x1, y: s.y1, vx: (s.from === 'red' ? 1 : -1) * (40 + R() * 120), vy: -60 - R() * 120, g: 0.8, w: 2, h: 2, col: '#e2b27c', life: s.from === 'red' ? 1.5 : 0.3, max: 0.3, floor: s.from === 'red' });
+      if (s.from === 'red') { S.crate -= 6; if (S.crate <= 0) breakCrate(); }
+      else { S.barrel -= 6; if (S.barrel <= 0) explode(); }
+    });
+    if (S.boom >= 0) {
+      const r = S.red; r.vy += 900 * dt; r.x += r.vx * dt; r.y += r.vy * dt; r.rot += r.vr * dt;
+      if (r.y > 0) { r.y = 0; r.vy *= -0.2; r.vx *= 0.5; r.vr = 0; }
+      if (S.t - S.boom > 1.4) r.a = Math.max(0, r.a - dt * 1.5);
+    }
+    S.parts.forEach((p) => {
+      p.vy += 900 * p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.life -= dt;
+      if (p.floor && p.y > -p.h / 2) { p.y = -p.h / 2; p.vy *= -0.25; p.vx *= 0.55; p.vr *= 0.4; if (Math.abs(p.vy) < 30) p.vy = 0; p.rot *= 0.9; }
+    });
+    S.parts = S.parts.filter((p) => p.life > 0);
+    S.shake = Math.max(0, S.shake - dt);
+  };
+  const stage = (hp, max) => (hp > max * 0.66 ? 0 : hp > max * 0.33 ? 1 : 2);
+  const ruin = (type, fn, cx, seed) => { const k = `ruin:${type}`; if (!spriteCache.has(k)) { const { w, h } = SIZE[type], a = makeCanvas(w + PADX * 2, h + PADT + PADB, res); a.ctx.translate(PADX + w / 2, PADT + h); fn(a.ctx, 0, 0, rnd(seed), { pieces: false, dust: false, smoke: false }); overlayNoise(a.ctx, 10, 77, 0.3); spriteCache.set(k, { canvas: a.canvas, ax: PADX + w / 2, ay: PADT + h, w: w + PADX * 2, h: h + PADT + PADB }); } const sp = spriteCache.get(k); c.drawImage(sp.canvas, cx - sp.ax, -sp.ay, sp.w, sp.h); };
+  const draw = () => {
+    const t = S.t;
+    c.setTransform(DPR, 0, 0, DPR, 0, 0);
+    c.drawImage(back, 0, 0, LW, LH);
+    lamp(CRATE * Z); lamp(BARREL * Z + 20);
+    c.save();
+    if (S.shake > 0) c.translate((R() - 0.5) * 12 * S.shake, (R() - 0.5) * 12 * S.shake);
+    c.translate(0, FY * Z); c.scale(Z, Z);
+    const back2 = t > 8.4, solid = t > 10.4, prog = Math.min(1, (t - 8.4) / 2), blink = 0.6 + 0.4 * Math.abs(Math.sin(t * 9));
+    if (S.crate > 0) drawSprite(c, 'wood', stage(S.crate, 150), 3, res, CRATE, 0);
+    else if (solid) drawSprite(c, 'wood', 0, 3, res, CRATE, 0);
+    else { ruin('wood', woodDebris, CRATE, 3); if (back2) holoFor(c, 'wood', CRATE, 0, prog, blink); }
+    if (S.glass || solid) drawSprite(c, 'glass', 0, 7, res, GLASS, 0);
+    else { ruin('glass', glassDebris, GLASS, 7); if (back2) holoFor(c, 'glass', GLASS, 0, prog, blink); }
+    if (S.barrel > 0) drawSprite(c, 'barrel', stage(S.barrel, 80), 9, res, BARREL, 0, t);
+    else if (solid) drawSprite(c, 'barrel', 0, 9, res, BARREL, 0);
+    else { ruin('barrel', barrelDebris, BARREL, 9); if (back2) holoFor(c, 'barrel', BARREL, 0, prog, blink); }
+    fighter(c, BLUE.x, 0, t > 3.4 && t < 10.6 ? 72 : 45, 1, '#4f7fd6');
+    const r = S.red;
+    if (r.a > 0) { c.save(); c.globalAlpha = r.a; c.translate(r.x, r.y); c.rotate(r.rot); fighter(c, 0, 0, 72, -1, '#d6714f'); c.restore(); }
+    if (t > 10.6) { c.save(); c.globalAlpha = Math.min(1, (t - 10.6) * 2); fighter(c, RED.x, 0, 72, -1, '#d6714f'); c.restore(); }
+    S.shots.forEach((s) => {
+      const p = (t - s.t0) / 0.12; if (p < 0 || p > 1 || s.done) return;
+      const x = s.x0 + (s.x1 - s.x0) * p, y = s.y0 + (s.y1 - s.y0) * p, dx = (s.x1 - s.x0) * 0.09, dy = (s.y1 - s.y0) * 0.09;
+      c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(255,200,80,.5)'; c.lineWidth = 3; c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x, y); c.stroke();
+      c.strokeStyle = '#fff1c4'; c.lineWidth = 1.2; c.stroke(); c.restore();
+      if (p < 0.25) glow(c, s.x0, s.y0, 9, 'rgba(255,210,120,.9)', 1, 'lighter');
+    });
+    S.parts.forEach((p) => {
+      const a = Math.min(1, p.life / Math.min(p.max, 0.8));
+      c.save(); c.globalAlpha = a;
+      if (p.k === 'plank' || p.k === 'chip') { c.translate(p.x, p.y); c.rotate(p.rot); const w = p.w || 2; c.fillStyle = p.col; c.fillRect(-w / 2, -p.h / 2, w, p.h); c.fillStyle = 'rgba(255,230,190,.35)'; c.fillRect(-w / 2, -p.h / 2, w, 0.7); c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(-w / 2, p.h / 2 - 0.7, w, 0.7); }
+      else if (p.k === 'shard') { c.translate(p.x, p.y); c.rotate(p.rot); c.fillStyle = 'rgba(175,232,255,.85)'; poly(c, [[-p.w, 1.5], [p.w, 1.5], [0, -p.w]]); c.fill(); if ((p.rot * 3 | 0) % 4 === 0) glow(c, 0, 0, 3, 'rgba(255,255,255,.9)', 1, 'lighter'); }
+      else if (p.k === 'spark') { c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#ffd36b'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx * 0.025, p.y - p.vy * 0.025); c.stroke(); }
+      else if (p.k === 'fire') { glow(c, p.x, p.y, p.r * (0.6 + a * 0.7), `rgba(255,${(140 + 90 * a) | 0},50,.95)`, 1, 'lighter'); }
+      else if (p.k === 'smoke') { const grow = 1 + (1 - p.life / p.max) * 1.5; c.globalAlpha = a * 0.6; glow(c, p.x, p.y, p.r * grow, `rgba(${p.col},.85)`); }
+      c.restore();
+    });
+    if (S.boom >= 0) {
+      const age = t - S.boom;
+      if (age < 0.6) { glow(c, BARREL, -24, 50 + Math.min(1, age / 0.08) * 120, `rgba(255,236,170,${0.95 * (1 - age / 0.6)})`, 1, 'lighter'); glow(c, BARREL, -24, 30, `rgba(255,255,255,${Math.max(0, 1 - age / 0.2)})`, 1, 'lighter'); }
+      if (age < 1.6) {
+        c.save(); c.globalAlpha = Math.max(0, 1 - age / 1.6);
+        c.setLineDash([6, 5]); c.strokeStyle = HAZ; c.lineWidth = 1.2; c.beginPath(); c.arc(BARREL, -24, 170 * Math.min(1, age / 0.25), Math.PI, 0); c.stroke(); c.setLineDash([]);
+        c.font = '700 12px "Big Shoulders Display", "Fira Sans Extra Condensed", sans-serif'; c.fillStyle = HAZ; c.textAlign = 'center'; c.fillText('радиус 170', BARREL, -24 - 176); c.restore();
+      }
+    }
+    c.restore();
+    if (S.boom >= 0 && t - S.boom < 0.25) { c.fillStyle = `rgba(255,230,180,${0.35 * (1 - (t - S.boom) / 0.25)})`; c.fillRect(0, 0, LW, LH); }
+    const vg = c.createRadialGradient(LW / 2, LH / 2, LH * 0.4, LW / 2, LH / 2, LW * 0.65); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)');
+    c.fillStyle = vg; c.fillRect(0, 0, LW, LH);
+    const ph = PHASES.reduce((acc, [pt], i) => (t >= pt ? i : acc), 0);
+    if (ph !== S.phase) { S.phase = ph; capEl.innerHTML = `<b>${ph + 1}</b>${PHASES[ph][1]}`; }
+  };
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let playing = !reduce, last = 0;
+  const frame = (now) => {
+    const dt = Math.min(1 / 30, (now - last) / 1000 || 0); last = now;
+    if (playing) { step(dt); if (S.t > LOOP) reset(); draw(); }
+    requestAnimationFrame(frame);
+  };
+  reset();
+  if (reduce) { for (let i = 0; i < 280; i++) step(1 / 60); btn.textContent = 'Играть'; }
+  draw();
+  btn.addEventListener('click', () => { playing = !playing; btn.textContent = playing ? 'Пауза' : 'Играть'; });
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- copy buttons ---------- */
+document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
+  const id = b.dataset.copy, el = document.getElementById(id), msg = document.getElementById(id + '-msg');
+  const selectIt = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); msg.textContent = 'Текст выделен — нажмите ⌘C'; };
+  try { navigator.clipboard.writeText(el.textContent).then(() => { msg.textContent = 'Скопировано'; }, selectIt); } catch (e) { selectIt(); }
+}));
+</script>

@@ -21,6 +21,8 @@ export interface DamageSource {
     shooterDist?: number;
     /** Bleeding from a wound, not a hit: never wounds again, no knockback. */
     bleed?: boolean;
+    /** An explosive barrel's blast: hurts everyone, thrown or gibbed like a rocket splash. */
+    barrel?: boolean;
 }
 
 /** Damage beyond the victim's remaining health that turns an explosion into gibs. */
@@ -28,14 +30,17 @@ export const GIB_OVERKILL = 30;
 /** A shotgun blast from this close (world units) throws the victim. */
 export const SHOTGUN_POINT_BLANK = 120;
 
-/** An explosion's splash (rocket or grenade blast that did not hit the victim itself), not a shot. */
+/** An explosion's splash (rocket or grenade blast that did not hit the victim itself, or a barrel blast), not a shot. */
 export const isSplash = (source: DamageSource): boolean =>
-    (source.weapon === WeaponType.ROCKET_LAUNCHER || source.weapon === WeaponType.GRENADE_LAUNCHER) && !source.direct;
+    !!source.barrel
+    || ((source.weapon === WeaponType.ROCKET_LAUNCHER || source.weapon === WeaponType.GRENADE_LAUNCHER) && !source.direct);
 
 /** `overkill` = the killing hit's damage after armor minus the victim's health right before it. */
 export const deathKind = (source: DamageSource, overkill: number): DeathKind => {
     // Bleeding out: the body slumps, whatever beam made the wound
     if (source.bleed) return 'fall';
+    // A barrel blast is never a direct hit: thrown at the edge, gibbed by a big overkill
+    if (source.barrel) return overkill >= GIB_OVERKILL ? 'gib' : 'thrown';
     switch (source.weapon) {
         case WeaponType.SHOTGUN:
             // No distance known: treat as far, so a missing value never launches a body.

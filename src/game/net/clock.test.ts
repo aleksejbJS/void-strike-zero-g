@@ -38,3 +38,19 @@ describe('toLocalClock smoke clouds', () => {
         expect(snap.smokes).toBeUndefined();
     });
 });
+
+describe('toLocalClock cover status', () => {
+    it('clock shifts returnsAt, leaving pieces that are not coming back and the host\'s own list alone', () => {
+        const status = [{ id: 'gone', hp: 0, returnsAt: 36000 }, { id: 'whole', hp: 150 }];
+        const snap: any = { serverTime: 5000, players: [], coverStatus: status };
+        toLocalClock(snap, 300);
+        expect(snap.coverStatus).toStrictEqual([{ id: 'gone', hp: 0, returnsAt: 36300 }, { id: 'whole', hp: 150 }]);
+        expect(status[0].returnsAt).toBe(36000);
+    });
+
+    it('copes with a snapshot from a host that sends no cover status', () => {
+        const snap: any = { serverTime: 5000, players: [] };
+        toLocalClock(snap, 300);
+        expect(snap.coverStatus).toBeUndefined();
+    });
+});

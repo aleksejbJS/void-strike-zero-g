@@ -27,4 +27,5 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
     }
     // New objects: the host's own cloud list must keep its own clock
     if (snap.smokes) snap.smokes = snap.smokes.map(c => ({ ...c, bornAt: c.bornAt + offset, endsAt: c.endsAt + offset }));
+    if (snap.coverStatus) snap.coverStatus = snap.coverStatus.map(c => (c.returnsAt === undefined ? c : { ...c, returnsAt: shift(c.returnsAt) }));
 };

@@ -78,6 +78,7 @@ export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, Objecti
   'weapon.grenadeLauncher': string;
   'weapon.smokeLauncher': string;
   'weapon.chainsaw': string;
+  'weapon.barrel': string;
 
   // Items
   'item.health': string;
@@ -172,6 +173,7 @@ export const translations: Record<Language, TranslationKeys> = {
     'weapon.grenadeLauncher': 'Grenade Launcher',
     'weapon.smokeLauncher': 'Smoke Launcher',
     'weapon.chainsaw': 'Chainsaw',
+    'weapon.barrel': 'Barrel',
 
     // Items
     'item.health': 'Health',
@@ -265,6 +267,7 @@ export const translations: Record<Language, TranslationKeys> = {
     'weapon.grenadeLauncher': 'Гранатомёт',
     'weapon.smokeLauncher': 'Дымовой гранатомёт',
     'weapon.chainsaw': 'Бензопила',
+    'weapon.barrel': 'Бочка',
 
     // Items
     'item.health': 'Здоровье',

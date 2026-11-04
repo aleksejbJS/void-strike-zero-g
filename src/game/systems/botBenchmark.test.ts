@@ -7,6 +7,8 @@ import { GameMode, MapId } from '../../types';
 import { clearBotMemory } from './bot';
 
 const STILL_LIMIT_MS = 10_000;
+// Pressing to move (walk, jetpack, reel) yet staying within 10 px this long counts as stuck
+const STUCK_LIMIT_MS = 2_000;
 // A 3-bot minute averages ~8 kills; single seeds swing from 4 to 11 (measured over seeds 1-20
 // after the 2 s spawn shield landed, which cost about 5% of kills). Below this, bots are passive.
 const DM_MIN_KILLS = 4;
@@ -40,4 +42,16 @@ describe('bot benchmark', () => {
         expect(r.kills).toBeGreaterThanOrEqual(3);
         expect(r.longestStillMs).toBeLessThan(STILL_LIMIT_MS);
     }, 60_000);
+
+    // Solid crates, glass and barrels stand in the bots' way: they must get past them, not push into them
+    it.each([
+        ['Default', MapId.DEFAULT],
+        ['Tunnels', MapId.TUNNELS],
+    ])('Deathmatch on %s with cover, 2 min: no bot stays stuck while trying to move', (_name, map) => {
+        clearBotMemory();
+        const r = runBotMatch(GameMode.DEATHMATCH, map as MapId, 120, 1);
+        console.log(`${_name} 2 min: ${r.kills} kills, longest stuck ${(r.longestStuckMs / 1000).toFixed(1)} s (${r.stuckBot}), longest still ${(r.longestStillMs / 1000).toFixed(1)} s`);
+        expect(r.longestStuckMs).toBeLessThan(STUCK_LIMIT_MS);
+        expect(r.longestStillMs).toBeLessThan(STILL_LIMIT_MS);
+    }, 120_000);
 });

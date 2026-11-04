@@ -111,6 +111,7 @@ export const createMatchView = async (host: HTMLElement): Promise<MatchView> => 
             cache.particleView?.clear();
             cache.beamView?.clear();
             cache.smokeView?.clear();
+            cache.coverView?.clear();
             destroyApp(app); // never app.destroy(true): other canvases share Pixi's batch pool
         },
     };

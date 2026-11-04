@@ -33,6 +33,13 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.30', date: 'Nov 4, 2026', points: [
+            'Crates, glass panels and explosive barrels on every map except the tournament duel arena',
+            'Wooden crates break fast, metal ones hold for long. Glass is see-through but stops bullets until it shatters',
+            'Shoot a barrel and it blows up everyone nearby',
+            'Broken cover comes back after 35 seconds',
+            'Bots take cover, shoot through it and set off barrels',
+        ] },
         { version: '0.4.29', date: 'Nov 4, 2026', points: [
             'Switch weapons with the mouse wheel: down for the next one, up for the previous. One trackpad swipe switches once',
         ] },
@@ -228,6 +235,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.30', date: '04.11.2026', points: [
+            'На всех картах, кроме турнирной арены для дуэлей, появились ящики, стеклянные перегородки и взрывные бочки',
+            'Деревянный ящик разбивается быстро, металлический держится долго. Стекло прозрачное, но останавливает пули, пока не разобьётся',
+            'Если прострелить бочку, она взорвётся и ранит всех рядом',
+            'Сломанные укрытия возвращаются через 35 секунд',
+            'Боты прячутся за ящиками, простреливают укрытия и подрывают бочки',
+        ] },
         { version: '0.4.29', date: '04.11.2026', points: [
             'Оружие можно менять колесом мыши: вниз — следующее, вверх — предыдущее. Один свайп по тачпаду меняет оружие один раз',
         ] },

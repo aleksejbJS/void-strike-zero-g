@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameMode, Team, WeaponType, Entity } from '../../types';
 import { createMockState, createMockPlayer } from '../../test/mocks';
 import { gameEvents, GameEvent, DeathEvent } from './events';
-import { applyDamage, createExplosion, fireWeapon } from './combat';
+import { applyDamage, fireWeapon } from './combat';
+import { createExplosion } from './explosion';
 import { deathEvent } from './effects';
 import { updatePhysics } from './physics';
 

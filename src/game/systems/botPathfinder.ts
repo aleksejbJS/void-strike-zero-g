@@ -20,6 +20,28 @@ export const nodeAt = (graph: NavGraph, pos: Vector2): NavNode | null => {
 export const goalNode = (graph: NavGraph, goal: Vector2): NavNode | null =>
     surfaceBelow(graph.nodes, goal.x, goal.y - 4) ?? surfaceBelow(graph.nodes, goal.x, goal.y - 200);
 
+const reachCache = new WeakMap<NavGraph, Map<number, Set<number>>>();
+
+/** Every surface some route leads to from `from` (itself included), ignoring blocked edges and zones. */
+export const reachableFrom = (graph: NavGraph, from: number): Set<number> => {
+    let byNode = reachCache.get(graph);
+    if (!byNode) { byNode = new Map(); reachCache.set(graph, byNode); }
+    const known = byNode.get(from);
+    if (known) return known;
+    const seen = new Set<number>([from]);
+    const queue = [from];
+    while (queue.length) for (const e of graph.out[queue.pop()!]) if (!seen.has(e.to)) { seen.add(e.to); queue.push(e.to); }
+    byNode.set(from, seen);
+    return seen;
+};
+
+/** False when no route leads from where the fighter stands to the surface under `goal` (an island
+ *  out of reach would leave a bot parked on the nearest surface forever). Unknown either end: true. */
+export const routeReaches = (graph: NavGraph, pos: Vector2, goal: Vector2): boolean => {
+    const here = nodeAt(graph, pos), there = goalNode(graph, goal);
+    return !here || !there || reachableFrom(graph, here.id).has(there.id);
+};
+
 const centre = (n: NavNode) => ({ x: (n.x0 + n.x1) / 2, y: n.y });
 
 export interface PathQuery {

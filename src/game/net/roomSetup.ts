@@ -3,6 +3,9 @@
 import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
+import { getCoverLayout } from '../cover/coverLayout';
+import { liftOutOfCover } from '../cover/coverSpawn';
+import { restoreAllCover } from '../cover/coverTick';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks } from '../build/botLooks';
@@ -45,6 +48,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     floatingTexts: [],
     platforms: getPlatforms(mode, map),
     pickups: getInitialPickups(mode, map),
+    cover: getCoverLayout(mode, map),
     camera: { x: 0, y: 0, zoom: 1 },
     corpses: [],
     lastHTFScore: 0,
@@ -142,12 +146,14 @@ export const resetHungerRound = (state: GameState, now: number) => {
     state.hungerEndReason = undefined;
 };
 
-/** Fresh start for every player (keeping identity, team and input tracking), pickups and shots. */
+/** Fresh start for every player (keeping identity, team and input tracking), cover, pickups and shots. */
 const respawnEveryone = (state: GameState) => {
+    restoreAllCover(state); // first: liftOutOfCover below must see the cover that is coming back
     state.players.forEach((p, i) => {
         const { lastProcessedInput, aim } = p;
         Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
         if (state.mode === GameMode.DUEL) p.pos = duelSpawnByIndex(i); // the fighters start on opposite sides
+        liftOutOfCover(state, p);
     });
     state.projectiles = [];
     state.beams = [];

@@ -2,15 +2,21 @@ import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectil
 import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL, ROCKET_MOTOR_TICKS } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
+import { pickupRect } from '../utils/pickupRect';
 import { updateBotAI } from './bot';
 import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
-import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
+import { applyDamage, fireWeapon, isTeammate } from './combat';
+import { createExplosion } from './explosion';
+import { projectileCoverHit } from '../cover/coverHits';
+import { damageCover } from '../cover/coverDamage';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
 import { grantSpawnShield } from './spawnShield';
+import { liftOutOfCover } from '../cover/coverSpawn';
+import { tickCover } from '../cover/coverTick';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -57,6 +63,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 p.maxFuel = DEFAULT_MAX_FUEL; p.jetpackFuel = DEFAULT_MAX_FUEL;
                 p.pos = state.mode === GameMode.DUEL ? duelSpawnPoint(state, p.id) : getSpawnPoint(p.team);
                 p.vel = { x: 0, y: 0 };
+                liftOutOfCover(state, p);
                 if (state.mode === GameMode.GUN_GAME) {
                     applyGunGameLoadout(p, p.gunLevel || 0);
                 } else if (state.mode === GameMode.DUEL) {
@@ -186,7 +193,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             // Bots press the same controls a player has
             const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
             updateGrapple(state, p, bot.hook, bot.hookAim ?? p.pos);
-            controls = { inputX: bot.inputX, wantsJump: bot.reel, wantsDown: false, wantsProne: false, isFlying: bot.isFlying };
+            controls = { inputX: bot.inputX, wantsJump: bot.reel, wantsDown: !!bot.wantsDown, wantsProne: false, isFlying: bot.isFlying };
+            applyStance(p, controls); // crouching behind cover
         }
 
         // Force Pipeline — unified movement (gravity, input, jetpack, grapple, friction, speed caps)
@@ -207,10 +215,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
         // Item Collection (ALL entities)
         state.pickups.forEach(item => {
-            // Item hitbox: flags are tall (pole + cloth), others are small cubes
-            const itemW = item.type === ItemType.FLAG ? 80 : 40;
-            const itemH = item.type === ItemType.FLAG ? 100 : 40;
-            const itemRect = { x: item.pos.x - itemW / 2, y: item.pos.y - itemH, w: itemW, h: itemH };
+            const itemRect = pickupRect(item);
             const playerRect = { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height };
 
             if (item.active && checkRectOverlap(itemRect, playerRect)) {
@@ -322,7 +327,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         let impact = proj.pos;
         let target: Entity | null = null;
         const wall = state.platforms.find(plat => checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat));
-        if (wall) {
+        const coverHit = projectileCoverHit(state, prevPos, proj.pos); // intact cover is a wall too: the nearer one is hit
+        if (wall || coverHit) {
             hit = true;
             impact = prevPos; // explode on the near side of the wall, not inside it
         } else {
@@ -351,9 +357,10 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             const explosive = proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER;
             if (explosive) {
                 // A rocket that hit a full-health fighter finishes them with its blast: still a direct hit
-                createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id);
+                createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id, { directCoverId: coverHit?.id });
             } else {
                 if (smokeRound) spawnSmoke(state, impact, now); // bursts into a cloud: no blast, no damage splash
+                else if (coverHit) damageCover(state, coverHit, WEAPONS_DATA[proj.type].damage, proj.ownerId, now);
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
             // Any weapon hitting a fighter draws blood; a wall hit throws sparks. An explosive keeps its
@@ -363,6 +370,9 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         }
     });
     state.projectiles = state.projectiles.filter(p => p.active);
+
+    // Cover: lit barrels go off, broken pieces come back (after the shots, so a barrel hit this tick is lit already)
+    tickCover(state, now);
 
     // Beams Update
     if (!state.beams) state.beams = [];

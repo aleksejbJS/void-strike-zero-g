@@ -10,6 +10,7 @@ export interface BotControls {
     hook: boolean;      // grapple button held
     hookAim?: Vector2;  // where the grapple is fired
     reel: boolean;      // reel the rope in (W while hooked)
+    wantsDown?: boolean; // crouch (S), behind cover
 }
 
 export const IDLE: BotControls = { inputX: 0, isFlying: false, hook: false, reel: false };
@@ -38,6 +39,9 @@ export interface BotMoves {
     dodgeUntil: number;
     dodgeReadyAt: number;
     escapeReadyAt: number;
+    lastHitAt: number;  // when the bot last took a real hit (0: never)
+    coverSince: number | null; // when the current stay in cover began (null: not in cover)
+    coverReadyAt: number;      // no cover again before this (after a full stay)
 }
 
 export const newBotNav = (): BotNav => ({
@@ -46,5 +50,6 @@ export const newBotNav = (): BotNav => ({
 });
 
 export const newBotMoves = (health: number): BotMoves => ({
-    strafeDir: 0, strafeUntil: 0, lastHealth: health, dodgeUntil: 0, dodgeReadyAt: 0, escapeReadyAt: 0,
+    strafeDir: 0, strafeUntil: 0, lastHealth: health, dodgeUntil: 0, dodgeReadyAt: 0, escapeReadyAt: 0, lastHitAt: 0,
+    coverSince: null, coverReadyAt: 0,
 });

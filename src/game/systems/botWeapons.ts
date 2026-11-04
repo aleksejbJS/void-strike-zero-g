@@ -4,6 +4,7 @@ import { Entity, GameState, ItemType, Pickup, Weapon, WeaponType } from '../../t
 import { distance } from '../utils/math';
 import { insideZone } from './hungerRound';
 import { buildNavGraph, HOP_RISE, solidAt, surfaceBelow } from './botNavGraph';
+import { routeReaches } from './botPathfinder';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
@@ -42,10 +43,12 @@ export const pickupReachable = (state: GameState, item: Pickup) => {
 };
 
 export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null => {
+    const graph = buildNavGraph(state.platforms);
     let best: Pickup | null = null;
     let bestDist = Infinity;
     state.pickups.forEach(item => {
         if (!item.active || item.type !== ItemType.WEAPON || !item.subtype || !pickupReachable(state, item)) return;
+        if (!routeReaches(graph, bot.pos, item.pos)) return;
         const existing = bot.inventory.find(w => w.type === item.subtype);
         const needsAmmo = existing ? existing.ammo < existing.maxAmmo * 0.4 : true;
         if (item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never use it

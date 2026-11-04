@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { GameMode, Team, WeaponType } from '../../types';
 import { createMockState, createMockPlayer } from '../../test/mocks';
-import { fireWeapon, createExplosion } from './combat';
+import { fireWeapon } from './combat';
+import { createExplosion } from './explosion';
 
 describe('Railgun', () => {
     it('is blocked by a wall between shooter and target', () => {

@@ -4,6 +4,8 @@
 import { GameState, GameMode, MapId } from '../../types';
 import { GameEvent } from '../systems/events';
 import type { FighterBuild } from '../build/buildParts';
+import type { Cover, CoverStatus } from '../cover/coverTypes';
+import { coverStatusOf } from '../cover/coverNet';
 
 export const SNAPSHOT_RATE = 30; // snapshots per second sent to clients
 export const MAX_NAME_LENGTH = 16;
@@ -37,17 +39,20 @@ export interface JoinRequest {
 // Gameplay-relevant state only. Particles, decals, floating texts and ragdolls are
 // cosmetic: clients create them locally from events instead of receiving them.
 // Platforms never change during a match: they are sent once in JoinAccepted.
+// Cover too (layout in JoinAccepted); snapshots carry only its changing part, `coverStatus`.
 export type Snapshot = Pick<GameState,
     'mode' | 'currentMap' | 'scores' | 'players' | 'projectiles' | 'pickups'
     | 'beams' | 'smokes' | 'hungerZone' | 'hungerWinnerId' | 'hungerRoundEndsAt' | 'hungerRoundStartedAt' | 'hungerEndReason' | 'gunGameWinnerId'
     | 'matchStartedAt' | 'matchEndsAt' | 'matchWinner' | 'matchEndReason' | 'lastHTFScore' | 'infiltrationEndTime'
-> & { serverTime: number };
+> & { serverTime: number; coverStatus?: CoverStatus[] };
 
 export interface JoinAccepted {
     id: string;
     mode: GameMode;
     map: MapId;
     platforms: GameState['platforms'];
+    /** Cover layout (absent from a host that has none: the client then plays without). */
+    cover?: Cover[];
     snapshot: Snapshot;
 }
 
@@ -56,6 +61,7 @@ export interface WatchAccepted {
     mode: GameMode;
     map: MapId;
     platforms: GameState['platforms'];
+    cover?: Cover[];
     snapshot: Snapshot;
 }
 
@@ -87,4 +93,5 @@ export const buildSnapshot = (state: GameState, now: number): Snapshot => ({
     lastHTFScore: state.lastHTFScore,
     infiltrationEndTime: state.infiltrationEndTime,
     serverTime: now,
+    coverStatus: coverStatusOf(state.cover ?? []),
 });

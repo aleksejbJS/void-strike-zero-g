@@ -1,6 +1,7 @@
 
 import type { FighterBuild } from './game/build/buildParts';
 import type { Corpse } from './game/systems/ragdoll/corpseBody';
+import type { Cover } from './game/cover/coverTypes';
 
 export type Vector2 = { x: number; y: number };
 
@@ -235,6 +236,7 @@ export interface GameState {
   matchEndReason?: 'score' | 'time';
   beams: Beam[];
   smokes?: SmokeCloud[]; // smoke clouds; readers use `state.smokes ?? []`
+  cover?: Cover[]; // destructible cover; readers use `state.cover ?? []`
 }
 
 export enum MapId {

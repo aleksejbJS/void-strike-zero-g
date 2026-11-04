@@ -168,6 +168,10 @@ export const setSFXVolume = (volume: number) => {
   }
 };
 
+/** The sound-effects output for synths in other files (none until initAudio has run after a click). */
+export const sfxOutput = (): { ctx: AudioContext; out: GainNode } | null =>
+  audioCtx && sfxGain ? { ctx: audioCtx, out: sfxGain } : null;
+
 export const playSound = (type: 'shoot' | 'hit' | 'explosion' | 'jump' | 'pickup' | 'shell' | 'score' | 'dash' | 'hook' | 'reload' | 'kill' | 'respawn', weaponType?: WeaponType, isMuted: boolean = false) => {
   if (isMuted || !audioCtx || !sfxGain) return;
 

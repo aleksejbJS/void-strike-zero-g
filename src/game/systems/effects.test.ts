@@ -3,7 +3,8 @@ import { GameMode, Team, WeaponType, Particle, ParticleKind } from '../../types'
 import { createMockState, createMockPlayer } from '../../test/mocks';
 import { gameEvents, GameEvent } from './events';
 import { applyEffectEvent } from './effects';
-import { applyDamage, createExplosion, fireWeapon } from './combat';
+import { applyDamage, fireWeapon } from './combat';
+import { createExplosion } from './explosion';
 import { DEFAULT_BUILD, FighterBuild } from '../build/buildParts';
 import { speedOf } from './ragdoll/corpseStep';
 import { updateCorpses } from './ragdoll/corpses';

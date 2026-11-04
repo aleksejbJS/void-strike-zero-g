@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { Entity, Team } from '../../types';
 import { makeState, makeBot } from '../../test/botFixtures';
 import { buildNavGraph, JET_RISE } from './botNavGraph';
-import { IDLE, newBotMoves, newBotNav } from './botNavState';
+import { BotControls, IDLE, newBotMoves, newBotNav } from './botNavState';
+import type { BotState } from './botMemory';
 import { combatMoves } from './botCombatMoves';
+import { piece } from '../cover/coverTestKit';
 
 // A floor with a ledge to the left that a jetpack reaches: the way out when the enemy stands to the right
 const platforms = [
@@ -20,7 +22,7 @@ const setup = (health: number, wounded = false) => {
     const graph = buildNavGraph(platforms);
     const nav = newBotNav();
     const moves = newBotMoves(bot.health);
-    const step = (now: number) => combatMoves(state, bot, nav, moves, graph, enemy, true, { ...IDLE }, now);
+    const step = (now: number) => combatMoves(state, bot, nav, moves, graph, enemy, true, { ...IDLE }, now, 'hunt');
     return { bot, nav, moves, step };
 };
 
@@ -63,5 +65,82 @@ describe('combatMoves escape', () => {
         step(1000);
         expect(nav.path).toHaveLength(0);
         expect(moves.escapeReadyAt).toBe(0);
+    });
+});
+
+// Enemy 200 px to the right (inside the machine gun's 320 px range), a crate halfway: its far-side spot is x 57
+const withCrate = (visible = true, wounded = false) => {
+    const s = setup(100, wounded);
+    const state = makeState();
+    state.platforms = platforms;
+    state.cover = [piece('crate', 'wood', 100, 1000)];
+    const enemy = makeBot('enemy', Team.NONE, 200, 1000) as unknown as Entity;
+    state.players = [s.bot, enemy];
+    const graph = buildNavGraph(platforms);
+    const step = (now: number, botState: BotState = 'hunt', controls: BotControls = IDLE) =>
+        combatMoves(state, s.bot, s.nav, s.moves, graph, enemy, visible, { ...controls }, now, botState);
+    return { ...s, state, step };
+};
+
+describe('combatMoves cover', () => {
+    it('walks to the crate and crouches behind it', () => {
+        const { bot, step } = withCrate();
+        expect(step(1000)).toMatchObject({ inputX: 1, wantsDown: false });
+        bot.pos.x = 57;
+        expect(step(1008)).toMatchObject({ inputX: 0, wantsDown: true, isFlying: false });
+    });
+
+    it('crouches instead of hopping when hit behind cover', () => {
+        const { bot, step } = withCrate();
+        bot.pos.x = 57;
+        step(1000);
+        bot.health -= 10;
+        expect(step(1008)).toMatchObject({ wantsDown: true, isFlying: false });
+    });
+
+    it('takes cover from an unseen shooter for 1.5 s after a hit', () => {
+        const { bot, step } = withCrate(false);
+        step(1000);
+        expect(step(1008).wantsDown).toBeFalsy(); // not hit, enemy not in sight: no cover
+        bot.health -= 10;
+        expect(step(1016).inputX).toBe(1);
+        expect(step(1016 + 1500).inputX).toBe(0);
+    });
+});
+
+describe('combatMoves cover gives way', () => {
+    // The goal's own move heads left, away from the crate
+    const goLeft = { ...IDLE, inputX: -1 };
+
+    it.each(['flag-run', 'defend', 'retreat'] as BotState[])('a bot on %s keeps going instead of hiding', botState => {
+        const { step } = withCrate();
+        expect(step(1000, botState, goLeft)).toMatchObject({ inputX: -1 });
+        expect(step(1008, botState, goLeft).wantsDown).toBeFalsy();
+    });
+
+    it('a hunting bot does hide', () => {
+        expect(withCrate().step(1000, 'hunt', goLeft).inputX).toBe(1);
+    });
+
+    it('a wounded bot keeps heading for its medkit', () => {
+        const { step } = withCrate(true, true);
+        expect(step(1000, 'hunt', goLeft).inputX).toBe(-1);
+    });
+
+    it('an escape move keeps its jetpack', () => {
+        const { nav, step } = withCrate();
+        nav.lockedUntil = 4000;
+        expect(step(1000, 'hunt', { ...IDLE, isFlying: true })).toMatchObject({ isFlying: true, inputX: 0 });
+        expect(step(4000, 'hunt', { ...IDLE, isFlying: true })).toMatchObject({ isFlying: false, inputX: 1 });
+    });
+
+    it('holds cover for 2.5 s, then not again for 3 s', () => {
+        const { bot, step } = withCrate();
+        bot.pos.x = 57;
+        expect(step(1000).wantsDown).toBe(true);
+        expect(step(3499).wantsDown).toBe(true);
+        expect(step(3500).wantsDown).toBeFalsy();
+        expect(step(6499).wantsDown).toBeFalsy();
+        expect(step(6500).wantsDown).toBe(true);
     });
 });

@@ -1,13 +1,18 @@
 // How a bot aims and when it pulls the trigger: a human-like reaction time, and an aim error
 // that grows with distance and with how fast the target moves (a running, flying player far
-// away is hard to hit; a standing one up close is not).
+// away is hard to hit; a standing one up close is not). A barrel next to an enemy, or the cover
+// in the way, is shot first.
 
-import { Entity, GameState, Vector2 } from '../../types';
+import { Entity, GameState, Vector2, WeaponType } from '../../types';
 import { BOT_FIRE_COOLDOWN_SCALE, BOT_VERTICAL_TOLERANCE } from '../../constants';
 import { distance } from '../utils/math';
 import { FIXED_STEP_MS } from './fixedStep';
 import { BotMemory, reactionDelay } from './botMemory';
-import { canSee, centerOf, muzzleOf } from './botSenses';
+import { aimPointOf, canSee, centerOf, muzzleOf, platformsClear } from './botSenses';
+import { smokeHides } from './smoke';
+import { barrelToShoot, coverAimPoint, coverToShoot } from './botCover';
+import { Cover, COVER_SPECS } from '../cover/coverTypes';
+import { firstCoverOnSegment } from '../cover/coverGeometry';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft } from './spawnShield';
 import { knownPos } from './botSearch';
@@ -18,6 +23,15 @@ const BODY_PX_PER_TICK = FIXED_STEP_MS / (1000 / 60);
 const BASE_SPREAD = 0.035;   // aim error in radians at a standing target
 const MOVING_SPREAD = 0.025; // extra radians per unit of target speed (running ≈ 4, flying up to 8)
 const MIN_SPREAD_PX = 8;
+
+/** Nothing but `piece` (or, for a railgun, nothing a beam goes through) stands between the bot and `target`. */
+const shotIsClear = (state: GameState, bot: Entity, target: Entity, piece: Cover | null, now: number) => {
+    if (piece?.kind === 'barrel') return true; // barrelToShoot already checked the view
+    const muzzle = muzzleOf(bot), center = centerOf(target);
+    if (!piece && bot.weapon.type !== WeaponType.RAILGUN) return canSee(state, bot, target, now);
+    const beamStopped = !piece && firstCoverOnSegment(state, muzzle, center, c => COVER_SPECS[c.kind].stopsRail) !== null;
+    return platformsClear(state, muzzle, center) && !smokeHides(state, muzzle, center, now) && !beamStopped;
+};
 
 /** Points the bot's gun at the target (or, when smoke hides it, at where it was last seen) and
  *  fires when it may. False when the bot has no idea where the target is: nothing to aim at. */
@@ -30,10 +44,12 @@ export const aimAndFire = (state: GameState, bot: Entity, target: Entity, mem: B
         bot.aim = Math.atan2(known.y - target.height / 2 - muzzle.y, known.x - muzzle.x);
         return true;
     }
-    const dist = distance(bot.pos, target.pos);
+    // Aim priority: a barrel that would catch an enemy, then the cover in the way, then the target
+    const piece = barrelToShoot(state, bot, now) ?? coverToShoot(state, bot, target);
+    const dist = distance(bot.pos, piece ? piece.pos : target.pos);
     const ticksToHit = bot.weapon.speed > 0 ? dist / bot.weapon.speed : 0;
-    const lead = ticksToHit * BODY_PX_PER_TICK;
-    const center = centerOf(target);
+    const lead = piece ? 0 : ticksToHit * BODY_PX_PER_TICK;
+    const center = piece ? coverAimPoint(piece) : aimPointOf(state, bot, target);
     const aim = { x: center.x + target.vel.x * lead, y: center.y + target.vel.y * lead };
     bot.facingRight = aim.x > bot.pos.x;
     const muzzle = muzzleOf(bot);
@@ -53,10 +69,10 @@ export const aimAndFire = (state: GameState, bot: Entity, target: Entity, mem: B
     }
     if (now < mem.fireAllowedAt) return true;
     const fireReady = now - bot.lastFired > bot.weapon.fireRate * BOT_FIRE_COOLDOWN_SCALE;
-    if (!fireReady || Math.abs(target.pos.y - bot.pos.y) >= BOT_VERTICAL_TOLERANCE) return true;
-    if (!canSee(state, bot, target, now)) return true;
+    if (!fireReady || Math.abs((piece ?? target).pos.y - bot.pos.y) >= BOT_VERTICAL_TOLERANCE) return true;
+    if (!shotIsClear(state, bot, target, piece, now)) return true;
 
-    const speed = Math.hypot(target.vel.x, target.vel.y);
+    const speed = piece ? 0 : Math.hypot(target.vel.x, target.vel.y);
     const spread = Math.max(MIN_SPREAD_PX, dist * (BASE_SPREAD + MOVING_SPREAD * speed));
     fire(bot, {
         x: aim.x + (Math.random() - 0.5) * 2 * spread,

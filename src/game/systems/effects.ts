@@ -16,6 +16,7 @@ import { flameColors } from '../render/fighter/parts/flamePalette';
 import { sanitizeBuild } from '../build/sanitizeBuild';
 import { presetBuild } from '../build/buildPresets';
 import { insideSmoke } from './smoke';
+import { applyCoverEvent } from './coverEffects';
 
 // The blast without its scorch mark (marks are page-wide: the menu preview must not leave any)
 export { explosionBurst };
@@ -157,6 +158,9 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
         }
         case 'FLOAT_TEXT':
             floatText(state, e.x, e.y, e.text, e.color);
+            break;
+        case 'COVER':
+            applyCoverEvent(state, e);
             break;
     }
 };
