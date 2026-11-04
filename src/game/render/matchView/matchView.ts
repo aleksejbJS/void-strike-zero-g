@@ -12,7 +12,6 @@ import { setHouseHidden } from '../scene/adFrames';
 import { createAdsController, AdsController } from '../../ads/adsController';
 import { destroyApp } from '../pixiApp';
 import { viewportOf } from '../viewport';
-import { destroyCoverTextures } from '../cover/coverTextures';
 import { newVisualCache } from './matchViewCache';
 
 export interface MatchView {
@@ -113,7 +112,6 @@ export const createMatchView = async (host: HTMLElement): Promise<MatchView> => 
             cache.beamView?.clear();
             cache.smokeView?.clear();
             cache.coverView?.clear();
-            destroyCoverTextures(); // baked pictures are page-wide; a view still showing one rebakes it on its next frame
             destroyApp(app); // never app.destroy(true): other canvases share Pixi's batch pool
         },
     };

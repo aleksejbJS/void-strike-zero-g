@@ -9,12 +9,12 @@ import { COVER_SPECS, COVER_WARN_MS, Cover, CoverKind } from '../../cover/coverT
 import { coverStage } from '../../cover/coverGeometry';
 import { barrelVent } from './barrelArt';
 import { HAZARD } from './coverArtKit';
-import { coverResolution, coverTexture } from './coverTextures';
+import { coverResolution, coverTexture, releaseCoverTextures, retainCoverTextures } from './coverTextures';
 
 interface Slot {
     root: Container;   // at the piece's feet; everything below is in the piece's own coordinates
     body: Sprite;
-    key: string;       // `${stage}:${res}` of the picture on the sprite
+    key: string;       // `${kind}:${stage}:${res}` of the picture on the sprite
     holo?: Graphics;
     vent?: Graphics;
 }
@@ -89,8 +89,10 @@ const dispose = (obj: Container) => {
 export class CoverView {
     private readonly container = new Container();
     private readonly slots = new Map<string, Slot>();
+    private cleared = false;
 
     constructor(private readonly layer: Container) {
+        retainCoverTextures();
         this.lower();
     }
 
@@ -117,10 +119,13 @@ export class CoverView {
         }
     }
 
-    /** Destroy every sprite and the container; the view is not usable afterwards. */
+    /** Destroy every sprite and the container, and let go of the baked pictures; the view is not usable afterwards. */
     clear(): void {
+        if (this.cleared) return;
+        this.cleared = true;
         this.slots.clear();
         dispose(this.container);
+        releaseCoverTextures();
     }
 
     // The view is the bottom of the layer: pickups, fighters and effects are added after it (and a view
@@ -143,7 +148,7 @@ export class CoverView {
 
     // A new stage or resolution gets its picture; so does a sprite whose picture was freed under it
     private showBody(slot: Slot, piece: Cover, res: number): void {
-        const stage = coverStage(piece), key = `${stage}:${res}`;
+        const stage = coverStage(piece), key = `${piece.kind}:${stage}:${res}`;
         if (slot.key === key && !slot.body.texture.destroyed) return;
         const baked = coverTexture(piece.kind, stage, res);
         slot.body.texture = baked.texture;

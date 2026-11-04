@@ -22,7 +22,6 @@ import { ProjectileView } from '../game/render/projectiles/projectileView';
 import { BeamView } from '../game/render/projectiles/beamView';
 import { SmokeView } from '../game/render/effects/smokeView';
 import { CoverView } from '../game/render/cover/coverView';
-import { destroyCoverTextures } from '../game/render/cover/coverTextures';
 import type { CorpseView } from '../game/render/ragdoll/corpseView';
 import { createMapLook, MapLook } from '../game/render/scene/mapLook';
 import { createAdsController, AdsController } from '../game/ads/adsController';
@@ -954,7 +953,6 @@ export default function GameCanvas() {
             visualCache.current.smokeView = null;
             visualCache.current.coverView?.clear();
             visualCache.current.coverView = null;
-            destroyCoverTextures(); // the baked cover pictures (GPU textures); the next match bakes its own
             visualCache.current.pickups.clear();
             visualCache.current.decals.clear();
             sessionRef.current?.dispose();

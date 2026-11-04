@@ -1,7 +1,8 @@
 // The baked pictures of cover: one canvas per kind × damage stage × resolution, drawn once at screen
 // resolution with a grain overlay and a soft cast shadow on the wall behind, then kept as a Pixi
-// texture. Textures bypass Pixi's cache (Texture.from(canvas, true)) so destroyCoverTextures() frees them
-// for real; baking is lazy, so only the kinds and stages that actually show up cost anything.
+// texture. Textures bypass Pixi's cache (Texture.from(canvas, true)) so they can be freed for real. They are
+// shared by every CoverView on the page (game screen, watch tiles): each view retains them while it lives and
+// the last one to release frees them. Baking is lazy, so only the kinds and stages that show up cost anything.
 
 import { Texture } from 'pixi.js';
 import { makeCanvas, overlayNoise } from '../scene/canvasKit';
@@ -31,6 +32,7 @@ const MIN_RES = 1;
 const MAX_RES = 3;
 
 const cache = new Map<string, CoverTexture>();
+let users = 0;
 
 /** Pixels per world unit to bake at for a view scaled by `zoom`: zoom × the screen's pixel ratio, in half steps, 1 to 3. */
 export const coverResolution = (zoom: number): number => {
@@ -76,8 +78,20 @@ export const coverTexture = (kind: CoverKind, stage: CoverStage, res: number): C
     return baked;
 };
 
-/** Free every baked picture (the next coverTexture() bakes again). Views that still show one pick a fresh one on their next sync. */
+/** Free every baked picture and forget the views that retained them (tests; teardown uses release). */
 export const destroyCoverTextures = (): void => {
     for (const { texture } of cache.values()) texture.destroy(true);
     cache.clear();
+    users = 0;
+};
+
+/** A view starts using the baked pictures: they stay alive until every view that retained them has released. */
+export const retainCoverTextures = (): void => {
+    users++;
+};
+
+/** A view is done with the pictures; the last release frees them (the next view bakes again). */
+export const releaseCoverTextures = (): void => {
+    users = Math.max(0, users - 1);
+    if (users === 0) destroyCoverTextures();
 };

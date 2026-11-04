@@ -7,6 +7,8 @@ import type { CoverEvent } from './events';
 import { applyEffectEvent } from './effects';
 import { applyCoverEvent } from './coverEffects';
 
+const GLASS_TINTS = ['#afe8ff', '#cdf3ff'];
+
 let state: GameState;
 beforeEach(() => { state = createMockState(GameMode.DEATHMATCH); });
 
@@ -36,9 +38,10 @@ describe('applyCoverEvent', () => {
         expect(kinds()).toContain('spark');
     });
 
-    it('broken glass adds shards in the glass tint', () => {
+    it('broken glass adds shards in the glass tints', () => {
         applyCoverEvent(state, event('glass', 'break'));
-        expect(state.particles.filter(p => p.color === '#afe8ff').length).toBeGreaterThanOrEqual(10);
+        // each shard takes one of the two tints at random: count both, there are 26 shards whatever the rolls
+        expect(state.particles.filter(p => GLASS_TINTS.includes(p.color))).toHaveLength(26);
     });
 
     it('a broken barrel adds nothing: the blast has its own effect', () => {

@@ -5,8 +5,12 @@ import { COVER_SPECS, COVER_WARN_MS, Cover } from '../../cover/coverTypes';
 // jsdom has no 2D canvas to bake the pictures: one fake texture per kind and stage
 const baked = new Map<string, Texture>();
 const bakes = vi.fn();
+const retained = vi.fn();
+const released = vi.fn();
 vi.mock('./coverTextures', () => ({
     coverResolution: () => 1,
+    retainCoverTextures: () => retained(),
+    releaseCoverTextures: () => released(),
     coverTexture: (kind: string, stage: number, res: number) => {
         bakes(kind, stage, res);
         const key = `${kind}:${stage}`;
@@ -126,6 +130,26 @@ describe('CoverView', () => {
         Object.assign(old, { destroyed: true });
         view.sync([piece('a', 'wood', 100)], 16);
         expect(sprites()[0].texture).not.toBe(old);
+    });
+
+    it('swaps the picture when the piece behind an id is another kind', () => {
+        const { view, sprites } = setup();
+        view.sync([piece('a', 'wood', 100)], 0);
+        const wood = sprites()[0].texture;
+        view.sync([piece('a', 'metal', 100)], 16); // same stage and resolution, other kind
+        expect(sprites()[0].texture).not.toBe(wood);
+        expect(bakes).toHaveBeenLastCalledWith('metal', 0, 1);
+    });
+
+    it('holds the shared pictures from creation until it is cleared, once', () => {
+        retained.mockClear();
+        released.mockClear();
+        const { view } = setup();
+        expect(retained).toHaveBeenCalledTimes(1);
+        expect(released).not.toHaveBeenCalled();
+        view.clear();
+        view.clear();
+        expect(released).toHaveBeenCalledTimes(1);
     });
 
     it('clear removes everything', () => {
