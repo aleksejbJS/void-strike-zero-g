@@ -2,7 +2,8 @@
 // resolution with a grain overlay and a soft cast shadow on the wall behind, then kept as a Pixi
 // texture. Textures bypass Pixi's cache (Texture.from(canvas, true)) so they can be freed for real. They are
 // shared by every CoverView on the page (game screen, watch tiles): each view retains them while it lives and
-// the last one to release frees them. Baking is lazy, so only the kinds and stages that show up cost anything.
+// the last one to release frees them. Only the kinds on the map are baked: a view bakes all stages of a kind
+// the first time that kind shows (on map load), so breaking a piece never bakes mid-fight.
 
 import { Texture } from 'pixi.js';
 import { makeCanvas, overlayNoise } from '../scene/canvasKit';

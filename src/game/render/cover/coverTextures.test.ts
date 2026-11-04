@@ -50,8 +50,8 @@ describe('shared baked pictures', () => {
         const a = new CoverView(layerA), b = new CoverView(layerB);
         a.sync([crate], 0);
         b.sync([crate], 0);
-        expect(made).toHaveLength(1); // both show the one baked picture
-        const picture = made[0];
+        expect(made).toHaveLength(4); // the crate's four stages, baked once for both views
+        const picture = made[0];      // stage 0, baked first
         expect(spriteOf(layerA).texture).toBe(picture);
 
         a.clear();
@@ -60,7 +60,7 @@ describe('shared baked pictures', () => {
         expect(spriteOf(layerB).texture).toBe(picture);
 
         b.clear();
-        expect(picture.destroy).toHaveBeenCalledTimes(1);
+        for (const t of made) expect(t.destroy).toHaveBeenCalledTimes(1);
         expect(picture.destroy).toHaveBeenCalledWith(true);
     });
 
@@ -71,8 +71,8 @@ describe('shared baked pictures', () => {
         const layer = new Container();
         const second = new CoverView(layer);
         second.sync([crate], 0);
-        expect(made).toHaveLength(2);
-        expect(spriteOf(layer).texture).toBe(made[1]);
+        expect(made).toHaveLength(8); // four stages each time
+        expect(spriteOf(layer).texture).toBe(made[4]);
         second.clear();
     });
 

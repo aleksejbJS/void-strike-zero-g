@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { COVER_SPECS, COVER_WARN_MS, Cover } from '../../cover/coverTypes';
 
-// jsdom has no 2D canvas to bake the pictures: one fake texture per kind and stage
+// jsdom has no 2D canvas to bake the pictures: one fake texture per kind and stage (a miss is a real bake)
 const baked = new Map<string, Texture>();
 const bakes = vi.fn();
+const misses = vi.fn();
 const retained = vi.fn();
 const released = vi.fn();
 vi.mock('./coverTextures', () => ({
@@ -14,7 +15,7 @@ vi.mock('./coverTextures', () => ({
     coverTexture: (kind: string, stage: number, res: number) => {
         bakes(kind, stage, res);
         const key = `${kind}:${stage}`;
-        if (!baked.has(key)) baked.set(key, new Texture());
+        if (!baked.has(key)) { misses(kind, stage, res); baked.set(key, new Texture()); }
         return { texture: baked.get(key)!, anchorX: 0.5, anchorY: 0.8 };
     },
 }));
@@ -73,6 +74,21 @@ describe('CoverView', () => {
         crate.hp = 0; // destroyed: the remains
         view.sync([crate], 32);
         expect(bakes).toHaveBeenLastCalledWith('wood', 3, 1);
+    });
+
+    it('bakes every stage of the kinds present on the first sync, so a fight never waits for a bake', () => {
+        baked.clear();
+        misses.mockClear();
+        const { view } = setup();
+        const crate = piece('a', 'wood', 100), keg = piece('b', 'barrel', 300);
+        view.sync([crate, keg], 0);
+        expect(misses.mock.calls.map(([k, st]) => `${k}${st}`).sort()).toEqual(['barrel0', 'barrel1', 'barrel2', 'barrel3', 'wood0', 'wood1', 'wood2', 'wood3']);
+        misses.mockClear();
+        crate.hp = 100; keg.hp = 20;
+        view.sync([crate, keg], 16);
+        crate.hp = 0; keg.hp = 0;
+        view.sync([crate, keg], 32);
+        expect(misses).not.toHaveBeenCalled();
     });
 
     it('shows the hologram only in the last 2 s before the piece returns', () => {

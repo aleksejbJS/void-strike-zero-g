@@ -5,7 +5,7 @@
 // projectiles and effects all draw over it, while platforms (their own layer) stay behind.
 
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { COVER_SPECS, COVER_WARN_MS, Cover, CoverKind } from '../../cover/coverTypes';
+import { COVER_SPECS, COVER_WARN_MS, Cover, CoverKind, CoverStage } from '../../cover/coverTypes';
 import { coverStage } from '../../cover/coverGeometry';
 import { barrelVent } from './barrelArt';
 import { HAZARD } from './coverArtKit';
@@ -26,6 +26,7 @@ const DASH_SPEED = 14;     // px of dash pattern per second
 const RING_RADIUS = 5.5;
 const RING_LIFT = 11;      // the ring floats this far above the piece
 const ROUND_RADIUS = 4;    // barrel hologram corners
+const STAGES: readonly CoverStage[] = [0, 1, 2, 3];
 
 type Point = readonly [number, number];
 
@@ -89,6 +90,7 @@ const dispose = (obj: Container) => {
 export class CoverView {
     private readonly container = new Container();
     private readonly slots = new Map<string, Slot>();
+    private readonly prepared = new Set<string>(); // `${kind}:${res}` with every stage baked
     private cleared = false;
 
     constructor(private readonly layer: Container) {
@@ -108,6 +110,7 @@ export class CoverView {
             live.add(piece.id);
             const slot = this.slots.get(piece.id) ?? this.add(piece);
             slot.root.position.set(piece.pos.x, piece.pos.y);
+            this.prepare(piece.kind, res);
             this.showBody(slot, piece, res);
             this.showHologram(slot, piece, now);
             this.showVent(slot, piece, now);
@@ -144,6 +147,14 @@ export class CoverView {
         const slot: Slot = { root, body, key: '' };
         this.slots.set(piece.id, slot);
         return slot;
+    }
+
+    // The first time a kind shows at this resolution (the map loads), bake all its stages: a piece
+    // breaking mid-fight then only swaps pictures and never stalls a frame on a bake
+    private prepare(kind: CoverKind, res: number): void {
+        if (this.prepared.has(`${kind}:${res}`)) return;
+        this.prepared.add(`${kind}:${res}`);
+        for (const stage of STAGES) coverTexture(kind, stage, res);
     }
 
     // A new stage or resolution gets its picture; so does a sprite whose picture was freed under it
