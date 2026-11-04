@@ -3,6 +3,7 @@
 import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
+import { getCoverLayout } from '../cover/coverLayout';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks } from '../build/botLooks';
@@ -45,6 +46,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     floatingTexts: [],
     platforms: getPlatforms(mode, map),
     pickups: getInitialPickups(mode, map),
+    cover: getCoverLayout(mode, map),
     camera: { x: 0, y: 0, zoom: 1 },
     corpses: [],
     lastHTFScore: 0,

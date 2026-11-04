@@ -27,6 +27,7 @@ import { createAdsController, AdsController } from '../game/ads/adsController';
 import { clearBotMemory } from '../game/systems/bot';
 import { ffaBotLooks } from '../game/build/botLooks';
 import { getPlatforms, getInitialPickups } from '../game/data/level';
+import { getCoverLayout } from '../game/cover/coverLayout';
 import { useUIStore } from '../store/uiStore';
 import { GameHud } from './hud/GameHud';
 import { objectiveFor, Objective } from './hud/objective';
@@ -245,6 +246,7 @@ export default function GameCanvas() {
         const effectiveMap = effectiveMapFor(gameMode, state.selectedMap);
         gameState.current.currentMap = effectiveMap;
         gameState.current.platforms = getPlatforms(gameMode, effectiveMap);
+        gameState.current.cover = getCoverLayout(gameMode, effectiveMap);
 
         physicsEngine.current.clear();
         gameState.current.platforms.forEach(p => physicsEngine.current.addPlatform(p));
