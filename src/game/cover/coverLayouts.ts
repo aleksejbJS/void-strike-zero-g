@@ -24,13 +24,13 @@ export const COVER_LAYOUTS: Record<CoverLayoutKey, readonly CoverEntry[]> = {
         ['barrel', 20, 900], ['barrel', 2020, 900], ['barrel', 2750, 600],
     ],
     hunger: [
-        ['wood', -1000, 1400], ['wood', 2200, 1400], ['wood', -300, 1200], ['wood', 1100, 1200],
+        ['wood', -960, 1400], ['wood', 2160, 1400], ['wood', -300, 1200], ['wood', 1100, 1200],
         ['wood', -1550, 300], ['wood', 2850, 300],
-        ['metal', -1950, -200], ['metal', 3150, -200], ['metal', 950, -900],
-        ['metal', -1750, 1300], ['metal', 3050, 1300],
+        ['metal', -1950, -200], ['metal', 3150, -200], ['metal', 910, -900],
+        ['metal', -1710, 1300], ['metal', 3010, 1300],
         ['glass', -40, 900], ['glass', 1040, 900],
-        ['barrel', 1500, 1400], ['barrel', 400, 1200], ['barrel', 530, 600],
-        ['barrel', -2200, 800], ['barrel', 3400, 800],
+        ['barrel', 1500, 1400], ['barrel', 431, 1200], ['barrel', 561, 600],
+        ['barrel', -2169, 800], ['barrel', 3369, 800],
     ],
     ctf: [
         ['wood', 300, 800], ['wood', 1700, 800], ['wood', -800, 800], ['wood', 2800, 800],

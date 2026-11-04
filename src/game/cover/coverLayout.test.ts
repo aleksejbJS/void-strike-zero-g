@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { GameMode, ItemType, MapId, Team } from '../../types';
 import { getPlatforms, getInitialPickups, HTF_FLAG_POS, INTEL_POS } from '../data/level';
 import { createRoomState, isTeamMode, spawnPointFor } from '../net/roomSetup';
+import { createHungerZone, hungerSpawnPoint } from '../systems/hungerRound';
 import { checkRectOverlap } from '../utils/math';
 import { COVER_SPECS, Cover } from './coverTypes';
 import { getCoverLayout, layoutKeyFor } from './coverLayout';
@@ -114,6 +115,36 @@ describe.each(CASES)('cover layout: $name', ({ mode, map, count }) => {
                 expect(dx, `${b.id} too close to the ${s.team} spawn`).toBeGreaterThanOrEqual(400);
             }
         }
+    });
+});
+
+describe('Hunger Games spawn slots', () => {
+    // Every deterministic spawn spot, read from the real spawn code: a new round hands out each
+    // slot once before it repeats one, so plenty of calls list them all.
+    const spawnSpots = () => {
+        createHungerZone(Date.now());
+        const seen = new Map<string, { x: number; y: number }>();
+        for (let i = 0; i < 500; i++) {
+            const s = hungerSpawnPoint();
+            seen.set(`${s.x},${s.y}`, s);
+        }
+        createHungerZone(Date.now()); // leave the round state fresh for other tests
+        return [...seen.values()];
+    };
+
+    it('no cover on a Hunger spawn slot', () => {
+        const spots = spawnSpots();
+        expect(spots.length).toBeGreaterThan(0);
+        const layout = getCoverLayout(GameMode.HUNGER_GAMES, MapId.HUNGER);
+        const onSlot: string[] = [];
+        for (const spot of spots) {
+            // Fighter hitbox as in physics.ts: 30 wide, 72 tall, pos = (centreX, feet)
+            const fighter = { x: spot.x - 15, y: spot.y - 72, w: 30, h: 72 };
+            for (const c of layout) {
+                if (checkRectOverlap(fighter, rectOf(c))) onSlot.push(`${c.id} (${c.kind} ${c.pos.x},${c.pos.y}) on slot ${spot.x},${spot.y}`);
+            }
+        }
+        expect(onSlot).toEqual([]);
     });
 });
 
