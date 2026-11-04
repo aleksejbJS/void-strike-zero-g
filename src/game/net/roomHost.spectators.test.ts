@@ -19,7 +19,7 @@ const rooms: GameRoom[] = [];
 // No bots: their AI emits random sounds/effects during the ticks, which made exact message lists flaky.
 // Every event the tests rely on is emitted by the test itself.
 const makeHost = () => {
-    const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 2, bots: 0 });
+    const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.DEFAULT, maxPlayers: 2, bots: 0, spectators: true });
     rooms.push(room);
     return new RoomHost(room);
 };

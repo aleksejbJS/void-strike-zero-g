@@ -24,6 +24,10 @@ export interface RoomConfig {
     bots?: number;
     /** Start the next match after the results screen (default true); a tournament duel stays on its result. */
     restartMatches?: boolean;
+    /** Accept watch-only links (WATCH); default false. Tournament duels allow them. */
+    spectators?: boolean;
+    /** Drop a remote player that sent no input for this long (RoomHost); default never. Tournament duels. */
+    idleKickMs?: number;
 }
 
 export type JoinResult = { ok: true } | { ok: false; reason: JoinRejected['reason'] };
@@ -35,8 +39,10 @@ export class GameRoom {
     private events: GameEvent[] = [];
     private readonly unsubscribeEvents: () => void;
     private readonly spawnPoint: ReturnType<typeof spawnPointFor>;
+    /** Duel only: the last human who left, so a dropped guest who joins again keeps its score. */
+    private departed: { name: string; score: number } | null = null;
 
-    constructor(private readonly config: RoomConfig) {
+    constructor(readonly config: RoomConfig) {
         this.spawnPoint = spawnPointFor(config.mode);
         this.state = createRoomState(config.mode, config.map);
         this.state.players.push(...createBots(config.mode, config.bots));
@@ -56,6 +62,10 @@ export class GameRoom {
         const hunger = this.state.mode === GameMode.HUNGER_GAMES;
         const duel = this.state.mode === GameMode.DUEL;
         if (duel) player.pos = duelSpawnPoint(this.state, id); // opposite side from the opponent
+        if (duel && this.departed?.name === player.name) {
+            player.score = this.departed.score; // back after a dropped link: the duel goes on where it was
+            this.departed = null;
+        }
         if (hunger) {
             // A round is in progress: watch until the next one (spec phase 2, H1)
             player.dead = true;
@@ -79,6 +89,8 @@ export class GameRoom {
     }
 
     leave(id: string) {
+        const leaving = this.state.players.find(p => p.id === id);
+        if (this.state.mode === GameMode.DUEL && leaving?.type === 'player') this.departed = { name: leaving.name, score: leaving.score };
         this.physics.removeBody(id);
         this.state.players = this.state.players.filter(p => p.id !== id);
         this.inputs.delete(id);
