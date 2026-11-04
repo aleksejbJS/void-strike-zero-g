@@ -3,7 +3,7 @@ import { GameMode, Team } from '../../types';
 import { createMockPlayer, createMockState } from '../../test/mocks';
 import { gameEvents, GameEvent } from '../systems/events';
 import { updatePhysics } from '../systems/physics';
-import { COVER_RETRY_MS, COVER_RETURN_MS, COVER_SPECS, Cover, CoverKind } from './coverTypes';
+import { BARREL_CHAIN_MS, COVER_RETRY_MS, COVER_RETURN_MS, COVER_SPECS, Cover, CoverKind } from './coverTypes';
 import { coverRect, isIntact } from './coverGeometry';
 import { damageCover } from './coverDamage';
 import { restoreAllCover, tickCover } from './coverTick';
@@ -18,6 +18,7 @@ afterEach(() => unsubscribe());
 
 const piece = (kind: CoverKind, hp = COVER_SPECS[kind].hp): Cover => ({ id: `${kind}_1`, kind, pos: { x: 500, y: 400 }, hp });
 const stateWith = (...cover: Cover[]) => Object.assign(createMockState(GameMode.DEATHMATCH), { cover });
+const isExplosion = (e: GameEvent) => e.type === 'EFFECT' && e.effect === 'explosion';
 /** A crate broken at NOW, so it is due back at DUE. */
 const brokenCrate = () => { const c = piece('wood'); damageCover(stateWith(c), c, 1000, 'p1', NOW); events.length = 0; return c; };
 
@@ -117,16 +118,20 @@ describe('tickCover: return', () => {
 });
 
 describe('tickCover: barrel fuse', () => {
-    it('a fuse that is not due yet stays lit; a due one is spent', () => {
+    it('a fuse that is not due yet stays lit; a due one is spent and the barrel goes off', () => {
         const barrel = piece('barrel');
         const state = stateWith(barrel);
         damageCover(state, barrel, 500, 'p1', NOW, true);
 
+        events.length = 0;
+
         tickCover(state, NOW + 149);
         expect(barrel.fuseAt).toBe(NOW + 150);
+        expect(events.filter(isExplosion)).toEqual([]);
 
         tickCover(state, NOW + 150);
         expect(barrel.fuseAt).toBeUndefined();
+        expect(events.filter(isExplosion)).toHaveLength(1);
     });
 });
 
@@ -159,13 +164,14 @@ describe('restoreAllCover', () => {
         const barrel = piece('barrel');
         const state = stateWith(barrel);
         damageCover(state, barrel, 1000, 'p1', NOW, true); // fuse pending
+        expect(barrel.fuseAt).toBe(NOW + BARREL_CHAIN_MS);
         events.length = 0;
 
         restoreAllCover(state);
+        expect(barrel.fuseAt).toBeUndefined(); // fails here, not only through the explosion below, if the fuse survives a reset
         tickCover(state, NOW + 1_000_000);
 
-        expect(events.filter(e => e.type === 'EFFECT' && e.effect === 'explosion')).toEqual([]);
-        expect(barrel.fuseAt).toBeUndefined();
+        expect(events.filter(isExplosion)).toEqual([]);
         expect(barrel.hp).toBe(COVER_SPECS.barrel.hp);
     });
 });

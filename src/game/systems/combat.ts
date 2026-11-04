@@ -17,6 +17,7 @@ import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
+import { BARREL_KILL_NAME } from '../cover/coverTypes';
 
 // --- Teams ---
 
@@ -70,7 +71,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     if (amount < 9999 && spawnShieldLeft(target, Date.now()) > 0) return; // just respawned
 
     // Self-damage multiplier (rocket-jump)
-    const isSelf = attackerId === target.id;
+    const isSelf = attackerId === target.id && !source.barrel; // a barrel blast hurts the breaker like anyone else
     const dmgMult = isSelf ? SELF_DAMAGE_MULT : 1;
     const kbMult = isSelf ? SELF_KNOCKBACK_MULT : 1;
 
@@ -162,24 +163,25 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                 type: 'KILL',
                 killer: killer ? killer.name : 'World',
                 killerColor: killer ? killer.color : '#ffffff',
-                weapon: killer ? (credit.weapon ? WEAPONS_DATA[credit.weapon].name : killer.weapon.name) : 'Environment',
+                weapon: source.barrel ? BARREL_KILL_NAME : killer ? (credit.weapon ? WEAPONS_DATA[credit.weapon].name : killer.weapon.name) : 'Environment',
                 victim: target.name,
                 victimColor: target.color
             });
-            // Award score (suicide gives nothing)
-            if (killer && killer.id !== target.id) {
+            // Award score (suicide and killing a teammate give nothing)
+            if (killer && killer.id !== target.id && !isTeammate(killer, target)) {
                 if (state.mode !== GameMode.CTF) {
                     killer.score++;
                 } else if (killer.team !== target.team) {
                     killer.score += 100;
                 }
 
-                if (state.mode === GameMode.GUN_GAME) {
+                // A barrel kill scores but does not move the Gun Game ladder or count for weapon achievements
+                if (state.mode === GameMode.GUN_GAME && !source.barrel) {
                     handleGunGameKill(state, killer);
                 }
 
                 // Track achievement only for player-controlled kills
-                if (killer.type === 'player') {
+                if (killer.type === 'player' && !source.barrel) {
                     trackKill(credit.weapon ?? killer.weapon.type);
                 }
             }

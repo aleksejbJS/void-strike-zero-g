@@ -58,3 +58,5 @@ export const BARREL_RADIUS = 170;
 export const BARREL_DAMAGE = 90;
 /** Delay before a barrel caught in another blast goes off. */
 export const BARREL_CHAIN_MS = 150;
+/** What the kill feed shows as the weapon of a barrel kill (a barrel is no WeaponType). */
+export const BARREL_KILL_NAME = 'Barrel';
