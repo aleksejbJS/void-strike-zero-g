@@ -22,6 +22,8 @@ export interface TournamentMatchSignals {
     snapshot: () => void;
     /** ClientSession's onDisconnected, and a failed reconnect attempt (RejoiningSocket). */
     disconnected: () => void;
+    /** The room refused the first join as full. */
+    rejected: () => void;
     /** Guest: how to drop the link and dial the host again (tournamentNet hands it over). */
     rejoinReady: (rejoin: () => void) => void;
     /** Esc during the duel. */
@@ -103,6 +105,7 @@ export function useTournamentMatch(
         joined: () => flowRef.current?.joined(Date.now()),
         snapshot: () => flowRef.current?.snapshot(Date.now()),
         disconnected: () => flowRef.current?.disconnected(Date.now()),
+        rejected: () => flowRef.current?.rejected(Date.now()),
         rejoinReady: rejoin => { rejoinRef.current = rejoin; },
         escape: () => {
             const flow = flowRef.current;

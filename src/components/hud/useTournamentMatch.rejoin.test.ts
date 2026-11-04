@@ -58,6 +58,21 @@ describe('useTournamentMatch: guest reconnects', () => {
         expect(matchSeen).toHaveBeenCalledTimes(2); // every 10 s, as while playing
     });
 
+    it('a first join refused as full (a reloaded guest whose old link still holds the seat) is dialled again', async () => {
+        const rejoin = vi.fn();
+        const { result } = renderMatch(guest(), duelState(0, 0));
+        act(() => result.current.signals.rejoinReady(rejoin));
+        act(() => result.current.signals.rejected());
+        expect(rejoin).toHaveBeenCalledTimes(1);
+        act(() => result.current.signals.disconnected()); // that attempt was refused too
+        await advance(3_500);
+        expect(rejoin).toHaveBeenCalledTimes(2);
+        act(() => result.current.signals.joined());
+        await advance(55_000); // well past the 50 s join deadline: joined in time, so no no-show
+        expect(endTournamentMatch).not.toHaveBeenCalled();
+        expect(isNoShow('m1', 'peer-h')).toBe(false);
+    });
+
     it('not back within 60 s: a no-show (no more heartbeats from the bracket) and back to the bracket', async () => {
         const { result } = joinedGuest();
         act(() => result.current.signals.disconnected());

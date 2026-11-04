@@ -8,7 +8,7 @@ const base = (): SessionCallbacks => ({
     onJoined: vi.fn(), onRejected: vi.fn(), onConnectionError: vi.fn(), onDisconnected: vi.fn(), onEvents: vi.fn(),
 });
 const signals = (): TournamentMatchSignals => ({
-    inviteReady: vi.fn(), joined: vi.fn(), snapshot: vi.fn(), disconnected: vi.fn(), rejoinReady: vi.fn(), escape: vi.fn(),
+    inviteReady: vi.fn(), joined: vi.fn(), snapshot: vi.fn(), disconnected: vi.fn(), rejected: vi.fn(), rejoinReady: vi.fn(), escape: vi.fn(),
 });
 const info = { id: 'p1' } as JoinAccepted;
 
@@ -37,13 +37,22 @@ describe('withTournamentSignals', () => {
         expect(callbacks.onDisconnected).not.toHaveBeenCalled();
     });
 
+    it('a join refused as full goes to the duel (it dials again: the old link may still hold the seat)', () => {
+        const callbacks = base();
+        const s = signals();
+        const wrapped = withTournamentSignals(callbacks, s);
+        wrapped.onRejected('full');
+        expect(s.rejected).toHaveBeenCalledTimes(1);
+        expect(callbacks.onRejected).not.toHaveBeenCalled();
+        wrapped.onRejected('invalid');
+        expect(callbacks.onRejected).toHaveBeenCalledWith('invalid');
+    });
+
     it('everything else passes through', () => {
         const callbacks = base();
         const wrapped = withTournamentSignals(callbacks, signals());
-        wrapped.onRejected('full');
         wrapped.onConnectionError('boom');
         wrapped.onEvents([]);
-        expect(callbacks.onRejected).toHaveBeenCalledWith('full');
         expect(callbacks.onConnectionError).toHaveBeenCalledWith('boom');
         expect(callbacks.onEvents).toHaveBeenCalledWith([]);
     });

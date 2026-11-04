@@ -10,7 +10,7 @@ import { markForfeit, markNoShow } from '../tournament/autopilot/runHistory';
 import { queueReport } from '../tournament/autopilot/reportOutbox';
 import { GuestRejoin } from './guestRejoin';
 import { duelScores, opponentOf } from './duelScores';
-import { FlowCalls } from './flowCalls';
+import { FlowCalls, type FlowCallHooks } from './flowCalls';
 
 export const HEARTBEAT_MS = 10_000; // matchSeen while connected (resolve_stale counts 60 s of silence)
 export const BACK_TO_BRACKET_MS = 8_000; // after the end screen appears
@@ -19,15 +19,12 @@ export const HOST_SILENT_MS = 5_000; // PeerJS never reports a vanished host: no
 export const GUEST_JOIN_MS = 50_000; // a guest that cannot join the host by then counts as a no-show
 export const FORFEIT_CONFIRM_MS = 2_000; // the second Esc must come this soon to forfeit
 
-export interface MatchFlowDeps {
+/** fail / ok (FlowCallHooks): a tournament call failed (log and show it) / went through (the error is over). */
+export interface MatchFlowDeps extends FlowCallHooks {
     run: TournamentMatchRun;
     read: () => { state: GameState; localId: string };
     /** Back to the bracket (endTournamentMatch). */
     end: () => void;
-    /** A tournament call failed: log it and show it. */
-    fail: (what: string, error: unknown) => void;
-    /** A tournament call went through: the shown error, if any, is over. */
-    ok: () => void;
     /** Guest: drop the link to the host and dial it again. */
     rejoin: () => void;
 }
@@ -62,9 +59,9 @@ export class TournamentMatchFlow {
         return !this.finished && this.forfeitArmedAt !== null && now - this.forfeitArmedAt < FORFEIT_CONFIRM_MS;
     }
 
-    /** Guest: the link dropped and it is dialling the host again. */
+    /** Guest: the link dropped mid-duel and it is dialling the host again. */
     get reconnecting(): boolean {
-        return !this.finished && this.rejoining.active;
+        return !this.finished && this.connectedAt !== null && this.rejoining.active;
     }
 
     /** Called a few times a second. */
@@ -72,11 +69,12 @@ export class TournamentMatchFlow {
         if (this.finished) return;
         if (this.connectedAt === null) {
             if (now >= this.joinDeadline) this.noShow(`could not join the host within ${GUEST_JOIN_MS / 1000} s`);
+            else this.rejoining.tick(now); // a refused first join is dialled again
             return;
         }
         if (now - this.lastBeatAt >= HEARTBEAT_MS) {
             this.lastBeatAt = now;
-            this.call('matchSeen', () => matchSeen(this.deps.run.matchId, this.deps.run.ticket));
+            this.calls.run('matchSeen', () => matchSeen(this.deps.run.matchId, this.deps.run.ticket));
         }
         if (this.rejoining.active) {
             if (this.rejoining.tick(now) === 'gave-up') this.noShow('could not get back into the duel within 60 s');
@@ -117,7 +115,7 @@ export class TournamentMatchFlow {
 
     /** Host: the room is reachable at this PeerJS id. */
     inviteReady(peerId: string): void {
-        const publish = () => this.call('publishHost', () => publishHost(this.deps.run.matchId, this.deps.run.ticket, peerId), publish);
+        const publish = () => this.calls.run('publishHost', () => publishHost(this.deps.run.matchId, this.deps.run.ticket, peerId), publish);
         publish();
     }
 
@@ -132,15 +130,22 @@ export class TournamentMatchFlow {
         this.lastSnapshotAt = now;
     }
 
+    /** First join refused as full: our old link (before a reload) holds the seat until the host drops it. */
+    rejected(now: number): void {
+        if (this.finished || this.connectedAt !== null) return;
+        console.warn('[tournament] the host says the duel is full, dialling again');
+        this.rejoining.start(now);
+    }
+
     /** The link to the room closed (the host left or the network dropped), or a reconnect attempt failed. */
     disconnected(now: number): void {
         if (this.finished) return;
-        if (this.connectedAt === null) {
+        if (this.rejoining.active) {
+            this.rejoining.failed(now);
+        } else if (this.connectedAt === null) {
             this.noShow('lost the link to the host before joining');
         } else if (this.endSeenAt !== null || this.deps.read().state.matchEndsAt) {
             this.finish(); // decided already
-        } else if (this.rejoining.active) {
-            this.rejoining.failed(now);
         } else {
             console.warn('[tournament] lost the link to the host, reconnecting');
             this.rejoining.start(now);
@@ -170,7 +175,7 @@ export class TournamentMatchFlow {
         const { matchId, ticket, side } = this.deps.run;
         const scores = duelScores(state, localId, side);
         let refused = false; // bad_ticket / bad_score: retrying cannot help
-        const send = () => this.call('reportResult', async () => {
+        const send = () => this.calls.run('reportResult', async () => {
             const outcome = await queueReport({ matchId, ticket, ...scores });
             if (outcome.kind === 'sent') return;
             refused = outcome.kind === 'dropped';
@@ -190,9 +195,5 @@ export class TournamentMatchFlow {
         if (this.finished) return;
         this.finished = true;
         this.deps.end();
-    }
-
-    private call(what: string, request: () => Promise<void>, retry?: () => void): void {
-        this.calls.run(what, request, retry);
     }
 }
