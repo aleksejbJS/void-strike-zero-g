@@ -10,6 +10,8 @@
 --   * Every write locks the tournament row first, so two browsers acting at the same moment are applied one
 --     after the other: the first decision about a match wins, the second is a no-op.
 --   * Server time (now()) is the only clock for every time rule.
+--   * Heartbeats (lobby_seen, match_seen) never write a row that Realtime publishes: every browser watching
+--     the bracket would reload on each of them. They go to tournament_seats.seen_at and tournament_presence.
 -- Error messages are codes the client maps: not_open, full, not_creator, not_enough_players, bad_ticket,
 -- and for malformed input bad_name, bad_nickname, bad_score, bad_peer_id.
 
@@ -43,8 +45,11 @@ create table if not exists public.tournament_seats (
     bracket_pos int check (bracket_pos between 0 and 7), -- shuffled at start
     secret_hash bytea,                                   -- sha256 of the seat secret; null for bots
     joined_at timestamptz not null default now(),
+    seen_at timestamptz,                                 -- last lobby heartbeat (lobby_seen); null for bots
     primary key (tournament_id, seat)
 );
+-- For databases where an earlier version of this file already ran.
+alter table public.tournament_seats add column if not exists seen_at timestamptz;
 
 -- round 0 is the first round; the winner of (round, slot) plays in (round + 1, slot / 2).
 create table if not exists public.tournament_matches (
@@ -62,10 +67,11 @@ create table if not exists public.tournament_matches (
     winner_seat int,
     decided_by text check (decided_by in ('played', 'walkover', 'bot')),
     ready_at timestamptz,
-    a_seen_at timestamptz,
-    b_seen_at timestamptz,
     unique (tournament_id, round, slot)
 );
+-- An earlier version kept the fighters' heartbeats here (a published table): they live in tournament_presence now.
+alter table public.tournament_matches drop column if exists a_seen_at;
+alter table public.tournament_matches drop column if exists b_seen_at;
 -- For databases where an earlier version of this file already ran (the table existed without the check).
 do $$
 begin
@@ -79,12 +85,21 @@ begin
 end
 $$;
 
+-- Fighters' heartbeats (match_seen), read by resolve_stale. Not published, not readable by the browser.
+create table if not exists public.tournament_presence (
+    match_id uuid not null references public.tournament_matches (id) on delete cascade,
+    seat int not null,
+    seen_at timestamptz not null default now(),
+    primary key (match_id, seat)
+);
+
 -- ---------------------------------------------------------------------------
 -- Read access: everyone may read, nobody may write directly
 -- ---------------------------------------------------------------------------
 alter table public.tournaments enable row level security;
 alter table public.tournament_seats enable row level security;
 alter table public.tournament_matches enable row level security;
+alter table public.tournament_presence enable row level security;
 
 drop policy if exists "tournaments are readable by everyone" on public.tournaments;
 create policy "tournaments are readable by everyone" on public.tournaments for select using (true);
@@ -95,11 +110,12 @@ create policy "tournament matches are readable by everyone" on public.tournament
 
 -- Supabase grants ALL on new tables to anon/authenticated by default. Take it all back, then give
 -- back reads only. No insert/update/delete policy exists either: RLS is the second lock.
-revoke all on table public.tournaments, public.tournament_seats, public.tournament_matches
+revoke all on table public.tournaments, public.tournament_seats, public.tournament_matches, public.tournament_presence
     from public, anon, authenticated;
 grant select on table public.tournaments, public.tournament_matches to anon, authenticated;
 -- Column grants: every seat column except secret_hash. A table-level select would expose it.
-grant select (tournament_id, seat, nickname, is_bot, bracket_pos, joined_at)
+-- seen_at is public: the lobby shows Start to a stand-in when the creator went silent (start_tournament).
+grant select (tournament_id, seat, nickname, is_bot, bracket_pos, joined_at, seen_at)
     on table public.tournament_seats to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -108,7 +124,8 @@ grant select (tournament_id, seat, nickname, is_bot, bracket_pos, joined_at)
 -- tournament_seats is deliberately NOT published: a change payload could carry secret_hash if Realtime
 -- ignored the column grant. Seat changes bump tournaments.updated_at instead, and the browser reloads
 -- the seats through the normal (column-granted) select. An earlier version of this file published the
--- seats, so they are removed here when present.
+-- seats, so they are removed here when present. tournament_presence is never published either: it
+-- changes with every heartbeat.
 -- ---------------------------------------------------------------------------
 do $$
 declare
@@ -126,12 +143,14 @@ begin
             execute format('alter publication supabase_realtime add table public.%I', v_table);
         end if;
     end loop;
-    if exists (
-        select 1 from pg_publication_tables
-        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'tournament_seats'
-    ) then
-        alter publication supabase_realtime drop table public.tournament_seats;
-    end if;
+    foreach v_table in array array['tournament_seats', 'tournament_presence'] loop
+        if exists (
+            select 1 from pg_publication_tables
+            where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = v_table
+        ) then
+            execute format('alter publication supabase_realtime drop table public.%I', v_table);
+        end if;
+    end loop;
 end
 $$;
 
@@ -161,7 +180,9 @@ end;
 $$;
 
 -- Moves the bracket forward until nothing changes. Called by the RPCs inside their transaction.
-create or replace function public.settle(p_id uuid)
+-- An earlier version of this file named it public.settle: that name is too generic for the public schema.
+drop function if exists public.settle(uuid);
+create or replace function public.tournament_settle(p_id uuid)
 returns void
 language plpgsql
 security definer
@@ -230,7 +251,7 @@ $$;
 
 -- Supabase also grants EXECUTE on new functions to the browser roles by default: take it back.
 revoke all on function public.tournament_check_ticket(uuid, int, text) from public, anon, authenticated;
-revoke all on function public.settle(uuid) from public, anon, authenticated;
+revoke all on function public.tournament_settle(uuid) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Lobby RPCs
@@ -260,8 +281,8 @@ begin
     delete from tournaments where created_at < now() - interval '24 hours';
 
     insert into tournaments (name) values (v_name) returning id into v_id;
-    insert into tournament_seats (tournament_id, seat, nickname, secret_hash)
-    values (v_id, 0, v_nickname, digest(v_secret, 'sha256'));
+    insert into tournament_seats (tournament_id, seat, nickname, secret_hash, seen_at)
+    values (v_id, 0, v_nickname, digest(v_secret, 'sha256'), now());
 
     return json_build_object('id', v_id, 'seat', 0, 'secret', encode(v_secret, 'hex'));
 end;
@@ -298,8 +319,8 @@ begin
         raise exception 'full';
     end if;
 
-    insert into tournament_seats (tournament_id, seat, nickname, secret_hash)
-    values (p_id, v_seat, v_nickname, digest(v_secret, 'sha256'));
+    insert into tournament_seats (tournament_id, seat, nickname, secret_hash, seen_at)
+    values (p_id, v_seat, v_nickname, digest(v_secret, 'sha256'), now());
     -- Seats are not in Realtime: this row change is what tells the lobby someone joined.
     update tournaments t set updated_at = now() where t.id = p_id;
 
@@ -340,7 +361,29 @@ begin
 end;
 $$;
 
--- The creator starts: fill with bots, shuffle the bracket, create every match, settle bot vs bot.
+-- Lobby heartbeat of a signed-up browser: "I am still here" (start_tournament reads it). It writes only
+-- tournament_seats, which Realtime does not publish, so it never makes the watching browsers reload.
+-- Outside the lobby it does nothing.
+create or replace function public.lobby_seen(p_id uuid, p_seat int, p_secret text)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare
+    v_status text;
+begin
+    select t.status into v_status from tournaments t where t.id = p_id for update;
+    perform tournament_check_ticket(p_id, p_seat, p_secret);
+    if v_status = 'lobby' then
+        update tournament_seats s set seen_at = now() where s.tournament_id = p_id and s.seat = p_seat;
+    end if;
+end;
+$$;
+
+-- Starts the tournament: fill with bots, shuffle the bracket, create every match, settle bot vs bot.
+-- The creator starts it. When the creator has been silent for 60 s (no lobby_seen: tab closed), the
+-- earliest-joined seat that is still present (seen within 60 s) may start it instead.
 create or replace function public.start_tournament(p_id uuid, p_seat int, p_secret text)
 returns void
 language plpgsql
@@ -351,6 +394,8 @@ declare
     t tournaments;
     v_humans int;
     v_size int;
+    v_creator_seen timestamptz;
+    v_stand_in int;
 begin
     select * into t from tournaments where id = p_id for update;
     perform tournament_check_ticket(p_id, p_seat, p_secret);
@@ -358,7 +403,19 @@ begin
         raise exception 'not_open';
     end if;
     if t.creator_seat <> p_seat then
-        raise exception 'not_creator';
+        select s.seen_at into v_creator_seen from tournament_seats s
+        where s.tournament_id = p_id and s.seat = t.creator_seat;
+        if v_creator_seen >= now() - interval '60 seconds' then
+            raise exception 'not_creator';
+        end if;
+        select s.seat into v_stand_in from tournament_seats s
+        where s.tournament_id = p_id and not s.is_bot and s.seat <> t.creator_seat
+          and s.seen_at >= now() - interval '60 seconds'
+        order by s.joined_at, s.seat
+        limit 1;
+        if v_stand_in is distinct from p_seat then
+            raise exception 'not_creator';
+        end if;
     end if;
 
     select count(*) into v_humans from tournament_seats s where s.tournament_id = p_id;
@@ -397,7 +454,7 @@ begin
 
     update tournaments set status = 'running', size = v_size, started_at = now(), updated_at = now() where id = p_id;
 
-    perform settle(p_id);
+    perform tournament_settle(p_id);
 end;
 $$;
 
@@ -433,7 +490,8 @@ $$;
 
 revoke all on function public.tournament_lock_match(uuid, int, text) from public, anon, authenticated;
 
--- Heartbeat from a fighter of the match: "I am still here" (feeds resolve_stale).
+-- Heartbeat from a fighter of the match: "I am still here" (feeds resolve_stale). Written to
+-- tournament_presence, which Realtime does not publish: a heartbeat never reloads the watching browsers.
 create or replace function public.match_seen(p_match uuid, p_seat int, p_secret text)
 returns void
 language plpgsql
@@ -443,10 +501,8 @@ as $$
 declare
     m tournament_matches := tournament_lock_match(p_match, p_seat, p_secret);
 begin
-    update tournament_matches x set
-        a_seen_at = case when p_seat = m.seat_a then now() else x.a_seen_at end,
-        b_seen_at = case when p_seat = m.seat_b then now() else x.b_seen_at end
-    where x.id = p_match;
+    insert into tournament_presence (match_id, seat, seen_at) values (m.id, p_seat, now())
+    on conflict (match_id, seat) do update set seen_at = excluded.seen_at;
 end;
 $$;
 
@@ -490,9 +546,11 @@ begin
         return;
     end if;
     -- A duel always has a winner (sudden death on a tie), so equal scores mean a broken client.
-    -- The score limit is 10, so nobody can have more.
-    if p_score_a is null or p_score_b is null or least(p_score_a, p_score_b) < 0
-        or greatest(p_score_a, p_score_b) > 10 or p_score_a = p_score_b then
+    -- The score limit is 10. Only sudden death after a 10:10 (a mutual kill at 9:9) goes past it, and then
+    -- the next kill decides: the winner is exactly one ahead (11:10, or 12:11 after another mutual kill).
+    if p_score_a is null or p_score_b is null or least(p_score_a, p_score_b) < 0 or p_score_a = p_score_b
+        or (greatest(p_score_a, p_score_b) > 10
+            and (least(p_score_a, p_score_b) < 10 or abs(p_score_a - p_score_b) <> 1)) then
         raise exception 'bad_score';
     end if;
 
@@ -504,15 +562,16 @@ begin
         winner_seat = case when p_score_a > p_score_b then m.seat_a else m.seat_b end
     where x.id = p_match;
 
-    perform settle(m.tournament_id);
+    perform tournament_settle(m.tournament_id);
 end;
 $$;
 
 -- Anyone may call this (every browser watching the bracket does, now and then). A ready match older
--- than 60 s is decided by walkover when a human side has not sent a heartbeat for 60 s:
+-- than 60 s is decided by walkover when a human side has not sent a heartbeat (match_seen) for 60 s:
 -- one side stale -> the other side wins; both stale -> coin flip. Bots are never stale.
--- Any ready match older than 15 min is closed too (coin flip when neither side is stale): a stalling host
--- or a link that never forms must not freeze the bracket. A real duel ends within 10 min plus sudden death.
+-- Any ready match older than 25 min (counted from ready_at) is closed too, by coin flip when neither side
+-- is stale: a stalling host or a link that never forms must not freeze the bracket. A real duel ends within
+-- its 10 min, plus sudden death, which has no cap of its own: 25 min leaves it a long margin.
 create or replace function public.resolve_stale(p_id uuid)
 returns void
 language plpgsql
@@ -528,12 +587,14 @@ begin
     with sides as (
         select
             m.id, m.seat_a, m.seat_b,
-            not sa.is_bot and (m.a_seen_at is null or m.a_seen_at < now() - interval '60 seconds') as a_stale,
-            not sb.is_bot and (m.b_seen_at is null or m.b_seen_at < now() - interval '60 seconds') as b_stale,
-            m.ready_at < now() - interval '15 minutes' as timed_out
+            not sa.is_bot and (pa.seen_at is null or pa.seen_at < now() - interval '60 seconds') as a_stale,
+            not sb.is_bot and (pb.seen_at is null or pb.seen_at < now() - interval '60 seconds') as b_stale,
+            m.ready_at < now() - interval '25 minutes' as timed_out
         from tournament_matches m
         join tournament_seats sa on sa.tournament_id = m.tournament_id and sa.seat = m.seat_a
         join tournament_seats sb on sb.tournament_id = m.tournament_id and sb.seat = m.seat_b
+        left join tournament_presence pa on pa.match_id = m.id and pa.seat = m.seat_a
+        left join tournament_presence pb on pb.match_id = m.id and pb.seat = m.seat_b
         where m.tournament_id = p_id and m.status = 'ready' and m.ready_at < now() - interval '60 seconds'
     )
     update tournament_matches x set
@@ -547,7 +608,7 @@ begin
     from sides s
     where x.id = s.id and (s.a_stale or s.b_stale or s.timed_out);
 
-    perform settle(p_id);
+    perform tournament_settle(p_id);
 end;
 $$;
 
@@ -558,6 +619,7 @@ revoke all on function public.create_tournament(text, text) from public;
 revoke all on function public.join_tournament(uuid, text) from public;
 revoke all on function public.leave_tournament(uuid, int, text) from public;
 revoke all on function public.start_tournament(uuid, int, text) from public;
+revoke all on function public.lobby_seen(uuid, int, text) from public;
 revoke all on function public.match_seen(uuid, int, text) from public;
 revoke all on function public.publish_host(uuid, int, text, text) from public;
 revoke all on function public.report_result(uuid, int, text, int, int) from public;
@@ -567,6 +629,7 @@ grant execute on function public.create_tournament(text, text) to anon, authenti
 grant execute on function public.join_tournament(uuid, text) to anon, authenticated;
 grant execute on function public.leave_tournament(uuid, int, text) to anon, authenticated;
 grant execute on function public.start_tournament(uuid, int, text) to anon, authenticated;
+grant execute on function public.lobby_seen(uuid, int, text) to anon, authenticated;
 grant execute on function public.match_seen(uuid, int, text) to anon, authenticated;
 grant execute on function public.publish_host(uuid, int, text, text) to anon, authenticated;
 grant execute on function public.report_result(uuid, int, text, int, int) to anon, authenticated;

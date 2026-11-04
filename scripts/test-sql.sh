@@ -75,8 +75,16 @@ SQL
 
 echo "[test-sql] loading the migration twice (it must be idempotent)"
 "${PSQL[@]}" -f "$MIGRATION"
-# Simulate a database where an earlier version ran: it published tournament_seats. The re-run must drop it.
-"${PSQL[@]}" -c "alter publication supabase_realtime add table public.tournament_seats"
+# Simulate a database where an earlier version ran: it published tournament_seats, kept the heartbeats on the
+# match row (a_seen_at, b_seen_at), had no seats.seen_at nor tournament_presence, and named settle() plainly.
+# The re-run must bring it to the current shape (tournaments.test.sql checks it).
+"${PSQL[@]}" <<'SQL'
+alter publication supabase_realtime add table public.tournament_seats;
+alter table public.tournament_matches add column a_seen_at timestamptz, add column b_seen_at timestamptz;
+alter table public.tournament_seats drop column seen_at;
+drop table public.tournament_presence;
+create function public.settle(p_id uuid) returns void language sql as 'select';
+SQL
 "${PSQL[@]}" -f "$MIGRATION"
 
 echo "[test-sql] running $TESTS"

@@ -3,7 +3,7 @@
 -- it creates a helper schema and test tournaments.
 --
 -- Each case is one DO block of asserts and starts from a fresh create_tournament.
--- Time rules are tested by moving created_at / ready_at / *_seen_at into the past (we run as superuser).
+-- Time rules are tested by moving created_at / ready_at / seen_at into the past (we run as superuser).
 -- Random choices (shuffle, walkover with both sides stale, bot vs bot) are checked by invariants only.
 
 set client_min_messages = warning;
@@ -76,6 +76,16 @@ begin
         raise exception 'expected error "%", got "%" from: %', p_code, coalesce(v_msg, '(no error)'), p_sql;
     end if;
 end $$;
+
+-- A fighter's last heartbeat for a match, p_ago in the past (what match_seen writes).
+create function tt.seen(p_match uuid, p_seat int, p_ago interval) returns void
+language sql as $$
+    insert into public.tournament_presence (match_id, seat, seen_at) values (p_match, p_seat, now() - p_ago)
+    on conflict (match_id, seat) do update set seen_at = excluded.seen_at
+$$;
+
+create function tt.seen_at(p_match uuid, p_seat int) returns timestamptz
+language sql as $$ select seen_at from public.tournament_presence where match_id = p_match and seat = p_seat $$;
 
 -- The host reports a result for the match.
 create function tt.report(p_match uuid, p_a int, p_b int) returns void
@@ -282,9 +292,12 @@ declare v_guest int := case when m.host_seat = m.seat_a then m.seat_b else m.sea
 declare v_other int := (tt.m(v_tid, 0, 1)).seat_a;
 begin
     perform public.match_seen(m.id, m.seat_a, tt.sec(v_tid, m.seat_a));
-    assert (tt.m(v_tid, 0, 0)).a_seen_at = now() and (tt.m(v_tid, 0, 0)).b_seen_at is null, 'seat a seen';
+    assert tt.seen_at(m.id, m.seat_a) = now() and tt.seen_at(m.id, m.seat_b) is null, 'seat a seen';
     perform public.match_seen(m.id, m.seat_b, tt.sec(v_tid, m.seat_b));
-    assert (tt.m(v_tid, 0, 0)).b_seen_at = now(), 'seat b seen';
+    assert tt.seen_at(m.id, m.seat_b) = now(), 'seat b seen';
+    perform tt.seen(m.id, m.seat_a, interval '1 minute');
+    perform public.match_seen(m.id, m.seat_a, tt.sec(v_tid, m.seat_a));
+    assert tt.seen_at(m.id, m.seat_a) = now(), 'a later heartbeat moves seen_at forward';
     perform tt.expect_error(format('select public.match_seen(%L, %s, %L)', m.id, v_other, tt.sec(v_tid, v_other)),
         'bad_ticket');
     perform tt.expect_error(format('select public.match_seen(%L, %s, %L)', m.id, m.seat_a, repeat('a', 64)),
@@ -322,6 +335,10 @@ begin
     perform tt.expect_error(format('select public.report_result(%L, %s, %L, -1, 3)', m.id, m.host_seat,
         tt.sec(v_tid, m.host_seat)), 'bad_score');
     perform tt.expect_error(format('select public.report_result(%L, %s, %L, 11, 3)', m.id, m.host_seat,
+        tt.sec(v_tid, m.host_seat)), 'bad_score');
+    perform tt.expect_error(format('select public.report_result(%L, %s, %L, 11, 9)', m.id, m.host_seat,
+        tt.sec(v_tid, m.host_seat)), 'bad_score');
+    perform tt.expect_error(format('select public.report_result(%L, %s, %L, 9, 11)', m.id, m.host_seat,
         tt.sec(v_tid, m.host_seat)), 'bad_score');
     assert (tt.m(v_tid, 0, 1)).status = 'ready', 'rejected scores change nothing';
 
@@ -385,32 +402,33 @@ begin
     select * into m from public.tournament_matches where tournament_id = v_tid and round = 0 and 3 in (seat_a, seat_b);
     v_human := case when m.seat_a = 3 then m.seat_b else m.seat_a end;
     select * into v_other from public.tournament_matches where tournament_id = v_tid and round = 0 and id <> m.id;
-    update public.tournament_matches set ready_at = now() - interval '5 minutes',
-        a_seen_at = now() - interval '90 seconds', b_seen_at = now() - interval '90 seconds' where id = m.id;
-    update public.tournament_matches set ready_at = now() - interval '5 minutes',
-        a_seen_at = now() - interval '20 seconds', b_seen_at = now() - interval '20 seconds' where id = v_other.id;
+    update public.tournament_matches set ready_at = now() - interval '5 minutes' where id in (m.id, v_other.id);
+    perform tt.seen(m.id, v_human, interval '90 seconds');
+    perform tt.seen(v_other.id, v_other.seat_a, interval '20 seconds');
+    perform tt.seen(v_other.id, v_other.seat_b, interval '20 seconds');
     perform public.resolve_stale(v_tid);
     m := tt.m(v_tid, 0, m.slot);
     assert m.status = 'done' and m.decided_by = 'walkover' and m.winner_seat = 3, 'stale human loses to the bot';
     assert (tt.m(v_tid, 0, v_other.slot)).status = 'ready', 'both seen recently: untouched';
 end $$;
 
--- A ready match older than 15 min is closed even when both sides are fresh (stalling host, no link).
+-- A ready match older than 25 min is closed even when both sides are fresh (stalling host, no link).
+-- Sudden death has no cap, so a 24 min old match with both sides present is left alone.
 do $$
 declare v_tid uuid := tt.running(4);
 declare m public.tournament_matches := tt.m(v_tid, 0, 0);
 declare v_other public.tournament_matches := tt.m(v_tid, 0, 1);
 begin
-    update public.tournament_matches set ready_at = now() - interval '16 minutes',
-        a_seen_at = now(), b_seen_at = now() where id = m.id;
-    update public.tournament_matches set ready_at = now() - interval '14 minutes',
-        a_seen_at = now(), b_seen_at = now() where id = v_other.id;
+    update public.tournament_matches set ready_at = now() - interval '26 minutes' where id = m.id;
+    update public.tournament_matches set ready_at = now() - interval '24 minutes' where id = v_other.id;
+    perform tt.seen(m.id, m.seat_a, interval '0'), tt.seen(m.id, m.seat_b, interval '0');
+    perform tt.seen(v_other.id, v_other.seat_a, interval '0'), tt.seen(v_other.id, v_other.seat_b, interval '0');
     perform public.resolve_stale(v_tid);
     m := tt.m(v_tid, 0, 0);
-    assert m.status = 'done' and m.decided_by = 'walkover', '16 min old match closed by walkover';
+    assert m.status = 'done' and m.decided_by = 'walkover', '26 min old match closed by walkover';
     assert m.winner_seat in (m.seat_a, m.seat_b), 'winner is one of the two';
     assert (tt.m(v_tid, 1, 0)).seat_a = m.winner_seat, 'winner advances';
-    assert (tt.m(v_tid, 0, 1)).status = 'ready', '14 min old match with fresh sides untouched';
+    assert (tt.m(v_tid, 0, 1)).status = 'ready', '24 min old match with fresh sides untouched';
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -438,6 +456,108 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Case: sudden death past the score limit — a mutual kill at 9:9 makes 10:10, the next kill decides
+-- ---------------------------------------------------------------------------
+do $$
+declare v_tid uuid := tt.running(4);
+declare m0 public.tournament_matches := tt.m(v_tid, 0, 0);
+declare m1 public.tournament_matches := tt.m(v_tid, 0, 1);
+begin
+    perform tt.report(m0.id, 10, 11);
+    assert (tt.m(v_tid, 0, 0)).winner_seat = m0.seat_b and (tt.m(v_tid, 0, 0)).score_b = 11, '10:11 accepted';
+    perform tt.report(m1.id, 12, 11);
+    assert (tt.m(v_tid, 0, 1)).winner_seat = m1.seat_a, '12:11 (another mutual kill) accepted';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Case: lobby heartbeat, and who may start when the creator went silent
+-- ---------------------------------------------------------------------------
+do $$
+declare v_tid uuid := tt.create();
+begin
+    assert (select seen_at from public.tournament_seats where tournament_id = v_tid and seat = 0) = now(),
+        'create marks the creator present';
+    perform tt.join(v_tid, 'Second');
+    perform tt.join(v_tid, 'Third');
+    assert (select seen_at from public.tournament_seats where tournament_id = v_tid and seat = 2) = now(),
+        'join marks the new seat present';
+    update public.tournament_seats set joined_at = now() - interval '5 minutes' where tournament_id = v_tid and seat = 0;
+    update public.tournament_seats set joined_at = now() - interval '4 minutes' where tournament_id = v_tid and seat = 1;
+    update public.tournament_seats set joined_at = now() - interval '3 minutes' where tournament_id = v_tid and seat = 2;
+
+    -- The creator is present: nobody else may start.
+    update public.tournament_seats set seen_at = now() - interval '59 seconds' where tournament_id = v_tid and seat = 0;
+    perform tt.expect_error(format('select public.start_tournament(%L, 1, %L)', v_tid, tt.sec(v_tid, 1)), 'not_creator');
+    perform tt.expect_error(format('select public.start_tournament(%L, 2, %L)', v_tid, tt.sec(v_tid, 2)), 'not_creator');
+
+    -- lobby_seen moves seen_at forward, checks the ticket, and never touches the published tournaments row.
+    update public.tournament_seats set seen_at = now() - interval '10 minutes' where tournament_id = v_tid and seat = 1;
+    update public.tournaments set updated_at = now() - interval '1 hour' where id = v_tid;
+    perform public.lobby_seen(v_tid, 1, tt.sec(v_tid, 1));
+    assert (select seen_at from public.tournament_seats where tournament_id = v_tid and seat = 1) = now(), 'seat 1 seen';
+    assert (select updated_at from public.tournaments where id = v_tid) = now() - interval '1 hour',
+        'lobby_seen does not bump updated_at';
+    perform tt.expect_error(format('select public.lobby_seen(%L, 1, %L)', v_tid, tt.sec(v_tid, 2)), 'bad_ticket');
+
+    -- The creator silent for 61 s, seat 1 (the earliest joined) silent too: seat 2 is the earliest present.
+    update public.tournament_seats set seen_at = now() - interval '61 seconds' where tournament_id = v_tid and seat in (0, 1);
+    perform tt.expect_error(format('select public.start_tournament(%L, 1, %L)', v_tid, tt.sec(v_tid, 1)), 'not_creator');
+    -- Seat 1 present again: it is the earliest present seat, so seat 2 may not start, seat 1 may.
+    update public.tournament_seats set seen_at = now() - interval '5 seconds' where tournament_id = v_tid and seat = 1;
+    perform tt.expect_error(format('select public.start_tournament(%L, 2, %L)', v_tid, tt.sec(v_tid, 2)), 'not_creator');
+    perform public.start_tournament(v_tid, 1, tt.sec(v_tid, 1));
+    assert (select status from public.tournaments where id = v_tid) = 'running', 'a present stand-in started it';
+
+    -- Outside the lobby the heartbeat does nothing.
+    update public.tournament_seats set seen_at = null where tournament_id = v_tid and seat = 1;
+    perform public.lobby_seen(v_tid, 1, tt.sec(v_tid, 1));
+    assert (select seen_at from public.tournament_seats where tournament_id = v_tid and seat = 1) is null,
+        'no lobby heartbeat once running';
+end $$;
+
+-- A creator who never sent a heartbeat (seen_at null) counts as silent; the earliest present seat starts.
+do $$
+declare v_tid uuid := tt.create();
+begin
+    perform tt.join(v_tid, 'Second');
+    perform tt.join(v_tid, 'Third');
+    update public.tournament_seats set seen_at = null where tournament_id = v_tid and seat = 0;
+    update public.tournament_seats set joined_at = now() - interval '1 minute' where tournament_id = v_tid and seat = 2;
+    perform tt.expect_error(format('select public.start_tournament(%L, 1, %L)', v_tid, tt.sec(v_tid, 1)), 'not_creator');
+    perform public.start_tournament(v_tid, 2, tt.sec(v_tid, 2));
+    assert (select status from public.tournaments where id = v_tid) = 'running', 'earliest-joined present seat started';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Case: a match heartbeat never rewrites a published row (it would reload every watching browser)
+-- ---------------------------------------------------------------------------
+do $$
+declare v_tid uuid := tt.running(4);
+declare m public.tournament_matches := tt.m(v_tid, 0, 0);
+declare v_match_ctid tid := (select ctid from public.tournament_matches where id = m.id);
+declare v_tournament_ctid tid := (select ctid from public.tournaments where id = v_tid);
+begin
+    perform public.match_seen(m.id, m.seat_a, tt.sec(v_tid, m.seat_a));
+    perform public.match_seen(m.id, m.seat_a, tt.sec(v_tid, m.seat_a));
+    assert (select ctid from public.tournament_matches where id = m.id) = v_match_ctid, 'match row not rewritten';
+    assert (select ctid from public.tournaments where id = v_tid) = v_tournament_ctid, 'tournament row not rewritten';
+    assert (select count(*) from public.tournament_presence where match_id = m.id) = 1, 'one presence row per seat';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Case: after re-running over an earlier version (see scripts/test-sql.sh) the old shapes are gone
+-- ---------------------------------------------------------------------------
+do $$
+begin
+    assert to_regprocedure('public.settle(uuid)') is null, 'the old settle() is dropped';
+    assert not exists (select 1 from information_schema.columns where table_schema = 'public'
+                       and table_name = 'tournament_matches' and column_name in ('a_seen_at', 'b_seen_at')),
+        'match heartbeat columns are dropped';
+    assert exists (select 1 from information_schema.columns where table_schema = 'public'
+                   and table_name = 'tournament_seats' and column_name = 'seen_at'), 'seats.seen_at added back';
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Case: Realtime publishes tournaments and matches, never seats (they hold secret_hash).
 -- The test script creates the publication and, between the two migration loads, adds tournament_seats
 -- to it the way an earlier version of the migration did: the second load must take it out again.
@@ -448,6 +568,8 @@ begin
             and tablename in ('tournaments', 'tournament_matches')) = 2, 'tournaments and matches in realtime';
     assert not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime'
                        and schemaname = 'public' and tablename = 'tournament_seats'), 'seats not in realtime';
+    assert not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime'
+                       and schemaname = 'public' and tablename = 'tournament_presence'), 'presence not in realtime';
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -476,8 +598,12 @@ end $$;
 -- ---------------------------------------------------------------------------
 do $$
 begin
-    assert not has_function_privilege('anon', 'public.settle(uuid)', 'execute'), 'anon cannot settle';
-    assert not has_function_privilege('authenticated', 'public.settle(uuid)', 'execute'), 'authenticated cannot settle';
+    assert not has_function_privilege('anon', 'public.tournament_settle(uuid)', 'execute'), 'anon cannot settle';
+    assert not has_function_privilege('authenticated', 'public.tournament_settle(uuid)', 'execute'),
+        'authenticated cannot settle';
+    assert has_function_privilege('anon', 'public.lobby_seen(uuid, int, text)', 'execute'), 'anon may lobby_seen';
+    assert not has_table_privilege('anon', 'public.tournament_presence', 'select'), 'anon cannot read presence';
+    assert has_column_privilege('anon', 'public.tournament_seats', 'seen_at', 'select'), 'anon reads seats.seen_at';
     assert not has_column_privilege('authenticated', 'public.tournament_seats', 'secret_hash', 'select'),
         'authenticated cannot read secret_hash';
     assert has_function_privilege('anon', 'public.resolve_stale(uuid)', 'execute'), 'anon may resolve_stale';
@@ -524,7 +650,7 @@ begin
 
     v_failed := false;
     begin
-        perform public.settle((v ->> 'id')::uuid);
+        perform public.tournament_settle((v ->> 'id')::uuid);
     exception when insufficient_privilege then v_failed := true;
     end;
     assert v_failed, 'anon cannot call settle';
