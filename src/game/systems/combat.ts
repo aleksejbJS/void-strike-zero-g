@@ -17,7 +17,7 @@ import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
-import { BARREL_KILL_NAME } from '../cover/coverTypes';
+import { killWeaponName } from './killWeaponName';
 
 // --- Teams ---
 
@@ -163,7 +163,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                 type: 'KILL',
                 killer: killer ? killer.name : 'World',
                 killerColor: killer ? killer.color : '#ffffff',
-                weapon: source.barrel ? BARREL_KILL_NAME : killer ? (credit.weapon ? WEAPONS_DATA[credit.weapon].name : killer.weapon.name) : 'Environment',
+                weapon: killWeaponName(killer, credit.weapon, source),
                 victim: target.name,
                 victimColor: target.color
             });
@@ -175,14 +175,14 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     killer.score += 100;
                 }
 
-                // A barrel kill scores but does not move the Gun Game ladder or count for weapon achievements
+                // A barrel kill scores but does not move the Gun Game ladder
                 if (state.mode === GameMode.GUN_GAME && !source.barrel) {
                     handleGunGameKill(state, killer);
                 }
 
-                // Track achievement only for player-controlled kills
-                if (killer.type === 'player' && !source.barrel) {
-                    trackKill(credit.weapon ?? killer.weapon.type);
+                // Track achievement only for player-controlled kills; a barrel kill counts as a kill but is no weapon's
+                if (killer.type === 'player') {
+                    trackKill(source.barrel ? undefined : credit.weapon ?? killer.weapon.type);
                 }
             }
         }

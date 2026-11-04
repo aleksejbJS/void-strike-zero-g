@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GameMode, Team } from '../../types';
+import { GameMode, Team, WeaponType } from '../../types';
+import { WEAPONS_DATA } from '../../constants';
 import type { Entity } from '../../types';
 import { createMockPlayer, createMockState } from '../../test/mocks';
 import { gameEvents, GameEvent } from '../systems/events';
@@ -158,10 +159,10 @@ describe('barrel blast', () => {
         expect(breaker.gunProgress).toBe(1);
     });
 
-    it('barrel kill does not count for weapon achievements', () => {
+    it('barrel kill counts for generic achievements but not for weapon ones', () => {
         const progress = vi.spyOn(achievementManager, 'updateProgress').mockReturnValue(false);
         const state = arena(GameMode.DEATHMATCH, barrelAt('b', 300));
-        const breaker = fighter('p1', Team.NONE, 1500);
+        const breaker = Object.assign(fighter('p1', Team.NONE, 1500), { weapon: { ...WEAPONS_DATA[WeaponType.CHAINSAW] } });
         const victim = fighter('v', Team.NONE, 300, 50);
         const other = fighter('o', Team.NONE, 900, 5);
         state.players.push(breaker, victim, other);
@@ -169,9 +170,11 @@ describe('barrel blast', () => {
         breakBarrel(state, state.cover[0], 'p1');
         tickCover(state, NOW);
         expect(victim.dead).toBe(true);
-        expect(progress).not.toHaveBeenCalled();
+        const tracked = () => progress.mock.calls.map(([id]) => id);
+        expect(tracked()).toEqual(['first_blood', 'killer', 'slayer', 'executioner']); // the breaker's chainsaw earns nothing
 
-        applyDamage(state, other, 'p1', 50, { x: 1, y: 0 }); // an ordinary kill is tracked
-        expect(progress).toHaveBeenCalledWith('first_blood');
+        progress.mockClear();
+        applyDamage(state, other, 'p1', 50, { x: 1, y: 0 }); // an ordinary kill with the chainsaw in hand does
+        expect(tracked()).toContain('chainsaw_master');
     });
 });
