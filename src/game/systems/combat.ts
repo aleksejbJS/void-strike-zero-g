@@ -5,7 +5,7 @@ import { GameState, Entity, Platform, Vector2, WeaponType, ItemType, GameMode, T
 import { WEAPONS_DATA, RESPAWN_DELAY, SELF_DAMAGE_MULT, SELF_KNOCKBACK_MULT, KNOCKBACK_AIR_MULT, PROJECTILE_MAX_LIFE } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
-import { distance, normalize, checkPointInRect, segmentRectEntry, segmentIntersectsRect } from '../utils/math';
+import { distance, normalize, checkPointInRect, segmentRectEntry } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
@@ -16,6 +16,7 @@ import { emitFlag } from './flagEvents';
 import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
+import { railThroughCover, chainsawCover } from '../cover/coverHits';
 
 // --- Teams ---
 
@@ -186,34 +187,6 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     }
 };
 
-// --- Explosions ---
-
-/** `directId`: the fighter the projectile itself hit; its blast is part of that direct hit, not a splash. */
-export const createExplosion = (state: GameState, pos: Vector2, ownerId: string, radius: number, weaponType?: WeaponType, directId?: string) => {
-    // Looks follow the blast radius; a grenade is drawn a bit smaller than a rocket (cosmetic only)
-    const size = (radius / 150) * (weaponType === WeaponType.GRENADE_LAUNCHER ? 0.85 : 1);
-    gameEvents.emit({ type: 'EFFECT', effect: 'explosion', x: pos.x, y: pos.y, size });
-    gameEvents.emit({ type: 'SOUND', sound: 'explosion' });
-
-    const wepData = weaponType ? WEAPONS_DATA[weaponType] : undefined;
-
-    const owner = state.players.find(o => o.id === ownerId);
-    // Walls shield from the blast: hit only if the chest or the feet can "see" the explosion
-    const blocked = (to: Vector2) => state.platforms.some(plat => segmentIntersectsRect(pos, to, plat));
-    const exposed = (p: Entity) => !blocked({ x: p.pos.x, y: p.pos.y - p.height / 2 }) || !blocked({ x: p.pos.x, y: p.pos.y - 2 });
-
-    state.players.forEach(p => {
-        if (owner && isTeammate(owner, p)) return;
-        if (!exposed(p)) return;
-        const dist = distance(pos, p.pos);
-        if (dist < radius) {
-            const dmg = (wepData?.damage ?? 100) * (1 - dist / radius);
-            const kbDir = { x: p.pos.x - pos.x, y: p.pos.y - pos.y };
-            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId });
-        }
-    });
-};
-
 // --- Weapon Firing ---
 
 /** Where a fighter's shots start (crouching and lying lower the gun). */
@@ -252,6 +225,10 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             if (t !== null && t < closestT) { closestT = t; hitPlayer = null; }
         });
 
+        // Metal and barrels stop the beam in front of whoever stands behind; wood and glass break and let it pass
+        const stopT = railThroughCover(state, origin, end, closestT, p.id, Date.now());
+        if (stopT < closestT) { closestT = stopT; hitPlayer = null; }
+
         const hitPos = { x: origin.x + dir.x * range * closestT, y: origin.y + dir.y * range * closestT };
 
         if (hitPlayer) {
@@ -287,6 +264,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
                 emitEffect('blood', tgt.pos.x, tgt.pos.y - 20, '#ef4444', 6);
             }
         });
+        chainsawCover(state, attackPos, p.id, Date.now());
         emitEffect('spark', attackPos.x, attackPos.y, '#ef4444', 8);
         gameEvents.emit({ type: 'SOUND', sound: 'shoot', subtype: p.weapon.type });
         return;

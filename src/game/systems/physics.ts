@@ -7,7 +7,10 @@ import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, se
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
 import { trackFlagCapture, trackItemPickup } from './achievements';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
-import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
+import { applyDamage, fireWeapon, isTeammate } from './combat';
+import { createExplosion } from './explosion';
+import { projectileCoverHit } from '../cover/coverHits';
+import { damageCover } from '../cover/coverDamage';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
 import { grantSpawnShield } from './spawnShield';
@@ -325,7 +328,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
         let impact = proj.pos;
         let target: Entity | null = null;
         const wall = state.platforms.find(plat => checkPointInRect(proj.pos, plat) || segmentIntersectsRect(prevPos, proj.pos, plat));
-        if (wall) {
+        const coverHit = projectileCoverHit(state, prevPos, proj.pos); // intact cover is a wall too: the nearer one is hit
+        if (wall || coverHit) {
             hit = true;
             impact = prevPos; // explode on the near side of the wall, not inside it
         } else {
@@ -354,9 +358,10 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             const explosive = proj.type === WeaponType.ROCKET_LAUNCHER || proj.type === WeaponType.GRENADE_LAUNCHER;
             if (explosive) {
                 // A rocket that hit a full-health fighter finishes them with its blast: still a direct hit
-                createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id);
+                createExplosion(state, impact, proj.ownerId, 150, proj.type, target?.id, { directCoverId: coverHit?.id });
             } else {
                 if (smokeRound) spawnSmoke(state, impact, now); // bursts into a cloud: no blast, no damage splash
+                else if (coverHit) damageCover(state, coverHit, WEAPONS_DATA[proj.type].damage, proj.ownerId, now);
                 gameEvents.emit({ type: 'SOUND', sound: 'hit' });
             }
             // Any weapon hitting a fighter draws blood; a wall hit throws sparks. An explosive keeps its
