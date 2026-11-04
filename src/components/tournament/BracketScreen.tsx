@@ -1,10 +1,11 @@
 // A running or finished tournament: the bracket (quarterfinal, semifinal, final, trophy), a banner about my
 // part in it, and Watch. useMyTurn starts my duel by itself when it is ready.
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
 import type { TranslationKeys } from '../../i18n/locales';
 import { useUIStore } from '../../store/uiStore';
+import { awardTournament } from '../../tournament/awardTournament';
 import { ticketFor } from '../../tournament/seatStore';
 import type { TournamentSnapshot } from '../../tournament/types';
 import { bracketColumns, roundName } from '../../game/tournament/bracketView';
@@ -32,6 +33,11 @@ export const BracketScreen: React.FC<{ snapshot: TournamentSnapshot }> = ({ snap
     const ticket = useMemo(() => ticketFor(tournament.id), [tournament.id]);
     const { turn, alreadyPlayed } = useMyTurn(snapshot, ticket);
     const mySeat = ticket?.seat ?? null;
+
+    // Champion, Finalist and Flawless are judged from every new snapshot; awardTournament pays each one once
+    useEffect(() => {
+        if (ticket) awardTournament(snapshot, ticket.seat);
+    }, [snapshot, ticket]);
 
     const columns = bracketColumns(snapshot);
     const size = tournament.size ?? (columns[0]?.length === 4 ? 8 : 4);
