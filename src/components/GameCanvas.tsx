@@ -14,6 +14,7 @@ import { screenToWorld, toView, viewportOf, worldToScreen, Viewport } from '../g
 import { drawAimLine } from '../game/render/aimLine';
 import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim } from '../game/input/sticks';
 import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
+import { attachWheelWeapon } from '../game/input/wheelWeapon';
 import { isTouchDevice } from './fullscreen';
 import { clampProneAim } from '../game/systems/stance';
 import { clearMarks } from '../game/systems/marks';
@@ -357,6 +358,7 @@ export default function GameCanvas() {
         let onMouseUp: ((e: MouseEvent) => void) | null = null;
         let onContextMenu: ((e: Event) => void) | null = null;
         let detachTouch: (() => void) | null = null;
+        let detachWheel: (() => void) | null = null;
         let onBlur: (() => void) | null = null;
         let onVisibilityChange: (() => void) | null = null;
         // Read once here: the isMobile state is not a dependency of this effect
@@ -884,6 +886,16 @@ export default function GameCanvas() {
                 });
             }
 
+            // Mouse wheel cycles through the weapon slots (down = next)
+            detachWheel = attachWheelWeapon(window, {
+                getLoadout: () => {
+                    const local = gameState.current.players.find(p => p.id === localIdRef.current);
+                    if (!local) return null;
+                    return { slots: local.inventory, current: local.inventory.findIndex(w => w.type === local.weapon?.type) };
+                },
+                select: index => selectWeapon(index),
+            });
+
             window.addEventListener('keydown', onKeyDown);
             window.addEventListener('keyup', onKeyUp);
             window.addEventListener('mousemove', onMouseMove);
@@ -911,6 +923,7 @@ export default function GameCanvas() {
             if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange);
 
             detachTouch?.();
+            detachWheel?.();
 
             // Keep textures: they are shared via the generateAssets() cache and reused next game
             if (pixiApp.current) destroyApp(pixiApp.current);
@@ -961,7 +974,7 @@ export default function GameCanvas() {
         ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue')
             : objective.timeMs !== undefined ? formatClock(Math.ceil(objective.timeMs / 1000)) : undefined)
         : null;
-    /** Keys 1–7 and the touch weapon row: switch locally at once, and tell the host when online. */
+    /** Keys 1–7, the mouse wheel and the touch weapon row: switch locally at once, and tell the host when online. */
     const selectWeapon = (index: number) => {
         const local = gameState.current.players.find(p => p.id === localIdRef.current);
         const weapon = local?.inventory[index];

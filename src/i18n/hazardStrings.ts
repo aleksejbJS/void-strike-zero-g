@@ -35,6 +35,7 @@ export interface HazardKeys {
     'ctl.leftClick': string;
     'ctl.rightClick': string;
     'ctl.or': string;
+    'ctl.wheel': string;
     'pv.you': string;
     'pv.killLine': string;
     'pv.killsThisWeapon': string;
@@ -83,6 +84,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.leftClick': 'Left click',
         'ctl.rightClick': 'Right click',
         'ctl.or': 'or',
+        'ctl.wheel': 'Mouse wheel',
         'pv.you': 'You',
         'pv.killLine': '{0} fragged {1}',
         'pv.killsThisWeapon': 'Kills this weapon: {0}',
@@ -129,6 +131,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.leftClick': 'ЛКМ',
         'ctl.rightClick': 'ПКМ',
         'ctl.or': 'или',
+        'ctl.wheel': 'Колесо',
         'pv.you': 'Вы',
         'pv.killLine': '{0}: фраг — {1}',
         'pv.killsThisWeapon': 'Убийств этим оружием: {0}',

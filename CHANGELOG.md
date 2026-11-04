@@ -1,5 +1,12 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.28 (unreleased)
+
+### 🖱️ Mouse-Wheel Weapon Switching
+- The mouse wheel cycles through the weapon slots: down = next, up = previous, empty slots are skipped and the ends wrap round. It goes through the same `selectWeapon` as keys 1–7, so online play needs no server change. `src/game/input/wheelWeapon.ts` (`wheelStep`, `cycleWeaponIndex`, `createWheelGate`, `attachWheelWeapon`) with tests
+- One gesture = one switch: a wheel event less than 150 ms after the previous one is ignored, so a trackpad swipe with its momentum tail switches once. Pinch-zoom (ctrl+wheel) and mostly horizontal swipes are ignored
+- The menu's controls legend shows `1–7 or Mouse wheel` (EN/RU)
+
 ## Version 0.4.27 (2026-11-04)
 
 ### 🎯 Railgun and Armor Slivers
