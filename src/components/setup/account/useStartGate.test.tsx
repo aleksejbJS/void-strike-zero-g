@@ -41,6 +41,7 @@ describe('useStartGate', () => {
         const { result, launch } = setup('guest', isNicknameTaken);
         await act(async () => { result.current.requestStart(); });
         expect(launch).not.toHaveBeenCalled();
+        act(() => { result.current.closeModal(); }); // the Log in window it opened is closed first
         await act(async () => { result.current.requestStart(); });
         expect(launch).toHaveBeenCalledTimes(1);
     });

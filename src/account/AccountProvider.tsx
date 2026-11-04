@@ -7,6 +7,7 @@ import { useUIStore } from '../store/uiStore';
 import { AccountError } from './accountError';
 import type { AccountApi, AccountUser } from './accountApi';
 import { completeLogin, logOutFlow } from './accountFlows';
+import { readDeviceOwner, setAsideForAccount } from './deviceOwner';
 import { accountsConfigured, loadAccountApi } from './loadAccountApi';
 import { createSync, Sync } from './sync';
 import { AccountContext, AccountState, AccountStatus } from './useAccount';
@@ -17,11 +18,10 @@ interface View { status: AccountStatus; nickname: string | null; userId: string 
 const view = (status: AccountStatus, user: AccountUser | null = null): View =>
     ({ status, nickname: user?.nickname ?? null, userId: user?.id ?? null });
 
-/**
- * Accounts cannot be used right now: disabled, still starting up, or another login / logout still
- * finishing (its window may have been closed while it runs).
- */
+/** Accounts cannot be used right now: disabled, or still starting up. */
 const unavailable = (): AccountError => new AccountError('network', 'accounts are not available right now');
+/** Another login / logout is still finishing (its window may have been closed): try again in a moment. */
+const busy = (): AccountError => new AccountError('busy', 'another account request is still running');
 /** A programming mistake: the UI offered an action the current state does not allow. */
 const misuse = (what: string): Error => new Error(`[account] ${what}`);
 
@@ -46,9 +46,50 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         setCurrent(next);
     }, []);
 
+    /** Leaves logged in, without the server: the device becomes a clean guest (see logOutFlow). */
+    const leave = useCallback(async (api: AccountApi, sync: Sync, userId: string, sessionGone: boolean): Promise<void> => {
+        running.current = 'logout';
+        try {
+            await logOutFlow({
+                api, sync, userId, reloadPlayer, sessionGone,
+                becomeGuest: () => {
+                    activeUser.current = null;
+                    if (syncRef.current !== sync) return; // the provider was torn down meanwhile
+                    syncRef.current = createSync(api); // a fresh one for the next login
+                    show(view('guest'));
+                },
+            });
+        } finally {
+            running.current = null;
+        }
+    }, [reloadPlayer, show]);
+
+    // The session died by itself while logged in (revoked, refused on refresh, logged out in another tab):
+    // the same safe steps as logOut, without asking the server to end a session that is already gone.
+    const onSessionEnded = useCallback((): void => {
+        const api = apiRef.current;
+        const sync = syncRef.current;
+        const userId = activeUser.current;
+        // Not logged in, or our own login / logout is running (its own signOut ends here too): nothing to do.
+        if (viewRef.current.status !== 'loggedIn' || running.current || !api || !sync || !userId) return;
+        console.warn(`[account] the session of user ${userId} ended, this device is a guest now`);
+        void leave(api, sync, userId, true);
+    }, [leave]);
+    const onSessionEndedRef = useRef(onSessionEnded);
+    useEffect(() => { onSessionEndedRef.current = onSessionEnded; });
+
     // Start-up: resolve the backend, then restore a stored session if there is one.
     useEffect(() => {
         let cancelled = false;
+        let unsubscribe: (() => void) | null = null;
+        /** No session any more, but the device still holds an account's progress: keep it for that account. */
+        const leaveLostSession = (): void => {
+            const owner = readDeviceOwner();
+            if (owner === null) return; // a guest's own progress: never touched
+            console.warn(`[account] the session of user ${owner} is gone; its progress is kept for its next login here`);
+            setAsideForAccount(owner);
+            reloadPlayer();
+        };
         const start = async (): Promise<void> => {
             const api = apiProp !== undefined ? apiProp : accountsConfigured() ? await loadAccountApi() : null;
             if (cancelled) return;
@@ -56,17 +97,19 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
             const sync = createSync(api);
             apiRef.current = api;
             syncRef.current = sync;
+            unsubscribe = api.onSessionEnded(() => onSessionEndedRef.current());
 
             let user: AccountUser | null;
             try {
                 user = await api.currentUser();
             } catch (error) {
+                // Offline with a known session, currentUser answers from the device; failing here means the
+                // session cannot be used at all.
                 console.warn('[account] could not check the stored session, playing as a guest:', error);
-                if (!cancelled) show(view('guest'));
-                return;
+                user = null;
             }
             if (cancelled) return;
-            if (!user) { show(view('guest')); return; }
+            if (!user) { leaveLostSession(); show(view('guest')); return; }
             await completeLogin(sync, user, reloadPlayer);
             if (cancelled) return;
             activeUser.current = user.id;
@@ -78,6 +121,7 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         });
         return () => {
             cancelled = true;
+            unsubscribe?.();
             syncRef.current?.dispose();
             syncRef.current = null;
             apiRef.current = null;
@@ -92,7 +136,8 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         const sync = syncRef.current;
         const { status } = viewRef.current;
         if (status === 'loggedIn') throw misuse('log in while already logged in');
-        if (!api || !sync || status !== 'guest' || running.current) throw unavailable();
+        if (!api || !sync || status !== 'guest') throw unavailable();
+        if (running.current) throw busy();
         running.current = 'login';
         try {
             const user = await call(api); // rejects with AccountError: the player stays a guest
@@ -114,23 +159,11 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children, api:
         const userId = activeUser.current;
         const { status } = viewRef.current;
         if (status === 'guest') throw misuse('log out while not logged in');
-        if (!api || !sync || status !== 'loggedIn' || running.current) throw unavailable();
+        if (!api || !sync || status !== 'loggedIn') throw unavailable();
+        if (running.current) throw busy();
         if (!userId) throw misuse('log out without an active account');
-        running.current = 'logout';
-        try {
-            await logOutFlow({
-                api, sync, userId, reloadPlayer,
-                becomeGuest: () => {
-                    activeUser.current = null;
-                    if (syncRef.current !== sync) return; // the provider was torn down meanwhile
-                    syncRef.current = createSync(api); // a fresh one for the next login
-                    show(view('guest'));
-                },
-            });
-        } finally {
-            running.current = null;
-        }
-    }, [reloadPlayer, show]);
+        await leave(api, sync, userId, false);
+    }, [leave]);
 
     const isNicknameTaken = useCallback((nick: string): Promise<boolean> => {
         const api = apiRef.current;

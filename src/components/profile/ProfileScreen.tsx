@@ -47,7 +47,7 @@ export const ProfileScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 {/* A new key after a login or logout: the progress under the screen changed, read it again */}
                 <ProfileBody key={`${status}:${nickname ?? ''}`} nickname={name} onProtect={openProtect} onLogOut={openLogOut} />
             </div>
-            {protecting && <AccountModal initialTab="signup" initialNickname={nicknameFor(state.playerName)} onClose={closeProtect} />}
+            {protecting && <AccountModal key={nicknameFor(state.playerName)} initialTab="signup" initialNickname={nicknameFor(state.playerName)} onClose={closeProtect} />}
             {loggingOut && <LogoutConfirm onClose={closeLogOut} />}
         </div>
     );

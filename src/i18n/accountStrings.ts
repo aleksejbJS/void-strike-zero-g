@@ -28,7 +28,9 @@ export interface AccountKeys {
     'ac.err.weak_password': string;
     'ac.err.rate_limited': string;
     'ac.err.network': string;
+    'ac.err.busy': string;
     'ac.err.unexpected': string;
+    'ac.guest.blocked': string;
     'ac.nick.too_short': string;
     'ac.nick.too_long': string;
     'ac.nick.bad_chars': string;
@@ -82,10 +84,12 @@ export const accountStrings: Record<Language, AccountKeys> = {
         'ac.err.weak_password': 'Password needs at least {0} characters.',
         'ac.err.rate_limited': 'Too many attempts. Wait a minute and try again.',
         'ac.err.network': 'No connection to accounts right now. Try again in a moment.',
+        'ac.err.busy': 'Previous request is still finishing, try again in a moment.',
         'ac.err.unexpected': 'Something went wrong. Try again.',
+        'ac.guest.blocked': 'Change the name to start the match.',
         'ac.nick.too_short': 'Nickname needs at least {0} characters.',
         'ac.nick.too_long': 'Nickname can have at most {0} characters.',
-        'ac.nick.bad_chars': 'Use only letters, digits, "_", "-" and single spaces.',
+        'ac.nick.bad_chars': 'Use only Latin or Russian letters, digits, "_", "-" and single spaces.',
         'ac.nick.mixed_scripts': 'Do not mix Latin and Cyrillic letters in one nickname.',
         'ac.nick.reserved': 'This nickname is reserved. Pick another one.',
         'pf.menu': 'Profile',
@@ -134,10 +138,12 @@ export const accountStrings: Record<Language, AccountKeys> = {
         'ac.err.weak_password': 'Пароль должен быть не короче {0} символов.',
         'ac.err.rate_limited': 'Слишком много попыток. Подождите минуту и повторите.',
         'ac.err.network': 'Сейчас нет связи с аккаунтами. Повторите чуть позже.',
+        'ac.err.busy': 'Предыдущий запрос ещё завершается, повторите чуть позже.',
         'ac.err.unexpected': 'Что-то пошло не так. Повторите попытку.',
+        'ac.guest.blocked': 'Измените имя, чтобы начать матч.',
         'ac.nick.too_short': 'Ник должен быть не короче {0} символов.',
         'ac.nick.too_long': 'Ник должен быть не длиннее {0} символов.',
-        'ac.nick.bad_chars': 'Только буквы, цифры, «_», «-» и одиночные пробелы.',
+        'ac.nick.bad_chars': 'Только латинские или русские буквы, цифры, «_», «-» и одиночные пробелы.',
         'ac.nick.mixed_scripts': 'Не смешивайте латинские и кириллические буквы в одном нике.',
         'ac.nick.reserved': 'Этот ник зарезервирован. Выберите другой.',
         'pf.menu': 'Профиль',

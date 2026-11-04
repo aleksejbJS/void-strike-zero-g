@@ -7,6 +7,7 @@ import { AccountError } from '../../account/accountError';
 import { useAccount } from '../../account/useAccount';
 import { useTranslation } from '../../i18n/useTranslation';
 import { accountErrorMessage } from '../setup/account/accountMessages';
+import { useModalLayer } from '../useModalLayer';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
 
@@ -19,31 +20,23 @@ export const LogoutConfirm: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     const mounted = useRef(true);
     const dismissed = useRef(false); // closed by the player: the running logout's outcome is not shown
     const cancel = useRef<HTMLButtonElement>(null);
+    const layer = useRef<HTMLDivElement>(null);
     const titleId = useId();
-
-    // Focus the harmless button on open and give focus back on close
-    useEffect(() => {
-        mounted.current = true; // StrictMode runs the cleanup once before the real mount
-        const opener = document.activeElement;
-        cancel.current?.focus();
-        return () => {
-            mounted.current = false;
-            if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-        };
-    }, []);
 
     const dismiss = useCallback((): void => {
         dismissed.current = true;
         onClose();
     }, [onClose]);
     const showing = (): boolean => mounted.current && !dismissed.current;
+    // The page behind is inert, Esc closes (also while the logout runs), focus goes back on close
+    useModalLayer(layer, dismiss);
 
-    // Esc closes, also while the logout runs
+    // Focus the harmless button on open
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [dismiss]);
+        mounted.current = true; // StrictMode runs the cleanup once before the real mount
+        cancel.current?.focus();
+        return () => { mounted.current = false; };
+    }, []);
 
     const confirm = async (): Promise<void> => {
         if (running.current) return;
@@ -64,7 +57,7 @@ export const LogoutConfirm: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,12,15,0.8)] p-4 phone:p-2">
+        <div ref={layer} className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,12,15,0.8)] p-4 phone:p-2">
             <div role="dialog" aria-modal="true" aria-labelledby={titleId}
                 className="max-h-full w-full max-w-[360px] overflow-y-auto rounded border-2 border-t-4 border-bay-edge border-t-bay-hazard bg-bay-panel p-4 text-bay-chalk phone:p-3">
                 <h2 id={titleId} className="m-0 mb-1.5 font-display text-2xl font-black uppercase phone:text-lg">{t('pf.logout.title')}</h2>

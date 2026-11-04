@@ -17,7 +17,7 @@ import { XpBar } from './builder/XpBar';
 import { useFighterDraft } from './builder/useFighterDraft';
 import { AccountModal } from './account/AccountModal';
 import { NameField } from './account/NameField';
-import { useStartGate } from './account/useStartGate';
+import { modalKey, StartCarry, useStartGate } from './account/useStartGate';
 import { enterFullscreen, isTouchDevice } from '../fullscreen';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard';
@@ -30,7 +30,7 @@ const Chevron: React.FC<{ dir: 'l' | 'r' }> = ({ dir }) => (
 // forTournament: opened from a tournament screen to pick a name; Start saves and goes back there, no match
 interface Props { onContinue: () => void; onBack: () => void; onOpenProfile?: () => void; forTournament?: boolean }
 
-const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile, forTournament = false }) => {
+const SetupScreen: React.FC<Props & { carry: StartCarry }> = ({ onContinue, onBack, onOpenProfile, forTournament = false, carry }) => {
     const { state, actions } = useUIStore();
     const { t, language } = useTranslation();
     const [name, setName] = useState(state.playerName);
@@ -52,7 +52,7 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile, forTo
         if (!forTournament) actions.startGame(state.selectedMode);
         onContinue();
     };
-    const gate = useStartGate(name, start);
+    const gate = useStartGate(name, start, carry);
     const onStart = () => {
         // Hides the browser bar. It needs the tap's user activation, which a taken-name check that answers later would miss.
         if (isTouchDevice()) void enterFullscreen();
@@ -101,7 +101,7 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile, forTo
                     </div>
 
                     <div className="flex min-w-0 flex-col gap-5 lg:h-full lg:min-h-0 short:gap-4 phone:h-full phone:min-h-0 phone:gap-2">
-                        <NameField name={name} onName={setName} busy={gate.checking} takenName={gate.takenName}
+                        <NameField name={name} onName={setName} busy={gate.checking} nameProblem={gate.nameProblem} takenName={gate.takenName}
                             onOpenModal={gate.openModal} onOpenProfile={onOpenProfile} />
 
                         <BuilderTabs build={build} colors={colors} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
@@ -113,15 +113,17 @@ const SetupScreen: React.FC<Props> = ({ onContinue, onBack, onOpenProfile, forTo
                     </div>
                 </main>
             </div>
-            {gate.modal && <AccountModal initialTab={gate.modal.tab} initialNickname={gate.modal.nickname} notice={gate.modal.notice} onClose={gate.closeModal} />}
+            {gate.modal && <AccountModal key={modalKey(gate.modal)} initialTab={gate.modal.tab} initialNickname={gate.modal.nickname} notice={gate.modal.notice} onClose={gate.closeModal} />}
         </div>
     );
 };
 
 const CharacterSetup: React.FC<Props> = props => {
     const { nickname } = useAccount();
+    // A Start still waiting for the accounts survives the screen being re-created by a restored login
+    const [carry] = useState<StartCarry>(() => ({ pending: false }));
     // A login rewrites the saved look and XP under the screen: the editor starts over from what is saved now
-    return <SetupScreen key={nickname ?? 'guest'} {...props} />;
+    return <SetupScreen key={nickname ?? 'guest'} carry={carry} {...props} />;
 };
 
 export default CharacterSetup;

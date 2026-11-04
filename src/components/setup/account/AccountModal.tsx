@@ -1,8 +1,10 @@
 // Small "Hazard Bay" window with two tabs: create an account (the guest's progress moves into it) or
 // log in to an existing one. Shared by the setup screen and the profile screen.
+// Callers key it on the request, so a changed request (tab, nickname) opens a fresh window.
 
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { useModalLayer } from '../../useModalLayer';
 import { AccountTab, useAccountForm } from './useAccountForm';
 
 export interface AccountModalProps {
@@ -26,31 +28,24 @@ export const AccountModal: React.FC<AccountModalProps> = ({ initialTab, initialN
     const [nickname, setNickname] = useState(initialNickname);
     const [password, setPassword] = useState('');
     const form = useAccountForm(onClose);
+    const layer = useRef<HTMLDivElement>(null);
+    useModalLayer(layer, form.dismiss); // Esc closes, also while a call runs (its late result is ignored)
     const nickInput = useRef<HTMLInputElement>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
     const id = useId();
 
-    // Focus the first empty field on open (what was typed later does not matter) and give focus back on close
+    // Focus the first empty field on open (what was typed later does not matter); the layer gives it back on close
     useEffect(() => {
-        const opener = document.activeElement;
         (initialNickname.trim() === '' ? nickInput : passwordInput).current?.focus();
-        return () => { if (opener instanceof HTMLElement && opener.isConnected) opener.focus(); };
     }, [initialNickname]);
-
-    // Esc closes, also while a call runs (the provider finishes it; its late result is ignored)
     const { dismiss } = form;
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [dismiss]);
 
     const switchTab = (next: AccountTab) => { setTab(next); form.clearError(); };
     const onSubmit = (e: React.FormEvent) => { e.preventDefault(); void form.submit(tab, nickname, password); };
     const typed = (set: (value: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => { set(e.target.value); form.clearError(); };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,12,15,0.8)] p-4 phone:p-2">
+        <div ref={layer} className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,12,15,0.8)] p-4 phone:p-2">
             <div role="dialog" aria-modal="true" aria-label={t('ac.dialog')}
                 className="max-h-full w-full max-w-[360px] overflow-y-auto rounded border-2 border-t-4 border-bay-edge border-t-bay-hazard bg-bay-panel p-4 text-bay-chalk phone:p-3">
                 {notice && <p role="status" className="m-0 mb-3 text-sm font-semibold leading-snug text-bay-signal phone:mb-2 phone:text-xs">{notice}</p>}

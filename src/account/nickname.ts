@@ -1,5 +1,7 @@
 // Nickname rules (3-12 chars, one script, no look-alike names) and the nickname -> fake email
 // encoding that lets Supabase email+password auth carry a nickname+password account.
+// Two rule sets: a NEW name (sign-up, a guest's name) must pass the strict whitelist; logging in only
+// needs the older, wider rules, so accounts registered before the whitelist (e.g. "Élan") keep working.
 
 export const NICK_MIN = 3;
 export const NICK_MAX = 12;
@@ -12,6 +14,9 @@ const LATIN_LETTER = /^(?=\p{L})\p{Script=Latin}$/u;
 const CYRILLIC_LETTER = /^(?=\p{L})\p{Script=Cyrillic}$/u;
 const NEUTRAL_CHAR = /^[0-9_\- ]$/;
 const BOT_NAME = /^bot \d+$/;
+// The whitelist for new names: basic Latin, the basic Russian alphabet (with Ё/ё), digits, '_', '-', space.
+// Rejects fullwidth and small-cap letters, Greek, accents, zero-width characters and other look-alikes.
+const STRICT_CHARS = /^[A-Za-z0-9\u0410-\u044F\u0401\u0451_\- ]+$/;
 // What a lower-cased key may contain: nothing but letters, digits, '_', '-' and space.
 const KEY_CHARS = /^[\p{L}0-9_\- ]+$/u;
 
@@ -31,8 +36,11 @@ export function nicknameKey(raw: string): string {
     return normalizeNickname(raw).toLowerCase();
 }
 
-/** First broken rule, or null when the nickname is allowed. */
-export function validateNickname(raw: string): NicknameError | null {
+/**
+ * First broken rule of the wider rules every existing account follows, or null. Used to log in and to
+ * trust a stored nickname: never to accept a new name (see validateNickname).
+ */
+export function validateExistingNickname(raw: string): NicknameError | null {
     const chars = Array.from(normalizeNickname(raw)); // by code point, so emoji count as one
     if (chars.length < NICK_MIN) return 'too_short';
     if (chars.length > NICK_MAX) return 'too_long';
@@ -57,6 +65,23 @@ export function validateNickname(raw: string): NicknameError | null {
 
     if (key === GUEST_DEFAULT_NAME.toLowerCase() || BOT_NAME.test(key)) return 'reserved';
     return null;
+}
+
+/** First broken rule for a new name (sign-up, a guest's name), or null when the nickname is allowed. */
+export function validateNickname(raw: string): NicknameError | null {
+    const problem = validateExistingNickname(raw);
+    if (problem) return problem;
+    return STRICT_CHARS.test(normalizeNickname(raw)) ? null : 'bad_chars';
+}
+
+/**
+ * What is wrong with a guest's name for a match, or null. Empty and the default "Anonymous" stay allowed
+ * (the match uses the default); any other name follows the same rules as a new account nickname.
+ */
+export function guestNameProblem(raw: string): NicknameError | null {
+    const key = nicknameKey(raw);
+    if (key === '' || key === GUEST_DEFAULT_NAME.toLowerCase()) return null;
+    return validateNickname(raw);
 }
 
 /** Stable fake address for a nickname: hex of its UTF-8 key (12 Cyrillic letters = 48 hex chars). */

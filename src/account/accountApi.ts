@@ -2,12 +2,13 @@
 // Every method either resolves or rejects with an AccountError the UI can turn into a message.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AccountError, guarded, toAccountError } from './accountError';
+import { AccountError, guarded } from './accountError';
 import { PASSWORD_MIN } from './passwordRules';
-import { nicknameKey, nicknameToEmail, normalizeNickname, validateNickname } from './nickname';
+import { endLocalSession, readSessionUser, watchSessionEnd } from './accountSession';
+import { nicknameKey, nicknameToEmail, normalizeNickname, validateExistingNickname, validateNickname } from './nickname';
 import { isUsableNickname, readCachedNickname } from './nicknameCache';
 import { PlayerSnapshot, sanitizeSnapshot } from './snapshot';
-import { readStoredAuthUser, removeStoredAuthSessions, StoredAuthUser } from './storedAuth';
+import type { StoredAuthUser } from './storedAuth';
 
 export { AccountError } from './accountError';
 export type { AccountErrorCode } from './accountError';
@@ -31,6 +32,11 @@ export interface AccountApi {
     /** Null when the account has no saved progress yet. */
     fetchSnapshot(userId: string): Promise<PlayerSnapshot | null>;
     saveSnapshot(userId: string, snapshot: PlayerSnapshot): Promise<void>;
+    /**
+     * Calls `listener` (outside the auth lock, a moment later) whenever the session on this device ends:
+     * our own logOut, a session the server no longer accepts, a logout in another tab. Returns the unsubscribe.
+     */
+    onSessionEnded(listener: () => void): () => void;
 }
 
 const NO_SESSION_HINT =
@@ -49,20 +55,26 @@ export function createAccountApi(client: SupabaseClient): AccountApi {
         return data.nickname;
     }
 
-    /** The user of the stored session, or null. Never offline-safe on its own: see the fallback below. */
-    async function sessionUser(): Promise<StoredAuthUser | null> {
+    /**
+     * The nickname of a user who just signed in. Falls back to the one written at sign-up (session metadata)
+     * when `profiles` cannot be read. With neither, the fresh session is ended again before rejecting, so a
+     * reload cannot silently log the player in after the window said the login failed.
+     */
+    async function nicknameAfterLogin(user: StoredAuthUser): Promise<string> {
         try {
-            const { data, error } = await client.auth.getSession(); // refreshes an expired token: needs the network
-            if (error) throw error;
-            return data.session?.user ?? null;
+            return await readNickname(user.id);
         } catch (error) {
-            const failure = toAccountError(error, 'currentUser');
-            // Supabase keeps the session when a refresh fails for want of a network (it drops it when the
-            // server rejects it): stay logged in with it; requests refresh the token once online.
-            const stored = failure.code === 'network' ? readStoredAuthUser() : null;
-            if (!stored) throw failure;
-            console.warn(`[account] could not refresh the session of user ${stored.id}, using the stored one`);
-            return stored;
+            const known = user.user_metadata?.nickname;
+            if (isUsableNickname(known)) {
+                console.warn(`[account] could not read the nickname of user ${user.id}, using "${known}" from the session:`, error);
+                return known;
+            }
+            try {
+                await endLocalSession(client, 'login clean-up');
+            } catch (endError) {
+                console.warn('[account] the nameless login could not be ended cleanly (its stored session was removed):', endError);
+            }
+            throw error;
         }
     }
 
@@ -90,33 +102,23 @@ export function createAccountApi(client: SupabaseClient): AccountApi {
         },
 
         async logIn(nick, password) {
-            // No account can carry a name that fails the rules, so there is nothing to ask the server.
-            if (validateNickname(nick) !== null) throw new AccountError('bad_credentials', 'invalid nickname');
+            // No account can carry a name that fails the rules, so there is nothing to ask the server. The wider
+            // rules: accounts registered before the whitelist must still be able to log in.
+            if (validateExistingNickname(nick) !== null) throw new AccountError('bad_credentials', 'invalid nickname');
 
             return guarded('logIn', async () => {
                 const { data, error } = await client.auth.signInWithPassword({ email: nicknameToEmail(nick), password });
                 if (error) throw error;
-                return { id: data.user.id, nickname: await readNickname(data.user.id) };
+                return { id: data.user.id, nickname: await nicknameAfterLogin(data.user) };
             });
         },
 
         async logOut() {
-            // Not offline-safe: signOut first loads the session (refreshing an expired token over the network)
-            // and then tells the server. When it fails, the session can stay stored and would come back on the
-            // next start-up, so it is removed from this device by hand. Still rejects: the caller decides.
-            try {
-                const { error } = await client.auth.signOut({ scope: 'local' });
-                if (error) throw error;
-            } catch (error) {
-                const failure = toAccountError(error, 'logOut');
-                const removed = removeStoredAuthSessions();
-                console.warn(`[account] logout request failed; removed ${removed} stored session(s) from this device instead:`, failure);
-                throw failure;
-            }
+            await endLocalSession(client, 'logout');
         },
 
         async currentUser() {
-            const user = await sessionUser();
+            const user = await readSessionUser(client);
             if (!user) return null;
             try {
                 return { id: user.id, nickname: await guarded('currentUser', () => readNickname(user.id)) };
@@ -129,7 +131,7 @@ export function createAccountApi(client: SupabaseClient): AccountApi {
         },
 
         async isNicknameTaken(nick) {
-            if (validateNickname(nick) !== null) return false;
+            if (validateExistingNickname(nick) !== null) return false;
             return guarded('isNicknameTaken', async () => {
                 const { data, error } = await client.rpc('nickname_taken', { nick_key: nicknameKey(nick) });
                 if (error) throw error;
@@ -152,6 +154,10 @@ export function createAccountApi(client: SupabaseClient): AccountApi {
                     .upsert({ user_id: userId, data: snapshot, updated_at: new Date().toISOString() });
                 if (error) throw error;
             });
+        },
+
+        onSessionEnded(listener) {
+            return watchSessionEnd(client, listener);
         },
     };
 }
