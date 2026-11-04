@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Runs the Supabase SQL tests against a throwaway local Postgres cluster.
+# Usage: bash scripts/test-sql.sh
+#
+# The cluster lives in a temp dir under $TMPDIR, listens only on a Unix socket inside that dir
+# (port number 54329, no TCP), so it never collides with a Postgres that is already running.
+# It is stopped and deleted on exit, whatever happens. Exits non-zero when any assert fails.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MIGRATION="$ROOT/supabase/migrations/20261104000000_tournaments.sql"
+TESTS="$ROOT/supabase/tests/tournaments.test.sql"
+PORT=54329
+# A bin dir with the server itself (Homebrew's libpq puts a server-less initdb on PATH).
+# Order: PG_BIN (override), a postgres on PATH, then Homebrew kegs oldest first (hosted Supabase runs 15).
+find_pg_bin() {
+    local dir
+    for dir in ${PG_BIN:-} \
+        "$(dirname "$(command -v postgres 2>/dev/null || echo /nonexistent/postgres)")" \
+        /opt/homebrew/opt/postgresql@{15,16,17,18}/bin /usr/local/opt/postgresql@{15,16,17,18}/bin \
+        /opt/homebrew/opt/postgresql/bin /usr/local/opt/postgresql/bin; do
+        if [ -x "$dir/postgres" ] && [ -x "$dir/initdb" ] && [ -x "$dir/pg_ctl" ] && [ -x "$dir/psql" ]; then
+            echo "$dir"
+            return 0
+        fi
+    done
+    return 1
+}
+PG_BIN="$(find_pg_bin)" || { echo "[test-sql] no Postgres server found; set PG_BIN=/path/to/postgres/bin" >&2; exit 1; }
+
+# The macOS postmaster refuses to start without a valid locale in the environment.
+export LC_ALL=en_US.UTF-8
+
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/vs-sqltest.XXXXXX")"
+DATA="$WORK/data"
+
+cleanup() {
+    if [ -f "$DATA/postmaster.pid" ]; then
+        "$PG_BIN/pg_ctl" -D "$DATA" -m immediate -w stop >/dev/null 2>&1 \
+            || echo "[test-sql] warning: could not stop the cluster in $DATA" >&2
+    fi
+    rm -rf "$WORK"
+}
+trap cleanup EXIT
+
+echo "[test-sql] $("$PG_BIN/postgres" --version), cluster in $WORK"
+"$PG_BIN/initdb" -D "$DATA" -U postgres -A trust -E UTF8 --no-locale >"$WORK/initdb.log" 2>&1 \
+    || { cat "$WORK/initdb.log" >&2; exit 1; }
+
+# wal_level=logical so the stand-in Realtime publication works without warnings.
+"$PG_BIN/pg_ctl" -D "$DATA" -l "$WORK/server.log" -w \
+    -o "-p $PORT -k $WORK -c listen_addresses='' -c wal_level=logical" start >/dev/null \
+    || { cat "$WORK/server.log" >&2; exit 1; }
+
+# Only warnings and errors: the migration's "already exists, skipping" notices are expected.
+export PGOPTIONS="-c client_min_messages=warning"
+PSQL=("$PG_BIN/psql" -X -q -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1)
+
+# What hosted Supabase already has: the browser roles, pgcrypto in schema "extensions", the Realtime
+# publication, and default privileges that grant everything on new public objects to the browser roles
+# (so the migration's revokes are tested against the real defaults).
+"${PSQL[@]}" <<'SQL'
+create role anon nologin;
+create role authenticated nologin;
+create role service_role nologin bypassrls;
+grant usage on schema public to anon, authenticated, service_role;
+create schema if not exists extensions;
+grant usage on schema extensions to anon, authenticated, service_role;
+create extension if not exists pgcrypto schema extensions;
+create publication supabase_realtime;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+SQL
+
+echo "[test-sql] loading the migration twice (it must be idempotent)"
+"${PSQL[@]}" -f "$MIGRATION"
+"${PSQL[@]}" -f "$MIGRATION"
+
+echo "[test-sql] running $TESTS"
+"${PSQL[@]}" -f "$TESTS"
+echo "[test-sql] PASS"
