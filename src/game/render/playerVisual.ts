@@ -10,6 +10,7 @@ import { drawGrappleRope } from './grappleRope';
 import { drawCarriedFlag } from './carriedFlag';
 import { clampProneAngle } from '../systems/stance';
 import { fighterInSmoke, fighterSmokeVisibility } from './smokeVisibility';
+import { spawnShieldAlpha } from './spawnShieldBlink';
 
 // Height of the weapon above the feet, used to aim from the right spot on screen
 const AIM_HEIGHT = 49;
@@ -57,7 +58,7 @@ export const updatePlayerVisual = (
     c.visible = !p.dead && !hidden;
     const view = views.get(c);
     if (p.dead || hidden || !view) return;
-    c.alpha = 1;
+    c.alpha = spawnShieldAlpha(p, now); // flickers right after a respawn, solid otherwise
     c.position.set(p.pos.x, p.pos.y);
 
     const frame = animator.frame(p, aimOf(p, camera, mouse, screenW, screenH, isLocal), now, textures, game);

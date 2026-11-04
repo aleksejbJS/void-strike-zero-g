@@ -15,6 +15,7 @@ import { absorbArmor } from './armor';
 import { emitFlag } from './flagEvents';
 import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
+import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 
 // --- Teams ---
 
@@ -65,6 +66,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     if (target.dead) return;
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
+    if (amount < 9999 && spawnShieldLeft(target, Date.now()) > 0) return; // just respawned
 
     // Self-damage multiplier (rocket-jump)
     const isSelf = attackerId === target.id;
@@ -221,6 +223,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
     if (p.weapon.ammo <= 0) return;
     p.weapon.ammo--;
     p.lastFired = Date.now();
+    dropSpawnShield(p); // shooting ends spawn protection
 
     const origin = shotOrigin(p);
 

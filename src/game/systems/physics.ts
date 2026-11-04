@@ -10,6 +10,7 @@ import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './ga
 import { applyDamage, fireWeapon, createExplosion, isTeammate } from './combat';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
+import { grantSpawnShield } from './spawnShield';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -66,6 +67,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     p.weapon = p.inventory[0];
                 }
                 p.hasFlag = Team.NONE;
+                grantSpawnShield(p, now);
                 emitEffect('respawn', p.pos.x, p.pos.y);
             }
         }
