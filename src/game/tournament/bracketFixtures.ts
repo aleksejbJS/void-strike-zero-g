@@ -1,4 +1,4 @@
-// Test helpers: build a tournament snapshot and move it forward like the server's settle() does.
+// Test helpers: build a tournament snapshot and move it forward like the server's tournament_settle() does.
 // Bot vs bot matches are NOT auto-resolved here: tests that use bots keep a human in every match.
 
 import type {

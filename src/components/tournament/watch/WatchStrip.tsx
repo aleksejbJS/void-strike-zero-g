@@ -44,7 +44,7 @@ const StripMatch: React.FC<{ cell: BracketCell } & Omit<Props, 'columns' | 'size
             {live && (
                 <input type="checkbox" checked={isWatched} disabled={!isWatched && !canWatchMore}
                     aria-label={t('tournament.watch.pick', nameA, nameB)} onChange={() => onToggle(match.id)}
-                    className="h-3.5 w-3.5 shrink-0 accent-[#FFC21A]" />
+                    className="h-3.5 w-3.5 shrink-0 accent-bay-hazard" />
             )}
             <span className={`max-w-[9rem] truncate ${done || live ? 'text-bay-chalk' : 'text-bay-dust'}`}>{nameA} – {nameB}</span>
             {result}

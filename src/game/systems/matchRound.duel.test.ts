@@ -48,6 +48,16 @@ describe('duel match limits', () => {
         expect(state.matchEndsAt).toBeDefined();
     });
 
+    it('a tie at the score limit (a mutual kill at 9:9) does not end the duel: the next kill decides', () => {
+        const state = twoFighters(GameMode.DUEL, 10, 10);
+        updateMatch(state, 0);
+        expect(state.matchEndsAt).toBeUndefined();
+        state.players[1].score = 11;
+        updateMatch(state, 1000);
+        expect(state.matchEndReason).toBe('score');
+        expect(state.matchWinner).toEqual({ playerId: 'b' });
+    });
+
     it('lets the leader win when time runs out without a tie', () => {
         const state = twoFighters(GameMode.DUEL, 3, 6);
         updateMatch(state, 0);
@@ -58,6 +68,13 @@ describe('duel match limits', () => {
 });
 
 describe('time limit in other modes (regression guard)', () => {
+    it('Deathmatch still ends in a draw on a tie at the score limit', () => {
+        const state = twoFighters(GameMode.DEATHMATCH, 20, 20);
+        updateMatch(state, 0);
+        expect(state.matchEndReason).toBe('score');
+        expect(state.matchWinner).toBeNull();
+    });
+
     it('Deathmatch still ends in a draw when time runs out on a tie', () => {
         const state = twoFighters(GameMode.DEATHMATCH, 4, 4);
         updateMatch(state, 0);

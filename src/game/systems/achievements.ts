@@ -1,7 +1,7 @@
 import { WeaponType, GameMode } from '../../types';
 import { COMBAT_ACHIEVEMENTS, MODE_ACHIEVEMENTS } from './achievementDefs';
 import type { Achievement, AchievementProgress } from './achievementDefs';
-import { MOVEMENT_ACHIEVEMENTS, COLLECTING_ACHIEVEMENTS, SPECIAL_ACHIEVEMENTS } from './achievementDefsMore';
+import { MOVEMENT_ACHIEVEMENTS, COLLECTING_ACHIEVEMENTS, SPECIAL_ACHIEVEMENTS, TOURNAMENT_ACHIEVEMENT_IDS } from './achievementDefsMore';
 
 // Callers import these from here; definitions live in achievementDefs*.ts
 export type { Achievement, AchievementCategory, AchievementProgress } from './achievementDefs';
@@ -123,11 +123,10 @@ export class AchievementManager {
   }
 
   public checkSpecialAchievements(): void {
-    const allAchievements = this.getAchievements();
-    const unlockedCount = allAchievements.filter(a => a.unlocked).length;
-    const totalAchievements = ACHIEVEMENTS.length - 1; // Exclude perfectionist itself
-
-    if (unlockedCount >= totalAchievements) {
+    // Every other achievement except the tournament ones (Perfectionist keeps its pre-tournament requirement)
+    const required = this.getAchievements()
+      .filter(a => a.id !== 'perfectionist' && !TOURNAMENT_ACHIEVEMENT_IDS.includes(a.id));
+    if (required.every(a => a.unlocked)) {
       this.updateProgress('perfectionist', 1);
     }
   }

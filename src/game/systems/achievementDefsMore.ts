@@ -68,6 +68,9 @@ export const COLLECTING_ACHIEVEMENTS: Achievement[] = [
   }
 ];
 
+/** Paid by tournaments only: Perfectionist does not ask for them (it predates them). */
+export const TOURNAMENT_ACHIEVEMENT_IDS: readonly string[] = ['tournament_champion', 'tournament_finalist', 'tournament_flawless'];
+
 // Special achievements
 export const SPECIAL_ACHIEVEMENTS: Achievement[] = [
   {
