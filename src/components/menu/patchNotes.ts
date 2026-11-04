@@ -33,6 +33,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.29', date: 'Nov 4, 2026', points: [
+            'Switch weapons with the mouse wheel: down for the next one, up for the previous. One trackpad swipe switches once',
+        ] },
         { version: '0.4.28', date: 'Nov 4, 2026', points: [
             'Spawn protection: for 2 seconds after a respawn you can\'t be hurt and your fighter blinks. Firing ends it early',
         ] },
@@ -225,6 +228,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.29', date: '04.11.2026', points: [
+            'Оружие можно менять колесом мыши: вниз — следующее, вверх — предыдущее. Один свайп по тачпаду меняет оружие один раз',
+        ] },
         { version: '0.4.28', date: '04.11.2026', points: [
             'Защита после респавна: 2 секунды вас нельзя ранить, а боец мигает. Выстрел снимает защиту раньше',
         ] },
