@@ -10,6 +10,7 @@ import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
 import { BleedDrips } from './fighterBleed';
+import { FighterFire } from './fighterFire';
 import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
@@ -34,6 +35,7 @@ interface AnimMemory {
     motion: FighterMotion;    // landing squash and hit flash
     dust: DustBudget;
     bleed: BleedDrips;        // blood from the stump of a wounded fighter
+    fire: FighterFire;        // flame jet, burning body, lit fuel tank
     parts: PartMotion;        // springs for tail, ears, lamp and wings
 }
 
@@ -105,6 +107,7 @@ export class FighterAnimator {
             const tip = stumpTip(pose);
             m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now);
         }
+        m.fire.update(game, p, { pose, grip, facing, hop }, since, now);
         return {
             pose, grip, weapon, facing,
             weaponType: p.weapon.type,
@@ -130,7 +133,8 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), parts: new PartMotion(),
+                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), fire: new FighterFire(),
+                parts: new PartMotion(),
             };
             this.memory.set(id, m);
         }

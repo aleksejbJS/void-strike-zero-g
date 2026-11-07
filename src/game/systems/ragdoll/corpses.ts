@@ -7,6 +7,7 @@ import { isDeathKind } from '../deathKind';
 import { Corpse, createCorpse } from './corpseBody';
 import { stepCorpse } from './corpseStep';
 import { launchCorpse, launchLimb } from './corpseLaunch';
+import { corpseTankFire } from './corpseTank';
 
 /** At most this many bodies lie before the oldest one starts fading (torn legs do not count). */
 export const MAX_CORPSES = 12;
@@ -39,7 +40,7 @@ const makeRoom = (state: GameState) => {
 /**
  * A corpse for a DEATH event, launched by its kind. Older hosts send no kind and no vel, a newer or
  * hostile host may send a kind we do not know: those fall, still. An unknown weapon is dropped, and
- * only a real boolean says it had lost a leg.
+ * only a real boolean says it had lost a leg, and only a string names a lit fuel tank on its back.
  */
 export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
     makeRoom(state);
@@ -47,6 +48,7 @@ export const addCorpse = (state: GameState, e: DeathEvent): Corpse => {
     const corpse = createCorpse({ ...e, kind: isDeathKind(e.kind) ? e.kind : 'fall', weapon: knownWeapon(e.weapon), oneLeg });
     // A host may send anything: only a real boolean says shot or splash
     launchCorpse(corpse, e.from, e.vel ?? STILL, typeof e.blast === 'boolean' ? e.blast : undefined);
+    if (typeof e.tank === 'string') corpse.tankId = e.tank;
     state.corpses.push(corpse);
     return corpse;
 };
@@ -60,8 +62,9 @@ export const addLimb = (state: GameState, e: LimbEvent): Corpse => {
     return leg;
 };
 
-/** One physics tick for every corpse; corpses whose time is up are removed. */
+/** One physics tick for every corpse (a lit tank on one burns); corpses whose time is up are removed. */
 export const updateCorpses = (state: GameState): void => {
     for (const c of state.corpses) stepCorpse(c, state.platforms);
+    corpseTankFire(state);
     state.corpses = state.corpses.filter(c => c.age < c.removeAt);
 };

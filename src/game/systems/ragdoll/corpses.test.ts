@@ -169,6 +169,22 @@ describe('corpse list', () => {
         expect(addCorpse(state, death({ weapon: WeaponType.SHOTGUN })).weapon).toBe(WeaponType.SHOTGUN);
     });
 
+    it('keeps the id of a lit fuel tank only when it is a string (a hostile host may send anything)', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        expect(addCorpse(state, death({ tank: 'tank_1' })).tankId).toBe('tank_1');
+        expect(addCorpse(state, { ...death(), tank: 7 } as unknown as DeathEvent).tankId).toBeUndefined();
+        expect(addCorpse(state, { ...death(), tank: { id: 'x' } } as unknown as DeathEvent).tankId).toBeUndefined();
+        expect(addCorpse(state, death()).tankId).toBeUndefined();
+    });
+
+    it('a corpse with a lit tank burns while the corpses are stepped', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        addCorpse(state, death({ tank: 'tank_1' }));
+        state.particles = [];
+        for (let i = 0; i < 10; i++) updateCorpses(state);
+        expect(state.particles.some(p => p.type === 'fire')).toBe(true);
+    });
+
     it('corpse with nothing under it is removed on time', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         state.platforms = [];

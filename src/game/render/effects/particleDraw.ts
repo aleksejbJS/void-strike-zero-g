@@ -48,7 +48,8 @@ const smoke = (alpha: number) => softCircle(p => p.size * (1 + (1 - p.life) * 1.
 const DRAWERS: Record<GraphicKind, GraphicDrawer> = {
     spark: (g, p) => streak(g, p, 1.5, SPARK_COLOR),
     ember: (g, p) => streak(g, p, p.size * 0.6, mix(EMBER_COOL, EMBER_HOT, p.life)),
-    fire: (g, p) => { g.circle(0, 0, 2).fill({ color: p.color, alpha: p.life }); },
+    // Jetpack sparks (size 2–4) stay 2 px dots; the bigger flamethrower flames are drawn at half their size
+    fire: (g, p) => { g.circle(0, 0, Math.max(2, p.size / 2)).fill({ color: p.color, alpha: p.life }); },
     smoke: smoke(0.35),
     puff: smoke(0.25),
     soot: softCircle(p => p.size * (1 + (1 - p.life) * 1.3), p => p.color, p => 0.7 * Math.min(1, p.life * 1.5)),

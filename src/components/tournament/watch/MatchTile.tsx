@@ -8,6 +8,7 @@ import { SpectatorSession } from '../../../game/net/spectatorSession';
 import { createMatchView, MatchView } from '../../../game/render/matchView/matchView';
 import { playSound } from '../../../game/systems/audio';
 import { playCoverSoundEvent } from '../../../game/systems/coverAudio';
+import { playFlameSoundEvent } from '../../../game/systems/flameAudio';
 import { WeaponType } from '../../../types';
 import { emptyWatchState } from './watchState';
 
@@ -94,6 +95,7 @@ export const MatchTile: React.FC<MatchTileProps> = ({ peerId, audible, expanded,
             onSound: e => {
                 if (e.type !== 'SOUND' || !audibleRef.current) return;
                 if (e.sound === 'cover') playCoverSoundEvent(e.subtype, false);
+                else if (e.sound === 'flame') playFlameSoundEvent(e.subtype, false);
                 else playSound(e.sound as SoundName, e.subtype as WeaponType | undefined);
             },
         });

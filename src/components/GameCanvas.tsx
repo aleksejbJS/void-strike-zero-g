@@ -49,6 +49,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { playCoverSoundEvent } from '../game/systems/coverAudio';
+import { playFlameSoundEvent } from '../game/systems/flameAudio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
 import { addShake, explosionShake } from '../game/render/screenShake';
@@ -532,6 +533,7 @@ export default function GameCanvas() {
                     }]);
                 } else if (event.type === 'SOUND') {
                     if (event.sound === 'cover') playCoverSoundEvent(event.subtype, isMutedRef.current);
+                    else if (event.sound === 'flame') playFlameSoundEvent(event.subtype, isMutedRef.current);
                     else playSound(event.sound as any, event.subtype as any, isMutedRef.current);
                 } else if (event.type === 'FLAG') {
                     setFlagBanner({ id: nextId('fb_'), kind: event.kind, action: event.action, team: event.team });

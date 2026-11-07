@@ -16,7 +16,8 @@ const FLOOR = 0.001; // an exponential ramp cannot reach 0
 const lastPlayed = new Map<string, number>();
 let noiseBuffer: { ctx: AudioContext; buffer: AudioBuffer } | null = null;
 
-const whiteNoise = (ctx: AudioContext): AudioBuffer => {
+/** One second of white noise for `ctx`, made once and shared (flameAudio.ts plays it too). */
+export const whiteNoise = (ctx: AudioContext): AudioBuffer => {
     if (noiseBuffer?.ctx === ctx) return noiseBuffer.buffer;
     const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const data = buffer.getChannelData(0);
