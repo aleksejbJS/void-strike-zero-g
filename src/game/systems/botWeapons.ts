@@ -5,11 +5,13 @@ import { distance } from '../utils/math';
 import { insideZone } from './hungerRound';
 import { buildNavGraph, HOP_RISE, solidAt, surfaceBelow } from './botNavGraph';
 import { routeReaches } from './botPathfinder';
+import { FLAME_RANGE } from './flameConstants';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
     switch (weapon.type) {
         case WeaponType.CHAINSAW: return dist < 90 ? 120 - dist : -100;
+        case WeaponType.FLAMETHROWER: return dist < FLAME_RANGE - 20 ? 115 - dist * 0.1 : -100; // close-range stream
         case WeaponType.SHOTGUN: return 100 - Math.max(0, dist - 60) * 0.6;
         case WeaponType.ROCKET_LAUNCHER: return 90 - Math.max(0, dist - 120) * 0.35;
         case WeaponType.GRENADE_LAUNCHER: return 85 - Math.max(0, dist - 140) * 0.3;
