@@ -25,6 +25,8 @@ export interface DamageSource {
     burn?: boolean;
     /** An explosive barrel's blast: hurts everyone, thrown or gibbed like a rocket splash. */
     barrel?: boolean;
+    /** A fuel tank's blast (the flamethrower carrier's tank going off). */
+    tank?: boolean;
 }
 
 /** Damage beyond the victim's remaining health that turns an explosion into gibs. */

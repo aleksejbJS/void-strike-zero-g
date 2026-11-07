@@ -123,6 +123,8 @@ export interface Entity {
   burnUntil?: number; // on fire until this timestamp, set by the flame stream (burning.ts)
   burnTickAt?: number; // when the next burn damage tick is due
   burnBy?: string; // id of the fighter who set the fire: gets the kill if it burns them to death
+  tankFuseAt?: number; // flamethrower fuel tank on fire: it blasts at this timestamp (fuelTank.ts)
+  tankBy?: string; // id of the fighter who lit the tank: gets the kills of the blast
 }
 
 export interface Projectile {

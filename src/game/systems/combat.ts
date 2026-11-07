@@ -20,6 +20,7 @@ import { railThroughCover, chainsawCover } from '../cover/coverHits';
 import { killWeaponName } from './killWeaponName';
 import { fireFlame } from './flamethrower';
 import { extinguish } from './burning';
+import { rollTankIgnition } from './fuelTank';
 
 // --- Teams ---
 
@@ -71,6 +72,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
     if (amount < 9999 && spawnShieldLeft(target, Date.now()) > 0) return; // just respawned
+    rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // Self-damage multiplier (rocket-jump)
     const isSelf = attackerId === target.id && !source.barrel; // a barrel blast hurts the breaker like anyone else
