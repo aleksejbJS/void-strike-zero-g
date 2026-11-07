@@ -64,6 +64,13 @@ describe('flamethrower', () => {
     expect(bot.weapon.type).toBe(WeaponType.MACHINE_GUN);
   });
 
+  it('is dropped for the machine gun once it is empty, however close the enemy', () => {
+    const bot = flameBot(WeaponType.FLAMETHROWER);
+    bot.weapon.ammo = 0;
+    pickBestWeapon(bot, 150);
+    expect(bot.weapon.type).toBe(WeaponType.MACHINE_GUN);
+  });
+
   it('is worth a detour for a bot without one', () => {
     const state = makeState();
     state.platforms = [{ id: 'floor', x: -2000, y: 0, w: 4000, h: 200, color: '#000' }];

@@ -9,6 +9,9 @@ export const FLAME_RANGE = 300;
 /** Half of the flame cone's opening angle, in radians (8 degrees). */
 export const FLAME_HALF_ANGLE = (8 * Math.PI) / 180;
 
+/** How close a bot with a flamethrower walks up to its enemy, in world px (well inside FLAME_RANGE). */
+export const BOT_FLAME_PREFERRED_RANGE = 150;
+
 /** A burning fighter keeps burning for this long after the last ignition. */
 export const BURN_MS = 5000;
 /** Time between burn damage ticks. */
