@@ -57,6 +57,7 @@ describe('a lit tank on a living carrier', () => {
         fuseEnds(state);
         expect(carrier.dead).toBe(true);
         expect(carrier).toMatchObject({ tankFuseAt: undefined, tankBy: undefined });
+        expect(of('DEATH')).toHaveLength(1);
         expect(of('DEATH')[0].kind).toBe('gib');
         expect(of('DEATH')[0].tank).toBeUndefined();
         expect(of('KILL')[0]).toMatchObject({ killer: 'igniter', weapon: TANK_KILL_NAME, victim: 'carrier' });
@@ -165,6 +166,19 @@ describe('lit tanks and the rest of the game', () => {
         fuseEnds(state);
         expect(bystander.dead).toBe(true);
         expect(of('KILL').map(k => [k.killer, k.weapon])).toEqual([['World', TANK_KILL_NAME], ['World', TANK_KILL_NAME]]);
+    });
+
+    it('pauses once the Hunger round is decided: no blast, nobody hurt', () => {
+        const { state, carrier } = scene(GameMode.HUNGER_GAMES);
+        state.hungerRoundEndsAt = FUSE_END + 5000;
+        state.litTanks = [{ id: 'tank_x', pos: tankPos(carrier), fuseAt: FUSE_END, by: 'igniter' }];
+        const bystander = near(state, 'bystander', 20);
+        fuseEnds(state);
+        expect(carrier.dead).toBe(false);
+        expect(carrier.tankFuseAt).toBe(FUSE_END);
+        expect(state.litTanks).toHaveLength(1);
+        expect(bystander.health).toBe(100);
+        expect(events).toEqual([]);
     });
 
     it('a tank kill scores but does not move the Gun Game ladder', () => {

@@ -40,8 +40,10 @@ const blast = (state: GameState, pos: Vector2, by: string, carrierId: string | u
 /**
  * Run once per physics tick: every due tank blows up. A living carrier always dies and is always gibbed, whatever their
  * health and armor; a dead carrier's tank (dropLitTank) goes off where they died and tells clients to gib the corpse.
+ * Paused once the Hunger round is decided, like burning and bleeding: the round reset clears every lit tank.
  */
 export const tickFuelTanks = (state: GameState, now: number): void => {
+    if (state.hungerRoundEndsAt) return;
     for (const p of state.players) {
         if (p.dead || p.tankFuseAt === undefined || p.tankFuseAt > now) continue;
         const by = p.tankBy ?? '';
