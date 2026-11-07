@@ -396,7 +396,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
       { id: 'htf_ammo_mid', type: ItemType.AMMO, pos: { x: 1000, y: 460 }, active: true, respawnTime: 0, value: 30 },
       { id: 'htf_weapon_rl', type: ItemType.WEAPON, subtype: WeaponType.ROCKET_LAUNCHER, pos: { x: 1000, y: 380 }, active: true, respawnTime: 0, value: 0 },
       { id: 'htf_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 1250, y: 520 }, active: true, respawnTime: 0, value: 0 }, // right end of the hill, ~250 px from the flag
-      { id: 'htf_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 750, y: 460 }, active: true, respawnTime: 0, value: 0 }, // left step of the hill, in the nook by the pillar, ~250 px from the flag
+      { id: 'htf_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 705, y: 460 }, active: true, respawnTime: 0, value: 0 }, // left end of the hill's step, in the nook by the pillar, ~300 px from the flag
     ];
   }
 
@@ -483,7 +483,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
     { id: 'weapon_plasma_blue', type: ItemType.WEAPON, subtype: WeaponType.PLASMA_GUN, pos: { x: -500, y: 470 }, active: true, respawnTime: 0, value: 0 },
     { id: 'weapon_plasma_red', type: ItemType.WEAPON, subtype: WeaponType.PLASMA_GUN, pos: { x: 2200, y: 470 }, active: true, respawnTime: 0, value: 0 },
     { id: 'weapon_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 850, y: 560 }, active: true, respawnTime: 0, value: 0 }, // midfield, near the central slab
-    { id: 'weapon_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 980, y: 560 }, active: true, respawnTime: 0, value: 0 }, // central slab under the mid platform, close quarters
+    { id: 'weapon_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 925, y: 560 }, active: true, respawnTime: 0, value: 0 }, // central slab under the mid platform, close quarters
   ];
 
   if (mode === GameMode.CTF) {

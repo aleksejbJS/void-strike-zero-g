@@ -13,6 +13,8 @@ const FLAME_LAYOUTS: [GameMode, MapId][] = [
     [GameMode.HUNGER_GAMES, MapId.HUNGER],
 ];
 
+const MIN_GAP = 50; // px between the flamethrower and any other pickup
+
 const flamePickups = (mode: GameMode, map: MapId): Pickup[] =>
     getInitialPickups(mode, map).filter(p => p.type === ItemType.WEAPON && p.subtype === WeaponType.FLAMETHROWER);
 
@@ -41,6 +43,15 @@ describe('flamethrower pickups', () => {
         const { x, y } = flamePickups(mode, map)[0].pos;
         const standsOn = getPlatforms(mode, map).some(p => x >= p.x && x <= p.x + p.w && p.y - y >= 0 && p.y - y <= 60);
         expect(standsOn).toBe(true);
+    });
+
+    // Older pickups already overlap in places (a medkit on a fuel can); the flamethrower must not add to that
+    it.each(FLAME_LAYOUTS)('%s on %s: the flamethrower does not sit on another pickup', (mode, map) => {
+        const [flame] = flamePickups(mode, map);
+        const crowding = getInitialPickups(mode, map)
+            .filter(p => p.id !== flame.id && Math.hypot(p.pos.x - flame.pos.x, p.pos.y - flame.pos.y) < MIN_GAP)
+            .map(p => p.id);
+        expect(crowding).toEqual([]);
     });
 
     it('Gun Game and Duel have none', () => {
