@@ -9,7 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry } from '../util
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
-import { deathKind, DamageSource, isSplash } from './deathKind';
+import { deathKind, DamageSource, isHazardBlast, isSplash } from './deathKind';
 import { shouldWound, inflictWound, killCredit } from './wound';
 import { absorbArmor } from './armor';
 import { emitFlag } from './flagEvents';
@@ -21,6 +21,7 @@ import { killWeaponName } from './killWeaponName';
 import { fireFlame } from './flamethrower';
 import { extinguish } from './burning';
 import { rollTankIgnition } from './fuelTank';
+import { dropLitTank } from './fuelTankBlast';
 
 // --- Teams ---
 
@@ -75,7 +76,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // Self-damage multiplier (rocket-jump)
-    const isSelf = attackerId === target.id && !source.barrel; // a barrel blast hurts the breaker like anyone else
+    const isSelf = attackerId === target.id && !isHazardBlast(source); // a barrel or tank blast hurts its author like anyone else
     const dmgMult = isSelf ? SELF_DAMAGE_MULT : 1;
     const kbMult = isSelf ? SELF_KNOCKBACK_MULT : 1;
 
@@ -116,8 +117,9 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         const credit = killCredit(target, attackerId, source);
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
-        // Blood, decal and ragdoll: the kind says how the body falls
-        emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
+        // Blood, decal and ragdoll: the kind says how the body falls; a lit tank stays on the corpse, which just drops
+        const tankId = dropLitTank(state, target);
+        emitDeath(target, tankId ? 'fall' : deathKind(source, overkill), source.from, !tankId && isSplash(source), tankId);
         target.wound = undefined; // after the event: it says oneLeg
         extinguish(target); // the dead burn no more
 
@@ -181,14 +183,14 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     killer.score += 100;
                 }
 
-                // A barrel kill scores but does not move the Gun Game ladder
-                if (state.mode === GameMode.GUN_GAME && !source.barrel) {
+                // A barrel or tank kill scores but does not move the Gun Game ladder
+                if (state.mode === GameMode.GUN_GAME && !isHazardBlast(source)) {
                     handleGunGameKill(state, killer);
                 }
 
-                // Track achievement only for player-controlled kills; a barrel kill counts as a kill but is no weapon's
+                // Track achievement only for player-controlled kills; a barrel or tank kill counts as a kill but is no weapon's
                 if (killer.type === 'player') {
-                    trackKill(source.barrel ? undefined : credit.weapon ?? killer.weapon.type);
+                    trackKill(isHazardBlast(source) ? undefined : credit.weapon ?? killer.weapon.type);
                 }
             }
         }

@@ -150,7 +150,9 @@ describe('the applyDamage hook', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0.01);
         shot(state, foe, WeaponType.PLASMA_GUN, 10);
         expect(foe.dead).toBe(true);
-        expect(foe.tankFuseAt).toBe(NOW + TANK_FUSE_MS);
+        // The lit tank stays behind at the death spot (fuelTankBlast.ts), off the fighter who will respawn
+        expect(state.litTanks).toEqual([expect.objectContaining({ fuseAt: NOW + TANK_FUSE_MS })]);
+        expect(foe.tankFuseAt).toBeUndefined();
     });
 
     it('a railgun beam through armor wounds (no death) and still rolls', () => {

@@ -213,6 +213,14 @@ export interface SmokeCloud {
   endsAt: number; // ms timestamp
 }
 
+/** A lit fuel tank whose carrier died: it still blasts at the death spot (host-only, never in snapshots). */
+export interface LitTank {
+  id: string;
+  pos: Vector2; // where the tank was on the carrier's back when they died
+  fuseAt: number; // ms timestamp of the blast
+  by: string; // id of the fighter who lit it: gets the kills of the blast
+}
+
 export interface GameState {
   mode: GameMode;
   scores: { [key in Team]: number };
@@ -243,6 +251,7 @@ export interface GameState {
   beams: Beam[];
   smokes?: SmokeCloud[]; // smoke clouds; readers use `state.smokes ?? []`
   cover?: Cover[]; // destructible cover; readers use `state.cover ?? []`
+  litTanks?: LitTank[]; // host-only: lit tanks of dead carriers (fuelTankBlast.ts); readers use `state.litTanks ?? []`
 }
 
 export enum MapId {

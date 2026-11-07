@@ -29,18 +29,19 @@ export const emitEffect = (effect: EffectKind, x: number, y: number, color?: str
 export const emitDamage = (x: number, y: number, amount: number) =>
     gameEvents.emit({ type: 'DAMAGE', x, y, amount: Math.round(amount) });
 
-export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false) =>
-    gameEvents.emit(deathEvent(e, kind, from, blast));
+export const emitDeath = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false, tank?: string) =>
+    gameEvents.emit(deathEvent(e, kind, from, blast, tank));
 
 /**
  * The DEATH event for an entity: where it fell, how it died, how it moved and the colours of its corpse.
  * `blast`: an explosion's splash killed it; always sent, false for a shot and every other cause
  * (only events from older hosts lack it). `oneLeg`: it was wounded, so its corpse has no second leg to lose.
+ * `tank`: the id of the lit fuel tank the corpse carries (only set when there is one).
  */
-export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false): DeathEvent => ({
+export const deathEvent = (e: Entity, kind: DeathKind = 'fall', from?: Vector2, blast = false, tank?: string): DeathEvent => ({
     type: 'DEATH', x: e.pos.x, y: e.pos.y, color: e.color, height: e.height,
     kind, from: from && { ...from }, vel: { ...e.vel }, facing: e.facingRight ? 1 : -1, weapon: e.weapon.type, blast,
-    oneLeg: !!e.wound, parts: ragdollColors(e),
+    oneLeg: !!e.wound, parts: ragdollColors(e), ...(tank !== undefined && { tank }),
 });
 
 /** The colours (and build) of the body parts that fly off a fighter: its corpse and its torn-off leg. */
