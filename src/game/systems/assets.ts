@@ -53,7 +53,6 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
     const jetpackFallback = getSVGDataURI(`<g stroke="#1f2937" stroke-width="2" fill="#ef4444"><rect x="22" y="16" width="20" height="32" rx="4"/><rect x="18" y="20" width="6" height="20" rx="2" fill="#94a3b8"/><rect x="40" y="20" width="6" height="20" rx="2" fill="#94a3b8"/><rect x="24" y="24" width="16" height="4" fill="#fbbf24"/></g>`);
     const grenadeFallback = getSVGDataURI(`<g stroke="#1f2937" stroke-width="2" fill="#84cc16"><rect x="8" y="24" width="34" height="10" rx="2" fill="#4d7c0f"/><circle cx="38" cy="26" r="8"/><circle cx="38" cy="26" r="5" fill="#a3e635"/><rect x="12" y="22" width="6" height="6" fill="#1f2937"/></g>`);
     const chainsawFallback = getSVGDataURI(`<g stroke="#1f2937" stroke-width="2" fill="#ef4444"><rect x="6" y="26" width="36" height="10" rx="2"/><rect x="36" y="22" width="14" height="18" rx="2" fill="#b91c1c"/><circle cx="44" cy="31" r="6" fill="#fbbf24"/><rect x="10" y="22" width="8" height="6" fill="#111827"/></g>`);
-    // Placeholder pictures until public/assets/{hud,items}/flamethrower.png exist: the manifest uses this directly
     const flamethrowerFallback = getSVGDataURI(`<g stroke="#1f2937" stroke-width="2" fill="#f97316"><rect x="6" y="26" width="30" height="10" rx="2"/><rect x="34" y="28" width="16" height="6" rx="1" fill="#6b7280"/><rect x="10" y="36" width="14" height="14" rx="3" fill="#b45309"/><path d="M50 31 Q56 22 61 31 Q56 40 50 31 Z" fill="#fbbf24"/></g>`);
     const intelFallback = getSVGDataURI(`<rect x="14" y="16" width="36" height="28" rx="2" fill="#facc15" stroke="#ca8a04" stroke-width="2"/><path d="M26 16 L26 12 L38 12 L38 16" stroke="#ca8a04" stroke-width="2" fill="none"/><circle cx="32" cy="30" r="4" fill="#ef4444" opacity="0.8"><animate attributeName="opacity" values="0.8;0.2;0.8" dur="1s" repeatCount="indefinite" /></circle>`);
     const plasmaFallback = getSVGDataURI(`<g stroke="#1e40af" stroke-width="2" fill="#1e3a8a"><rect x="6" y="26" width="44" height="12" rx="2"/><rect x="40" y="24" width="8" height="16" rx="1" fill="#3b82f6"/><circle cx="16" cy="32" r="4" fill="#60a5fa"/><circle cx="26" cy="32" r="4" fill="#60a5fa"/><circle cx="36" cy="32" r="4" fill="#60a5fa"/></g>`);
@@ -73,7 +72,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         weapon_grenade_launcher: assetUrl('assets/items/granat.png'),
         weapon_smoke_launcher: assetUrl('assets/items/smoke_launcher.png'),
         weapon_chainsaw: assetUrl('assets/items/chainsaw.png'),
-        weapon_flamethrower: flamethrowerFallback,
+        weapon_flamethrower: assetUrl('assets/items/flamethrower.png'),
         weapon_plasma_gun: assetUrl('assets/items/plasma_gun.png'),
         // Trimmed pictures for weapons held by fighters (grip points in render/fighter/weaponGrips.ts)
         held_machine_gun: assetUrl('assets/hud/machine_gun.png'),
@@ -84,15 +83,15 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         held_smoke_launcher: assetUrl('assets/hud/smoke_launcher.png'),
         held_plasma_gun: assetUrl('assets/hud/plasma_gun.png'),
         held_chainsaw: assetUrl('assets/hud/chainsaw.png'),
-        held_flamethrower: flamethrowerFallback,
+        held_flamethrower: assetUrl('assets/hud/flamethrower.png'),
         jetpack: assetUrl('assets/items/jetpack.png'),
         dirt_tile: assetUrl('assets/dirt_tile.png'),
         grass_tile: assetUrl('assets/grass_tile.png')
     };
 
     // Bump bundle name to force reload when manifest changes
-    const bundleName = 'game-assets-v15';
-    const fallbackBundleName = 'game-assets-v10-fallback';
+    const bundleName = 'game-assets-v16';
+    const fallbackBundleName = 'game-assets-v11-fallback';
 
     try {
         // Check if bundle already exists to avoid duplicate error
@@ -112,6 +111,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
         if (!textures.weapon_railgun) textures.weapon_railgun = Texture.from(railFallback);
         if (!textures.weapon_grenade_launcher) textures.weapon_grenade_launcher = Texture.from(grenadeFallback);
         if (!textures.weapon_chainsaw) textures.weapon_chainsaw = Texture.from(chainsawFallback);
+        if (!textures.weapon_flamethrower) textures.weapon_flamethrower = Texture.from(flamethrowerFallback);
         if (!textures.weapon_plasma_gun) textures.weapon_plasma_gun = Texture.from(plasmaFallback);
         if (!textures.jetpack) textures.jetpack = Texture.from(jetpackFallback);
         return withSharedPictures(textures);
@@ -129,6 +129,7 @@ const loadAssetsInternal = async (): Promise<Record<string, Texture>> => {
             weapon_railgun: railFallback,
             weapon_grenade_launcher: grenadeFallback,
             weapon_chainsaw: chainsawFallback,
+            weapon_flamethrower: flamethrowerFallback,
             weapon_plasma_gun: plasmaFallback,
             jetpack: jetpackFallback
         };
