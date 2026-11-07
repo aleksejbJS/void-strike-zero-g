@@ -19,6 +19,7 @@ import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
 import { killWeaponName } from './killWeaponName';
 import { fireFlame } from './flamethrower';
+import { extinguish } from './burning';
 
 // --- Teams ---
 
@@ -95,14 +96,15 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         return;
     }
 
-    // Bleeding is plain health loss: no flag bonus, armor, knockback or damage number
-    const holdingHTF = !source.bleed && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
+    // Bleeding and burning are plain health loss: no flag bonus, armor, knockback or damage number
+    const plainLoss = !!source.bleed || !!source.burn;
+    const holdingHTF = !plainLoss && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
     let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
-    if (!source.bleed) dmg = absorbArmor(target, dmg);
+    if (!plainLoss) dmg = absorbArmor(target, dmg);
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
-    if (!source.bleed) {
+    if (!plainLoss) {
         push();
         emitDamage(target.pos.x, target.pos.y - 40, dmg);
     }
@@ -115,6 +117,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         // Blood, decal and ragdoll: the kind says how the body falls
         emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
         target.wound = undefined; // after the event: it says oneLeg
+        extinguish(target); // the dead burn no more
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {

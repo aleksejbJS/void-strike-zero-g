@@ -81,6 +81,7 @@ const baseEntity = (mode: GameMode, team: Team) => {
         lastProcessedInput: 0,
         jetpackOn: false,
         wound: undefined, // a new life starts whole (the Object.assign in respawnEveryone clears an old wound)
+        burnUntil: undefined, burnTickAt: undefined, burnBy: undefined, // ...and not on fire
     };
 };
 

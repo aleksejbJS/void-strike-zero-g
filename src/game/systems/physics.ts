@@ -14,6 +14,7 @@ import { projectileCoverHit } from '../cover/coverHits';
 import { damageCover } from '../cover/coverDamage';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
+import { tickBurning } from './burning';
 import { grantSpawnShield } from './spawnShield';
 import { liftOutOfCover } from '../cover/coverSpawn';
 import { tickCover } from '../cover/coverTick';
@@ -314,6 +315,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
     // Bleeding: wounded fighters lose health until a medkit (after pickups, so a medkit stops it this tick)
     tickBleeding(state);
+    tickBurning(state, now);
 
     // Projectiles Update
     state.projectiles.forEach(proj => {

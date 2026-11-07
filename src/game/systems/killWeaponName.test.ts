@@ -16,6 +16,11 @@ describe('killWeaponName', () => {
         expect(killWeaponName(undefined, undefined, { barrel: true })).toBe('Barrel');
     });
 
+    it('a burn death says Flamethrower whatever the arsonist holds now, even if the arsonist has left', () => {
+        expect(killWeaponName(killer, undefined, { burn: true, weapon: WeaponType.FLAMETHROWER })).toBe('Flamethrower');
+        expect(killWeaponName(undefined, undefined, { burn: true })).toBe('Flamethrower');
+    });
+
     it('no killer in the match says Environment', () => {
         expect(killWeaponName(undefined, undefined, {})).toBe('Environment');
     });

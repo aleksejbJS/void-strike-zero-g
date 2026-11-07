@@ -10,6 +10,7 @@ import { firstCoverOnSegment } from '../cover/coverGeometry';
 import { damageCover } from '../cover/coverDamage';
 import { gameEvents } from './events';
 import { applyDamage, isTeammate } from './combat';
+import { igniteBurn } from './burning';
 import { FLAME_COVER_MULT, FLAME_HALF_ANGLE, FLAME_RANGE } from './flameConstants';
 
 /** The three rays: the aim line and one on each edge of the cone. */
@@ -64,6 +65,7 @@ export const fireFlame = (state: GameState, p: Entity, origin: Vector2, dir: Vec
     for (const tgt of state.players) {
         if (!victimIds.has(tgt.id)) continue;
         applyDamage(state, tgt, p.id, stats.damage, dir, stats.knockbackForce, { weapon: WeaponType.FLAMETHROWER, from: origin });
+        if (!tgt.dead) igniteBurn(tgt, p.id, now); // a hit that kills sets no fire: the dead are out
     }
     for (const cover of scorched) {
         damageCover(state, cover, stats.damage * FLAME_COVER_MULT[cover.kind], p.id, now);

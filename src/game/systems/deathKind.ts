@@ -21,6 +21,8 @@ export interface DamageSource {
     shooterDist?: number;
     /** Bleeding from a wound, not a hit: never wounds again, no knockback. */
     bleed?: boolean;
+    /** Burning from the flame stream, not a hit: no armor, no knockback, no damage number. */
+    burn?: boolean;
     /** An explosive barrel's blast: hurts everyone, thrown or gibbed like a rocket splash. */
     barrel?: boolean;
 }

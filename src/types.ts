@@ -120,6 +120,9 @@ export interface Entity {
   hungerOutTimer?: number;
   wound?: Wound; // lost a leg to a railgun through armor (missing from older hosts: whole)
   spawnShieldUntil?: number; // can't be hurt before this timestamp, right after a respawn (spawnShield.ts)
+  burnUntil?: number; // on fire until this timestamp, set by the flame stream (burning.ts)
+  burnTickAt?: number; // when the next burn damage tick is due
+  burnBy?: string; // id of the fighter who set the fire: gets the kill if it burns them to death
 }
 
 export interface Projectile {

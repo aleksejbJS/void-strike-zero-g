@@ -24,6 +24,8 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
     for (const p of snap.players) {
         p.respawnTimer = shift(p.respawnTimer) ?? 0;
         p.spawnShieldUntil = shift(p.spawnShieldUntil);
+        p.burnUntil = shift(p.burnUntil);
+        p.burnTickAt = shift(p.burnTickAt);
     }
     // New objects: the host's own cloud list must keep its own clock
     if (snap.smokes) snap.smokes = snap.smokes.map(c => ({ ...c, bornAt: c.bornAt + offset, endsAt: c.endsAt + offset }));
