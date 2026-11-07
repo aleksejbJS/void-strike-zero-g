@@ -18,7 +18,7 @@ const FIRE_EVERY_TICKS = 3;
  *  the same spot as TANK_SPOT in render/fighter/fuelTankBack.ts (not imported: that file reaches pixi.js). */
 const TANK_UP = 10;
 const TANK_BACK = 14;
-/** The jet leans up this much: a corpse on its back does not blow its flame into the floor. */
+/** The jet leans up this much; any downward part of the back's way is dropped, so it never blows into the floor. */
 const JET_LIFT = 0.6;
 /** Corpse speed is per tick, a DEATH event's velocity per 60 Hz frame. */
 const TICK_TO_ENTITY_VEL = 2;
@@ -36,7 +36,7 @@ const tankOf = (c: Corpse): { at: Vector2; angle: number } => {
         x: hip.x + (up.x * TANK_UP + back.x * TANK_BACK) * RIG_SCALE,
         y: hip.y + (up.y * TANK_UP + back.y * TANK_BACK) * RIG_SCALE,
     };
-    return { at, angle: Math.atan2(back.y - JET_LIFT, back.x) };
+    return { at, angle: Math.atan2(Math.min(back.y, 0) - JET_LIFT, back.x) };
 };
 
 /** Fire from the back of every corpse that carries a lit tank; called once per corpse tick. */

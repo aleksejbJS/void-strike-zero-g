@@ -71,6 +71,19 @@ describe('corpseTankFire', () => {
         expect(state.particles.every(p => p.type === 'fire')).toBe(true);
     });
 
+    it('a corpse lying with its back to the floor blows the jet up, not into the floor', () => {
+        const state = withTankCorpse();
+        const c = state.corpses[0];
+        // Spine level, facing left: the back (and the tank) points straight down
+        c.facing = -1;
+        c.points.hip.x = 100; c.points.hip.y = 500;
+        c.points.neck.x = 130; c.points.neck.y = 500;
+        c.age = 0;
+        corpseTankFire(state);
+        expect(state.particles.length).toBeGreaterThan(0);
+        for (const p of state.particles) expect(p.vel.y).toBeLessThan(0);
+    });
+
     it('is rate-limited by the corpse age, not every tick', () => {
         const state = withTankCorpse();
         const c = state.corpses[0];

@@ -62,6 +62,21 @@ describe('FighterFire.jet', () => {
         expect(far).toBeLessThan(FLAME_RANGE * 1.2);
     });
 
+    it('a held spray is one stream: flames all the way from the muzzle to the end of the range', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const fire = new FighterFire();
+        // Half a second of 60 Hz frames, two physics ticks (120 per second) per frame
+        for (let t = NOW; t < NOW + 500; t += FRAME_MS) {
+            fire.jet(state, 0, 0, 0, t);
+            updateParticles(state);
+            updateParticles(state);
+        }
+        const xs = state.particles.map(q => q.pos.x);
+        for (let from = 0; from < FLAME_RANGE; from += FLAME_RANGE / 3) {
+            expect(xs.filter(x => x >= from && x < from + FLAME_RANGE / 3).length).toBeGreaterThanOrEqual(5);
+        }
+    });
+
     it('is rate-limited per fighter', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         const fire = new FighterFire();
