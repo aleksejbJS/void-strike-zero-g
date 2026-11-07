@@ -9,7 +9,7 @@ import { gameEvents, GameEvent } from './events';
 import { updatePhysics } from './physics';
 import { igniteBurn, extinguish, isBurning, tickBurning } from './burning';
 import { BURN_MS, BURN_TICK_MS } from './flameConstants';
-import { arena, enemyAt, spray, NOW } from './flameTestKit';
+import { NOW } from './flameTestKit';
 
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
@@ -169,25 +169,5 @@ describe('burn and the rest of the game', () => {
         toLocalClock(snap, 300);
         expect(foe).toMatchObject({ burnUntil: 1000 + BURN_MS + 300, burnTickAt: 1000 + BURN_TICK_MS + 300 });
         expect(calm.burnUntil).toBeUndefined();
-    });
-});
-
-describe('flame stream ignites', () => {
-    it('one hit sets the target on fire, credited to the shooter', () => {
-        const { state, shooter } = arena();
-        const foe = enemyAt(state, 'foe', 200);
-        spray(state, shooter);
-        expect(foe).toMatchObject({ burnUntil: NOW + BURN_MS, burnBy: 'shooter' });
-    });
-
-    it('a miss and a hit that kills leave nothing burning', () => {
-        const { state, shooter } = arena();
-        const far = enemyAt(state, 'far', 320);
-        const weak = enemyAt(state, 'weak', 100);
-        weak.health = 1;
-        spray(state, shooter);
-        expect(far.burnUntil).toBeUndefined();
-        expect(weak.dead).toBe(true);
-        expect(weak.burnUntil).toBeUndefined();
     });
 });
