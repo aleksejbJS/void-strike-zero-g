@@ -15,6 +15,7 @@ const KEYS: Record<WeaponType, keyof TranslationKeys> = {
     [WeaponType.GRENADE_LAUNCHER]: 'weapon.grenadeLauncher',
     [WeaponType.SMOKE_LAUNCHER]: 'weapon.smokeLauncher',
     [WeaponType.CHAINSAW]: 'weapon.chainsaw',
+    [WeaponType.FLAMETHROWER]: 'weapon.flamethrower',
 };
 
 const BY_NAME = new Map<string, keyof TranslationKeys>([

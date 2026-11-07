@@ -19,6 +19,7 @@ export const WEAPON_GRIPS: Record<WeaponType, WeaponGrip> = {
     [WeaponType.SMOKE_LAUNCHER]: { length: 44, grip: [0.22, 0.62], fore: [0.62, 0.48], axis: 0.34 }, // same pose as the grenade launcher
     [WeaponType.PLASMA_GUN]: { length: 46, grip: [0.31, 0.75], fore: [0.62, 0.55], axis: 0.45 },
     [WeaponType.CHAINSAW]: { length: 46, grip: [0.1, 0.5], fore: [0.24, 0.14], axis: 0.5 },
+    [WeaponType.FLAMETHROWER]: { length: 44, grip: [0.22, 0.62], fore: [0.62, 0.48], axis: 0.34 }, // same pose as the grenade launcher until its own art lands
 };
 
 /** Hand and barrel points in weapon space (origin = top-left of the picture, x along the barrel). */

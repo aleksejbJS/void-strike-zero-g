@@ -32,6 +32,7 @@ export enum WeaponType {
   GRENADE_LAUNCHER = 'GRENADE_LAUNCHER',
   SMOKE_LAUNCHER = 'SMOKE_LAUNCHER',
   CHAINSAW = 'CHAINSAW',
+  FLAMETHROWER = 'FLAMETHROWER',
 }
 
 export enum ItemType {

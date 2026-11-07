@@ -13,6 +13,7 @@ export const WEAPON_ICON: Record<WeaponType, string> = {
     [WeaponType.PLASMA_GUN]: assetUrl('assets/hud/plasma_gun.png'),
     [WeaponType.RAILGUN]: assetUrl('assets/hud/railgun.png'),
     [WeaponType.CHAINSAW]: assetUrl('assets/hud/chainsaw.png'),
+    [WeaponType.FLAMETHROWER]: assetUrl('assets/hud/flamethrower.png'),
 };
 
 export const ITEM_ICON = {
