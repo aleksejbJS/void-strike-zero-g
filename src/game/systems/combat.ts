@@ -18,6 +18,7 @@ import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
 import { killWeaponName } from './killWeaponName';
+import { fireFlame } from './flamethrower';
 
 // --- Teams ---
 
@@ -207,6 +208,11 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
 
     p.vel.x -= dir.x * p.weapon.recoil;
     p.vel.y -= dir.y * p.weapon.recoil;
+
+    if (p.weapon.type === WeaponType.FLAMETHROWER) {
+        fireFlame(state, p, origin, dir, Date.now());
+        return;
+    }
 
     if (p.weapon.type === WeaponType.RAILGUN) {
         const range = 2200;
