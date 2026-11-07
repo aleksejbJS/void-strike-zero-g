@@ -14,7 +14,8 @@ export const TANK_BLOOD = 60;
 const BLOOD_COLOR = '#dc2626';
 /** A burst of the tank's jet every this many corpse ticks (120 per second). */
 const FIRE_EVERY_TICKS = 3;
-/** The tank on a corpse's back: this far up the spine from the hip and this far behind it (rig units). */
+/** The tank on a corpse's back: this far up the spine from the hip and this far behind it (rig units),
+ *  the same spot as TANK_SPOT in render/fighter/fuelTankBack.ts (not imported: that file reaches pixi.js). */
 const TANK_UP = 10;
 const TANK_BACK = 14;
 /** The jet leans up this much: a corpse on its back does not blow its flame into the floor. */

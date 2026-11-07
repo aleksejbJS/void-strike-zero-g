@@ -8,6 +8,7 @@ import { FLAME_HALF_ANGLE, FLAME_RANGE } from '../../systems/flameConstants';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { GripPoints } from './weaponGrips';
 import { muzzlePoint } from './muzzleFlash';
+import { TANK_SPOT } from './fuelTankBack';
 
 /** The jet shows this long after the last flame tick (the stream ticks every 100 ms). */
 export const JET_MS = 150;
@@ -28,8 +29,7 @@ const JET_COLORS = ['#fff7c2', '#fde047', '#fbbf24', '#fb923c', '#f97316', '#ef4
 const BODY_COUNT = 2;
 const BODY_COLORS = ['#ea580c', '#f97316', '#fb923c', '#fcd34d', '#facc15'];
 
-/** The tank in the upper-body frame (rig units, behind the jetpack), and its jet tipped this much upward. */
-const TANK_AT = { x: -14, y: -10 };
+/** The lit tank's jet is tipped this much upward. */
 const TANK_TILT = 0.35;
 
 const between = (min: number, max: number) => min + Math.random() * (max - min);
@@ -56,7 +56,7 @@ export class FighterFire {
             this.jet(state, muzzle.x, muzzle.y, turn(f.pose.gunAngle), now);
         }
         this.body(state, p, now);
-        const tank = world(upperPoint(f.pose, TANK_AT.x, TANK_AT.y));
+        const tank = world(upperPoint(f.pose, TANK_SPOT.x, TANK_SPOT.y));
         this.tank(state, p, tank.x, tank.y, turn(Math.PI + f.pose.lean + TANK_TILT), now);
     }
 

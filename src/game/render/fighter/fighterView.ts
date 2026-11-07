@@ -16,6 +16,7 @@ import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
 import { createMuzzleLight, drawMuzzle, muzzlePoint } from './muzzleFlash';
 import { drawStump } from './fighterStump';
+import { drawFuelHose, drawFuelTank } from './fuelTankBack';
 
 export interface FighterView {
     root: Container;
@@ -93,6 +94,11 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     const b = view.body.clear();
     // The flame goes over the tail (a tail just taking off still swings through it) and under the jetpack
     drawTail(b, pose, look, f.parts);
+    // A flamethrower's fuel tank sits behind the jetpack; a corpse keeps the tank but drops the gun the hose feeds
+    if (f.weaponType === WeaponType.FLAMETHROWER) {
+        drawFuelTank(b, pose);
+        if (!f.weaponless) drawFuelHose(b, pose, grip);
+    }
     if (f.flame) drawFlame(b, pose, look, f.flicker);
     drawJetpack(b, pose, look, f.flame, f.parts);
     const legDark = shade(look.leg, 0.72);
