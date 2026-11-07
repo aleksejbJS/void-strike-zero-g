@@ -3,7 +3,7 @@
 // so a frame rate of 144 Hz spawns no more fire than 60 Hz.
 
 import { Entity, GameState, Vector2, WeaponType } from '../../../types';
-import { createParticles } from '../../systems/effectSpawn';
+import { addFlame, spawnTankJet } from '../../systems/flameParticles';
 import { FLAME_HALF_ANGLE, FLAME_RANGE } from '../../systems/flameConstants';
 import { FighterPose, RIG_SCALE, upperPoint } from './fighterPose';
 import { GripPoints } from './weaponGrips';
@@ -16,8 +16,6 @@ export const JET_MS = 150;
 const JET_GAP_MS = 20;
 const BODY_GAP_MS = 45;
 const TANK_GAP_MS = 25;
-/** With this many live particles (a big fight full of blasts), no new fire is added. */
-const FIRE_CAP = 1200;
 
 /** A jet particle lives this many physics ticks; 'fire' particles slow by DAMPING every tick (particles.ts). */
 const JET_LIFE_TICKS = 30;
@@ -30,30 +28,11 @@ const JET_COLORS = ['#fff7c2', '#fde047', '#fbbf24', '#fb923c', '#f97316', '#ef4
 const BODY_COUNT = 2;
 const BODY_COLORS = ['#ea580c', '#f97316', '#fb923c', '#fcd34d', '#facc15'];
 
-/** The tank's jet: hotter (blue-white), bigger and faster than body flames, from the tank on the back. */
-const TANK_COUNT = 3;
-const TANK_COLORS = ['#ffffff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8', '#60a5fa'];
-const TANK_SPREAD = 0.25;   // radians either side of the jet's way
 /** The tank in the upper-body frame (rig units, behind the jetpack), and its jet tipped this much upward. */
 const TANK_AT = { x: -14, y: -10 };
 const TANK_TILT = 0.35;
 
 const between = (min: number, max: number) => min + Math.random() * (max - min);
-const pick = (colors: string[]) => colors[Math.floor(Math.random() * colors.length)];
-
-/** One flame particle unless the scene is already full of particles. */
-const flame = (state: GameState, at: Vector2, colors: string[], vel: Vector2, size: number, decay?: number) => {
-    if (state.particles.length >= FIRE_CAP) return;
-    createParticles(state, at.x, at.y, 1, pick(colors), 'fire', { vel, size, ...(decay !== undefined && { decay }) });
-};
-
-/** One burst of a lit tank's jet from (x, y) along `angle`; also used by corpses that carry a lit tank. */
-export const spawnTankJet = (state: GameState, x: number, y: number, angle: number): void => {
-    for (let i = 0; i < TANK_COUNT; i++) {
-        const a = angle + between(-TANK_SPREAD, TANK_SPREAD), v = between(5, 8);
-        flame(state, { x, y }, TANK_COLORS, { x: Math.cos(a) * v, y: Math.sin(a) * v }, between(7, 12), between(0.045, 0.06));
-    }
-};
 
 /** What the animator already worked out for this frame: the pose, the grip, the facing and a hop's lift. */
 export interface FireFrame { pose: FighterPose; grip: GripPoints; facing: number; hop: number }
@@ -86,7 +65,7 @@ export class FighterFire {
         if (!this.due('jetAt', JET_GAP_MS, now)) return;
         for (let i = 0; i < JET_COUNT; i++) {
             const a = angle + between(-FLAME_HALF_ANGLE, FLAME_HALF_ANGLE), v = JET_SPEED * between(0.85, 1.05);
-            flame(state, { x, y }, JET_COLORS, { x: Math.cos(a) * v, y: Math.sin(a) * v }, between(5, 10), 1 / JET_LIFE_TICKS);
+            addFlame(state, { x, y }, JET_COLORS, { x: Math.cos(a) * v, y: Math.sin(a) * v }, between(5, 10), 1 / JET_LIFE_TICKS);
         }
     }
 
@@ -97,7 +76,7 @@ export class FighterFire {
         const w = p.isProne ? p.width * 2 : p.width; // lying down, the body is longer than the hitbox is wide
         for (let i = 0; i < BODY_COUNT; i++) {
             const at = { x: p.pos.x + between(-0.45, 0.45) * w, y: p.pos.y - between(0.05, 0.95) * p.height };
-            flame(state, at, BODY_COLORS, { x: between(-0.3, 0.3), y: -between(0.6, 1.6) }, between(5, 9));
+            addFlame(state, at, BODY_COLORS, { x: between(-0.3, 0.3), y: -between(0.6, 1.6) }, between(5, 9));
         }
     }
 

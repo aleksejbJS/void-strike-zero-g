@@ -1,9 +1,10 @@
 // A corpse that died with a lit fuel tank: the tank roars from its back until it blows (TANK_BLAST),
 // then the body is torn to pieces with blood. Display side only, like the rest of the corpses.
+// The simulation's module graph reaches this file (via effects.ts): import nothing that reaches pixi.js.
 
 import { GameState, Vector2 } from '../../../types';
 import { createParticles } from '../effectSpawn';
-import { spawnTankJet } from '../../render/fighter/fighterFire';
+import { spawnTankJet } from '../flameParticles';
 import { RIG_SCALE } from '../../render/fighter/fighterPose';
 import { Corpse, CorpsePointId } from './corpseBody';
 import { addCorpse } from './corpses';
