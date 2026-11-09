@@ -55,6 +55,7 @@ import { addShake, explosionShake } from '../game/render/screenShake';
 import { spawnPointFor } from '../game/net/roomSetup';
 import { currentBuild } from '../game/build/currentBuild';
 import { useMatchRewards } from './hud/useMatchRewards';
+import { useStatsCollector } from './hud/useStatsCollector';
 import { useTournamentMatch } from './hud/useTournamentMatch';
 import { openTournamentNet } from './hud/tournamentNet';
 import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
@@ -115,6 +116,7 @@ export default function GameCanvas() {
         hungerWinnerId: null
     });
     const reward = useMatchRewards(gameState, localIdRef); // XP for the match that just ended
+    useStatsCollector(gameState, localIdRef); // lifetime counters and play time for leaderboards
     const tournamentRun = state.tournamentMatch; // a tournament duel: always online, see useTournamentMatch
     const tourney = useTournamentMatch(gameState, localIdRef, tournamentRun);
 
