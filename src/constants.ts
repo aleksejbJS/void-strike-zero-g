@@ -99,10 +99,11 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     fireRate: 100,
     speed: 18,
     color: '#fbbf24',
-    ammo: 999,
-    maxAmmo: 999,
+    ammo: 50,
+    maxAmmo: 50, // one magazine; reloads automatically, the reserve never runs out
     recoil: 0.2,
     knockbackForce: 0.3,
+    reloadMs: 1000,
   },
   [WeaponType.SHOTGUN]: {
     type: WeaponType.SHOTGUN,
@@ -187,6 +188,18 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     maxAmmo: 200,
     recoil: 0.2,
     knockbackForce: 0.2,
+  },
+  [WeaponType.FLAMETHROWER]: {
+    type: WeaponType.FLAMETHROWER,
+    name: 'Flamethrower',
+    damage: 5, // per stream tick; the burning status adds more (flameConstants.ts)
+    fireRate: 100, // fast ticks while holding fire
+    speed: 0, // Short-range stream; no projectile
+    color: '#f97316',
+    ammo: 100,
+    maxAmmo: 200,
+    recoil: 0,
+    knockbackForce: 0,
   },
 };
 

@@ -2,6 +2,7 @@
 import type { FighterBuild } from './game/build/buildParts';
 import type { Corpse } from './game/systems/ragdoll/corpseBody';
 import type { Cover } from './game/cover/coverTypes';
+import type { Stats } from './game/stats/statKeys';
 
 export type Vector2 = { x: number; y: number };
 
@@ -32,6 +33,7 @@ export enum WeaponType {
   GRENADE_LAUNCHER = 'GRENADE_LAUNCHER',
   SMOKE_LAUNCHER = 'SMOKE_LAUNCHER',
   CHAINSAW = 'CHAINSAW',
+  FLAMETHROWER = 'FLAMETHROWER',
 }
 
 export enum ItemType {
@@ -55,6 +57,8 @@ export interface Weapon {
   maxAmmo: number;
   recoil: number;
   knockbackForce: number; // force applied to target on hit
+  reloadMs?: number;      // set = magazine-fed: maxAmmo is the magazine, the reserve is unlimited
+  reloadEndsAt?: number;  // timestamp the running reload refills the magazine
 }
 
 export interface Pickup {
@@ -119,6 +123,11 @@ export interface Entity {
   hungerOutTimer?: number;
   wound?: Wound; // lost a leg to a railgun through armor (missing from older hosts: whole)
   spawnShieldUntil?: number; // can't be hurt before this timestamp, right after a respawn (spawnShield.ts)
+  burnUntil?: number; // on fire until this timestamp, set by the flame stream (burning.ts)
+  burnTickAt?: number; // when the next burn damage tick is due
+  burnBy?: string; // id of the fighter who set the fire: gets the kill if it burns them to death
+  tankFuseAt?: number; // flamethrower fuel tank on fire: it blasts at this timestamp (fuelTank.ts)
+  tankBy?: string; // id of the fighter who lit the tank: gets the kills of the blast
 }
 
 export interface Projectile {
@@ -132,7 +141,7 @@ export interface Projectile {
   life?: number; // Ticks left before the projectile expires (grenades explode)
 }
 
-export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff' | 'debris' | 'soot';
+export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff' | 'debris' | 'soot' | 'flame' | 'magazine';
 
 export interface Particle {
   id: string;
@@ -207,6 +216,14 @@ export interface SmokeCloud {
   endsAt: number; // ms timestamp
 }
 
+/** A lit fuel tank whose carrier died: it still blasts at the death spot (host-only, never in snapshots). */
+export interface LitTank {
+  id: string;
+  pos: Vector2; // where the tank was on the carrier's back when they died
+  fuseAt: number; // ms timestamp of the blast
+  by: string; // id of the fighter who lit it: gets the kills of the blast
+}
+
 export interface GameState {
   mode: GameMode;
   scores: { [key in Team]: number };
@@ -237,6 +254,9 @@ export interface GameState {
   beams: Beam[];
   smokes?: SmokeCloud[]; // smoke clouds; readers use `state.smokes ?? []`
   cover?: Cover[]; // destructible cover; readers use `state.cover ?? []`
+  playerStats?: Record<string, Stats>; // per-player counters of this room/game, by player id (stats/playerStats.ts)
+  statsSession?: string; // id of this room/game, so counters of one session are added to totals once
+  litTanks?: LitTank[]; // host-only: lit tanks of dead carriers (fuelTankBlast.ts); readers use `state.litTanks ?? []`
 }
 
 export enum MapId {

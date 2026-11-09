@@ -23,6 +23,7 @@ import type { BodyId } from '../../build/bodyTypes';
 import type { ColorMatrixFilter } from 'pixi.js';
 import type { FighterExpression } from '../characters/humanArtSelector';
 import type { HumanWounds } from '../characters/humanWounds';
+import { drawFuelHose, drawFuelTank } from './fuelTankBack';
 
 export interface FighterView {
     root: Container;
@@ -58,6 +59,7 @@ export interface FighterFrame {
     headBob?: number;  // radians added to the head tilt (default 0)
     hitFlash?: number; // 0..1, brightens the colours after a hit (default 0)
     weaponless?: boolean; // empty hands: no weapon picture and no fallback gun (a corpse drops its gun)
+    tankLit?: boolean; // a lit fuel tank on the back: drawn whatever is in hand, so its jet never comes from nothing
 }
 
 const FALLBACK_GUN = 0x1e293b;
@@ -106,6 +108,10 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     const b = view.body.clear();
     // The flame goes over the tail (a tail just taking off still swings through it) and under the jetpack
     if (!illustrated || look.build.tail !== 'none') drawTail(b, pose, look, f.parts);
+    // A flamethrower's fuel tank sits behind the jetpack; a corpse keeps the tank but drops the gun the hose feeds
+    const flamethrower = f.weaponType === WeaponType.FLAMETHROWER;
+    if (flamethrower || f.tankLit) drawFuelTank(b, pose);
+    if (flamethrower && !f.weaponless) drawFuelHose(b, pose, grip);
     if (f.flame) drawFlame(b, pose, look, f.flicker);
     drawJetpack(b, pose, look, f.flame, f.parts);
     if (!illustrated) drawLegacyBody(b, pose, look, f.oneLeg);

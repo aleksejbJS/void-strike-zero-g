@@ -11,10 +11,12 @@ import MainMenu from './MainMenu';
 let store: ReturnType<typeof useUIStore>;
 const Spy: React.FC = () => { store = useUIStore(); return null; };
 
-const renderMenu = (onCustomize = vi.fn(), onOpenProfile = vi.fn(), account = stubAccount({ status: 'disabled' })) => {
+const renderMenu = (onCustomize = vi.fn(), onOpenProfile = vi.fn(), account = stubAccount({ status: 'disabled' }), onOpenLeaderboard = vi.fn()) => {
     render(
         <UIProvider><Spy />
-            <AccountContext.Provider value={account}><MainMenu onCustomize={onCustomize} onOpenProfile={onOpenProfile} /></AccountContext.Provider>
+            <AccountContext.Provider value={account}>
+                <MainMenu onCustomize={onCustomize} onOpenProfile={onOpenProfile} onOpenLeaderboard={onOpenLeaderboard} />
+            </AccountContext.Provider>
         </UIProvider>,
     );
     return onCustomize;
@@ -109,6 +111,26 @@ describe('MainMenu', () => {
             renderMenu();
             fireEvent.click(screen.getByRole('button', { name: 'Switch language to Russian' }));
             expect(screen.getByRole('button', { name: 'Профиль' })).toBeInTheDocument();
+        });
+    });
+
+    describe('Top button', () => {
+        it('opens the leaderboards when accounts are enabled', () => {
+            const onOpenLeaderboard = vi.fn();
+            renderMenu(vi.fn(), vi.fn(), stubAccount({ status: 'guest' }), onOpenLeaderboard);
+            fireEvent.click(screen.getByRole('button', { name: 'Top' }));
+            expect(onOpenLeaderboard).toHaveBeenCalledTimes(1);
+        });
+
+        it('is hidden while accounts are disabled', () => {
+            renderMenu();
+            expect(screen.queryByRole('button', { name: 'Top' })).not.toBeInTheDocument();
+        });
+
+        it('follows the language switch', () => {
+            renderMenu(vi.fn(), vi.fn(), stubAccount({ status: 'loggedIn', nickname: 'Alex' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Switch language to Russian' }));
+            expect(screen.getByRole('button', { name: 'Топ' })).toBeInTheDocument();
         });
     });
 });

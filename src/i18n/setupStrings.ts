@@ -22,6 +22,7 @@ export interface SetupKeys extends Record<`cs.base.${BodyId}`, string> {
     'cs.jetpack': string;
     'cs.custom': string;
     'cs.colorOf': string;
+    'cs.resetColor': string;
     'cs.back': string;
     'cs.startOffline': string;
     'cs.startHost': string;
@@ -53,6 +54,7 @@ export const setupStrings: Record<Language, SetupKeys> = {
         'cs.jetpack': 'Jetpack',
         'cs.custom': 'Custom',
         'cs.colorOf': '{0} color',
+        'cs.resetColor': 'Restore original {0} color',
         'cs.back': 'Back',
         'cs.startOffline': 'Start match',
         'cs.startHost': 'Create game',
@@ -87,6 +89,7 @@ export const setupStrings: Record<Language, SetupKeys> = {
         'cs.jetpack': 'Джетпак',
         'cs.custom': 'Свой',
         'cs.colorOf': 'Цвет: {0}',
+        'cs.resetColor': 'Вернуть исходный цвет: {0}',
         'cs.back': 'Назад',
         'cs.startOffline': 'Начать матч',
         'cs.startHost': 'Создать игру',

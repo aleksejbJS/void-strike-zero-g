@@ -77,6 +77,7 @@ const drawBody = (fighter: FighterView, c: Corpse) => {
     drawFighter(fighter, {
         pose, look: lookOfCorpse(c.colors), facing: c.facing, grip: gripPoints(weaponType, GUN_ASPECT),
         weaponless: true, flame: false, flicker: 0, parts: IDLE_PARTS, muzzleFlash: 0, weaponType, oneLeg: c.oneLeg,
+        tankLit: c.tankId !== undefined,
     });
 };
 

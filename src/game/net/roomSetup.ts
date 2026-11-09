@@ -10,6 +10,7 @@ import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../system
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks, withBotTeamColor } from '../build/botLooks';
 import { JoinRequest } from './protocol';
+import { newStatsSession } from '../stats/playerStats';
 
 export const isTeamMode = (mode: GameMode) =>
     mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -59,6 +60,9 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     gunGameWinnerId: null,
     beams: [],
     smokes: [],
+    playerStats: {},
+    statsSession: newStatsSession(), // kept by resetMatch / resetHungerRound: one session per room
+    litTanks: [],
 });
 
 const startingWeapon = (mode: GameMode) =>
@@ -81,6 +85,8 @@ const baseEntity = (mode: GameMode, team: Team) => {
         lastProcessedInput: 0,
         jetpackOn: false,
         wound: undefined, // a new life starts whole (the Object.assign in respawnEveryone clears an old wound)
+        burnUntil: undefined, burnTickAt: undefined, burnBy: undefined, // ...and not on fire
+        tankFuseAt: undefined, tankBy: undefined, // ...with no lit fuel tank
     };
 };
 
@@ -154,6 +160,7 @@ const respawnEveryone = (state: GameState) => {
     state.projectiles = [];
     state.beams = [];
     state.smokes = [];
+    state.litTanks = [];
     state.pickups = getInitialPickups(state.mode, state.currentMap);
 };
 

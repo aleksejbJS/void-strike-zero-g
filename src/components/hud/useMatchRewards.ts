@@ -4,6 +4,8 @@ import { MutableRefObject, useEffect, useRef, useState } from 'react';
 import { GameState } from '../../types';
 import { detectMatchEnd } from '../../game/build/matchOutcome';
 import { addMatchXp, Reward } from '../../game/build/progress';
+import { addStats } from '../../game/stats/lifetimeStats';
+import { matchWinStats } from '../../game/stats/matchWinStats';
 import { notifyProgressChanged } from '../../account/progressEvents';
 
 const POLL_MS = 250;
@@ -30,6 +32,7 @@ export function useMatchRewards(state: MutableRefObject<GameState>, localId: Mut
             }
             if (episode.current || !seenPlay.current) return;
             episode.current = addMatchXp(end.won);
+            addStats(matchWinStats(state.current, end)); // wins, bot-match wins and Hunger Games wins, once per end screen
             notifyProgressChanged(); // a logged-in player's new XP goes to the cloud
             setReward(episode.current);
         };

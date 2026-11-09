@@ -16,6 +16,7 @@ import { ModePreview } from './ModePreview';
 import { PlayPanel, MapOption } from './PlayPanel';
 import { ControlsLegend } from './ControlsLegend';
 import { ProfileButton } from './ProfileButton';
+import { TopButton } from './TopButton';
 import { WhatsNew } from './WhatsNew';
 import { TournamentUnavailable } from './TournamentUnavailable';
 import { ADS_ADMIN_HASH, canSeeAdSettings } from '../ads/adminAccess';
@@ -30,7 +31,13 @@ const mapsFor = (mode: GameMode, t: Translate): MapOption[] => {
     return [standard]; // objective modes are built for the default map
 };
 
-const MainMenu: React.FC<{ onCustomize: () => void; onOpenProfile: () => void }> = ({ onCustomize, onOpenProfile }) => {
+interface Props {
+    onCustomize: () => void;
+    onOpenProfile: () => void;
+    onOpenLeaderboard: () => void;
+}
+
+const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboard }) => {
     const { state, actions } = useUIStore();
     const { t, language, changeLanguage } = useTranslation();
     const [mode, setMode] = useState<GameMode>(state.selectedMode);
@@ -69,7 +76,9 @@ const MainMenu: React.FC<{ onCustomize: () => void; onOpenProfile: () => void }>
                             <img src={assetUrl('assets/menu/void-strike-logo.webp')} alt="" width="2172" height="724" />
                         </h1>
                     </div>
-                    <div className="ap-header-actions flex min-w-0 shrink-0 gap-2">
+                    {/* max-w-full: on a narrow portrait phone the row stays within the screen, the nickname truncates */}
+                    <div className="ap-header-actions flex min-w-0 max-w-full shrink-0 gap-2">
+                        <TopButton onOpen={onOpenLeaderboard} t={t} />
                         <ProfileButton onOpen={onOpenProfile} t={t} />
                         <button type="button" onClick={() => setNewsOpen(true)}
                             className="flex h-11 items-center gap-2 rounded phone:h-9 border-2 border-bay-edge bg-bay-steel px-4 text-[15px] font-semibold hover:bg-bay-plate focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">

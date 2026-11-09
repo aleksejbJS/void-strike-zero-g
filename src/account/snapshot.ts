@@ -1,17 +1,19 @@
 // The player's whole saved progress as one value: what is pulled from / pushed to the cloud.
 // Pure data, no storage access. Sanitizing makes any untrusted value valid; merging never lowers anything.
-// Forward compatible: data a newer build added (achievement ids, fighter parts or slots this build does
-// not know) is kept, well-formed and bounded, so an older tab never erases it from the cloud. The game
-// ignores it: achievements are read through their definitions, and the build is sanitized on every load.
+// Forward compatible: data a newer build added (achievement ids, lifetime counters, fighter parts or slots
+// this build does not know) is kept, well-formed and bounded, so an older tab never erases it from the
+// cloud. The game ignores it: achievements are read through their definitions, the counters through the
+// names it knows, and the build is sanitized on every load.
 
 import { DEFAULT_BUILD, FighterBuild } from '../game/build/buildParts';
 import { sanitizeBuild } from '../game/build/sanitizeBuild';
+import type { Stats } from '../game/stats/statKeys';
 import type { AchievementProgress } from '../game/systems/achievements';
 
 export interface FighterColors { player: string; head: string; torso: string; arms: string; legs: string; jetpack: string }
 export interface FighterLook { build: FighterBuild; skinId: string; colors: FighterColors; savedAt: number }
-/** `look: null` means the guest never customised the fighter. */
-export interface PlayerSnapshot { achievements: AchievementProgress; xp: number; look: FighterLook | null }
+/** `look: null` means the guest never customised the fighter. `stats` are the lifetime counters that leaderboards rank. */
+export interface PlayerSnapshot { achievements: AchievementProgress; xp: number; look: FighterLook | null; stats: Stats }
 
 type Entry = AchievementProgress[string];
 
@@ -23,6 +25,8 @@ const MAX_ACHIEVEMENTS = 200;
 const BUILD_FIELD_RE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
 const BUILD_VALUE_RE = /^#?[A-Za-z0-9_-]{1,40}$/;
 const MAX_BUILD_FIELDS = 40;
+const STAT_KEY_RE = /^[a-zA-Z]{1,40}$/;
+const MAX_STATS = 60;
 
 /** Names like "constructor" or "__proto__" would clash with plain-object lookups. */
 const isSafeKey = (key: string, pattern: RegExp): boolean => pattern.test(key) && !(key in Object.prototype);
@@ -48,6 +52,24 @@ function sanitizeAchievements(raw: unknown): AchievementProgress {
         if (!isSafeKey(id, ACHIEVEMENT_ID_RE)) continue;
         const entry = sanitizeEntry(raw[id]);
         if (entry) { result[id] = entry; count += 1; }
+    }
+    return result;
+}
+
+/**
+ * The counters as stored, not as the game knows them: every well-formed name is kept, even one this build
+ * does not know (a newer counter). Values are whole numbers, so a fraction or a negative never gets through.
+ */
+function sanitizeStats(raw: unknown): Stats {
+    const result: Record<string, number> = {};
+    if (!isRecord(raw)) return result;
+    let count = 0;
+    for (const key of Object.keys(raw)) {
+        if (count >= MAX_STATS) break;
+        const value = raw[key];
+        if (!isSafeKey(key, STAT_KEY_RE) || !isCount(value)) continue;
+        result[key] = Math.floor(value);
+        count += 1;
     }
     return result;
 }
@@ -95,6 +117,7 @@ export function sanitizeSnapshot(raw: unknown): PlayerSnapshot {
         achievements: sanitizeAchievements(source.achievements),
         xp: isCount(source.xp) ? Math.floor(source.xp) : 0,
         look: sanitizeLook(source.look),
+        stats: sanitizeStats(source.stats),
     };
 }
 
@@ -106,6 +129,17 @@ function mergeEntry(a: Entry | undefined, b: Entry | undefined): Entry {
     const merged: Entry = { progress: Math.max(a.progress, b.progress), unlocked: a.unlocked || b.unlocked };
     const unlockedAt = earliest(a.unlockedAt, b.unlockedAt);
     if (unlockedAt !== undefined) merged.unlockedAt = unlockedAt;
+    return merged;
+}
+
+/** Per counter, the larger value; a counter only one side has is kept. */
+function mergeStats(a: Stats, b: Stats): Stats {
+    const x: Record<string, number | undefined> = a;
+    const y: Record<string, number | undefined> = b;
+    const merged: Record<string, number> = {};
+    for (const key of new Set([...Object.keys(x), ...Object.keys(y)])) {
+        merged[key] = Math.max(x[key] ?? 0, y[key] ?? 0);
+    }
     return merged;
 }
 
@@ -121,7 +155,7 @@ function mergeLooks(a: FighterLook | null, b: FighterLook | null): FighterLook |
 }
 
 /**
- * Never lowers anything: max progress and XP, unlocked if either side unlocked, newest look wins
+ * Never lowers anything: max progress, XP and counters, unlocked if either side unlocked, newest look wins
  * (`b` on a tie: pass the cloud copy, or the account's pending copy, as `b`).
  */
 export function mergeSnapshots(a: PlayerSnapshot, b: PlayerSnapshot): PlayerSnapshot {
@@ -129,5 +163,5 @@ export function mergeSnapshots(a: PlayerSnapshot, b: PlayerSnapshot): PlayerSnap
     for (const id of new Set([...Object.keys(a.achievements), ...Object.keys(b.achievements)])) {
         achievements[id] = mergeEntry(a.achievements[id], b.achievements[id]);
     }
-    return { achievements, xp: Math.max(a.xp, b.xp), look: mergeLooks(a.look, b.look) };
+    return { achievements, xp: Math.max(a.xp, b.xp), look: mergeLooks(a.look, b.look), stats: mergeStats(a.stats, b.stats) };
 }

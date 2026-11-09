@@ -10,10 +10,13 @@ import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
 import { BleedDrips } from './fighterBleed';
+import { FighterFire } from './fighterFire';
 import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
 import { humanBleedAnchor } from '../characters/humanBleedAnchor';
+import { MagazineDrop } from './fighterMagazine';
+import { reloadProgress } from '../../systems/reload';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
 const cyclePx = (stride: number) => 4 * stride * RIG_SCALE; // ground covered by one full step cycle
@@ -35,7 +38,9 @@ interface AnimMemory {
     motion: FighterMotion;    // landing squash and hit flash
     dust: DustBudget;
     bleed: BleedDrips;        // blood from the stump of a wounded fighter
+    fire: FighterFire;        // flame jet, burning body, lit fuel tank
     parts: PartMotion;        // springs for tail, ears, lamp and wings
+    magazine: MagazineDrop;   // drops the empty magazine when a reload starts
 }
 
 export const heldWeaponKey = (type: string) => `held_${type.toLowerCase()}`;
@@ -89,7 +94,10 @@ export class FighterAnimator {
         const weapon = textures[heldWeaponKey(p.weapon.type)];
         const grip = gripPoints(p.weapon.type, weapon ? weapon.height / weapon.width : FALLBACK_ASPECT);
         const look = lookFromEntity(p);
-        const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip, body: look.build.body });
+        const reload = reloadProgress(p.weapon, now) ?? undefined;
+        const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip, reload, body: look.build.body });
+        const hand = pose.frontArm.end; // the grip, where the magazine sits
+        m.magazine.update(game, p.weapon, { x: p.pos.x + hand.x * facing * RIG_SCALE, y: p.pos.y + hand.y * RIG_SCALE }, facing);
 
         // Tail, ears and wings answer to the speed along the facing, in px/s, not to the world direction
         const localVel = localVelocity({ x: p.vel.x * VEL_TO_PX_PER_S, y: p.vel.y * VEL_TO_PX_PER_S }, facing);
@@ -107,6 +115,7 @@ export class FighterAnimator {
             const tip = humanBleedAnchor(look.build.body, pose) ?? stumpTip(pose);
             m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now);
         }
+        m.fire.update(game, p, { pose, grip, facing, hop }, since, now);
         return {
             pose, grip, weapon, facing,
             weaponType: p.weapon.type,
@@ -120,6 +129,7 @@ export class FighterAnimator {
             hitFlash: motion.hitFlash,
             expression: p.health <= 40 || p.wound || motion.hitFlash > 0 ? 'hurt' : 'normal',
             oneLeg: !!p.wound,
+            tankLit: typeof p.tankFuseAt === 'number',
             hop,
         };
     }
@@ -133,7 +143,9 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), parts: new PartMotion(),
+                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), fire: new FighterFire(),
+                parts: new PartMotion(),
+                magazine: new MagazineDrop(),
             };
             this.memory.set(id, m);
         }

@@ -1,12 +1,13 @@
 // Reads and writes the player's snapshot in localStorage, which stays the game's working copy.
-// The game keeps using its own keys (achievements, XP, build, skin, colours); this file only
-// gathers them into one snapshot and spreads a snapshot back out.
+// The game keeps using its own keys (achievements, XP, lifetime counters, build, skin, colours); this
+// file only gathers them into one snapshot and spreads a snapshot back out.
 
 import { BUILD_KEY, loadBuild, saveBuild } from '../game/build/buildStorage';
 import { XP_KEY, loadXp, setXp } from '../game/build/progress';
 import { sanitizeBuild } from '../game/build/sanitizeBuild';
 import { BODY_PRESETS } from '../game/build/characterBases';
 import { migrateCharacter } from '../game/build/characterMigration';
+import { clearStats, exportStats, replaceStats } from '../game/stats/lifetimeStats';
 import { achievementManager } from '../game/systems/achievements';
 import {
     PLAYER_KEYS, loadArmColor, loadHeadColor, loadJetpackColor, loadLegColor, loadPlayerColor,
@@ -77,6 +78,7 @@ export function readLocalSnapshot(): PlayerSnapshot {
         achievements: achievementManager.exportProgress(),
         xp: loadXp(),
         look: readStoredLook(),
+        stats: exportStats(),
     });
 }
 
@@ -85,12 +87,14 @@ export function writeLocalSnapshot(snapshot: PlayerSnapshot): void {
     const clean = sanitizeSnapshot(snapshot); // replaceProgress does no shape check of its own
     achievementManager.replaceProgress(clean.achievements);
     setXp(clean.xp);
+    replaceStats(clean.stats); // silent: the achievements above already carry the merged progress
     if (clean.look) writeLook(clean.look);
 }
 
-/** Forgets the whole local player: progress, XP, look and name (used on logout). */
+/** Forgets the whole local player: progress, XP, counters, look and name (used on logout). */
 export function clearLocalSnapshot(): void {
     achievementManager.reset();
+    clearStats();
     for (const key of [ACHIEVEMENT_KEY, XP_KEY, PLAYER_KEYS.name, ...LOOK_KEYS]) removeStored(key);
 }
 

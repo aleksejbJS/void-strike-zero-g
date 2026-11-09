@@ -12,7 +12,7 @@ import { createSync, Sync } from '../account/sync';
 export const USER = 'user-1';
 const colors = { player: '#3b82f6', head: '#111111', torso: '#3b82f6', arms: '#222222', legs: '#475569', jetpack: '#ef4444' };
 export const look: FighterLook = { build: { ...DEFAULT_BUILD, helmet: 'dome' }, skinId: 'wolf', colors, savedAt: 77 };
-export const snap = (xp: number, extra: Partial<PlayerSnapshot> = {}): PlayerSnapshot => ({ achievements: {}, xp, look: null, ...extra });
+export const snap = (xp: number, extra: Partial<PlayerSnapshot> = {}): PlayerSnapshot => ({ achievements: {}, xp, look: null, stats: {}, ...extra });
 export const networkError = (): AccountError => new AccountError('network', 'offline');
 
 export interface SyncHarness {

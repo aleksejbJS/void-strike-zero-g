@@ -1,0 +1,99 @@
+<style>
+  .hb{background:#1A1D21;color:#ECE9E2;font-family:'Fira Sans',Barlow,system-ui,sans-serif;padding:18px;border-radius:6px;font-size:13px}
+  .hb h4{font-family:'Fira Sans Extra Condensed','Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;font-size:30px;margin:0 0 4px;letter-spacing:.5px}
+  .stripe{height:8px;background:repeating-linear-gradient(-45deg,#FFC21A 0 10px,#1A1D21 10px 20px);margin:6px 0 12px;width:220px}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+  .tab{padding:6px 10px;border:2px solid #4A525E;background:#2B3038;border-radius:3px;font-weight:600;font-size:12px}
+  .tab.on{background:#FFC21A;color:#1A1D21;border-color:#FFC21A}
+  .side{display:flex;flex-direction:column;gap:4px;width:150px;flex-shrink:0}
+  .row{display:grid;grid-template-columns:34px 1fr 70px;padding:5px 10px;border-bottom:1px solid #2B3038;align-items:center}
+  .row .n{color:#B7B2A8;font-weight:700}
+  .row .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .row.g1 .n{color:#FFC21A}.row.g2 .n{color:#ECE9E2}.row.g3 .n{color:#d08a4a}
+  .gap{text-align:center;color:#4A525E;padding:2px;letter-spacing:4px}
+  .me{background:#FFC21A;color:#1A1D21;border-radius:3px;border:none}
+  .me .n{color:#1A1D21}
+  .tbl{background:#22262C;border:2px solid #3C434D;border-radius:4px;flex:1}
+  .hdr{display:grid;grid-template-columns:34px 1fr 70px;padding:6px 10px;color:#B7B2A8;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #3C434D}
+  .back{display:inline-block;padding:5px 10px;border:2px solid #4A525E;border-radius:3px;background:#2B3038;font-weight:600;font-size:12px;margin-bottom:8px}
+  .note{color:#B7B2A8;font-size:11px;margin-top:8px}
+</style>
+
+<h2>Как выглядит экран «Топ»?</h2>
+<p class="subtitle">Оба варианта — отдельный экран, кнопка «Топ» в шапке главного меню рядом с «Профилем». Отличаются тем, как переключать 6 топов. Ниже — вы не в десятке: строка «Вы» под чертой.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Вкладки сверху</h3>
+      <p>Шесть кнопок в ряд, под ними одна таблица. Проще, хорошо ложится на телефон (вкладки переносятся).</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Список слева, таблица справа</h3>
+      <p>Категории столбиком, как список режимов в главном меню. Солиднее на ноутбуке, на телефоне превращается в A.</p>
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">A — вкладки</div>
+    <div class="mockup-body hb">
+      <span class="back">← Меню</span>
+      <h4>Топ игроков</h4><div class="stripe"></div>
+      <div class="tabs">
+        <span class="tab">XP</span><span class="tab on">Убийства</span><span class="tab">Убийства ботов</span>
+        <span class="tab">Победы</span><span class="tab">Победы над ботами</span><span class="tab">Турниры</span>
+      </div>
+      <div class="tbl">
+        <div class="hdr"><span>#</span><span>Игрок</span><span style="text-align:right">Убийств</span></div>
+        <div class="row g1"><span class="n">1</span><span>Kosmonavt</span><span class="v">1 284</span></div>
+        <div class="row g2"><span class="n">2</span><span>Вихрь</span><span class="v">1 102</span></div>
+        <div class="row g3"><span class="n">3</span><span>zeroG_pro</span><span class="v">987</span></div>
+        <div class="row"><span class="n">4</span><span>Мясник</span><span class="v">760</span></div>
+        <div class="row"><span class="n">5</span><span>orbit</span><span class="v">701</span></div>
+        <div class="row"><span class="n">6</span><span>Танкист</span><span class="v">655</span></div>
+        <div class="row"><span class="n">7</span><span>jetfox</span><span class="v">590</span></div>
+        <div class="row"><span class="n">8</span><span>Лёд</span><span class="v">512</span></div>
+        <div class="row"><span class="n">9</span><span>hookline</span><span class="v">498</span></div>
+        <div class="row"><span class="n">10</span><span>Пила</span><span class="v">471</span></div>
+        <div class="gap">· · ·</div>
+        <div class="row me"><span class="n">37</span><span>Вы · Aleksejs</span><span class="v">214</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B — список слева</div>
+    <div class="mockup-body hb">
+      <span class="back">← Меню</span>
+      <h4>Топ игроков</h4><div class="stripe"></div>
+      <div style="display:flex;gap:10px">
+        <div class="side">
+          <span class="tab">XP</span><span class="tab on">Убийства</span><span class="tab">Убийства ботов</span>
+          <span class="tab">Победы</span><span class="tab">Победы над ботами</span><span class="tab">Турниры</span>
+        </div>
+        <div class="tbl">
+          <div class="hdr"><span>#</span><span>Игрок</span><span style="text-align:right">Убийств</span></div>
+          <div class="row g1"><span class="n">1</span><span>Kosmonavt</span><span class="v">1 284</span></div>
+          <div class="row g2"><span class="n">2</span><span>Вихрь</span><span class="v">1 102</span></div>
+          <div class="row g3"><span class="n">3</span><span>zeroG_pro</span><span class="v">987</span></div>
+          <div class="row"><span class="n">4</span><span>Мясник</span><span class="v">760</span></div>
+          <div class="row"><span class="n">5</span><span>orbit</span><span class="v">701</span></div>
+          <div class="row"><span class="n">6</span><span>Танкист</span><span class="v">655</span></div>
+          <div class="row"><span class="n">7</span><span>jetfox</span><span class="v">590</span></div>
+          <div class="row"><span class="n">8</span><span>Лёд</span><span class="v">512</span></div>
+          <div class="row"><span class="n">9</span><span>hookline</span><span class="v">498</span></div>
+          <div class="row"><span class="n">10</span><span>Пила</span><span class="v">471</span></div>
+          <div class="gap">· · ·</div>
+          <div class="row me"><span class="n">37</span><span>Вы · Aleksejs</span><span class="v">214</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note" style="margin-top:12px">Гостю вместо строки «Вы» показываем: «Зарегистрируйтесь, чтобы попасть в топ» + кнопка. Если вы в десятке — ваша строка просто подсвечена жёлтым на своём месте.</p>

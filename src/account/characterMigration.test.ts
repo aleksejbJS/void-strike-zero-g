@@ -23,7 +23,7 @@ describe('illustrated look migration', () => {
         expect(store.selectedSkin).toBe('base-human');
         expect(JSON.parse(store.fighterBuild)).toMatchObject({ body: 'human', helmet: 'none' });
         const remote: PlayerSnapshot = {
-            achievements: {}, xp: 100,
+            achievements: {}, xp: 100, stats: {},
             look: { ...canonical, skinId: 'base-cat', build: presetBuild('base-cat'), savedAt: 42 },
         };
         expect(mergeSnapshots(readLocalSnapshot(), remote).look?.skinId).toBe('base-cat');
@@ -54,7 +54,7 @@ describe('illustrated look migration', () => {
         for (const preset of BODY_PRESETS) {
             const look = { skinId: preset.id, build: { ...presetBuild(preset.id), helmet: 'box' as const },
                 colors: { ...preset.palette, player: preset.color }, savedAt: 50 };
-            writeLocalSnapshot({ achievements: {}, xp: 300, look });
+            writeLocalSnapshot({ achievements: {}, xp: 300, look, stats: {} });
             expect(readLocalSnapshot().look).toEqual(look);
             expect(readLocalSnapshot().xp).toBe(300);
         }

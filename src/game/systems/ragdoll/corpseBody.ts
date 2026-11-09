@@ -39,6 +39,8 @@ export interface Corpse {
     only?: CorpsePiece['part'];
     /** It had lost its back leg to a railgun wound: no back leg is drawn. */
     oneLeg?: boolean;
+    /** Id of the lit fuel tank on its back: it burns until the TANK_BLAST with this id tears it apart. */
+    tankId?: string;
 }
 
 /** What a corpse is made from: where and how a body stood, and what it looked like. A DEATH event has all of it. */

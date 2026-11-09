@@ -6,6 +6,7 @@ const snapshot: PlayerSnapshot = {
     achievements: { killer: { progress: 10, unlocked: true, unlockedAt: 5 } },
     xp: 120,
     look: null,
+    stats: { kills: 9, futureStat: 2 } as PlayerSnapshot['stats'],
 };
 
 describe('pendingStore', () => {
@@ -58,7 +59,7 @@ describe('pendingStore', () => {
 
     it('sanitizes what it hands back', () => {
         store['accountPending:u1'] = JSON.stringify({ xp: -5, achievements: 'nope', extra: true });
-        expect(takePending('u1')).toEqual({ achievements: {}, xp: 0, look: null });
+        expect(takePending('u1')).toEqual({ achievements: {}, xp: 0, look: null, stats: {} });
     });
 
     it('drops corrupt JSON with a warning naming the key', () => {

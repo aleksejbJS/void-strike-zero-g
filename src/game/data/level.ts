@@ -347,6 +347,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
       { id: 'tun_gl_top', type: ItemType.WEAPON, subtype: WeaponType.GRENADE_LAUNCHER, pos: { x: 1000, y: -450 }, active: true, respawnTime: 0, value: 0 },
       { id: 'tun_cs_mid', type: ItemType.WEAPON, subtype: WeaponType.CHAINSAW, pos: { x: 1450, y: 310 }, active: true, respawnTime: 0, value: 0 },
       { id: 'tun_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 2600, y: 360 }, active: true, respawnTime: 0, value: 0 }, // middle zig-zag step, with the upper step overhead
+      { id: 'tun_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: -500, y: 400 }, active: true, respawnTime: 0, value: 0 }, // middle shelf of the left stack, close quarters
 
       // Health/Armor
       { id: 'tun_hp_mid', type: ItemType.HEALTH, pos: { x: 1000, y: 150 }, active: true, respawnTime: 0, value: 25 },
@@ -369,6 +370,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
       { id: 'hg_rail_left', type: ItemType.WEAPON, subtype: WeaponType.RAILGUN, pos: { x: -600, y: -650 }, active: true, respawnTime: 0, value: 0 },
       { id: 'hg_rail_right', type: ItemType.WEAPON, subtype: WeaponType.RAILGUN, pos: { x: 2000, y: -700 }, active: true, respawnTime: 0, value: 0 },
       { id: 'hg_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 1530, y: 350 }, active: true, respawnTime: 0, value: 0 }, // on the scatter-cover slab, out in the open
+      { id: 'hg_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 530, y: 550 }, active: true, respawnTime: 0, value: 0 }, // small central shelf, close quarters
       { id: 'hg_hp_center', type: ItemType.HEALTH, pos: { x: 0, y: 1000 }, active: true, respawnTime: 0, value: 25 },
       { id: 'hg_hp_left', type: ItemType.HEALTH, pos: { x: -2300, y: 750 }, active: true, respawnTime: 0, value: 25 },
       { id: 'hg_hp_right', type: ItemType.HEALTH, pos: { x: 3200, y: 750 }, active: true, respawnTime: 0, value: 25 },
@@ -394,6 +396,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
       { id: 'htf_ammo_mid', type: ItemType.AMMO, pos: { x: 1000, y: 460 }, active: true, respawnTime: 0, value: 30 },
       { id: 'htf_weapon_rl', type: ItemType.WEAPON, subtype: WeaponType.ROCKET_LAUNCHER, pos: { x: 1000, y: 380 }, active: true, respawnTime: 0, value: 0 },
       { id: 'htf_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 1250, y: 520 }, active: true, respawnTime: 0, value: 0 }, // right end of the hill, ~250 px from the flag
+      { id: 'htf_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 705, y: 460 }, active: true, respawnTime: 0, value: 0 }, // left end of the hill's step, in the nook by the pillar, ~300 px from the flag
     ];
   }
 
@@ -411,6 +414,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
       { id: 'weapon_plasma_left', type: ItemType.WEAPON, subtype: WeaponType.PLASMA_GUN, pos: { x: -1300, y: 70 }, active: true, respawnTime: 0, value: 0 }, // Mid-high left
       { id: 'weapon_plasma_right', type: ItemType.WEAPON, subtype: WeaponType.PLASMA_GUN, pos: { x: 3050, y: 70 }, active: true, respawnTime: 0, value: 0 }, // Mid-high right
       { id: 'weapon_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 1250, y: 660 }, active: true, respawnTime: 0, value: 0 }, // Lower center, on the low slab near the mid-center platform
+      { id: 'weapon_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 850, y: 460 }, active: true, respawnTime: 0, value: 0 }, // Middle tier of the centre, between two slabs - close quarters
 
       // Health - Distributed across levels
       { id: 'hp_center_low', type: ItemType.HEALTH, pos: { x: 1000, y: 660 }, active: true, respawnTime: 0, value: 25 },
@@ -453,6 +457,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
       { id: 'inf_ammo_mid', type: ItemType.AMMO, pos: { x: 1200, y: 120 }, active: true, respawnTime: 0, value: 30 },
       { id: 'inf_weapon_rl', type: ItemType.WEAPON, subtype: WeaponType.ROCKET_LAUNCHER, pos: { x: 800, y: 320 }, active: true, respawnTime: 0, value: 0 },
       { id: 'inf_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 1650, y: 470 }, active: true, respawnTime: 0, value: 0 }, // mid approach to the bastion, near the upper slab
+      { id: 'inf_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 1780, y: 260 }, active: true, respawnTime: 0, value: 0 }, // upper slab of the mid approach
       { id: 'inf_fuel_attack', type: ItemType.FUEL, pos: { x: -800, y: 470 }, active: true, respawnTime: 0, value: 150 },
     ];
   }
@@ -478,6 +483,7 @@ export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
     { id: 'weapon_plasma_blue', type: ItemType.WEAPON, subtype: WeaponType.PLASMA_GUN, pos: { x: -500, y: 470 }, active: true, respawnTime: 0, value: 0 },
     { id: 'weapon_plasma_red', type: ItemType.WEAPON, subtype: WeaponType.PLASMA_GUN, pos: { x: 2200, y: 470 }, active: true, respawnTime: 0, value: 0 },
     { id: 'weapon_smoke', type: ItemType.WEAPON, subtype: WeaponType.SMOKE_LAUNCHER, pos: { x: 850, y: 560 }, active: true, respawnTime: 0, value: 0 }, // midfield, near the central slab
+    { id: 'weapon_flame', type: ItemType.WEAPON, subtype: WeaponType.FLAMETHROWER, pos: { x: 925, y: 560 }, active: true, respawnTime: 0, value: 0 }, // central slab under the mid platform, close quarters
   ];
 
   if (mode === GameMode.CTF) {

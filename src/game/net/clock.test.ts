@@ -54,3 +54,24 @@ describe('toLocalClock cover status', () => {
         expect(snap.coverStatus).toBeUndefined();
     });
 });
+
+describe('toLocalClock weapon reloads', () => {
+    it('shifts the reload timer of the held weapon and of the carried ones, each once', () => {
+        const p = createMockPlayer('a', Team.NONE);
+        const held = { ...p.weapon, ammo: 0, reloadEndsAt: 2000 };
+        const other = { ...p.weapon, ammo: 0, reloadEndsAt: 3000 };
+        const idle = { ...p.weapon };
+        p.weapon = held;
+        p.inventory = [held, other, idle];
+        const wire = createMockPlayer('b', Team.NONE);
+        wire.inventory = [{ ...p.weapon, ammo: 0, reloadEndsAt: 4000 }];
+        wire.weapon = { ...wire.inventory[0] }; // over the wire the held weapon is a separate copy
+        const snap: any = { serverTime: 1000, players: [p, wire] };
+        toLocalClock(snap, 300);
+        expect(held.reloadEndsAt).toBe(2300);
+        expect(other.reloadEndsAt).toBe(3300);
+        expect(idle.reloadEndsAt).toBeUndefined();
+        expect(wire.weapon.reloadEndsAt).toBe(4300);
+        expect(wire.inventory[0].reloadEndsAt).toBe(4300);
+    });
+});

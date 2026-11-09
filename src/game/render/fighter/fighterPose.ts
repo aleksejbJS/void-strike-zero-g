@@ -9,6 +9,7 @@ import { HelmetId } from '../../build/buildParts';
 import type { BodyId } from '../../build/bodyTypes';
 import { illustratedPose } from '../characters/bodyPose';
 import { proneBodyFrame, proneWeaponLift } from './pronePose';
+import { reloadAngle, reloadDip, RELOAD_PULL } from './reloadPose';
 
 export const RIG_SCALE = 1.12;
 export const THIGH = 14.5;
@@ -35,6 +36,7 @@ export interface PoseInput {
     moveDir: number;   // 1 running forward, -1 backpedalling
     recoil: number;    // 0..1, kicks the weapon back
     grip: GripPoints;
+    reload?: number;   // 0..1 progress of a running reload; unset when not reloading
 }
 
 export interface FighterPose {
@@ -115,13 +117,14 @@ export const solvePose = (input: PoseInput): FighterPose => {
     const forward = (j: Vector2) => j.x;
     const lower = (j: Vector2) => j.y;
 
-    // Weapon: barrel along the aim, kicked back and up by recoil
-    const gunAngle = input.aim - input.recoil * 0.16;
+    // Weapon: barrel along the aim, kicked back and up by recoil, lowered while reloading
+    const dip = reloadDip(input.reload);
+    const gunAngle = (input.aim - input.recoil * 0.16) * (1 - dip) + reloadAngle(input.state) * dip;
     const d = { x: Math.cos(gunAngle), y: Math.sin(gunAngle) };
     const n = { x: -d.y, y: d.x };
     const chest = upperPoint(frame, 5, -13.5);
     let weaponLift = 0;
-    const slide = GRIP_REACH - input.recoil * 3.5 - input.grip.grip.x; // picture's left edge along the barrel
+    const slide = GRIP_REACH - input.recoil * 3.5 - dip * RELOAD_PULL - input.grip.grip.x; // picture's left edge along the barrel
     const onGun = (gx: number, gy: number) => ({
         x: chest.x + d.x * (gx + slide) + n.x * (gy - input.grip.axisY),
         y: chest.y + d.y * (gx + slide) + n.y * (gy - input.grip.axisY) - weaponLift,

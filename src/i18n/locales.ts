@@ -8,8 +8,9 @@ import { BuilderKeys, builderStrings } from './builderStrings';
 import { RewardKeys, rewardStrings } from './rewardStrings';
 import { AccountKeys, accountStrings } from './accountStrings';
 import { TournamentKeys, tournamentStrings } from './tournamentStrings';
+import { LeaderboardKeys, leaderboardStrings } from './leaderboardStrings';
 
-export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys, AccountKeys, TournamentKeys {
+export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys, AccountKeys, TournamentKeys, LeaderboardKeys {
   // Menu
   'menu.title': string;
   'menu.deploy': string;
@@ -78,7 +79,9 @@ export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, Objecti
   'weapon.grenadeLauncher': string;
   'weapon.smokeLauncher': string;
   'weapon.chainsaw': string;
+  'weapon.flamethrower': string;
   'weapon.barrel': string;
+  'weapon.fuelTank': string;
 
   // Items
   'item.health': string;
@@ -106,6 +109,7 @@ export const translations: Record<Language, TranslationKeys> = {
     ...rewardStrings.en,
     ...accountStrings.en,
     ...tournamentStrings.en,
+    ...leaderboardStrings.en,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'DEPLOY',
@@ -173,7 +177,9 @@ export const translations: Record<Language, TranslationKeys> = {
     'weapon.grenadeLauncher': 'Grenade Launcher',
     'weapon.smokeLauncher': 'Smoke Launcher',
     'weapon.chainsaw': 'Chainsaw',
+    'weapon.flamethrower': 'Flamethrower',
     'weapon.barrel': 'Barrel',
+    'weapon.fuelTank': 'Fuel Tank',
 
     // Items
     'item.health': 'Health',
@@ -200,6 +206,7 @@ export const translations: Record<Language, TranslationKeys> = {
     ...rewardStrings.ru,
     ...accountStrings.ru,
     ...tournamentStrings.ru,
+    ...leaderboardStrings.ru,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'СТАРТ',
@@ -267,7 +274,9 @@ export const translations: Record<Language, TranslationKeys> = {
     'weapon.grenadeLauncher': 'Гранатомёт',
     'weapon.smokeLauncher': 'Дымовой гранатомёт',
     'weapon.chainsaw': 'Бензопила',
+    'weapon.flamethrower': 'Огнемёт',
     'weapon.barrel': 'Бочка',
+    'weapon.fuelTank': 'Топливный бак',
 
     // Items
     'item.health': 'Здоровье',

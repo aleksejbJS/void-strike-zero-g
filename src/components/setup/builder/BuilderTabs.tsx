@@ -14,6 +14,8 @@ import { usePartThumbnails } from './usePartThumbnails';
 interface Props {
     build: FighterBuild;
     colors: Record<BodyColor, string>;
+    /** The preset's own colours, which each row's reset button goes back to. */
+    originals: Record<BodyPart, string>;
     level: number;
     onBuild: (patch: Partial<FighterBuild>) => void;
     onColor: (part: BodyColor, color: string) => void;
@@ -29,7 +31,7 @@ const SlotTiles: React.FC<{ slot: Slot; build: FighterBuild; colors: Record<Body
         return <PartTiles slot={slot} value={build[slot]} level={level} thumbs={thumbs} onPick={onPick} />;
     };
 
-export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, onColor }) => {
+export const BuilderTabs: React.FC<Props> = ({ build, colors, originals, level, onBuild, onColor }) => {
     const { t, language } = useTranslation();
     const [tab, setTab] = useState<TabId>('head');
     const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -54,7 +56,7 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
 
     const colorRow = (part: BodyPart, label: string, value: string, onChange: (color: string) => void) => (
         <ColorRow key={part} label={label} groupLabel={t('cs.colorOf', label)} customLabel={t('cs.custom')}
-            presets={presetsFor(part, language)} value={value} onChange={onChange} />
+            presets={presetsFor(part, language)} value={value} original={originals[part]} resetLabel={t('cs.resetColor', label)} onChange={onChange} />
     );
     const visorRow = colorRow('visor', t('cs.visor'), build.visorColor, color => onBuild({ visorColor: color }));
     const patternRow = colorRow('pattern', t('cs.pattern'), build.patternColor, color => onBuild({ patternColor: color }));

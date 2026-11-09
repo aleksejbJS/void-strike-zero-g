@@ -6,7 +6,8 @@ import { pickupRect } from '../utils/pickupRect';
 import { updateBotAI } from './bot';
 import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
-import { trackFlagCapture, trackItemPickup } from './achievements';
+import { bumpStat } from '../stats/playerStats';
+import { tickFlagHold } from '../stats/flagHold';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
 import { applyDamage, fireWeapon, isTeammate } from './combat';
 import { createExplosion } from './explosion';
@@ -14,9 +15,11 @@ import { projectileCoverHit } from '../cover/coverHits';
 import { damageCover } from '../cover/coverDamage';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
+import { tickBurning } from './burning';
 import { grantSpawnShield } from './spawnShield';
 import { liftOutOfCover } from '../cover/coverSpawn';
 import { tickCover } from '../cover/coverTick';
+import { tickFuelTanks } from './fuelTankBlast';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -28,6 +31,7 @@ import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
 import { duelLoadout, duelSpawnPoint } from './duelRules';
 import { spawnSmoke, updateSmokes } from './smoke';
+import { isMagazineFed, tickReloads } from './reload';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -149,6 +153,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     // Players Logic
     state.players.forEach(p => {
         if (p.dead) return;
+        tickReloads(p, now); // magazines refill before this tick's trigger pull
 
         let controls: PlayerControls;
         if (p.type === 'player') {
@@ -231,11 +236,13 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 if (p.type === 'bot' && item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never pick it up; it stays for humans
                 if (item.type === ItemType.HEALTH && p.health < 100) { p.health = Math.min(100, p.health + item.value); healWound(p); collected = true; }
                 else if (item.type === ItemType.ARMOR && p.armor < 100) { p.armor = Math.min(100, p.armor + item.value); collected = true; }
-                else if (item.type === ItemType.AMMO) { p.inventory.forEach(w => w.ammo = Math.min(w.maxAmmo, w.ammo + item.value)); collected = true; }
+                else if (item.type === ItemType.AMMO) { p.inventory.forEach(w => { if (!isMagazineFed(w)) w.ammo = Math.min(w.maxAmmo, w.ammo + item.value); }); collected = true; } // magazines refill only by reloading
                 else if (item.type === ItemType.WEAPON) {
                     // Gun Game disables weapon pickups to preserve ladder progression
                     if (state.mode !== GameMode.GUN_GAME) {
                         const has = p.inventory.find(w => w.type === item.subtype);
+                        // A second magazine-fed gun adds nothing (its reserve is unlimited): leave it lying
+                        if (has && isMagazineFed(has)) return;
                         if (has) has.ammo = Math.min(has.maxAmmo, has.ammo + 10); else if (item.subtype) p.inventory.push({ ...WEAPONS_DATA[item.subtype] });
                         // Don't auto-switch weapon - let player choose
                         collected = true;
@@ -284,9 +291,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                             p.hasFlag = Team.NONE;
                             gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                             emitFlag('ctf', 'captured', p.team);
-
-                            // Track achievement for flag capture
-                            trackFlagCapture();
+                            if (p.type === 'player') bumpStat(state, p.id, 'flagCaptures');
                         } else if (!item.active) {
                             // Ничего — флаг временно унесен
                         } else if (Math.abs(item.pos.x - (item.team === Team.BLUE ? -350 : 2350)) > 100) {
@@ -304,16 +309,14 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                 }
 
-                // Track achievement for item pickup
-                if (collected && p.type === 'player') {
-                    trackItemPickup();
-                }
+                if (collected && p.type === 'player') bumpStat(state, p.id, 'itemPickups');
             }
         });
     });
 
     // Bleeding: wounded fighters lose health until a medkit (after pickups, so a medkit stops it this tick)
     tickBleeding(state);
+    tickBurning(state, now);
 
     // Projectiles Update
     state.projectiles.forEach(proj => {
@@ -373,6 +376,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
     // Cover: lit barrels go off, broken pieces come back (after the shots, so a barrel hit this tick is lit already)
     tickCover(state, now);
+    tickFuelTanks(state, now); // lit fuel tanks whose fuse ran out blow up
 
     // Beams Update
     if (!state.beams) state.beams = [];
@@ -381,6 +385,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     });
     state.beams = state.beams.filter(b => b.life > 0);
     updateSmokes(state, now);
+
+    tickFlagHold(state); // flag time for the stats, once per tick
 
     // Hold The Flag scoring tick
     if (state.mode === GameMode.HOLD_THE_FLAG) {

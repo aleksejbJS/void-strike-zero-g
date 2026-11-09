@@ -201,9 +201,9 @@ forward compatible like achievements) with finite non-negative values, floored; 
 ### Task 6: Supabase — period totals, trigger, `leaderboard` RPC
 
 **Files:**
-- Create: `supabase/migrations/20261109000000_leaderboards.sql`, `supabase/tests/auth-stub.sql`, `supabase/tests/leaderboards.test.sql`
+- Create: `supabase/migrations/20261109000000_leaderboards.sql`, `supabase/tests/auth-stub.sql`, `supabase/tests/leaderboards-helpers.sql`, `supabase/tests/leaderboards-trigger.test.sql`, `supabase/tests/leaderboards-rpc.test.sql`, `supabase/tests/leaderboards-warnings.sql`
 - Modify: `scripts/test-sql.sh` (run the existing tournaments suite unchanged, then a second fresh database: auth stub →
-  `20261103000000_accounts.sql` → `20261105000000_account_hardening.sql` → leaderboards migration twice (idempotent) → leaderboards tests),
+  `20261103000000_accounts.sql` → `20261105000000_account_hardening.sql` → leaderboards migration twice (idempotent) → helpers → trigger and RPC suites → warnings check),
   `docs/supabase-setup.md` (owner step: run the new migration in the SQL editor)
 
 **Interfaces:**
@@ -271,7 +271,7 @@ no client → `LeaderboardError('offline')`; RPC error or thrown fetch → logge
 - Consumes: `fetchBoard`, `Board`, `RankedStat`, `Period` (Task 7); `useAccount()` (`status`, `nickname`)
 - Produces: `LeaderboardScreen: React.FC<{ onBack: () => void; onRegister: () => void }>`; `TopButton: React.FC<{ onOpen: () => void; t: Translate }>`
 
-Behaviour (mockup B, `.superpowers/brainstorm/16795-1794050422/content/leaderboard-layout.html`): back button, title, hazard stripe;
+Behaviour (mockup B, `docs/plans/2026-11-07-leaderboard-layout-mockup.html`): back button, title, hazard stripe;
 category list left (6 rows, order XP, Kills, Bot kills, Wins, Wins vs bots, Tournaments), period switch above the table (default **Week**),
 table rank / player / value with places 1–3 tinted (gold `bay-hazard`, white `bay-chalk`, bronze). Logged-in and `me.rank ≤ 10` → own row
 highlighted in place (match by nickname); `me.rank > 10` → `· · ·` gap + highlighted `lb.you` row; logged in but `me` null → `lb.unranked`

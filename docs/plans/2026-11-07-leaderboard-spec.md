@@ -25,7 +25,7 @@ Achievements still unlock at their target (e.g. Executioner at 100 kills), but t
 | Periods | **This week, this month, all time** |
 | Counters | Lifetime counters for every achievement direction; they keep counting past the achievement target |
 | Broken trackers | Fix them as part of this work (owner asked explicitly for play time) |
-| Layout | **Option B**: categories as a vertical list on the left, table on the right (more boards can be added as rows). Mockup: `.superpowers/brainstorm/16795-1794050422/content/leaderboard-layout.html` |
+| Layout | **Option B**: categories as a vertical list on the left, table on the right (more boards can be added as rows). Mockup: `docs/plans/2026-11-07-leaderboard-layout-mockup.html` |
 | Week/month computation | **Option A**: the server computes deltas between saved totals (see Data) |
 | Online counters | **General channel**: the room reports *all* of a player's in-sim counters to that player (kills, bot kills, weapon kills, flag captures, flag hold time, item pickups, HG wins), not just kills |
 

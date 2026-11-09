@@ -8,6 +8,9 @@ import { debrisTrail } from './explosionFx';
 // Kinds that never move: the renderer animates them by life alone
 const FADE_ONLY: ReadonlySet<ParticleKind | undefined> = new Set(['flash', 'fireball', 'ring', 'puff']);
 
+// Upward pull on a hot flame, px per tick per tick
+const FLAME_RISE = 0.035;
+
 // Bodies standing on a platform overlap its top by a sub-pixel slop; droplets born at their feet count as above it
 const LANDING_SLOP = 2;
 
@@ -46,6 +49,7 @@ const stepParticle = (state: GameState, p: Particle) => {
     p.pos.y += p.vel.y;
     switch (p.type) {
         case 'shell':
+        case 'magazine': // an ejected magazine tumbles and bounces like a big casing
             bounceShell(state, p);
             break;
         case 'spark':
@@ -77,6 +81,11 @@ const stepParticle = (state: GameState, p: Particle) => {
         case 'dust':
             p.vel.x *= 0.94;
             p.vel.y *= 0.94;
+            break;
+        case 'flame':
+            // A hot flame slows like fire and rises a little, so a long stream curls up at its end
+            p.vel.x *= 0.9;
+            p.vel.y = p.vel.y * 0.9 - FLAME_RISE;
             break;
         default: // fire and untyped
             if (p.type !== 'fire') p.vel.y += GRAVITY * 0.1;

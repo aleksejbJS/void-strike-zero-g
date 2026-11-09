@@ -38,6 +38,10 @@ describe('hasMuzzleFlash', () => {
         expect(hasMuzzleFlash(WeaponType.CHAINSAW)).toBe(false);
     });
 
+    it('gives the flamethrower no flash (its own stream is the light)', () => {
+        expect(hasMuzzleFlash(WeaponType.FLAMETHROWER)).toBe(false);
+    });
+
     it('flashes for the machine gun and every other firearm', () => {
         for (const w of [WeaponType.MACHINE_GUN, WeaponType.PLASMA_GUN, WeaponType.GRENADE_LAUNCHER, WeaponType.SHOTGUN, WeaponType.ROCKET_LAUNCHER, WeaponType.RAILGUN]) {
             expect(hasMuzzleFlash(w)).toBe(true);

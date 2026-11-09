@@ -10,6 +10,8 @@ import { nodeAt } from './botPathfinder';
 import { BotControls, BotMoves, BotNav } from './botNavState';
 import { takeEdge, zoneFilter } from './botRoute';
 import { findCoverSpot } from './botCover';
+import { hasFlamethrower } from './botWeapons';
+import { BOT_FLAME_PREFERRED_RANGE } from './flameConstants';
 import type { BotState } from './botMemory';
 
 const DODGE_MS = 220, DODGE_COOLDOWN_MS = 2500;
@@ -20,8 +22,12 @@ const COVER_STAY_MS = 2500, COVER_COOLDOWN_MS = 3000;
 // Goals that matter more than hiding: carrying or chasing an objective, escorting, a medkit or the zone
 const NO_COVER_STATES: ReadonlySet<BotState> = new Set(['flag-run', 'defend', 'retreat']);
 
-export const preferredRange = (bot: Entity) =>
-    bot.weapon.type === WeaponType.SHOTGUN || bot.weapon.type === WeaponType.CHAINSAW ? 120 : 320;
+/** How close the bot wants to get to its enemy. With a flamethrower it walks in whatever it holds
+ *  (pickBestWeapon swaps to the flamethrower once the enemy is inside its reach). */
+export const preferredRange = (bot: Entity) => {
+    if (bot.weapon.type === WeaponType.SHOTGUN || bot.weapon.type === WeaponType.CHAINSAW) return 120;
+    return hasFlamethrower(bot) ? BOT_FLAME_PREFERRED_RANGE : 320;
+};
 
 /** Strafe direction for the next burst: mostly sideways, backing off when too close, never off the surface. */
 const strafe = (bot: Entity, target: Entity, here: NavNode, moves: BotMoves, now: number) => {
@@ -41,7 +47,9 @@ const strafe = (bot: Entity, target: Entity, here: NavNode, moves: BotMoves, now
 const takeCover = (
     state: GameState, bot: Entity, here: NavNode | null, moves: BotMoves, target: Entity, targetVisible: boolean, now: number,
 ): Pick<BotControls, 'inputX' | 'wantsDown'> | null => {
-    const underFire = now - moves.lastHitAt < UNDER_FIRE_MS || (targetVisible && distance(bot.pos, target.pos) < preferredRange(bot));
+    // A flamethrower bot is meant to be up close: only a real hit sends it behind a crate, not the distance
+    const inRange = targetVisible && !hasFlamethrower(bot) && distance(bot.pos, target.pos) < preferredRange(bot);
+    const underFire = now - moves.lastHitAt < UNDER_FIRE_MS || inRange;
     if (!underFire || !here) return null;
     const spot = findCoverSpot(state, bot, target);
     if (!spot || spot.y !== here.y || spot.x < here.x0 || spot.x > here.x1) return null; // on another surface
