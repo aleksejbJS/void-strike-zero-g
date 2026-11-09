@@ -1,6 +1,6 @@
 import { describe, it, test, expect, beforeEach, vi, Mock } from 'vitest';
-import { achievementManager, AchievementManager, ACHIEVEMENTS, memoryStore, trackKill, trackFlagCapture, trackItemPickup } from './achievements';
-import { WeaponType } from '../../types';
+import { achievementManager, AchievementManager, ACHIEVEMENTS, memoryStore } from './achievements';
+const addKill = (): void => ['first_blood', 'killer', 'slayer', 'executioner'].forEach(id => achievementManager.updateProgress(id));
 
 describe('Achievement System', () => {
   beforeEach(() => {
@@ -25,7 +25,7 @@ describe('Achievement System', () => {
       const unsubscribe = achievementManager.onAchievementUnlocked(listener);
       unsubscribe();
 
-      trackKill(WeaponType.MACHINE_GUN);
+      addKill();
 
       expect(listener).not.toHaveBeenCalled();
     });
@@ -33,7 +33,7 @@ describe('Achievement System', () => {
 
   describe('Basic Achievement Tracking', () => {
     test('should track first blood achievement', () => {
-      trackKill(WeaponType.MACHINE_GUN);
+      addKill();
       const achievements = achievementManager.getAchievements();
       const firstBlood = achievements.find(a => a.id === 'first_blood');
 
@@ -44,7 +44,7 @@ describe('Achievement System', () => {
     test('should track multiple kills for killer achievement', () => {
       // Track 10 kills
       for (let i = 0; i < 10; i++) {
-        trackKill(WeaponType.MACHINE_GUN);
+        addKill();
       }
 
       const achievements = achievementManager.getAchievements();
@@ -55,7 +55,7 @@ describe('Achievement System', () => {
     });
 
     test('should track flag captures', () => {
-      trackFlagCapture();
+      achievementManager.updateProgress('flag_capturer');
       const achievements = achievementManager.getAchievements();
       const flagCapturer = achievements.find(a => a.id === 'flag_capturer');
 
@@ -65,7 +65,7 @@ describe('Achievement System', () => {
     test('should track item pickups', () => {
       // Track 100 pickups
       for (let i = 0; i < 100; i++) {
-        trackItemPickup();
+        achievementManager.updateProgress('collector');
       }
 
       const achievements = achievementManager.getAchievements();
@@ -79,7 +79,7 @@ describe('Achievement System', () => {
   describe('Weapon Specific Achievements', () => {
     test('should track chainsaw kills', () => {
       for (let i = 0; i < 25; i++) {
-        trackKill(WeaponType.CHAINSAW);
+        achievementManager.updateProgress('chainsaw_master');
       }
 
       const achievements = achievementManager.getAchievements();
@@ -91,7 +91,7 @@ describe('Achievement System', () => {
 
     test('should track railgun kills', () => {
       for (let i = 0; i < 20; i++) {
-        trackKill(WeaponType.RAILGUN);
+        achievementManager.updateProgress('sniper');
       }
 
       const achievements = achievementManager.getAchievements();
@@ -104,15 +104,15 @@ describe('Achievement System', () => {
 
   describe('XP and Progress Tracking', () => {
     test('should calculate total XP correctly', () => {
-      trackKill(WeaponType.MACHINE_GUN); // First blood: 10 XP
-      trackFlagCapture(); // Not an achievement that gives XP directly
+      addKill(); // First blood: 10 XP
+      achievementManager.updateProgress('flag_capturer'); // Not an achievement that gives XP directly
 
       const totalXP = achievementManager.getTotalXP();
       expect(totalXP).toBe(10);
     });
 
     test('should calculate completion percentage', () => {
-      trackKill(WeaponType.MACHINE_GUN); // Unlock first blood
+      addKill(); // Unlock first blood
 
       const percentage = achievementManager.getCompletionPercentage();
       expect(percentage).toBeGreaterThan(0);
@@ -122,7 +122,7 @@ describe('Achievement System', () => {
 
   describe('Achievement Persistence', () => {
     test('should persist achievements in localStorage', () => {
-      trackKill(WeaponType.MACHINE_GUN);
+      addKill();
 
       // Create new manager instance (simulating page reload)
       const newManager = new AchievementManager();
@@ -167,7 +167,7 @@ describe('Achievement System', () => {
     });
 
     test('replaceProgress overwrites previous progress instead of merging', () => {
-      trackKill(WeaponType.MACHINE_GUN);
+      addKill();
       achievementManager.replaceProgress({ killer: { progress: 3, unlocked: false } });
       expect(byId().first_blood.unlocked).toBe(false);
       expect(byId().killer.progress).toBe(3);
@@ -188,7 +188,7 @@ describe('Achievement System', () => {
     });
 
     test('exportProgress returns a deep copy', () => {
-      trackKill(WeaponType.MACHINE_GUN);
+      addKill();
       const exported = achievementManager.exportProgress();
       expect(exported.killer.progress).toBe(1);
       Object.assign(exported.killer, { progress: 99, unlocked: true });

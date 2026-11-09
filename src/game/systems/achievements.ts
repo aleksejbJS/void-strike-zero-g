@@ -1,4 +1,3 @@
-import { WeaponType, GameMode } from '../../types';
 import { COMBAT_ACHIEVEMENTS, MODE_ACHIEVEMENTS } from './achievementDefs';
 import type { Achievement, AchievementProgress } from './achievementDefs';
 import { MOVEMENT_ACHIEVEMENTS, COLLECTING_ACHIEVEMENTS, SPECIAL_ACHIEVEMENTS, TOURNAMENT_ACHIEVEMENT_IDS } from './achievementDefsMore';
@@ -145,52 +144,3 @@ export class AchievementManager {
 }
 
 export const achievementManager = new AchievementManager();
-
-// Helper functions for tracking achievements
-export const trackKill = (weaponType?: WeaponType): void => {
-  achievementManager.updateProgress('first_blood');
-  achievementManager.updateProgress('killer');
-  achievementManager.updateProgress('slayer');
-  achievementManager.updateProgress('executioner');
-
-  if (weaponType === WeaponType.CHAINSAW) {
-    achievementManager.updateProgress('chainsaw_master');
-  } else if (weaponType === WeaponType.RAILGUN) {
-    achievementManager.updateProgress('sniper');
-  } else if (weaponType === WeaponType.ROCKET_LAUNCHER) {
-    achievementManager.updateProgress('demolition_expert');
-  }
-};
-
-export const trackFlagCapture = (): void => {
-  achievementManager.updateProgress('flag_capturer');
-};
-
-export const trackFlagHoldTime = (seconds: number): void => {
-  achievementManager.updateProgress('king_of_hill', seconds);
-};
-
-export const trackHungerGamesWin = (): void => {
-  achievementManager.updateProgress('survivor');
-};
-
-export const trackDoubleJump = (): void => {
-  achievementManager.updateProgress('acrobatic');
-};
-
-export const trackHookUse = (): void => {
-  achievementManager.updateProgress('hook_master');
-};
-
-export const trackDashUse = (): void => {
-  achievementManager.updateProgress('speed_demon');
-};
-
-export const trackItemPickup = (): void => {
-  achievementManager.updateProgress('collector');
-  achievementManager.updateProgress('hoarder');
-};
-
-export const trackPlayTime = (seconds: number): void => {
-  achievementManager.updateProgress('veteran', seconds);
-};

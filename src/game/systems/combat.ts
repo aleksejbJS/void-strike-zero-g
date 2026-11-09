@@ -7,7 +7,7 @@ import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { distance, normalize, checkPointInRect, segmentRectEntry } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
-import { trackKill } from './achievements';
+import { creditKill } from '../stats/creditKill';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
 import { deathKind, DamageSource, isSplash } from './deathKind';
 import { shouldWound, inflictWound, killCredit } from './wound';
@@ -180,10 +180,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     handleGunGameKill(state, killer);
                 }
 
-                // Track achievement only for player-controlled kills; a barrel kill counts as a kill but is no weapon's
-                if (killer.type === 'player') {
-                    trackKill(source.barrel ? undefined : credit.weapon ?? killer.weapon.type);
-                }
+                // Stats count only human kills (creditKill checks); a barrel kill counts as a kill but is no weapon's
+                creditKill(state, killer, target, source.barrel ? undefined : credit.weapon ?? killer.weapon.type);
             }
         }
     }

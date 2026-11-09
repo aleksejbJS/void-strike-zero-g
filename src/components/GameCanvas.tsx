@@ -60,6 +60,7 @@ import { openTournamentNet } from './hud/tournamentNet';
 import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
+import { newStatsSession } from '../game/stats/playerStats';
 import { nextId } from '../game/utils/id';
 
 const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Walk: false, KeyZ: false };
@@ -243,7 +244,9 @@ export default function GameCanvas() {
         hungerWinnerId: null,
         gunGameWinnerId: null,
         beams: [],
-        smokes: []
+        smokes: [],
+        playerStats: {},
+        statsSession: newStatsSession()
     });
 
     const initLevel = () => {
