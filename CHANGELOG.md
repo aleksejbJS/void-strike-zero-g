@@ -1,5 +1,15 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.32 (2026-11-09)
+
+### 🔫 Machine Gun magazine & reload
+- Spec: `docs/plans/2026-11-09-mg-reload-spec.md`. The Machine Gun fires a 50-round magazine (`ammo`/`maxAmmo` 50, was 999) with an unlimited reserve and reloads automatically for 1 s (`reloadMs: 1000`) once it is empty; no firing while reloading. Other weapons are unchanged (ammo from pickups, no magazine)
+- `src/game/systems/reload.ts`: a weapon with `reloadMs` is magazine-fed; the reload timer `reloadEndsAt` lives on the weapon, so it keeps running in the background after switching weapons. `fireWeapon` refuses while reloading and the last round starts the reload (with a `reload` sound event, heard like shots); `updatePhysics` calls `tickReloads` for every living fighter, bots included
+- Ammo boxes and a spare Machine Gun pickup do not refill the magazine (a spare MG stays on the floor). Bots no longer count a low magazine as "low ammo" when deciding to fetch weapons
+- Online: weapons already travel in snapshots; `toLocalClock` shifts `reloadEndsAt` (held weapon and inventory) to the client's clock
+- Animation: `solvePose` takes the reload progress — the barrel dips down-forward (barely when prone) and is pulled to the chest by 25 %, held, and raised back from 75 % (`render/fighter/reloadPose.ts`). `MagazineDrop` drops an empty-magazine particle (`magazine` kind, bounces like a casing) from the grip when a reload starts; reload timer jitter between snapshots does not drop a second one, nor does switching back to a gun that is mid-reload
+- HUD: the ammo box shows `37 / 50`; while reloading it shows "Reloading" / "Перезарядка" with a filling bar (`ReloadBar`), and the phone's selected weapon slot shows the same bar. `StatsState.reload` carries the progress
+
 ## Version 0.4.31 (2026-11-04)
 
 ### 🛡️ Infiltration defenders take cover

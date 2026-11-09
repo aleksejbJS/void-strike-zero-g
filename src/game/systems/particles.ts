@@ -46,6 +46,7 @@ const stepParticle = (state: GameState, p: Particle) => {
     p.pos.y += p.vel.y;
     switch (p.type) {
         case 'shell':
+        case 'magazine': // an ejected magazine tumbles and bounces like a big casing
             bounceShell(state, p);
             break;
         case 'spark':

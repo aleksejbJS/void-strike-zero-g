@@ -18,9 +18,9 @@ describe('duelLoadout', () => {
         expect(loadout.some(w => w.type === WeaponType.PLASMA_GUN)).toBe(false);
     });
 
-    it('gives the machine gun 999 shots and every other weapon its normal ammo', () => {
+    it('gives the machine gun a full 50-round magazine and every other weapon its normal ammo', () => {
         const loadout = duelLoadout();
-        expect(loadout[0].ammo).toBe(999);
+        expect(loadout[0]).toMatchObject({ type: WeaponType.MACHINE_GUN, ammo: 50, reloadMs: 1000 });
         for (const w of loadout) expect(w.ammo).toBe(WEAPONS_DATA[w.type].ammo);
     });
 

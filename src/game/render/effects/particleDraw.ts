@@ -15,6 +15,8 @@ const EMBER_COOL = 0xdc2626;       // red as it dies
 const BRASS = 0xd9a520;
 const BRASS_SHINE = 0xfff0b0;
 const DUST_COLOR = 0xbeb4a0;
+const MAG_BODY = 0x2b3038;         // gunmetal box
+const MAG_EDGE = 0x8a9099;
 const DEBRIS_TAIL = 2.6;           // debris streaks are longer than sparks: they read as flung chunks
 
 export const isSpriteKind = (kind: ParticleKind | undefined): kind is SpriteKind =>
@@ -64,6 +66,13 @@ const DRAWERS: Record<GraphicKind, GraphicDrawer> = {
         g.rotation = p.rotation ?? 0;
         g.rect(-2, -1, 4, 2).fill({ color: BRASS, alpha: p.life });
         g.moveTo(-2, -0.5).lineTo(2, -0.5).stroke({ width: 1, color: BRASS_SHINE, alpha: p.life * 0.8 });
+    },
+    magazine: (g, p) => {
+        // A small gunmetal box with a brass round peeking out of the top; solid until it fades at the end
+        const alpha = Math.min(1, p.life * 4);
+        g.rotation = p.rotation ?? 0;
+        g.rect(-2.5, -4.5, 5, 9).fill({ color: MAG_BODY, alpha }).stroke({ width: 1, color: MAG_EDGE, alpha });
+        g.rect(-1.5, -6, 3, 1.5).fill({ color: BRASS, alpha });
     },
     ring: (g, p) => {
         const t = 1 - p.life;
