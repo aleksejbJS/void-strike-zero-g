@@ -4,6 +4,7 @@ import GameCanvas from './components/GameCanvas';
 import MainMenu from './components/menu/MainMenu';
 import PlayerCustomization from './components/setup/CharacterSetup';
 import { ProfileScreen } from './components/profile/ProfileScreen';
+import { LeaderboardScreen } from './components/leaderboard/LeaderboardScreen';
 import { TournamentScreens } from './components/tournament/TournamentScreens';
 import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
   const { state, actions } = useUIStore();
   const [showingCustomization, setShowingCustomization] = useState(false);
   const [showingProfile, setShowingProfile] = useState(false);
+  const [showingLeaderboard, setShowingLeaderboard] = useState(false);
   const hash = useHash();
 
   // A match may have gone full screen on a phone; the menu is shown with the browser bar again
@@ -77,15 +79,28 @@ const App: React.FC = () => {
   ) : inTournament ? (
     <TournamentScreens onCustomize={() => setShowingCustomization(true)} />
   ) : (
-    <MainMenu onCustomize={() => setShowingCustomization(true)} onOpenProfile={() => setShowingProfile(true)} />
+    <MainMenu
+      onCustomize={() => setShowingCustomization(true)}
+      onOpenProfile={() => setShowingProfile(true)}
+      onOpenLeaderboard={() => setShowingLeaderboard(true)}
+    />
   );
 
-  // The profile opens over the menu or the setup screen, which stay mounted underneath (hidden),
-  // so Back returns to that screen as it was left
+  // The profile and the Top screen open over the menu or the setup screen, which stay mounted underneath
+  // (hidden), so Back returns to that screen as it was left. Register on the Top screen goes to the profile,
+  // where sign-up lives; Back from there returns to the menu.
+  const overlay = showingProfile ? (
+    <ProfileScreen onBack={() => setShowingProfile(false)} />
+  ) : showingLeaderboard ? (
+    <LeaderboardScreen
+      onBack={() => setShowingLeaderboard(false)}
+      onRegister={() => { setShowingLeaderboard(false); setShowingProfile(true); }}
+    />
+  ) : null;
   return (
     <>
-      <div className={showingProfile ? 'hidden' : undefined}>{screen}</div>
-      {showingProfile && <ProfileScreen onBack={() => setShowingProfile(false)} />}
+      <div className={overlay ? 'hidden' : undefined}>{screen}</div>
+      {overlay}
     </>
   );
 };
