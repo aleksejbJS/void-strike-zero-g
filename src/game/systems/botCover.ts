@@ -8,6 +8,7 @@ import { coverRect, firstCoverOnSegment, intactCover } from '../cover/coverGeome
 import { isTeammate } from './combat';
 import { aimPointOf, muzzleOf, platformsClear } from './botSenses';
 import { spawnShieldLeft } from './spawnShield';
+import { FLAME_RANGE } from './flameConstants';
 
 const SPOT_REACH = 400;       // px: crates farther than this from the bot are not worth running to
 const SPOT_GAP = 18;          // px between the crate's side and the bot's centre
@@ -58,13 +59,15 @@ export const coverToShoot = (state: GameState, bot: Entity, target: Entity): Cov
 };
 
 /** An intact barrel in plain view with an enemy inside its blast, and no teammate, nor the bot itself,
- *  within the blast plus a margin (a barrel hurts everyone at full damage). Never with a chainsaw. */
+ *  within the blast plus a margin (a barrel hurts everyone at full damage). Never with a chainsaw; with the
+ *  flamethrower only a barrel the flame reaches. */
 export const barrelToShoot = (state: GameState, bot: Entity, now = Date.now()): Cover | null => {
     if (melee(bot)) return null;
     const muzzle = muzzleOf(bot);
     for (const barrel of intactCover(state)) {
         if (barrel.kind !== 'barrel') continue;
         const centre = pieceCentre(barrel);
+        if (bot.weapon.type === WeaponType.FLAMETHROWER && distance(muzzle, centre) > FLAME_RANGE) continue;
         const near = (p: Entity, reach: number) => !p.dead && distance(centre, p.pos) < reach;
         const friendly = state.players.some(p => (p.id === bot.id || isTeammate(bot, p)) && near(p, BARREL_RADIUS + BARREL_SAFE_MARGIN));
         const enemy = state.players.some(p => p.id !== bot.id && !isTeammate(bot, p) && spawnShieldLeft(p, now) <= 0 && near(p, BARREL_RADIUS));
