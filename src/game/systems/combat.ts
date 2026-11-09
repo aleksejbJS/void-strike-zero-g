@@ -18,6 +18,7 @@ import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
 import { killWeaponName } from './killWeaponName';
+import { canFire, startReloadIfEmpty } from './reload';
 
 // --- Teams ---
 
@@ -195,9 +196,10 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
 export const shotOrigin = (p: Entity): Vector2 => ({ x: p.pos.x, y: p.pos.y - muzzleHeight(p) });
 
 export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
-    if (p.weapon.ammo <= 0) return;
+    if (!canFire(p.weapon)) return; // empty, or the magazine is being reloaded
     p.weapon.ammo--;
     p.lastFired = Date.now();
+    startReloadIfEmpty(p.weapon, p.lastFired); // the last round of a magazine starts the reload
     dropSpawnShield(p); // shooting ends spawn protection
 
     const origin = shotOrigin(p);

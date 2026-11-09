@@ -104,7 +104,7 @@ const DesktopHud: React.FC<GameHudProps & { clock?: string; activeWeaponData?: W
 
             <Vitals t={t} hp={stats.hp} armor={stats.arm} fuel={stats.fuel} maxFuel={stats.maxFuel ?? 100} bleeding={stats.bleeding} />
             <WeaponBar inventory={p.inventory} active={p.activeWeapon} />
-            <AmmoPanel t={t} weapon={p.activeWeaponData} ammo={stats.ammo} />
+            <AmmoPanel t={t} weapon={p.activeWeaponData} ammo={stats.ammo} reload={stats.reload} />
         </>
     );
 };
