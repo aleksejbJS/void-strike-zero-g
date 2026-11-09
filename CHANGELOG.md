@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.32 (unreleased)
+## Version 0.4.32 (2026-11-09)
 
 ### 🔫 Machine Gun magazine & reload
 - Spec: `docs/plans/2026-11-09-mg-reload-spec.md`. The Machine Gun fires a 50-round magazine (`ammo`/`maxAmmo` 50, was 999) with an unlimited reserve and reloads automatically for 1 s (`reloadMs: 1000`) once it is empty; no firing while reloading. Other weapons are unchanged (ammo from pickups, no magazine)
