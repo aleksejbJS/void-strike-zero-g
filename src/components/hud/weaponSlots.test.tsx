@@ -27,4 +27,12 @@ describe('WeaponBar with every weapon', () => {
         expect(screen.getByText('8')).toBeInTheDocument();
         expect(screen.getByText('9')).toBeInTheDocument();
     });
+
+    it('narrows the slots past seven, so nine fit between the side panels at 1512 px (as wide as seven)', () => {
+        const nine = render(<WeaponBar inventory={Object.values(WeaponType).map(type => WEAPONS_DATA[type])} active={null} />);
+        for (const slot of Array.from(nine.container.firstElementChild!.children)) expect(slot.className).toContain('w-[72px]');
+        nine.unmount();
+        const six = render(<WeaponBar inventory={[WEAPONS_DATA[WeaponType.MACHINE_GUN]]} active={null} />);
+        for (const slot of Array.from(six.container.firstElementChild!.children)) expect(slot.className).toContain('w-24');
+    });
 });
