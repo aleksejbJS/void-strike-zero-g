@@ -33,10 +33,18 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.32', date: null, points: [
+        { version: '0.4.34', date: null, points: [
             'New Top screen: six boards (XP, kills, bot kills, wins, wins against bots, tournament titles) for this week, this month and all time, with your own place',
             'Online kills, flag captures and item pickups now count toward your progress',
             'The Veteran, King of the Hill and Survivor achievements can now be earned',
+        ] },
+        { version: '0.4.33', date: 'Nov 9, 2026', points: [
+            'Character setup: a ↺ button next to a changed colour puts back the preset\'s original colour, without touching your parts',
+        ] },
+        { version: '0.4.32', date: 'Nov 9, 2026', points: [
+            'Machine Gun: a 50-round magazine and a 1-second automatic reload — the fighter lowers the gun and the empty magazine drops out',
+            'The ammo box shows the rounds left and a reload bar; the Machine Gun reloads in the background while you use another weapon',
+            'Bots reload by the same rules',
         ] },
         { version: '0.4.31', date: 'Nov 4, 2026', points: [
             'Infiltration: bots defending the intel now take cover behind crates too',
@@ -243,10 +251,18 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.32', date: null, points: [
+        { version: '0.4.34', date: null, points: [
             'Новый экран «Топ»: шесть таблиц (XP, убийства, убийства ботов, победы, победы над ботами, турниры) за неделю, месяц и всё время, с вашим местом',
             'Убийства, захваты флага и подобранные предметы в онлайне теперь засчитываются в ваш прогресс',
             'Достижения Veteran, King of the Hill и Survivor теперь можно получить',
+        ] },
+        { version: '0.4.33', date: '09.11.2026', points: [
+            'Настройка персонажа: кнопка ↺ рядом с изменённым цветом возвращает исходный цвет пресета, детали остаются',
+        ] },
+        { version: '0.4.32', date: '09.11.2026', points: [
+            'Пулемёт: магазин на 50 патронов и автоматическая перезарядка за 1 секунду — боец опускает ствол, пустой магазин выпадает',
+            'В HUD видно, сколько патронов осталось, и полоску перезарядки; пулемёт дозаряжается, пока вы стреляете из другого оружия',
+            'Боты перезаряжаются по тем же правилам',
         ] },
         { version: '0.4.31', date: '04.11.2026', points: [
             'Infiltration: боты, охраняющие интел, теперь тоже прячутся за ящиками',

@@ -29,6 +29,7 @@ import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
 import { duelLoadout, duelSpawnPoint } from './duelRules';
 import { spawnSmoke, updateSmokes } from './smoke';
+import { isMagazineFed, tickReloads } from './reload';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -150,6 +151,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     // Players Logic
     state.players.forEach(p => {
         if (p.dead) return;
+        tickReloads(p, now); // magazines refill before this tick's trigger pull
 
         let controls: PlayerControls;
         if (p.type === 'player') {
@@ -232,11 +234,13 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 if (p.type === 'bot' && item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never pick it up; it stays for humans
                 if (item.type === ItemType.HEALTH && p.health < 100) { p.health = Math.min(100, p.health + item.value); healWound(p); collected = true; }
                 else if (item.type === ItemType.ARMOR && p.armor < 100) { p.armor = Math.min(100, p.armor + item.value); collected = true; }
-                else if (item.type === ItemType.AMMO) { p.inventory.forEach(w => w.ammo = Math.min(w.maxAmmo, w.ammo + item.value)); collected = true; }
+                else if (item.type === ItemType.AMMO) { p.inventory.forEach(w => { if (!isMagazineFed(w)) w.ammo = Math.min(w.maxAmmo, w.ammo + item.value); }); collected = true; } // magazines refill only by reloading
                 else if (item.type === ItemType.WEAPON) {
                     // Gun Game disables weapon pickups to preserve ladder progression
                     if (state.mode !== GameMode.GUN_GAME) {
                         const has = p.inventory.find(w => w.type === item.subtype);
+                        // A second magazine-fed gun adds nothing (its reserve is unlimited): leave it lying
+                        if (has && isMagazineFed(has)) return;
                         if (has) has.ammo = Math.min(has.maxAmmo, has.ammo + 10); else if (item.subtype) p.inventory.push({ ...WEAPONS_DATA[item.subtype] });
                         // Don't auto-switch weapon - let player choose
                         collected = true;

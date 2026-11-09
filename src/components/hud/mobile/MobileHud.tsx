@@ -76,7 +76,7 @@ export const MobileHud: React.FC<Props> = p => {
                     <AchievementToast t={t} achievement={p.recentAchievement} />
                 </div>
             )}
-            <MobileWeapons t={t} inventory={p.inventory} active={p.activeWeapon} ammo={stats.ammo} onSelect={controls.onSelectWeapon} />
+            <MobileWeapons t={t} inventory={p.inventory} active={p.activeWeapon} ammo={stats.ammo} reload={stats.reload} onSelect={controls.onSelectWeapon} />
             <TouchSticks t={t} sticks={controls.sticks} hookDown={controls.hookDown} onHook={controls.onHook} />
             <TouchHint t={t} />
         </>

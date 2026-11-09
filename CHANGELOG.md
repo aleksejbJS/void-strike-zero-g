@@ -1,9 +1,9 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.32 (unreleased)
+## Version 0.4.34 (unreleased)
 
 ### 🏅 Leaderboards
-- Spec: `docs/plans/2026-11-07-leaderboard-spec.md`, plan: `docs/plans/2026-11-09-leaderboard-plan.md`, layout mockup in `docs/plans/`. **Owner step before merging:** run `supabase/migrations/20261109000000_leaderboards.sql` in the Supabase SQL Editor (`docs/supabase-setup.md`). Until it is run the boards cannot load and show "Could not load the board" with a Retry button; saving progress is not affected
+- Spec: `docs/plans/2026-11-07-leaderboard-spec.md`, plan: `docs/plans/2026-11-09-leaderboard-plan.md`, layout mockup in `docs/plans/`. **Owner step before merging:** run `supabase/migrations/20261109000000_leaderboards.sql` in the Supabase SQL Editor (`docs/supabase-setup.md`). Until it is run the boards cannot load and show "Could not load the board." with a Retry button; saving progress is not affected
 - New menu button **Top** (`src/components/leaderboard/*`, strings in `src/i18n/leaderboardStrings.ts`): six boards, XP, kills, bot kills, wins, wins vs bots and tournaments, each for this week, this month and all time. Top 10 plus your own place below the table; a guest sees a "Register to get on the board" prompt. Only registered players are ranked and a value of 0 is never listed. A week starts Monday 00:00 UTC, a month on the 1st 00:00 UTC
 - Lifetime counters (`src/game/stats/*`): kills, bot kills, chainsaw / railgun / rocket kills, flag captures, flag hold time, hook uses, item pickups, play time, Hunger Games wins, wins, bot-match wins and tournament titles. They **keep counting past achievement targets** (before, a finished achievement stopped counting) and are seeded from existing achievement progress so nobody starts from zero. They travel in the existing cloud snapshot (`lifetimeStats`), so they follow the account to any device
 - Counted online and offline: the simulation (offline game, Node server, browser host) writes per-player counters into `GameState.playerStats`, which online travels in every snapshot. The client credits only new increases of its own entry (a high-water mark per stats session), so a reconnect or a repeated snapshot never credits the same increase twice, a client-predicted hook use that the server rolls back is not counted twice, an offline "play again" starts a new session without losing anything, and a hidden tab or a sleeping laptop adds no play time. Online kills, flag captures and item pickups now count toward achievements, which they did not before
@@ -11,6 +11,22 @@
 - New achievements that can now be earned: Veteran (play time), King of the Hill (flag hold time) and Survivor (Hunger Games wins). Acrobatic (double jump) and Speed Demon (dash) stay out: the game has neither mechanic
 - Server-side totals (`supabase/migrations/20261109000000_leaderboards.sql`): table `player_stats` (per user, period, period start and stat; RLS on, no policies, no browser grants) and a trigger `record_player_stats` on `player_progress` that turns each cloud save into week / month / all-time increases. A player's first save only sets the all-time baseline (capped), so existing totals do not land in this week's board. A lower value (an older build, another device) never lowers or erases a total. **Per-save limits** stop a forged snapshot: an increase above the limit is clamped to it and the excess is dropped for good (XP 1000, kills 300, bot kills 600, wins 30, bot wins 30, tournament titles 5), with a `raise warning` in the log. The `leaderboard(p_stat, p_period)` RPC returns the top 10 and the caller's own place; unknown stat or period raises `bad_stat` / `bad_period`
 - Tests: `scripts/test-sql.sh` now also builds a fresh `leaderboards` database (auth stand-in, both account migrations, the leaderboards migration twice to prove it is idempotent) and runs `supabase/tests/leaderboards-trigger.test.sql`, `leaderboards-rpc.test.sql` and a check that the trigger's warnings reach the client (`leaderboards-warnings.sql`)
+
+## Version 0.4.33 (2026-11-09)
+
+### ↺ Reset a colour to the preset's original
+- Spec: `docs/plans/2026-11-09-color-reset-spec.md`. Every colour row on the setup screen (5 body colours and pattern on the Colours tab, visor glow on the Head tab) gets a ↺ button at its end while its colour differs from the selected preset's (case-insensitive). It sets that one colour back; parts and other colours stay. The button's column is always reserved, so swatches do not move when it appears
+- Originals come from `useFighterDraft` (`originals`): the preset's palette for the body, `presetBuild` for visor and pattern. `ColorRow` takes `original` and `resetLabel` (`cs.resetColor`, EN/RU). Tests: `CharacterSetupColorReset.test.tsx`
+
+## Version 0.4.32 (2026-11-09)
+
+### 🔫 Machine Gun magazine & reload
+- Spec: `docs/plans/2026-11-09-mg-reload-spec.md`. The Machine Gun fires a 50-round magazine (`ammo`/`maxAmmo` 50, was 999) with an unlimited reserve and reloads automatically for 1 s (`reloadMs: 1000`) once it is empty; no firing while reloading. Other weapons are unchanged (ammo from pickups, no magazine)
+- `src/game/systems/reload.ts`: a weapon with `reloadMs` is magazine-fed; the reload timer `reloadEndsAt` lives on the weapon, so it keeps running in the background after switching weapons. `fireWeapon` refuses while reloading and the last round starts the reload (with a `reload` sound event, heard like shots); `updatePhysics` calls `tickReloads` for every living fighter, bots included
+- Ammo boxes and a spare Machine Gun pickup do not refill the magazine (a spare MG stays on the floor). Bots no longer count a low magazine as "low ammo" when deciding to fetch weapons
+- Online: weapons already travel in snapshots; `toLocalClock` shifts `reloadEndsAt` (held weapon and inventory) to the client's clock
+- Animation: `solvePose` takes the reload progress — the barrel dips down-forward (barely when prone) and is pulled to the chest by 25 %, held, and raised back from 75 % (`render/fighter/reloadPose.ts`). `MagazineDrop` drops an empty-magazine particle (`magazine` kind, bounces like a casing) from the grip when a reload starts; reload timer jitter between snapshots does not drop a second one, nor does switching back to a gun that is mid-reload
+- HUD: the ammo box shows `37 / 50`; while reloading it shows "Reloading" / "Перезарядка" with a filling bar (`ReloadBar`), and the phone's selected weapon slot shows the same bar. `StatsState.reload` carries the progress
 
 ## Version 0.4.31 (2026-11-04)
 

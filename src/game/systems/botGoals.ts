@@ -10,6 +10,7 @@ import { NavGraph } from './botNavGraph';
 import { roamGoal } from './botRoam';
 import { preferredRange } from './botCombatMoves';
 import { chasePoint, knownPos, searchGoal } from './botSearch';
+import { isMagazineFed } from './reload';
 
 export interface BotGoal {
     moveTarget: Vector2;
@@ -131,7 +132,7 @@ export const chooseGoal = (state: GameState, bot: Entity, mem: BotMemory, target
     // Detour for a weapon when low on ammo, still on the starter gun, or idle in free-for-all modes
     if (bot.hasFlag === Team.NONE) {
         const weaponPickup = findWeaponPickup(state, bot);
-        const lowAmmo = bot.weapon.ammo < bot.weapon.maxAmmo * 0.25;
+        const lowAmmo = !isMagazineFed(bot.weapon) && bot.weapon.ammo < bot.weapon.maxAmmo * 0.25; // a magazine just reloads
         const hasOnlyStarter = bot.inventory.length <= 1;
         const idleFreeForAll = !target && (state.mode === GameMode.DEATHMATCH || state.mode === GameMode.HUNGER_GAMES);
         if (weaponPickup && (lowAmmo || hasOnlyStarter || idleFreeForAll)) {
