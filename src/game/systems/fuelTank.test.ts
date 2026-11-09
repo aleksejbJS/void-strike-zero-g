@@ -7,7 +7,7 @@ import { gameEvents, GameEvent } from './events';
 import { applyDamage } from './combat';
 import { tickBurning } from './burning';
 import { ignitionChance, rollTankIgnition } from './fuelTank';
-import { TANK_BLAST_CHANCE, TANK_FUSE_MS, TANK_IGNITE_CHANCE } from './flameConstants';
+import { TANK_BLAST_CHANCE, TANK_FUSE_MS } from './flameConstants';
 import type { DamageSource } from './deathKind';
 import { NOW } from './flameTestKit';
 
@@ -28,7 +28,7 @@ describe('ignitionChance', () => {
     it('is the per-weapon chance for a plain hit', () => {
         expect(ignitionChance(hit(WeaponType.PLASMA_GUN))).toBe(0.05);
         expect(ignitionChance(hit(WeaponType.SHOTGUN))).toBe(0.01);
-        expect(ignitionChance(hit(WeaponType.FLAMETHROWER))).toBe(TANK_IGNITE_CHANCE[WeaponType.FLAMETHROWER]);
+        expect(ignitionChance(hit(WeaponType.FLAMETHROWER))).toBe(0.015);
         expect(ignitionChance(hit(WeaponType.SMOKE_LAUNCHER))).toBe(0);
     });
 
