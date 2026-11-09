@@ -24,9 +24,14 @@ export type GameEvent =
     // How the fighter died, for the corpse each client simulates: `kind` (missing from older hosts: fall),
     // `from` = blast centre / muzzle / beam origin, `vel` = victim velocity, `weapon` = the gun it held,
     // `blast` = killed by an explosion's splash, not a shot (missing from older hosts),
-    // `oneLeg` = it had already lost a leg to a railgun wound (missing from older hosts: two legs).
+    // `oneLeg` = it had already lost a leg to a railgun wound (missing from older hosts: two legs),
+    // `tank` = id of the lit fuel tank left on the corpse: a TANK_BLAST with that id gibs it later.
     | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors;
-        kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType; blast?: boolean; oneLeg?: boolean }
+        kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType; blast?: boolean; oneLeg?: boolean;
+        tank?: string }
+    // A lit fuel tank blew up at x/y: clients throw its burning fuel, and tear apart the corpse carrying tank `id`
+    // (see DEATH.tank) if there is one (a living carrier's tank has no corpse). The explosion itself comes as an EFFECT.
+    | { type: 'TANK_BLAST'; id: string; x: number; y: number }
     // A railgun beam tore a leg off a fighter who survived (a wound): where it stood, which way it faced,
     // `vel` = its velocity, `from` = beam origin, `parts` = its colours for the flying leg.
     | { type: 'LIMB'; x: number; y: number; facing: 1 | -1; vel: Vector2; from?: Vector2; parts?: RagdollColors }

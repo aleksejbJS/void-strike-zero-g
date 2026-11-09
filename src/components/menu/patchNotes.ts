@@ -33,6 +33,13 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.34', date: 'Nov 9, 2026', points: [
+            'New weapon: the flamethrower. One per map, for close fights: a 300 px stream that hits everyone in it and sets them on fire',
+            'Burning fighters lose 1 HP every half second for 5 seconds. The flame breaks wooden crates twice as fast and barely hurts metal ones',
+            'The fuel tank on your back can catch fire when you are hit. Three seconds later it blows up, tearing you apart and hurting everyone nearby',
+            'A corpse with a lit tank keeps burning and explodes when its time runs out',
+            'Bots pick up the flamethrower and walk in close to use it',
+        ] },
         { version: '0.4.33', date: 'Nov 9, 2026', points: [
             'Character setup: a ↺ button next to a changed colour puts back the preset\'s original colour, without touching your parts',
         ] },
@@ -246,6 +253,13 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.34', date: '09.11.2026', points: [
+            'Новое оружие — огнемёт. По одному на карту, для ближнего боя: струя на 300 px задевает всех на пути и поджигает',
+            'Горящий боец теряет 1 HP каждые полсекунды в течение 5 секунд. Деревянные ящики огонь ломает вдвое быстрее, металлические почти не берёт',
+            'Топливный бак за спиной может загореться от попадания. Через три секунды он взрывается, разрывает носителя и ранит всех рядом',
+            'Труп с горящим баком продолжает гореть и взрывается, когда время выходит',
+            'Боты подбирают огнемёт и подходят вплотную, чтобы им пользоваться',
+        ] },
         { version: '0.4.33', date: '09.11.2026', points: [
             'Настройка персонажа: кнопка ↺ рядом с изменённым цветом возвращает исходный цвет пресета, детали остаются',
         ] },

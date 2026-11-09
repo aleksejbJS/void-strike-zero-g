@@ -1,7 +1,7 @@
-// A player on screen: the fighter plus what hangs off it (grapple rope, carried flag).
+// A player on screen: the fighter plus what hangs off it (grapple rope, carried flag, lit tank warning).
 // The container sits at the player's feet; only the fighter inside it is mirrored.
 
-import { Container, Graphics, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { Entity, GameState, Vector2 } from '../../types';
 import { createFighterView, drawFighter, FighterView } from './fighter/fighterView';
 import { FighterAnimator } from './fighter/fighterAnimator';
@@ -11,6 +11,8 @@ import { drawCarriedFlag } from './carriedFlag';
 import { clampProneAngle } from '../systems/stance';
 import { fighterInSmoke, fighterSmokeVisibility } from './smokeVisibility';
 import { spawnShieldAlpha } from './spawnShieldBlink';
+import { drawTankWarning, placeTankHalo } from './tankWarning';
+import { glowTexture } from './effects/glowTextures';
 
 // Height of the weapon above the feet, used to aim from the right spot on screen
 const AIM_HEIGHT = 49;
@@ -28,7 +30,15 @@ export const createPlayerVisual = (p: Entity): Container => {
     const shadow = new Graphics().ellipse(0, 0, 22, 5).fill({ color: 0x000000, alpha: 0.45 });
     shadow.label = 'contactShadow';
     const view = createFighterView();
-    c.addChild(shadow, view.root);
+    const warning = new Graphics();
+    warning.label = 'tankWarning';
+    // A lit tank's glow washes over the fighter (additive, so it tints instead of hiding it)
+    const halo = new Sprite(glowTexture());
+    halo.label = 'tankHalo';
+    halo.anchor.set(0.5);
+    halo.blendMode = 'add';
+    halo.visible = false;
+    c.addChild(shadow, view.root, halo, warning);
     views.set(c, view);
     return c;
 };
@@ -70,4 +80,8 @@ export const updatePlayerVisual = (
     const toWorld = (pt: Vector2) => ({ x: pt.x * frame.facing * RIG_SCALE, y: pt.y * RIG_SCALE });
     drawGrappleRope(c, p, toWorld(frame.pose.shoulderFront), now);
     drawCarriedFlag(c, p, frame.facing, toWorld(upperPoint(frame.pose, -9, -16)), now, game.mode);
+    const warning = c.getChildByLabel('tankWarning');
+    if (warning instanceof Graphics) drawTankWarning(warning, p, now);
+    const halo = c.getChildByLabel('tankHalo');
+    if (halo instanceof Sprite) placeTankHalo(halo, p, now);
 };

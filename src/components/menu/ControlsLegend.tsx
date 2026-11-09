@@ -15,6 +15,6 @@ export const ControlsLegend: React.FC<{ t: Translate }> = ({ t }) => (
         <span className="flex items-center gap-2"><Key>{t('ctl.rightClick')}</Key>{t('ctl.or')}<Key>Shift</Key>{t('ctl.grapple')}</span>
         <span className="flex items-center gap-2"><Key>S</Key>{t('ctl.crouch')}</span>
         <span className="flex items-center gap-2"><Key>Z</Key>{t('ctl.prone')}</span>
-        <span className="flex items-center gap-2"><Key>1–7</Key>{t('ctl.or')}<Key>{t('ctl.wheel')}</Key>{t('ctl.weapons')}</span>
+        <span className="flex items-center gap-2"><Key>1–9</Key>{t('ctl.or')}<Key>{t('ctl.wheel')}</Key>{t('ctl.weapons')}</span>
     </div>
 );

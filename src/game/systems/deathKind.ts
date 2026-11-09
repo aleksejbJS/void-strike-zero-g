@@ -21,8 +21,12 @@ export interface DamageSource {
     shooterDist?: number;
     /** Bleeding from a wound, not a hit: never wounds again, no knockback. */
     bleed?: boolean;
+    /** Burning from the flame stream, not a hit: no armor, no knockback, no damage number. */
+    burn?: boolean;
     /** An explosive barrel's blast: hurts everyone, thrown or gibbed like a rocket splash. */
     barrel?: boolean;
+    /** A fuel tank's blast (the flamethrower carrier's tank going off). */
+    tank?: boolean;
 }
 
 /** Damage beyond the victim's remaining health that turns an explosion into gibs. */
@@ -30,9 +34,15 @@ export const GIB_OVERKILL = 30;
 /** A shotgun blast from this close (world units) throws the victim. */
 export const SHOTGUN_POINT_BLANK = 120;
 
-/** An explosion's splash (rocket or grenade blast that did not hit the victim itself, or a barrel blast), not a shot. */
+/** A blast of the arena, not of a weapon (a barrel or a fuel tank): hurts everyone, never moves the Gun Game ladder. */
+export const isHazardBlast = (source: DamageSource): boolean => !!source.barrel || !!source.tank;
+
+/** The carrier's own tank going off on their back (no damage number, no push: they are torn apart). */
+export const isOwnTankBlast = (source: DamageSource): boolean => !!source.tank && !!source.direct;
+
+/** An explosion's splash (rocket or grenade blast that did not hit the victim itself, a barrel or a tank blast), not a shot. */
 export const isSplash = (source: DamageSource): boolean =>
-    !!source.barrel
+    isHazardBlast(source)
     || ((source.weapon === WeaponType.ROCKET_LAUNCHER || source.weapon === WeaponType.GRENADE_LAUNCHER) && !source.direct);
 
 /** `overkill` = the killing hit's damage after armor minus the victim's health right before it. */
@@ -41,6 +51,8 @@ export const deathKind = (source: DamageSource, overkill: number): DeathKind => 
     if (source.bleed) return 'fall';
     // A barrel blast is never a direct hit: thrown at the edge, gibbed by a big overkill
     if (source.barrel) return overkill >= GIB_OVERKILL ? 'gib' : 'thrown';
+    // A tank blast always gibs its own carrier (direct); neighbours like a rocket splash
+    if (source.tank) return source.direct || overkill >= GIB_OVERKILL ? 'gib' : 'thrown';
     switch (source.weapon) {
         case WeaponType.SHOTGUN:
             // No distance known: treat as far, so a missing value never launches a body.

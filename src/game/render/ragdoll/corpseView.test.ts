@@ -10,6 +10,7 @@ import { gripPoints } from '../fighter/weaponGrips';
 import { IDLE_PARTS } from '../fighter/parts/partMotionFrame';
 import { createFighterView, drawFighter, FighterView } from '../fighter/fighterView';
 import { heldWeaponKey } from '../fighter/fighterAnimator';
+import { TANK_COLOR } from '../fighter/fuelTankBack';
 import { createCorpseView, CorpseView, destroyCorpseView, syncCorpseViews, updateCorpseView } from './corpseView';
 
 // jsdom has no 2D canvas to bake the glow texture; nothing here depends on it
@@ -90,6 +91,19 @@ describe('corpse views', () => {
             expect(v.fighter!.body.context.instructions.length).toBeGreaterThan(0);
             destroyCorpseView(v);
         }
+    });
+
+    it('a corpse with a lit tank wears it, whatever gun it dropped (its jet never comes from nothing)', () => {
+        const tankColorIn = (tankId?: string) => {
+            const c = Object.assign(createCorpse(death({ kind: 'fall', weapon: WeaponType.SHOTGUN })), { tankId });
+            const v = createCorpseView(c, {});
+            updateCorpseView(v, c);
+            const colors = (v.fighter!.body.context.instructions as unknown as { data: { style?: { color?: number } } }[]).map(i => i.data.style?.color);
+            destroyCorpseView(v);
+            return colors.includes(TANK_COLOR);
+        };
+        expect(tankColorIn('tank_1')).toBe(true);
+        expect(tankColorIn(undefined)).toBe(false);
     });
 
     it('a missing colour set draws with the default build', () => {

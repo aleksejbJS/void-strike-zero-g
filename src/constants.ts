@@ -189,6 +189,18 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     recoil: 0.2,
     knockbackForce: 0.2,
   },
+  [WeaponType.FLAMETHROWER]: {
+    type: WeaponType.FLAMETHROWER,
+    name: 'Flamethrower',
+    damage: 5, // per stream tick; the burning status adds more (flameConstants.ts)
+    fireRate: 100, // fast ticks while holding fire
+    speed: 0, // Short-range stream; no projectile
+    color: '#f97316',
+    ammo: 100,
+    maxAmmo: 200,
+    recoil: 0,
+    knockbackForce: 0,
+  },
 };
 
 export const ITEMS_DATA = {

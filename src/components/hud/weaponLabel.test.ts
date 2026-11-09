@@ -11,6 +11,11 @@ describe('weaponLabel', () => {
         expect(weaponLabel(tIn('ru'), 'Barrel')).toBe('Бочка');
     });
 
+    it('translates the flamethrower', () => {
+        expect(weaponLabel(tIn('en'), 'Flamethrower')).toBe('Flamethrower');
+        expect(weaponLabel(tIn('ru'), 'Flamethrower')).toBe('Огнемёт');
+    });
+
     it('translates a weapon name and leaves an unknown one as it is', () => {
         expect(weaponLabel(tIn('ru'), 'Chainsaw')).toBe('Бензопила');
         expect(weaponLabel(tIn('ru'), 'Environment')).toBe('Environment');
