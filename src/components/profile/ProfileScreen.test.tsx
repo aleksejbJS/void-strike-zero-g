@@ -107,7 +107,7 @@ describe('ProfileScreen content', () => {
 
     it('reads the achievements, XP and name again after a login', async () => {
         h.api.fetchSnapshot.mockResolvedValue({
-            achievements: { veteran: { progress: 1, unlocked: true, unlockedAt: 5 } }, xp: 400, look: null,
+            achievements: { veteran: { progress: 1, unlocked: true, unlockedAt: 5 } }, xp: 400, look: null, stats: {},
         });
         const { account } = await mountProfile(h);
         expect(screen.getByText('0/20')).toBeInTheDocument();

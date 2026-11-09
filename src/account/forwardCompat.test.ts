@@ -1,5 +1,6 @@
 // A tab running an older build must never erase cloud data a newer build added: achievements it does
-// not know, and fighter parts or slots it does not know. The game itself must never show or count them.
+// not know, lifetime counters it does not know, and fighter parts or slots it does not know. The game
+// itself must never show or count them.
 
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_BUILD } from '../game/build/buildParts';
@@ -7,6 +8,7 @@ import { BUILD_KEY, loadBuild } from '../game/build/buildStorage';
 import { achievementManager } from '../game/systems/achievements';
 import { readProfile } from '../components/profile/profileData';
 import { LOOK_SAVED_AT_KEY, writeLocalSnapshot } from './localSnapshot';
+import { STATS_KEY } from '../game/stats/lifetimeStats';
 import { sanitizeSnapshot } from './snapshot';
 import { installSyncHarness, look, snap, USER } from '../test/syncHarness';
 
@@ -72,5 +74,37 @@ describe('forward compatibility with a newer build', () => {
         await expect(h.sync.flush(USER)).resolves.toBe(true);
 
         expect(h.saved().look?.build).toMatchObject({ helmet: 'halo', cape: 'red_cape' });
+    });
+
+    it('a push keeps a lifetime counter this build does not know', async () => {
+        writeLocalSnapshot(snap(0, { stats: { kills: 3 } }));
+        h.fetchSnapshot.mockResolvedValue(cloudRow({ stats: { futureStat: 9, kills: 1 } }));
+
+        await expect(h.sync.flush(USER)).resolves.toBe(true);
+
+        expect(h.saved().stats).toEqual({ kills: 3, futureStat: 9 });
+    });
+
+    it('a pulled unknown counter is not stored for the game, yet reaches the cloud again with the next push', async () => {
+        h.fetchSnapshot.mockResolvedValue(cloudRow({ stats: { futureStat: 9, kills: 2 } }));
+
+        await h.sync.pull(USER);
+        const stored = JSON.parse(h.store[STATS_KEY]);
+        expect(stored.kills).toBe(2);
+        expect(stored).not.toHaveProperty('futureStat'); // the game keeps known counters only
+
+        h.sync.requestPush(USER);
+        await expect(h.sync.flush(USER)).resolves.toBe(true);
+
+        expect(h.saved(h.saveSnapshot.mock.calls.length - 1).stats).toMatchObject({ kills: 2, futureStat: 9 });
+    });
+
+    it('an old cloud row without counters never lowers the local ones', async () => {
+        writeLocalSnapshot(snap(0, { stats: { kills: 3, wins: 1 } }));
+        h.fetchSnapshot.mockResolvedValue(cloudRow({ xp: 5 })); // saved by a build before counters existed
+
+        await expect(h.sync.flush(USER)).resolves.toBe(true);
+
+        expect(h.saved().stats).toEqual({ kills: 3, wins: 1 });
     });
 });

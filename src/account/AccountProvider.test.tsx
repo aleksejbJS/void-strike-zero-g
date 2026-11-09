@@ -47,6 +47,7 @@ describe('AccountProvider start-up', () => {
 
     it('restores a stored session: pulls the cloud, uses the account nickname', async () => {
         h.store.playerName = 'Zed';
+        h.store.lifetimeStats = '{}'; // counters already stored (none yet), so the cloud copy lacks nothing
         h.api.currentUser.mockResolvedValue(ALEX);
         h.api.fetchSnapshot.mockResolvedValue(snap(300));
         h.mount();

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { DEFAULT_BUILD } from '../game/build/buildParts';
 import { presetBuild } from '../game/build/buildPresets';
+import { STAT_KEYS } from '../game/stats/statKeys';
 import { achievementManager } from '../game/systems/achievements';
 import { clearLocalSnapshot, readLocalSnapshot, saveLookIfChanged, writeLocalSnapshot } from './localSnapshot';
 import { FighterLook, PlayerSnapshot } from './snapshot';
@@ -12,6 +13,7 @@ const full: PlayerSnapshot = {
     achievements: { killer: { progress: 10, unlocked: true, unlockedAt: 5 }, first_blood: { progress: 1, unlocked: false } },
     xp: 120,
     look,
+    stats: { kills: 42, botKills: 30, wins: 3, playMs: 90000 },
 };
 
 describe('localSnapshot', () => {
@@ -30,8 +32,9 @@ describe('localSnapshot', () => {
     });
     afterEach(() => warn.mockRestore());
 
-    it('reads an empty guest as no progress and no look', () => {
-        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 0, look: null });
+    it('reads an empty guest as no progress and no look, with every counter seeded at 0', () => {
+        const zeros = Object.fromEntries(STAT_KEYS.map(key => [key, 0]));
+        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 0, look: null, stats: zeros });
         expect(warn).not.toHaveBeenCalled();
     });
 
@@ -59,17 +62,34 @@ describe('localSnapshot', () => {
     });
 
     it('writing a snapshot with no look on an empty store stores no look', () => {
-        writeLocalSnapshot({ achievements: {}, xp: 5, look: null });
-        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 5, look: null });
+        writeLocalSnapshot({ achievements: {}, xp: 5, look: null, stats: {} });
+        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 5, look: null, stats: {} });
         expect(store).not.toHaveProperty('fighterBuild');
         expect(store).not.toHaveProperty('fighterLookSavedAt');
     });
 
     it('sanitizes what it writes', () => {
         const bad = { 'Bad Id': { progress: 1, unlocked: true }, killer: { progress: 'x', unlocked: true } };
-        writeLocalSnapshot({ achievements: bad as unknown as PlayerSnapshot['achievements'], xp: -4, look: null });
-        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 0, look: null });
+        writeLocalSnapshot({ achievements: bad as unknown as PlayerSnapshot['achievements'], xp: -4, look: null, stats: { kills: -3, wins: 2.8 } });
+        expect(readLocalSnapshot()).toEqual({ achievements: {}, xp: 0, look: null, stats: { wins: 2 } });
         expect(achievementManager.exportProgress()).toEqual({});
+    });
+
+    it('stats: reads the lifetime counters the game keeps under "lifetimeStats"', () => {
+        store.lifetimeStats = JSON.stringify({ kills: 7, hookUses: 2 });
+        expect(readLocalSnapshot().stats).toEqual({ kills: 7, hookUses: 2 });
+    });
+
+    it('stats: writing stores them under "lifetimeStats" without touching achievements', () => {
+        writeLocalSnapshot({ ...full, achievements: {} });
+        expect(JSON.parse(store.lifetimeStats)).toEqual(full.stats);
+        expect(achievementManager.exportProgress()).toEqual({});
+    });
+
+    it('stats: write sanitizes (negative dropped, fractions floored) and the game keeps only counters it knows', () => {
+        writeLocalSnapshot({ ...full, stats: { kills: -3, wins: 2.8, futureStat: 5 } as PlayerSnapshot['stats'] });
+        expect(JSON.parse(store.lifetimeStats)).toEqual({ wins: 2 });
+        expect(readLocalSnapshot().stats).toEqual({ wins: 2 });
     });
 
     it('a guest who never touched colours has no look; defaults fill the gaps once one key exists', () => {
@@ -85,13 +105,13 @@ describe('localSnapshot', () => {
         expect(readLocalSnapshot().look).toBeNull();
     });
 
-    it('clearLocalSnapshot removes every key and resets the achievements', () => {
+    it('clearLocalSnapshot removes every key (the lifetime counters too) and resets the achievements', () => {
         writeLocalSnapshot(full);
         store.playerName = 'Ace';
         clearLocalSnapshot();
         const removed = mocks().removeItem.mock.calls.map(([key]) => key);
         for (const key of ['achievementProgress', 'fighterXp', 'fighterBuild', 'selectedSkin', 'playerColor', 'torsoColor',
-            'headColor', 'armColor', 'legColor', 'jetpackColor', 'playerName', 'fighterLookSavedAt']) {
+            'headColor', 'armColor', 'legColor', 'jetpackColor', 'playerName', 'fighterLookSavedAt', 'lifetimeStats']) {
             expect(removed).toContain(key);
         }
         expect(store).toEqual({});
