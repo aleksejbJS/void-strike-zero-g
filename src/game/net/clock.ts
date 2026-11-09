@@ -24,6 +24,8 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
     for (const p of snap.players) {
         p.respawnTimer = shift(p.respawnTimer) ?? 0;
         p.spawnShieldUntil = shift(p.spawnShieldUntil);
+        // Reload timers live on the weapons; the held one may be an inventory object too: shift it once
+        for (const w of new Set([p.weapon, ...p.inventory])) w.reloadEndsAt = shift(w.reloadEndsAt);
     }
     // New objects: the host's own cloud list must keep its own clock
     if (snap.smokes) snap.smokes = snap.smokes.map(c => ({ ...c, bornAt: c.bornAt + offset, endsAt: c.endsAt + offset }));

@@ -8,7 +8,7 @@ import {
 
 export type { TournamentMatchRun, TournamentNav } from './tournamentSlice';
 
-export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number; bleeding?: boolean };
+export type StatsState = { hp: number; arm: number; fuel: number; maxFuel?: number; ammo: number; dead: boolean; respawn: number; bleeding?: boolean; reload?: number }; // reload: 0..1 while the held weapon reloads
 type ScoresState = { red: number; blue: number };
 export type PlayerScore = { id: string; name: string; score: number; isPlayer: boolean; isLocal?: boolean; gunLevel?: number; gunProgress?: number; gunTotalLevels?: number };
 
