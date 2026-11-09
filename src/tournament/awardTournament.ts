@@ -5,6 +5,7 @@
 
 import { achievementManager } from '../game/systems/achievements';
 import { tournamentAwards } from '../game/tournament/awards';
+import { addStats } from '../game/stats/lifetimeStats';
 import { notifyProgressChanged } from '../account/progressEvents';
 import type { TournamentSnapshot } from './types';
 
@@ -58,10 +59,12 @@ export function awardTournament(s: TournamentSnapshot, seat: number): void {
     for (const award of pending) memory.add(award.key);
     if (fresh.length === 0) return; // awarded before, in an earlier page session
 
-    // Not `some()`: every award must be applied, even after the first one unlocks
-    const results = fresh.map(award => achievementManager.updateProgress(award.achievementId));
+    // Before the achievements: a first-ever counter load is seeded from them and would already include this title
+    const titles = fresh.filter(a => a.achievementId === 'tournament_champion').length;
+    if (titles > 0) addStats({ tournamentsWon: titles });
+    for (const award of fresh) achievementManager.updateProgress(award.achievementId);
     writeStored(new Set([...known, ...memory]));
-    if (results.includes(true)) notifyProgressChanged(); // a logged-in player's new achievements go to the cloud
+    notifyProgressChanged(); // a logged-in player's new awards and counters go to the cloud, even for a repeat title
 }
 
 /** Forgets what was awarded (tests, and a future "reset progress"); `keepStorage` simulates a page reload. */
