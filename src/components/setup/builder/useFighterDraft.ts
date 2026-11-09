@@ -6,7 +6,7 @@ import { SKINS } from '../../../constants';
 import { FighterBuild } from '../../../game/build/buildParts';
 import { presetBuild } from '../../../game/build/buildPresets';
 import { currentBuild } from '../../../game/build/currentBuild';
-import { BodyColor } from '../colorPresets';
+import { BodyColor, BodyPart } from '../colorPresets';
 
 interface Draft {
     presetIndex: number;
@@ -23,6 +23,12 @@ const presetColors = (index: number): Record<BodyColor, string> => {
     return { torso: palette.torso, head: palette.head, arms: palette.arms, legs: palette.legs, jetpack: palette.jetpack };
 };
 
+/** Every colour the preset starts with: its palette for the body, its starting build for visor and pattern. */
+const presetOriginals = (index: number): Record<BodyPart, string> => {
+    const { visorColor, patternColor } = presetBuild(SKINS[index].id);
+    return { ...presetColors(index), visor: visorColor, pattern: patternColor };
+};
+
 /** `skinId` and `colors` are the saved choices; the saved build is loaded with locked parts already removed. */
 export const useFighterDraft = (skinId: string, colors: Record<BodyColor, string>) => {
     const [draft, setDraft] = useState<Draft>(() => {
@@ -36,6 +42,7 @@ export const useFighterDraft = (skinId: string, colors: Record<BodyColor, string
     return {
         ...draft,
         preset: SKINS[draft.presetIndex],
+        originals: presetOriginals(draft.presetIndex),
         stepPreset: (step: number) => setDraft(d => {
             const presetIndex = (d.presetIndex + step + SKINS.length) % SKINS.length;
             return { presetIndex, build: presetBuild(SKINS[presetIndex].id), colors: presetColors(presetIndex), changed: false };

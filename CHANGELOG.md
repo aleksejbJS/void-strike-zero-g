@@ -1,5 +1,11 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.32 (2026-11-09)
+
+### ↺ Reset a colour to the preset's original
+- Spec: `docs/plans/2026-11-09-color-reset-spec.md`. Every colour row on the setup screen (5 body colours and pattern on the Colours tab, visor glow on the Head tab) gets a ↺ button at its end while its colour differs from the selected preset's (case-insensitive). It sets that one colour back; parts and other colours stay. The button's column is always reserved, so swatches do not move when it appears
+- Originals come from `useFighterDraft` (`originals`): the preset's palette for the body, `presetBuild` for visor and pattern. `ColorRow` takes `original` and `resetLabel` (`cs.resetColor`, EN/RU). Tests: `CharacterSetupColorReset.test.tsx`
+
 ## Version 0.4.31 (2026-11-04)
 
 ### 🛡️ Infiltration defenders take cover

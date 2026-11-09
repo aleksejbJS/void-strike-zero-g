@@ -33,6 +33,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.32', date: 'Nov 9, 2026', points: [
+            'Character setup: a ↺ button next to a changed colour puts back the preset\'s original colour, without touching your parts',
+        ] },
         { version: '0.4.31', date: 'Nov 4, 2026', points: [
             'Infiltration: bots defending the intel now take cover behind crates too',
         ] },
@@ -238,6 +241,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.32', date: '09.11.2026', points: [
+            'Настройка персонажа: кнопка ↺ рядом с изменённым цветом возвращает исходный цвет пресета, детали остаются',
+        ] },
         { version: '0.4.31', date: '04.11.2026', points: [
             'Infiltration: боты, охраняющие интел, теперь тоже прячутся за ящиками',
         ] },
