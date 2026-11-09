@@ -13,6 +13,7 @@ import type { BodyArtDefinition, XY } from './artTypes';
 import { illustratedPose, sourceBodyPoint } from './bodyPose';
 import { BODY_ART } from './definitions';
 import { artScale, partGeometry, placePart } from './placement';
+import { expectedFeet } from './footTargetsTestKit';
 
 const states: FighterState[] = ['idle', 'walk', 'run', 'fly', 'fall', 'crouch', 'prone'];
 const grip = gripPoints(WeaponType.MACHINE_GUN, 0.23);
@@ -83,9 +84,10 @@ describe('illustrated anatomy pose', () => {
             const label = `${body}/${weapon}/${state}/aim=${sample.aim}`;
             expectPoint(adapted.gunTopLeft, original.gunTopLeft, `${label}/gun`);
             expect(adapted.gunAngle, label).toBe(original.gunAngle);
-            for (const limb of ['frontArm', 'backArm', 'frontLeg', 'backLeg'] as const) {
-                expectPoint(adapted[limb].end, original[limb].end, `${label}/${limb}`);
-            }
+            for (const limb of ['frontArm', 'backArm'] as const) expectPoint(adapted[limb].end, original[limb].end, `${label}/${limb}`);
+            // Feet stay on the floor line but stand under their own painted hips, so the legs never cross
+            const feet = expectedFeet(body, original);
+            for (const limb of ['frontLeg', 'backLeg'] as const) expectPoint(adapted[limb].end, feet[limb], `${label}/${limb}`);
         }
     });
 

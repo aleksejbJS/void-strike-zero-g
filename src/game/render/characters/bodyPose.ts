@@ -4,7 +4,8 @@ import type { BodyId } from '../../build/bodyTypes';
 import type { FighterPose, FighterState } from '../fighter/fighterPose';
 import { solveLimb } from '../fighter/ik';
 import { PRONE_SUPPORT } from '../fighter/pronePose';
-import type { BodyArtDefinition, XY } from './artTypes';
+import type { BodyArtDefinition, SourcePart, XY } from './artTypes';
+import { artScale } from './placement';
 import { BODY_ART } from './definitions';
 
 const fittedLimb = (start: Vector2, end: Vector2, upper: number, lower: number,
@@ -36,6 +37,23 @@ export const sourceBodyPoint = (definition: BodyArtDefinition, pose: FighterPose
     return { x: pose.hip.x + x * c - y * s, y: pose.hip.y + x * s + y * c };
 };
 
+/** A painted bone's length in rig units, so the picture is drawn at its own proportions. */
+const paintedLength = (definition: BodyArtDefinition, part: SourcePart | undefined, fallback: number): number => {
+    if (!part?.axisEnd) return fallback;
+    return Math.hypot(part.axisEnd[0] - part.origin[0], part.axisEnd[1] - part.origin[1]) * (part.pixelScale ?? artScale(definition));
+};
+
+/**
+ * Tucked airborne feet can still land a hair past each other after following their hips; set them side by
+ * side then, in their hips' order, so the shins do not cross at the ankles.
+ */
+const uncrossed = (front: Vector2, back: Vector2, hipFront: Vector2, hipBack: Vector2, keep: boolean): [Vector2, Vector2] => {
+    const hipOrder = Math.sign(hipFront.x - hipBack.x);
+    if (keep || hipOrder === 0 || Math.sign(front.x - back.x) === hipOrder) return [front, back];
+    const middle = (front.x + back.x) / 2, gap = 0.5 * hipOrder;
+    return [{ x: middle + gap, y: front.y }, { x: middle - gap, y: back.y }];
+};
+
 export const illustratedPose = (pose: FighterPose, body: BodyId, state?: FighterState): FighterPose => {
     const definition = BODY_ART[body];
     const front = definition.parts.upperArmFront, back = definition.parts.upperArmBack;
@@ -52,15 +70,28 @@ export const illustratedPose = (pose: FighterPose, body: BodyId, state?: Fighter
         if (prone && leg.joint.y > clearance) leg.joint.y = clearance;
         return leg;
     };
+    // The shared pose hangs both legs from one centre hip and plants the near foot forward, but the painted
+    // near leg hangs from the hip behind the centre. Carry each foot along with its own hip so the legs keep
+    // the shared stance without crossing in an X. Prone and crouched legs keep their authored ground contact
+    // (a wide crouch reads as one knee forward, and the Human kneels on its own projection).
+    const crouched = (state ?? pose.state) === 'crouch';
+    const shared = prone || crouched;
+    const underHip = (foot: Vector2, hip: Vector2): Vector2 => shared ? foot : { x: foot.x + hip.x - pose.hip.x, y: foot.y };
+    const [footFront, footBack] = uncrossed(underHip(pose.frontLeg.end, hipFront), underHip(pose.backLeg.end, hipBack), hipFront, hipBack, shared);
     const supported = state ? state !== 'fly' && state !== 'fall' : pose.lean > 1;
     // The far thigh is foreshortened in the Human kneeling projection, rather than bent backward.
-    const kneelingHuman = body === 'human' && (state ?? pose.state) === 'crouch';
+    const kneelingHuman = body === 'human' && crouched;
+    // Standing, running and airborne legs use the painted thigh and shin proportions: the shared 14.5 + 14.5
+    // bones are longer than the drawn legs, which stretched the thighs and forced a deep knee bend at rest.
+    const paintedLeg = (side: 'Front' | 'Back', start: Vector2, end: Vector2) => fittedLeg(start, end,
+        paintedLength(definition, definition.parts[`thigh${side}`], 14.5), paintedLength(definition, definition.parts[`shin${side}`], 14.5));
     return {
         ...pose, shoulderFront, shoulderBack,
         head: sourceBodyPoint(definition, pose, definition.parts.head?.origin ?? definition.neck),
         frontArm: fittedArm(shoulderFront, pose.frontArm.end, supported),
         backArm: fittedArm(shoulderBack, pose.backArm.end, supported),
-        frontLeg: fittedLeg(hipFront, pose.frontLeg.end),
-        backLeg: fittedLeg(hipBack, pose.backLeg.end, kneelingHuman ? 6.5 : 14.5, kneelingHuman ? 13 : 14.5),
+        frontLeg: shared ? fittedLeg(hipFront, footFront) : paintedLeg('Front', hipFront, footFront),
+        backLeg: kneelingHuman ? fittedLeg(hipBack, pose.backLeg.end, 6.5, 13)
+            : shared ? fittedLeg(hipBack, footBack) : paintedLeg('Back', hipBack, footBack),
     };
 };

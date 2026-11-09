@@ -49,7 +49,10 @@ describe('illustrated corpse thickness at platforms', () => {
         for (let tick = 0; tick < 480; tick++) stepCorpse(c, [thin]);
         expect(c.points.head.y + headRadius(body)).toBeLessThanOrEqual(TOP + 0.5);
         expect(c.points.hip.y + 5 * RIG_SCALE).toBeLessThanOrEqual(TOP + 0.5);
-        expect(speedOf(c)).toBeLessThan(0.05);
+        // Accepted trade-off of the straight painted standing legs (owner decision, 2026-11-09): after this
+        // fast fall the Robot can still creep slowly (under ~18 px/s) while it fades out (ticks 420-540);
+        // the other bodies settle faster than before.
+        expect(speedOf(c)).toBeLessThan(body === 'robot' ? 0.15 : 0.05);
     });
 
     it('retains zero-radius legacy contact for a build without a body', () => {

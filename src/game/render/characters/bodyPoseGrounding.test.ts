@@ -5,6 +5,7 @@ import { BODY_IDS } from '../../build/bodyTypes';
 import { solvePose, type FighterState } from '../fighter/fighterPose';
 import { gripPoints } from '../fighter/weaponGrips';
 import { illustratedPose } from './bodyPose';
+import { expectedFeet } from './footTargetsTestKit';
 
 const phases = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
 const aims = [-0.9, -0.3, 0, 0.3, 0.9];
@@ -51,9 +52,12 @@ describe('illustrated arms at the floor', () => {
             const original = solvePose(input), adapted = solvePose({ ...input, body });
             expect(adapted.gunTopLeft).toEqual(original.gunTopLeft);
             expect(adapted.gunAngle).toBe(original.gunAngle);
+            // Hands keep the shared targets; feet keep the floor line but stand under their own painted hips
+            const feet = expectedFeet(body, original);
+            const target = { frontArm: original.frontArm.end, backArm: original.backArm.end, ...feet };
             for (const limb of ['frontArm', 'backArm', 'frontLeg', 'backLeg'] as const) {
-                expect(adapted[limb].end.x, `${body}/${state}/${limb}/x`).toBeCloseTo(original[limb].end.x, 5);
-                expect(adapted[limb].end.y, `${body}/${state}/${limb}/y`).toBeCloseTo(original[limb].end.y, 5);
+                expect(adapted[limb].end.x, `${body}/${state}/${limb}/x`).toBeCloseTo(target[limb].x, 5);
+                expect(adapted[limb].end.y, `${body}/${state}/${limb}/y`).toBeCloseTo(target[limb].y, 5);
                 expect(Object.values(adapted[limb].joint).every(Number.isFinite), `${body}/${state}/${limb}`).toBe(true);
             }
         }
