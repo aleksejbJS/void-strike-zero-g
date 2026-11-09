@@ -201,9 +201,9 @@ forward compatible like achievements) with finite non-negative values, floored; 
 ### Task 6: Supabase — period totals, trigger, `leaderboard` RPC
 
 **Files:**
-- Create: `supabase/migrations/20261109000000_leaderboards.sql`, `supabase/tests/auth-stub.sql`, `supabase/tests/leaderboards.test.sql`
+- Create: `supabase/migrations/20261109000000_leaderboards.sql`, `supabase/tests/auth-stub.sql`, `supabase/tests/leaderboards-helpers.sql`, `supabase/tests/leaderboards-trigger.test.sql`, `supabase/tests/leaderboards-rpc.test.sql`, `supabase/tests/leaderboards-warnings.sql`
 - Modify: `scripts/test-sql.sh` (run the existing tournaments suite unchanged, then a second fresh database: auth stub →
-  `20261103000000_accounts.sql` → `20261105000000_account_hardening.sql` → leaderboards migration twice (idempotent) → leaderboards tests),
+  `20261103000000_accounts.sql` → `20261105000000_account_hardening.sql` → leaderboards migration twice (idempotent) → helpers → trigger and RPC suites → warnings check),
   `docs/supabase-setup.md` (owner step: run the new migration in the SQL editor)
 
 **Interfaces:**

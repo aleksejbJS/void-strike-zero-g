@@ -33,6 +33,11 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.32', date: null, points: [
+            'New Top screen: six boards (XP, kills, bot kills, wins, wins against bots, tournament titles) for this week, this month and all time, with your own place',
+            'Online kills, flag captures and item pickups now count toward your progress',
+            'The Veteran, King of the Hill and Survivor achievements can now be earned',
+        ] },
         { version: '0.4.31', date: 'Nov 4, 2026', points: [
             'Infiltration: bots defending the intel now take cover behind crates too',
         ] },
@@ -238,6 +243,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.32', date: null, points: [
+            'Новый экран «Топ»: шесть таблиц (XP, убийства, убийства ботов, победы, победы над ботами, турниры) за неделю, месяц и всё время, с вашим местом',
+            'Убийства, захваты флага и подобранные предметы в онлайне теперь засчитываются в ваш прогресс',
+            'Достижения Veteran, King of the Hill и Survivor теперь можно получить',
+        ] },
         { version: '0.4.31', date: '04.11.2026', points: [
             'Infiltration: боты, охраняющие интел, теперь тоже прячутся за ящиками',
         ] },

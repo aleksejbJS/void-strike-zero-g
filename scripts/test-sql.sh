@@ -127,7 +127,8 @@ done
 
 # The suites silence their expected warnings; here each warning path runs once and its text must arrive.
 echo "[test-sql] checking the trigger's warnings"
-"${LB_PSQL[@]}" -f "$LB_WARNINGS" 2>"$WORK/warnings.log"
+"${LB_PSQL[@]}" -f "$LB_WARNINGS" 2>"$WORK/warnings.log" \
+    || { cat "$WORK/warnings.log" >&2; exit 1; }
 for expected in 'stat xp: skipped "x"' 'stat kills: first save brought 20000, capped to 10000' \
     'stat kills: one save raised it by 5000, clamped to 300'; do
     grep -qF "$expected" "$WORK/warnings.log" \
