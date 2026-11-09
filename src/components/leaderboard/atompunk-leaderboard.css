@@ -1,0 +1,29 @@
+/* Top screen in the atompunk style: board tabs on metal plates, the table as a dark inset well. */
+
+.atompunk-ui .ap-board-tab { font-size: 21px; }
+
+/* The table sits sunk into the panel, like the input fields */
+.atompunk-ui .ap-board-table {
+    overflow: hidden;
+    border: 1px solid #806344;
+    border-radius: 8px;
+    background: #151916;
+    box-shadow: inset 0 2px 6px #000a;
+}
+.atompunk-ui .ap-board-table .border-bay-steel { border-color: #2c2d28; }
+.atompunk-ui .ap-board-table [role='columnheader'] { font-family: var(--ap-font-display); font-size: 14px; letter-spacing: .08em; }
+
+/* The viewer's own row is painted like a picked button */
+.atompunk-ui .ap-board-table [role='row'][aria-current='true'] {
+    background-image: var(--ap-paint);
+    background-size: cover;
+    box-shadow: inset 0 0 0 1px #ffe49a, inset 0 0 0 2px #8d5917;
+}
+
+@media (max-width: 639px) {
+    .atompunk-ui .ap-board-tab { font-size: 17px; }
+}
+@media (max-height: 500px) {
+    .atompunk-ui .ap-board-tab { font-size: 14px; }
+    .atompunk-ui .ap-board-table [role='columnheader'] { font-size: 11px; }
+}

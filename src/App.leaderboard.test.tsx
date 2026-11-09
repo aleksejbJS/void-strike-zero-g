@@ -34,7 +34,7 @@ describe('App Top screen navigation', () => {
         expect(screen.getByRole('heading', { level: 1, name: 'Top players' })).toBeInTheDocument();
         expect(hidden(playButton())).toBe(true);
 
-        fireEvent.click(screen.getByRole('button', { name: '← Menu' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
         expect(screen.queryByRole('heading', { level: 1, name: 'Top players' })).not.toBeInTheDocument();
         expect(hidden(playButton())).toBe(false);
     });

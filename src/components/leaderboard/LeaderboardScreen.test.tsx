@@ -46,7 +46,7 @@ describe('LeaderboardScreen', () => {
         expect(screen.getByRole('heading', { level: 1, name: 'Top players' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'XP' })).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByRole('button', { name: 'This week' })).toHaveAttribute('aria-pressed', 'true');
-        fireEvent.click(screen.getByRole('button', { name: '← Menu' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
         expect(onBack).toHaveBeenCalledTimes(1);
     });
 

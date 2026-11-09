@@ -6,7 +6,7 @@ import { Language } from '../types';
 const en = {
     'lb.menu': 'Top',
     'lb.title': 'Top players',
-    'lb.back': '← Menu',
+    'lb.back': 'Menu',
     'lb.cat.xp': 'XP',
     'lb.cat.kills': 'Kills',
     'lb.cat.botKills': 'Bot kills',
@@ -34,7 +34,7 @@ export const leaderboardStrings: Record<Language, LeaderboardKeys> = {
     ru: {
         'lb.menu': 'Топ',
         'lb.title': 'Топ игроков',
-        'lb.back': '← Меню',
+        'lb.back': 'Меню',
         'lb.cat.xp': 'XP',
         'lb.cat.kills': 'Убийства',
         'lb.cat.botKills': 'Убийства ботов',
