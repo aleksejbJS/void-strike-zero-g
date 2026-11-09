@@ -1,13 +1,13 @@
 -- Void Strike: Zero-G — leaderboards: weekly, monthly and all-time totals, and the RPC that serves the boards.
 -- Run AFTER 20261103000000_accounts.sql: paste this whole file into Supabase Dashboard -> SQL Editor ->
--- New query -> Run. Safe to run more than once. Setup steps: docs/supabase-setup.md (section "Leaderboards").
--- Tests: bash scripts/test-sql.sh (supabase/tests/leaderboards.test.sql, on a throwaway local Postgres).
+-- New query -> Run. Safe to run more than once. Setup steps: docs/supabase-setup.md (section "Таблица лидеров").
+-- Tests: bash scripts/test-sql.sh (supabase/tests/leaderboards-*.sql, on a throwaway local Postgres).
 --
 -- How it works:
---   * A trigger on player_progress compares each ranked counter of the saved snapshot with the stored all-time
---     total and adds the INCREASE to this week, this month and all-time. A lower value (another device's older
---     copy) or a missing counter (an older build) changes nothing. The first save only records the all-time
---     baseline, so veterans do not flood the first weekly board. A jump above the per-save limit is clamped.
+--   * A trigger on player_progress credits the INCREASE of each ranked counter over the last value seen (at most
+--     a per-save limit; the excess is dropped for good) to this week, this month and all-time. A lower value
+--     (another device's older copy) or a missing counter (an older build) changes nothing. The first save is
+--     only the all-time baseline (capped), so veterans do not flood the first weekly board.
 --   * The trigger never makes a save fail: a bad value is skipped with a WARNING naming player and counter.
 --   * Browsers cannot read or write player_stats; they read the boards through leaderboard() only.
 -- Week starts Monday 00:00 UTC, month on the 1st 00:00 UTC; "all" rows use period_start 2000-01-01.
@@ -19,39 +19,38 @@ create table if not exists public.player_stats (
     period text not null check (period in ('week', 'month', 'all')),
     period_start date not null,
     stat text not null,
-    value bigint not null default 0,
+    value bigint not null default 0,               -- the credited total
+    seen bigint,                                   -- "all" rows only: the highest raw value saved so far
     updated_at timestamptz not null default now(), -- when the value last grew: the earlier one wins a tie
     primary key (user_id, period, period_start, stat)
 );
+-- The column and the checks also reach a database where an earlier version of this file already ran.
+alter table public.player_stats
+    add column if not exists seen bigint,
+    drop constraint if exists player_stats_value_check, add constraint player_stats_value_check check (value >= 0),
+    drop constraint if exists player_stats_seen_check, add constraint player_stats_seen_check check (seen >= 0);
 
 -- The board query: one period of one counter, best first, ties by who got there first.
 create index if not exists player_stats_board_idx
     on public.player_stats (stat, period, period_start, value desc, updated_at);
 
--- RLS on with no policies, and no table rights: only the security-definer functions below touch the rows.
--- Supabase grants ALL on new tables to anon/authenticated by default: take it back.
+-- RLS on, no policies, no table rights (Supabase grants ALL by default): only the functions below touch the rows.
 alter table public.player_stats enable row level security;
 revoke all on table public.player_stats from public, anon, authenticated;
 
--- Ranked counters and their per-save limits (no real session gets near them); null = not a ranked counter.
--- Keep in step with the boards in the client (src/leaderboard) and the counters it pushes (src/game/stats).
-create or replace function public.leaderboard_stat_limit(p_stat text)
-returns bigint
+-- The ranked counters: how much one save may add, and the most a first save (baseline) may bring in.
+-- No real player gets near them. Keep in step with the client's boards (src/leaderboard) and counters.
+drop function if exists public.leaderboard_stat_limit(text); -- an earlier version of this file
+create or replace function public.leaderboard_stats()
+returns table (stat text, save_limit bigint, baseline_cap bigint)
 language sql
 immutable
-set search_path = public
 as $$
-    select case p_stat
-        when 'xp' then 1000
-        when 'kills' then 300
-        when 'botKills' then 600
-        when 'wins' then 30
-        when 'botWins' then 30
-        when 'tournamentsWon' then 5
-    end::bigint
+    values ('xp', 1000::bigint, 200000::bigint), ('kills', 300, 10000), ('botKills', 600, 10000),
+           ('wins', 30, 1000), ('botWins', 30, 1000), ('tournamentsWon', 5, 100)
 $$;
 
-revoke all on function public.leaderboard_stat_limit(text) from public, anon, authenticated;
+revoke all on function public.leaderboard_stats() from public, anon, authenticated;
 
 -- Trigger: turn increases of the saved counters into week / month / all-time totals.
 create or replace function public.record_player_stats()
@@ -63,17 +62,16 @@ as $$
 declare
     v_week date := date_trunc('week', now() at time zone 'utc')::date;
     v_month date := date_trunc('month', now() at time zone 'utc')::date;
-    v_stat text;
+    r record;
     v_raw jsonb;
     v_num numeric;
     v_value bigint;
-    v_total bigint;
+    v_seen bigint;
     v_delta bigint;
-    v_limit bigint;
 begin
-    foreach v_stat in array array['xp', 'kills', 'botKills', 'wins', 'botWins', 'tournamentsWon'] loop
+    for r in select * from public.leaderboard_stats() loop
         -- xp sits at the top of the snapshot, the other counters in "stats". Missing: an older build, skip.
-        v_raw := case when v_stat = 'xp' then new.data -> 'xp' else new.data -> 'stats' -> v_stat end;
+        v_raw := case when r.stat = 'xp' then new.data -> 'xp' else new.data -> 'stats' -> r.stat end;
         continue when v_raw is null;
 
         -- Anything but a whole number from 0 to the bigint maximum is skipped (a hostile or broken client).
@@ -81,40 +79,45 @@ begin
         v_num := case when jsonb_typeof(v_raw) = 'number' then v_raw::numeric end;
         if v_num is null or v_num < 0 or v_num <> trunc(v_num) or v_num > 9223372036854775807 then
             raise warning 'record_player_stats: user %, stat %: skipped % (not a whole number from 0 to 2^63-1)',
-                new.user_id, v_stat, left(v_raw::text, 40);
+                new.user_id, r.stat, left(v_raw::text, 40);
             continue;
         end if;
         v_value := v_num::bigint;
 
         -- Saves of one player are serialised by the player_progress row lock; "for update" is a second lock.
-        select value into v_total
-        from public.player_stats
-        where user_id = new.user_id and period = 'all' and period_start = date '2000-01-01' and stat = v_stat
+        select coalesce(s.seen, s.value) into v_seen -- seen is null only on rows of an earlier version
+        from public.player_stats s
+        where s.user_id = new.user_id and s.period = 'all' and s.period_start = date '2000-01-01' and s.stat = r.stat
         for update;
 
         if not found then
-            -- First save with this counter: the baseline. Nothing goes to week/month.
-            insert into public.player_stats (user_id, period, period_start, stat, value)
-            values (new.user_id, 'all', date '2000-01-01', v_stat, v_value)
+            -- First save with this counter: the (capped) baseline. Nothing goes to week/month.
+            if v_value > r.baseline_cap then
+                raise warning 'record_player_stats: user %, stat %: first save brought %, capped to %',
+                    new.user_id, r.stat, v_value, r.baseline_cap;
+            end if;
+            insert into public.player_stats (user_id, period, period_start, stat, value, seen)
+            values (new.user_id, 'all', date '2000-01-01', r.stat, least(v_value, r.baseline_cap), v_value)
             on conflict (user_id, period, period_start, stat) do nothing;
             continue;
         end if;
 
-        v_delta := v_value - v_total; -- both are 0..bigint max, so this cannot overflow
-        continue when v_delta <= 0;    -- unchanged, or an older copy from another device
+        v_delta := v_value - v_seen; -- both 0..bigint max: no overflow. <= 0: unchanged, or another device's older copy
+        continue when v_delta <= 0;
 
-        v_limit := public.leaderboard_stat_limit(v_stat);
-        if v_delta > v_limit then
+        -- seen always moves up to the saved value, so an excess above the limit is dropped, never paid again.
+        if v_delta > r.save_limit then
             raise warning 'record_player_stats: user %, stat %: one save raised it by %, clamped to %',
-                new.user_id, v_stat, v_delta, v_limit;
-            v_delta := v_limit;
+                new.user_id, r.stat, v_delta, r.save_limit;
+            v_delta := r.save_limit;
         end if;
 
-        -- total + delta <= the saved value, and week/month never exceed all-time: no overflow either.
+        -- The credited total never exceeds seen, so total + delta <= the saved value: no overflow either.
+        update public.player_stats s set value = s.value + v_delta, seen = v_value, updated_at = now()
+        where s.user_id = new.user_id and s.period = 'all' and s.period_start = date '2000-01-01' and s.stat = r.stat;
         insert into public.player_stats (user_id, period, period_start, stat, value, updated_at)
-        values (new.user_id, 'all', date '2000-01-01', v_stat, v_delta, now()),
-               (new.user_id, 'week', v_week, v_stat, v_delta, now()),
-               (new.user_id, 'month', v_month, v_stat, v_delta, now())
+        values (new.user_id, 'week', v_week, r.stat, v_delta, now()),
+               (new.user_id, 'month', v_month, r.stat, v_delta, now())
         on conflict (user_id, period, period_start, stat)
             do update set value = player_stats.value + excluded.value, updated_at = now();
     end loop;
@@ -123,17 +126,15 @@ begin
 end;
 $$;
 
--- Only the trigger runs this function; nobody calls it directly.
-revoke all on function public.record_player_stats() from public, anon, authenticated;
-
+revoke all on function public.record_player_stats() from public, anon, authenticated; -- only the trigger runs it
 -- player_progress is our own table, so dropping and re-creating its trigger is safe on a re-run.
 drop trigger if exists on_player_progress_saved on public.player_progress;
 create trigger on_player_progress_saved
     after insert or update of data on public.player_progress
     for each row execute function public.record_player_stats();
 
--- leaderboard(stat, period): the top 10 of the current period, plus the caller's own place.
--- Returns { "top": [{ "rank", "nickname", "value" }], "me": { "rank", "value" } | null }.
+-- leaderboard(stat, period): the top 10 of the current period, plus the caller's own place, as
+-- { "top": [{ "rank", "nickname", "value" }], "me": { "rank", "value" } | null }.
 -- Order: value desc, then the earlier updated_at, then user id (only so equal rows never swap between calls).
 -- Values of 0 are never listed. "me" only for a logged-in caller with a value above 0 in this period.
 create or replace function public.leaderboard(p_stat text, p_period text)
@@ -150,7 +151,7 @@ declare
     v_top json;
     v_me_json json;
 begin
-    if public.leaderboard_stat_limit(p_stat) is null then
+    if not exists (select 1 from public.leaderboard_stats() l where l.stat = p_stat) then
         raise exception 'bad_stat';
     end if;
     v_start := case p_period

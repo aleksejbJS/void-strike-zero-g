@@ -3,7 +3,8 @@
 # Usage: bash scripts/test-sql.sh
 #
 # Two suites, each in its own fresh database: tournaments (database "postgres"), then leaderboards
-# (database "leaderboards": auth stand-in, the two account migrations, the leaderboards migration).
+# (database "leaderboards": auth stand-in, the two account migrations, the leaderboards migration, then the
+# trigger and RPC suites and a check that the trigger's WARNING paths reach the client).
 #
 # The cluster lives in a temp dir under $TMPDIR, listens only on a Unix socket inside that dir
 # (port number 54329, no TCP), so it never collides with a Postgres that is already running.
@@ -15,8 +16,10 @@ MIGRATIONS="$ROOT/supabase/migrations"
 MIGRATION="$MIGRATIONS/20261104000000_tournaments.sql"
 TESTS="$ROOT/supabase/tests/tournaments.test.sql"
 LB_MIGRATION="$MIGRATIONS/20261109000000_leaderboards.sql"
-LB_TESTS="$ROOT/supabase/tests/leaderboards.test.sql"
 AUTH_STUB="$ROOT/supabase/tests/auth-stub.sql"
+LB_HELPERS="$ROOT/supabase/tests/leaderboards-helpers.sql"
+LB_TESTS=("$ROOT/supabase/tests/leaderboards-trigger.test.sql" "$ROOT/supabase/tests/leaderboards-rpc.test.sql")
+LB_WARNINGS="$ROOT/supabase/tests/leaderboards-warnings.sql"
 PORT=54329
 # A bin dir with the server itself (Homebrew's libpq puts a server-less initdb on PATH).
 # Order: PG_BIN (override), a postgres on PATH, then Homebrew kegs oldest first (hosted Supabase runs 15).
@@ -116,6 +119,18 @@ echo "[test-sql] loading the leaderboards migration twice (it must be idempotent
 "${LB_PSQL[@]}" -f "$LB_MIGRATION"
 "${LB_PSQL[@]}" -f "$LB_MIGRATION"
 
-echo "[test-sql] running $LB_TESTS"
-"${LB_PSQL[@]}" -f "$LB_TESTS"
+"${LB_PSQL[@]}" -f "$LB_HELPERS"
+for tests in "${LB_TESTS[@]}"; do
+    echo "[test-sql] running $tests"
+    "${LB_PSQL[@]}" -f "$tests"
+done
+
+# The suites silence their expected warnings; here each warning path runs once and its text must arrive.
+echo "[test-sql] checking the trigger's warnings"
+"${LB_PSQL[@]}" -f "$LB_WARNINGS" 2>"$WORK/warnings.log"
+for expected in 'stat xp: skipped "x"' 'stat kills: first save brought 20000, capped to 10000' \
+    'stat kills: one save raised it by 5000, clamped to 300'; do
+    grep -qF "$expected" "$WORK/warnings.log" \
+        || { echo "[test-sql] missing warning: $expected" >&2; cat "$WORK/warnings.log" >&2; exit 1; }
+done
 echo "[test-sql] PASS"
