@@ -2,14 +2,21 @@
 # Runs the Supabase SQL tests against a throwaway local Postgres cluster.
 # Usage: bash scripts/test-sql.sh
 #
+# Two suites, each in its own fresh database: tournaments (database "postgres"), then leaderboards
+# (database "leaderboards": auth stand-in, the two account migrations, the leaderboards migration).
+#
 # The cluster lives in a temp dir under $TMPDIR, listens only on a Unix socket inside that dir
 # (port number 54329, no TCP), so it never collides with a Postgres that is already running.
 # It is stopped and deleted on exit, whatever happens. Exits non-zero when any assert fails.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MIGRATION="$ROOT/supabase/migrations/20261104000000_tournaments.sql"
+MIGRATIONS="$ROOT/supabase/migrations"
+MIGRATION="$MIGRATIONS/20261104000000_tournaments.sql"
 TESTS="$ROOT/supabase/tests/tournaments.test.sql"
+LB_MIGRATION="$MIGRATIONS/20261109000000_leaderboards.sql"
+LB_TESTS="$ROOT/supabase/tests/leaderboards.test.sql"
+AUTH_STUB="$ROOT/supabase/tests/auth-stub.sql"
 PORT=54329
 # A bin dir with the server itself (Homebrew's libpq puts a server-less initdb on PATH).
 # Order: PG_BIN (override), a postgres on PATH, then Homebrew kegs oldest first (hosted Supabase runs 15).
@@ -56,22 +63,28 @@ echo "[test-sql] $("$PG_BIN/postgres" --version), cluster in $WORK"
 export PGOPTIONS="-c client_min_messages=warning"
 PSQL=("$PG_BIN/psql" -X -q -h "$WORK" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1)
 
-# What hosted Supabase already has: the browser roles, pgcrypto in schema "extensions", the Realtime
-# publication, and default privileges that grant everything on new public objects to the browser roles
-# (so the migration's revokes are tested against the real defaults).
+# What hosted Supabase already has: the browser roles (once per cluster), and in every database pgcrypto in
+# schema "extensions" and default privileges that grant everything on new public objects to the browser
+# roles (so the migrations' revokes are tested against the real defaults).
 "${PSQL[@]}" <<'SQL'
 create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin bypassrls;
+SQL
+supabase_defaults() {
+    "$@" <<'SQL'
 grant usage on schema public to anon, authenticated, service_role;
 create schema if not exists extensions;
 grant usage on schema extensions to anon, authenticated, service_role;
 create extension if not exists pgcrypto schema extensions;
-create publication supabase_realtime;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 SQL
+}
+supabase_defaults "${PSQL[@]}"
+# The Realtime publication (only the tournaments migration uses it).
+"${PSQL[@]}" -c 'create publication supabase_realtime;'
 
 echo "[test-sql] loading the migration twice (it must be idempotent)"
 "${PSQL[@]}" -f "$MIGRATION"
@@ -89,4 +102,20 @@ SQL
 
 echo "[test-sql] running $TESTS"
 "${PSQL[@]}" -f "$TESTS"
+
+# Leaderboards: a fresh database with the account tables. Its locale must know Cyrillic, as hosted
+# Supabase's does: the accounts migrations stop on a database that cannot lower-case it.
+echo "[test-sql] leaderboards: fresh database, auth stand-in, account migrations"
+"${PSQL[@]}" -c "create database leaderboards template template0 encoding 'UTF8' locale 'en_US.UTF-8'"
+LB_PSQL=("$PG_BIN/psql" -X -q -h "$WORK" -p "$PORT" -U postgres -d leaderboards -v ON_ERROR_STOP=1)
+supabase_defaults "${LB_PSQL[@]}"
+"${LB_PSQL[@]}" -f "$AUTH_STUB"
+"${LB_PSQL[@]}" -f "$MIGRATIONS/20261103000000_accounts.sql"
+"${LB_PSQL[@]}" -f "$MIGRATIONS/20261105000000_account_hardening.sql"
+echo "[test-sql] loading the leaderboards migration twice (it must be idempotent)"
+"${LB_PSQL[@]}" -f "$LB_MIGRATION"
+"${LB_PSQL[@]}" -f "$LB_MIGRATION"
+
+echo "[test-sql] running $LB_TESTS"
+"${LB_PSQL[@]}" -f "$LB_TESTS"
 echo "[test-sql] PASS"
