@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.35 (unreleased)
+## Version 0.4.35 (2026-11-09)
 
 ### 🏅 Leaderboards
 - Spec: `docs/plans/2026-11-07-leaderboard-spec.md`, plan: `docs/plans/2026-11-09-leaderboard-plan.md`, layout mockup in `docs/plans/`. **Owner step before merging:** run `supabase/migrations/20261109000000_leaderboards.sql` in the Supabase SQL Editor (`docs/supabase-setup.md`). Until it is run the boards cannot load and show "Could not load the board." with a Retry button; saving progress is not affected
