@@ -104,7 +104,7 @@ const SetupScreen: React.FC<Props & { carry: StartCarry }> = ({ onContinue, onBa
                         <NameField name={name} onName={setName} busy={gate.checking} nameProblem={gate.nameProblem} takenName={gate.takenName}
                             onOpenModal={gate.openModal} onOpenProfile={onOpenProfile} />
 
-                        <BuilderTabs build={build} colors={colors} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
+                        <BuilderTabs build={build} colors={colors} originals={draft.originals} level={levelForXp(xp)} onBuild={draft.patchBuild} onColor={draft.setColor} />
 
                         <div className="mt-auto flex shrink-0 gap-3">
                             <button type="button" onClick={onBack} className={`h-[72px] rounded border-2 border-bay-edge px-7 text-[17px] font-semibold hover:bg-bay-steel short:h-[60px] phone:hidden ${focusRing}`}>{t('cs.back')}</button>

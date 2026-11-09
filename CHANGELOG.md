@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.4.33 (2026-11-09)
+## Version 0.4.34 (2026-11-09)
 
 ### 🔥 Flamethrower
 - Spec: `docs/plans/2026-11-07-flamethrower-spec.md`, plan: `docs/plans/2026-11-07-flamethrower-plan.md`. New `WeaponType.FLAMETHROWER` (EN "Flamethrower", RU "Огнемёт"): 5 damage per 100 ms tick while fire is held (≈50 HP/s), 100 fuel on pickup, 200 max, no recoil or knockback. Every tuning value lives in `src/game/systems/flameConstants.ts`. Not in the Gun Game ladder or the duel loadout
@@ -14,6 +14,12 @@
 - HUD: weapon slots 8 and 9 are shown in the weapon bar and picked with keys 1–9 (`components/hud/weaponSlots.ts`); nine slots narrow to fit between the side panels
 - Bots with the flamethrower only set off a barrel their flame reaches
 - Fixed in the browser check: the jet's particles used to pile up at the far end, so the stream looked like a few dots; each burst now spreads its flames over the whole way. A corpse lying on its back no longer blows its tank jet into the floor
+
+## Version 0.4.33 (2026-11-09)
+
+### ↺ Reset a colour to the preset's original
+- Spec: `docs/plans/2026-11-09-color-reset-spec.md`. Every colour row on the setup screen (5 body colours and pattern on the Colours tab, visor glow on the Head tab) gets a ↺ button at its end while its colour differs from the selected preset's (case-insensitive). It sets that one colour back; parts and other colours stay. The button's column is always reserved, so swatches do not move when it appears
+- Originals come from `useFighterDraft` (`originals`): the preset's palette for the body, `presetBuild` for visor and pattern. `ColorRow` takes `original` and `resetLabel` (`cs.resetColor`, EN/RU). Tests: `CharacterSetupColorReset.test.tsx`
 
 ## Version 0.4.32 (2026-11-09)
 
