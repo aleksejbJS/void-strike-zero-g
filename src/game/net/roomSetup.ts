@@ -62,6 +62,7 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     smokes: [],
     playerStats: {},
     statsSession: newStatsSession(), // kept by resetMatch / resetHungerRound: one session per room
+    litTanks: [],
 });
 
 const startingWeapon = (mode: GameMode) =>
@@ -84,6 +85,8 @@ const baseEntity = (mode: GameMode, team: Team) => {
         lastProcessedInput: 0,
         jetpackOn: false,
         wound: undefined, // a new life starts whole (the Object.assign in respawnEveryone clears an old wound)
+        burnUntil: undefined, burnTickAt: undefined, burnBy: undefined, // ...and not on fire
+        tankFuseAt: undefined, tankBy: undefined, // ...with no lit fuel tank
     };
 };
 
@@ -161,6 +164,7 @@ const respawnEveryone = (state: GameState) => {
     state.projectiles = [];
     state.beams = [];
     state.smokes = [];
+    state.litTanks = [];
     state.pickups = getInitialPickups(state.mode, state.currentMap);
 };
 

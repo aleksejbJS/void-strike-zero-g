@@ -13,6 +13,8 @@ export interface ExplosionOpts {
     directCoverId?: string;
     /** A barrel blast: hurts everyone in reach (teammates and `ownerId` too), at full damage and knockback. */
     barrel?: boolean;
+    /** A fuel tank blast: hurts everyone in reach like a barrel. */
+    tank?: boolean;
     /** Base damage instead of the weapon's. */
     damage?: number;
     /** The tick's clock for cover damage (a chained barrel's fuse); the wall clock when omitted. */
@@ -42,13 +44,13 @@ export const createExplosion = (
     const exposed = (p: Entity) => !blocked({ x: p.pos.x, y: p.pos.y - p.height / 2 }) || !blocked({ x: p.pos.x, y: p.pos.y - 2 });
 
     state.players.forEach(p => {
-        if (!opts.barrel && owner && isTeammate(owner, p)) return;
+        if (!opts.barrel && !opts.tank && owner && isTeammate(owner, p)) return;
         if (!exposed(p)) return;
         const dist = distance(pos, p.pos);
         if (dist < radius) {
             const dmg = baseDamage * (1 - dist / radius);
             const kbDir = { x: p.pos.x - pos.x, y: p.pos.y - pos.y };
-            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId, barrel: opts.barrel });
+            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId, barrel: opts.barrel, tank: opts.tank });
         }
     });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Texture } from 'pixi.js';
+import { Graphics, Texture } from 'pixi.js';
 import { createMockPlayer, createMockState } from '../../test/mocks';
 import { GameMode, Team } from '../../types';
 import { HOP_PX } from './fighter/fighterMotion';
@@ -28,6 +28,21 @@ describe('a player on screen', () => {
         expect(root.position.y).toBe(-HOP_PX);
         expect(shadow.position.y).toBe(0);
         cleanup();
+    });
+
+    it('shows the warning over a fighter whose tank is lit, and none otherwise', () => {
+        const p = createMockPlayer('carrier', Team.BLUE);
+        p.pos = { x: 100, y: 500 };
+        const c = createPlayerVisual(p);
+        const draw = () => updatePlayerVisual(c, p, { x: 0, y: 0 }, { x: 0, y: 0 }, 800, 600, {}, false, createMockState(GameMode.DEATHMATCH), 1000);
+        const warning = c.getChildByLabel('tankWarning') as Graphics;
+        draw();
+        expect(warning.bounds.width > 0).toBe(false);
+        p.tankFuseAt = 2500;
+        draw();
+        expect(warning.bounds.width).toBeGreaterThan(0);
+        c.destroy({ children: true, context: true });
+        forgetPlayerVisual('carrier');
     });
 
     it('a whole fighter stays at its feet', () => {

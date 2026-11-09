@@ -15,9 +15,11 @@ import { projectileCoverHit } from '../cover/coverHits';
 import { damageCover } from '../cover/coverDamage';
 import { healWound } from './wound';
 import { tickBleeding } from './bleeding';
+import { tickBurning } from './burning';
 import { grantSpawnShield } from './spawnShield';
 import { liftOutOfCover } from '../cover/coverSpawn';
 import { tickCover } from '../cover/coverTick';
+import { tickFuelTanks } from './fuelTankBlast';
 import { emitEffect, emitText, projectileTrail } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
@@ -314,6 +316,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
     // Bleeding: wounded fighters lose health until a medkit (after pickups, so a medkit stops it this tick)
     tickBleeding(state);
+    tickBurning(state, now);
 
     // Projectiles Update
     state.projectiles.forEach(proj => {
@@ -373,6 +376,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
 
     // Cover: lit barrels go off, broken pieces come back (after the shots, so a barrel hit this tick is lit already)
     tickCover(state, now);
+    tickFuelTanks(state, now); // lit fuel tanks whose fuse ran out blow up
 
     // Beams Update
     if (!state.beams) state.beams = [];

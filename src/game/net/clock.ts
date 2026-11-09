@@ -24,6 +24,9 @@ export const toLocalClock = (snap: Snapshot, offset: number) => {
     for (const p of snap.players) {
         p.respawnTimer = shift(p.respawnTimer) ?? 0;
         p.spawnShieldUntil = shift(p.spawnShieldUntil);
+        p.burnUntil = shift(p.burnUntil);
+        p.burnTickAt = shift(p.burnTickAt);
+        p.tankFuseAt = shift(p.tankFuseAt);
         // Reload timers live on the weapons; the held one may be an inventory object too: shift it once
         for (const w of new Set([p.weapon, ...p.inventory])) w.reloadEndsAt = shift(w.reloadEndsAt);
     }

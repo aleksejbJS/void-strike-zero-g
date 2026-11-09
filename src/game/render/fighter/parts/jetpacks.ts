@@ -21,7 +21,7 @@ const METAL = 0x94a3b8;
 const PIPE = 0x64748b;
 
 /** Round shading of an upright cylinder of width w starting at x0: a light stripe on the left, shade on the right. */
-const cylinderShade = (g: Graphics, at: Frame, shape: Vector2[], x0: number, w: number, color: number) => {
+export const cylinderShade = (g: Graphics, at: Frame, shape: Vector2[], x0: number, w: number, color: number) => {
     g.poly(flat(at(clipPoly(shape, p => x0 + w * 0.66 - p.x)))).fill(shade(color, 0.8));
     const stripe = clipPoly(clipPoly(shape, p => x0 + w * 0.16 - p.x), p => p.x - (x0 + w * 0.36));
     g.poly(flat(at(stripe))).fill({ color: WHITE, alpha: 0.3 });

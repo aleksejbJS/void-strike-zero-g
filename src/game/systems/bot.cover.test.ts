@@ -62,4 +62,27 @@ describe('bots and cover', () => {
     expect(shots).toHaveLength(1);
     expect(Math.abs(shots[0].at.x - 300)).toBeLessThan(12);
   });
+
+  // The flamethrower reaches FLAME_RANGE only: a crate within reach is burned, one beyond it is left to the machine gun
+  const withFlamethrower = (cover: Cover[], enemyX: number) => {
+    const ctx = setup(cover, 0, enemyX, true);
+    ctx.bot.inventory = [{ ...WEAPONS_DATA[WeaponType.MACHINE_GUN] }, { ...WEAPONS_DATA[WeaponType.FLAMETHROWER] }];
+    ctx.bot.weapon = ctx.bot.inventory[1];
+    return ctx;
+  };
+
+  it('burns a crate within the flamethrower reach', () => {
+    const { bot, shots, think } = withFlamethrower([piece('crate', 'wood', 150, 0)], 200);
+    think(10_000);
+    expect(bot.weapon.type).toBe(WeaponType.FLAMETHROWER);
+    expect(shots).toHaveLength(1);
+    expect(Math.abs(shots[0].at.x - 150)).toBeLessThan(25);
+  });
+
+  it('puts the flamethrower away for a crate beyond its reach', () => {
+    const { bot, shots, think } = withFlamethrower([piece('crate', 'wood', 400, 0)], 450);
+    think(10_000);
+    expect(bot.weapon.type).toBe(WeaponType.MACHINE_GUN);
+    expect(shots).toHaveLength(1);
+  });
 });

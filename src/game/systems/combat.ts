@@ -9,7 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry } from '../util
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { creditKill } from '../stats/creditKill';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
-import { deathKind, DamageSource, isSplash } from './deathKind';
+import { deathKind, DamageSource, isHazardBlast, isOwnTankBlast, isSplash } from './deathKind';
 import { shouldWound, inflictWound, killCredit } from './wound';
 import { absorbArmor } from './armor';
 import { emitFlag } from './flagEvents';
@@ -17,7 +17,11 @@ import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
-import { killWeaponName } from './killWeaponName';
+import { killAchievementWeapon, killWeaponName } from './killWeaponName';
+import { fireFlame } from './flamethrower';
+import { extinguish } from './burning';
+import { rollTankIgnition } from './fuelTank';
+import { dropLitTank } from './fuelTankBlast';
 import { canFire, startReloadIfEmpty } from './reload';
 
 // --- Teams ---
@@ -70,9 +74,10 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
     if (amount < 9999 && spawnShieldLeft(target, Date.now()) > 0) return; // just respawned
+    rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // Self-damage multiplier (rocket-jump)
-    const isSelf = attackerId === target.id && !source.barrel; // a barrel blast hurts the breaker like anyone else
+    const isSelf = attackerId === target.id && !isHazardBlast(source); // a barrel or tank blast hurts its author like anyone else
     const dmgMult = isSelf ? SELF_DAMAGE_MULT : 1;
     const kbMult = isSelf ? SELF_KNOCKBACK_MULT : 1;
 
@@ -95,14 +100,15 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         return;
     }
 
-    // Bleeding is plain health loss: no flag bonus, armor, knockback or damage number
-    const holdingHTF = !source.bleed && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
+    // Bleeding and burning are plain health loss: no flag bonus, armor, knockback or damage number
+    const plainLoss = !!source.bleed || !!source.burn;
+    const holdingHTF = !plainLoss && state.mode === GameMode.HOLD_THE_FLAG && target.hasFlag === target.team;
     let dmg = (holdingHTF ? amount * 1.1 : amount) * dmgMult;
-    if (!source.bleed) dmg = absorbArmor(target, dmg);
+    if (!plainLoss) dmg = absorbArmor(target, dmg);
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
-    if (!source.bleed) {
+    if (!plainLoss && !isOwnTankBlast(source)) { // a carrier torn apart by their own tank: no "9999" over them
         push();
         emitDamage(target.pos.x, target.pos.y - 40, dmg);
     }
@@ -112,9 +118,11 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         const credit = killCredit(target, attackerId, source);
         target.dead = true;
         target.respawnTimer = state.mode === GameMode.HUNGER_GAMES ? Number.MAX_SAFE_INTEGER : (Date.now() + RESPAWN_DELAY);
-        // Blood, decal and ragdoll: the kind says how the body falls
-        emitDeath(target, deathKind(source, overkill), source.from, isSplash(source));
+        // Blood, decal and ragdoll: the kind says how the body falls; a lit tank stays on the corpse, which just drops
+        const tankId = dropLitTank(state, target);
+        emitDeath(target, tankId ? 'fall' : deathKind(source, overkill), source.from, !tankId && isSplash(source), tankId);
         target.wound = undefined; // after the event: it says oneLeg
+        extinguish(target); // the dead burn no more
 
         // Hunger Games: shrink zone on each death (executed by tickHungerZoneShrink)
         if (state.mode === GameMode.HUNGER_GAMES) {
@@ -176,13 +184,13 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     killer.score += 100;
                 }
 
-                // A barrel kill scores but does not move the Gun Game ladder
-                if (state.mode === GameMode.GUN_GAME && !source.barrel) {
+                // A barrel or tank kill scores but does not move the Gun Game ladder
+                if (state.mode === GameMode.GUN_GAME && !isHazardBlast(source)) {
                     handleGunGameKill(state, killer);
                 }
 
-                // Stats count only human kills (creditKill checks); a barrel kill counts as a kill but is no weapon's
-                creditKill(state, killer, target, source.barrel ? undefined : credit.weapon ?? killer.weapon.type);
+                // Stats count only human kills (creditKill checks); a burn counts for the flamethrower, a hazard blast for no weapon
+                creditKill(state, killer, target, killAchievementWeapon(killer, credit.weapon, source));
             }
         }
     }
@@ -207,6 +215,11 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
 
     p.vel.x -= dir.x * p.weapon.recoil;
     p.vel.y -= dir.y * p.weapon.recoil;
+
+    if (p.weapon.type === WeaponType.FLAMETHROWER) {
+        fireFlame(state, p, origin, dir, Date.now());
+        return;
+    }
 
     if (p.weapon.type === WeaponType.RAILGUN) {
         const range = 2200;

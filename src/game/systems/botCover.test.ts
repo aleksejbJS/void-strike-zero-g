@@ -135,6 +135,19 @@ describe('barrelToShoot', () => {
         expect(barrelToShoot(state, bot)).toBeNull();
     });
 
+    // Ruling R7: the flame reaches FLAME_RANGE (300 px), so a farther barrel is out of its reach
+    it('with the flamethrower only a barrel within the flame\'s reach', () => {
+        const scene = (barrelX: number, enemyX: number) => {
+            const { state, bot } = setup([piece('keg', 'barrel', barrelX, FLOOR_Y)]);
+            armWith(bot, WeaponType.FLAMETHROWER);
+            state.players = [bot, makeBot('enemy', Team.BLUE, enemyX, FLOOR_Y) as unknown as Entity];
+            return barrelToShoot(state, bot);
+        };
+        // The enemy is within the flame's reach and inside the barrel's blast (161.6 px), the barrel 420 px away is not
+        expect(scene(420, 260)).toBeNull();
+        expect(scene(200, 300)?.id).toBe('keg');
+    });
+
     it('keeps a teammate 20 px clear of the blast', () => {
         const withMate = (mateX: number) => {
             const s = barrelSetup();

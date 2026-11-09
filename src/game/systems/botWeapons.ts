@@ -5,12 +5,14 @@ import { distance } from '../utils/math';
 import { insideZone } from './hungerRound';
 import { buildNavGraph, HOP_RISE, solidAt, surfaceBelow } from './botNavGraph';
 import { routeReaches } from './botPathfinder';
+import { FLAME_RANGE } from './flameConstants';
 import { isMagazineFed } from './reload';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
     switch (weapon.type) {
         case WeaponType.CHAINSAW: return dist < 90 ? 120 - dist : -100;
+        case WeaponType.FLAMETHROWER: return dist < FLAME_RANGE - 20 ? 115 - dist * 0.1 : -100; // close-range stream
         case WeaponType.SHOTGUN: return 100 - Math.max(0, dist - 60) * 0.6;
         case WeaponType.ROCKET_LAUNCHER: return 90 - Math.max(0, dist - 120) * 0.35;
         case WeaponType.GRENADE_LAUNCHER: return 85 - Math.max(0, dist - 140) * 0.3;
@@ -21,11 +23,16 @@ const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     }
 };
 
+/** The bot carries a flamethrower with fuel left, in hand or in the pack. */
+export const hasFlamethrower = (bot: Entity) =>
+    [bot.weapon, ...bot.inventory].some(w => w.type === WeaponType.FLAMETHROWER && w.ammo > 0);
+
 export const pickBestWeapon = (bot: Entity, dist: number) => {
     let best = bot.weapon;
-    let bestScore = scoreWeaponForDistance(best, dist) + (best.ammo / Math.max(1, best.maxAmmo)) * 30;
+    // An empty weapon in hand never wins: anything with ammo beats it
+    let bestScore = best.ammo <= 0 ? -Infinity : scoreWeaponForDistance(best, dist) + (best.ammo / Math.max(1, best.maxAmmo)) * 30;
     bot.inventory.forEach(w => {
-        if (w.ammo <= 0) return;
+        if (w.ammo <= 0 || w.type === WeaponType.SMOKE_LAUNCHER) return; // bots never fire smoke, even from an empty gun
         const s = scoreWeaponForDistance(w, dist) + (w.ammo / Math.max(1, w.maxAmmo)) * 30;
         if (s > bestScore + 5) { // small hysteresis
             best = w; bestScore = s;
