@@ -4,14 +4,17 @@
 
 import { GameState, Vector2 } from '../../../types';
 import { createParticles } from '../effectSpawn';
-import { spawnTankJet } from '../flameParticles';
+import { spawnTankJet, tankFlash, TANK_JET_RATE } from '../flameParticles';
 import { TANK_BLOOD, TANK_BLOOD_COLOR as BLOOD_COLOR } from '../flameConstants';
 import { RIG_SCALE } from '../../render/fighter/fighterPose';
 import { Corpse, CorpsePointId } from './corpseBody';
 import { addCorpse } from './corpses';
 
-/** A burst of the tank's jet every this many corpse ticks (120 per second). */
+/** A burst of the tank's jet every this many corpse ticks (120 per second), as many flames as TANK_JET_RATE asks. */
 const FIRE_EVERY_TICKS = 3;
+const FLAMES_PER_BURST = Math.round((TANK_JET_RATE * FIRE_EVERY_TICKS) / 120);
+/** A pulse of light at the tank every this many corpse ticks. */
+const FLASH_EVERY_TICKS = 9;
 /** The tank on a corpse's back: this far up the spine from the hip and this far behind it (rig units),
  *  the same spot as TANK_SPOT in render/fighter/fuelTankBack.ts (not imported: that file reaches pixi.js). */
 const TANK_UP = 10;
@@ -24,7 +27,7 @@ const TICK_TO_ENTITY_VEL = 2;
 const between = (min: number, max: number) => min + Math.random() * (max - min);
 
 /** Where the tank sits on the corpse and which way (radians) its jet points, from the spine hip → neck. */
-const tankOf = (c: Corpse): { at: Vector2; angle: number } => {
+export const tankOf = (c: Corpse): { at: Vector2; angle: number } => {
     const { hip, neck } = c.points;
     const len = Math.hypot(neck.x - hip.x, neck.y - hip.y) || 1;
     const up = { x: (neck.x - hip.x) / len, y: (neck.y - hip.y) / len };
@@ -42,7 +45,9 @@ export const corpseTankFire = (state: GameState): void => {
     for (const c of state.corpses) {
         if (c.tankId === undefined || c.age % FIRE_EVERY_TICKS !== 0) continue;
         const { at, angle } = tankOf(c);
-        spawnTankJet(state, at.x, at.y, angle);
+        const hip = c.points.hip;
+        spawnTankJet(state, at.x, at.y, angle, FLAMES_PER_BURST, { x: hip.x - hip.px, y: hip.y - hip.py });
+        if (c.age % FLASH_EVERY_TICKS === 0) tankFlash(state, at.x, at.y);
     }
 };
 

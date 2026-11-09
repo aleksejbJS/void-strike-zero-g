@@ -4,7 +4,7 @@
 import { Graphics, Sprite } from 'pixi.js';
 import { Particle, ParticleKind } from '../../../types';
 
-type SpriteKind = 'flash' | 'fireball';
+type SpriteKind = 'flash' | 'fireball' | 'flame';
 type GraphicKind = Exclude<ParticleKind, SpriteKind>;
 type GraphicDrawer = (g: Graphics, p: Particle) => void;
 
@@ -16,9 +16,12 @@ const BRASS = 0xd9a520;
 const BRASS_SHINE = 0xfff0b0;
 const DUST_COLOR = 0xbeb4a0;
 const DEBRIS_TAIL = 2.6;           // debris streaks are longer than sparks: they read as flung chunks
+const FLAME_COOL = 0x9f1d0b;       // a hot flame darkens toward this deep red as it dies
+const FLAME_ALPHA = 0.6;           // overlapping flames add up to a white-hot core
+const FLAME_GROWTH = 0.9;          // a flame swells by this share of its size over its life
 
 export const isSpriteKind = (kind: ParticleKind | undefined): kind is SpriteKind =>
-    kind === 'flash' || kind === 'fireball';
+    kind === 'flash' || kind === 'fireball' || kind === 'flame';
 
 /** Linear blend of two 0xRRGGBB colours; t = 1 gives `hot`, t = 0 gives `cool`. */
 const mix = (cool: number, hot: number, t: number): number => {
@@ -86,8 +89,17 @@ export const drawGraphic = (g: Graphics, p: Particle) => {
     DRAWERS[kind](g, p);
 };
 
-/** Reposition and rescale a glow sprite: flash is a white burst, fireball a growing orange ball. */
+/** A hot flame (the flamethrower's stream, a lit tank's jet): swells, cools toward deep red and fades. */
+const drawFlame = (s: Sprite, p: Particle) => {
+    s.position.set(p.pos.x, p.pos.y);
+    s.tint = mix(FLAME_COOL, Number.parseInt(p.color.slice(1), 16), Math.sqrt(Math.max(0, p.life)));
+    s.alpha = FLAME_ALPHA * Math.min(1, p.life * 2.5);
+    s.width = s.height = 2 * p.size * (0.6 + FLAME_GROWTH * (1 - p.life));
+};
+
+/** Reposition and rescale a glow sprite: flash is a white burst, fireball a growing orange ball, flame a hot flame. */
 export const drawSprite = (s: Sprite, p: Particle) => {
+    if (p.type === 'flame') return drawFlame(s, p);
     const fireball = p.type === 'fireball';
     const radius = fireball ? p.size + (1 - p.life) * 34 : p.size;
     s.position.set(p.pos.x, p.pos.y);

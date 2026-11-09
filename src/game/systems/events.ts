@@ -29,7 +29,8 @@ export type GameEvent =
     | { type: 'DEATH'; x: number; y: number; color: string; height: number; parts?: RagdollColors;
         kind?: DeathKind; from?: Vector2; vel: Vector2; facing: 1 | -1; weapon?: WeaponType; blast?: boolean; oneLeg?: boolean;
         tank?: string }
-    // A dead carrier's lit fuel tank `id` (see DEATH.tank) blew up at x/y; the explosion itself comes as an EFFECT.
+    // A lit fuel tank blew up at x/y: clients throw its burning fuel, and tear apart the corpse carrying tank `id`
+    // (see DEATH.tank) if there is one (a living carrier's tank has no corpse). The explosion itself comes as an EFFECT.
     | { type: 'TANK_BLAST'; id: string; x: number; y: number }
     // A railgun beam tore a leg off a fighter who survived (a wound): where it stood, which way it faced,
     // `vel` = its velocity, `from` = beam origin, `parts` = its colours for the flying leg.

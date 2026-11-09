@@ -18,6 +18,7 @@ import { presetBuild } from '../build/buildPresets';
 import { insideSmoke } from './smoke';
 import { applyCoverEvent } from './coverEffects';
 import { gibTankCorpse } from './ragdoll/corpseTank';
+import { fuelFireball } from './flameParticles';
 
 // The blast without its scorch mark (marks are page-wide: the menu preview must not leave any)
 export { explosionBurst };
@@ -166,6 +167,7 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
             break;
         case 'TANK_BLAST': // the explosion itself arrives as its own EFFECT
             gibTankCorpse(state, e.id, { x: e.x, y: e.y });
+            if (Number.isFinite(e.x) && Number.isFinite(e.y)) fuelFireball(state, e.x, e.y);
             break;
     }
 };

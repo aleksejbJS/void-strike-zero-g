@@ -19,12 +19,12 @@ const look: FighterLook = {
 };
 
 /** Fill and stroke colours of the body layer, in drawing order, for a fighter holding `weaponType`. */
-const bodyColors = (weaponType: WeaponType, weaponless = false): (number | undefined)[] => {
+const bodyColors = (weaponType: WeaponType, weaponless = false, tankLit = false): (number | undefined)[] => {
     const grip = gripPoints(weaponType, 65 / 240);
     const view = createFighterView();
     drawFighter(view, {
         pose: solvePose({ state: 'idle', aim: 0, t: 0, phase: 0, moveDir: 1, recoil: 0, grip }),
-        look, facing: 1, grip, weaponType, flame: false, flicker: 0, parts: IDLE_PARTS, muzzleFlash: 0, weaponless,
+        look, facing: 1, grip, weaponType, flame: false, flicker: 0, parts: IDLE_PARTS, muzzleFlash: 0, weaponless, tankLit,
     });
     const instructions = view.body.context.instructions as unknown as { data: { style?: { color?: number } } }[];
     const colors = instructions.map(i => i.data.style?.color);
@@ -51,6 +51,16 @@ describe('fuel tank on the back', () => {
         const colors = bodyColors(WeaponType.FLAMETHROWER, true);
         expect(colors).toContain(TANK_COLOR);
         expect(colors).not.toContain(HOSE_COLOR);
+    });
+
+    it('a lit tank stays on the back after a switch to another gun (no hose to it)', () => {
+        const colors = bodyColors(WeaponType.MACHINE_GUN, false, true);
+        expect(colors).toContain(TANK_COLOR);
+        expect(colors).not.toContain(HOSE_COLOR);
+    });
+
+    it('a corpse with a lit tank shows it whatever gun it dropped', () => {
+        expect(bodyColors(WeaponType.SHOTGUN, true, true)).toContain(TANK_COLOR);
     });
 
     it('the lit tank jet starts inside the drawn tank', () => {

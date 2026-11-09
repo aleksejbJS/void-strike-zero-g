@@ -39,8 +39,9 @@ const blast = (state: GameState, pos: Vector2, by: string, carrierId: string | u
     createExplosion(state, pos, by, TANK_RADIUS, undefined, carrierId, { tank: true, damage: TANK_DAMAGE, now });
 
 /**
- * Run once per physics tick: every due tank blows up. A living carrier always dies and is always gibbed, whatever their
- * health and armor; a dead carrier's tank (dropLitTank) goes off where they died and tells clients to gib the corpse.
+ * Run once per physics tick: every due tank blows up and tells clients (TANK_BLAST). A living carrier always dies and is
+ * always gibbed, whatever their health and armor; a dead carrier's tank (dropLitTank) goes off where they died and the
+ * clients gib the corpse that carries it.
  * Paused once the Hunger round is decided, like burning and bleeding: the round reset clears every lit tank.
  */
 export const tickFuelTanks = (state: GameState, now: number): void => {
@@ -52,6 +53,7 @@ export const tickFuelTanks = (state: GameState, now: number): void => {
         clearFuse(p); // first: the death must not drop this tank again
         applyDamage(state, p, by, 9999, { x: 0, y: 0 }, 0, { tank: true, direct: true, from: pos });
         emitEffect('blood', pos.x, pos.y, TANK_BLOOD_COLOR, TANK_BLOOD); // extra blood, like a corpse torn by its tank
+        gameEvents.emit({ type: 'TANK_BLAST', id: nextId('tank_'), x: pos.x, y: pos.y }); // the burning fuel; no corpse carries it
         blast(state, pos, by, p.id, now);
     }
     const tanks = state.litTanks ?? [];

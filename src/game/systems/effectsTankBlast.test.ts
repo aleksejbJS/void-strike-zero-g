@@ -31,4 +31,15 @@ describe('a corpse with a lit fuel tank (DEATH.tank, TANK_BLAST)', () => {
         applyEffectEvent(state, deathWithTank(42));
         expect(state.corpses[0].tankId).toBeUndefined();
     });
+
+    it('every tank blast throws a ball of burning fuel in every direction, a corpse there or not', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        applyEffectEvent(state, { type: 'TANK_BLAST', id: 'tank_9', x: 0, y: 480 });
+        const flames = state.particles.filter(p => p.type === 'flame');
+        expect(flames.length).toBeGreaterThanOrEqual(30);
+        expect(flames.some(p => p.vel.x < -2)).toBe(true);
+        expect(flames.some(p => p.vel.x > 2)).toBe(true);
+        expect(flames.some(p => p.vel.y < -2)).toBe(true);
+        expect(state.particles.some(p => p.type === 'flash')).toBe(true);
+    });
 });

@@ -61,7 +61,9 @@ describe('a lit tank on a living carrier', () => {
         expect(of('DEATH')[0].kind).toBe('gib');
         expect(of('DEATH')[0].tank).toBeUndefined();
         expect(of('KILL')[0]).toMatchObject({ killer: 'igniter', weapon: TANK_KILL_NAME, victim: 'carrier' });
-        expect(of('TANK_BLAST')).toEqual([]);
+        // Clients throw the burning fuel; no corpse carries this tank, so none is torn apart again
+        const spot = tankPos(carrier);
+        expect(of('TANK_BLAST')).toEqual([expect.objectContaining({ x: spot.x, y: spot.y })]);
         expect(state.litTanks ?? []).toEqual([]);
     });
 

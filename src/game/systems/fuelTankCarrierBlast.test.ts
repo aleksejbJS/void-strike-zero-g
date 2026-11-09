@@ -1,4 +1,4 @@
-// A living carrier blown up by their own tank: no "9999" damage number over them, extra blood, a gib and a
+// A living carrier blown up by their own tank: no "9999" damage number over them, extra blood, burning fuel, a gib and a
 // "Fuel Tank" kill for whoever lit the tank (spec 2026-11-07-flamethrower, section 4).
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -58,5 +58,6 @@ describe('the carrier\'s own tank blast', () => {
         expect(of('DEATH')).toEqual([expect.objectContaining({ kind: 'gib' })]);
         expect(of('KILL')).toEqual([expect.objectContaining({ killer: 'igniter', weapon: TANK_KILL_NAME, victim: 'carrier' })]);
         expect(of('EFFECT')).toContainEqual(expect.objectContaining({ effect: 'blood', count: TANK_BLOOD }));
+        expect(of('TANK_BLAST')).toHaveLength(1); // clients throw the burning fuel
     });
 });

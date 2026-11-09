@@ -6,7 +6,6 @@ import type { Entity, GameState, Vector2 } from '../../types';
 import { WEAPONS_DATA } from '../../constants';
 import { segmentRectEntry } from '../utils/math';
 import type { Cover } from '../cover/coverTypes';
-import { firstCoverOnSegment } from '../cover/coverGeometry';
 import { damageCover } from '../cover/coverDamage';
 import { gameEvents } from './events';
 import { applyDamage, isTeammate } from './combat';
@@ -14,27 +13,10 @@ import { igniteBurn } from './burning';
 import { spawnShieldLeft } from './spawnShield';
 import { hungerShieldLeft } from './hungerRound';
 import { FLAME_COVER_MULT, FLAME_HALF_ANGLE, FLAME_RANGE } from './flameConstants';
+import { rayStop } from './flameReach';
 
 /** The three rays: the aim line and one on each edge of the cone. */
 const RAY_ANGLES = [-FLAME_HALF_ANGLE, 0, FLAME_HALF_ANGLE];
-
-/** Where a ray stops: `t` is the fraction of its length, `cover` the piece that stopped it (none for a platform or open air). */
-interface RayStop {
-    t: number;
-    cover: Cover | null;
-}
-
-/** The ray origin → end ends at the first platform or intact piece of cover; a tie goes to the platform. */
-const rayStop = (state: GameState, origin: Vector2, end: Vector2): RayStop => {
-    let t = 1;
-    for (const plat of state.platforms) {
-        const platT = segmentRectEntry(origin, end, plat);
-        if (platT !== null && platT < t) t = platT;
-    }
-    const hit = firstCoverOnSegment(state, origin, end);
-    if (hit && hit.t < t) return { t: hit.t, cover: hit.cover };
-    return { t, cover: null };
-};
 
 /** A fighter's hitbox: pos is (centerX, bottomY). */
 const hitbox = (e: Entity) => ({ x: e.pos.x - e.width / 2, y: e.pos.y - e.height, w: e.width, h: e.height });

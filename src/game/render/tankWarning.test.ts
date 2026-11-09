@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Graphics } from 'pixi.js';
-import { drawTankWarning, fuseBurnt, warningLit } from './tankWarning';
+import { Graphics, Sprite, Texture } from 'pixi.js';
+import { drawTankWarning, fuseBurnt, placeTankHalo, warningLit } from './tankWarning';
 import { TANK_FUSE_MS } from '../systems/flameConstants';
 
 const NOW = 50_000;
@@ -37,5 +37,47 @@ describe('the lit tank warning', () => {
         expect(g.bounds.width).toBeGreaterThan(0);
         expect(g.bounds.maxY).toBeLessThan(-72); // above the head
         g.destroy({ context: true });
+    });
+
+    it('is big enough to read in a fight: a triangle and pulse ring at least 42 px wide', () => {
+        const g = new Graphics();
+        drawTankWarning(g, { height: 72, tankFuseAt: NOW + TANK_FUSE_MS }, NOW);
+        expect(g.bounds.width).toBeGreaterThanOrEqual(42);
+        g.destroy({ context: true });
+    });
+
+    it('a ring pulses out of the triangle on every blink', () => {
+        const width = (burnt: number) => {
+            const g = new Graphics();
+            drawTankWarning(g, { height: 72, tankFuseAt: NOW + TANK_FUSE_MS * (1 - burnt) }, NOW);
+            const w = g.bounds.width;
+            g.destroy({ context: true });
+            return w;
+        };
+        const widths = Array.from({ length: 20 }, (_, i) => width(0.3 + i * 0.01));
+        expect(Math.max(...widths) - Math.min(...widths)).toBeGreaterThan(10);
+    });
+});
+
+describe('the glow over a fighter with a lit tank', () => {
+    it('is hidden without a lit tank', () => {
+        const s = new Sprite(Texture.WHITE);
+        placeTankHalo(s, { height: 72 }, NOW);
+        expect(s.visible).toBe(false);
+        s.destroy();
+    });
+
+    it('covers the whole fighter and pulses with the blinks', () => {
+        const s = new Sprite(Texture.WHITE);
+        const alphas: number[] = [];
+        for (let k = 0; k < 40; k++) {
+            placeTankHalo(s, { height: 72, tankFuseAt: NOW + TANK_FUSE_MS - k * 10 }, NOW);
+            alphas.push(s.alpha);
+        }
+        expect(s.visible).toBe(true);
+        expect(s.height).toBeGreaterThan(72);
+        expect(s.position.y).toBe(-36);
+        expect(Math.max(...alphas) - Math.min(...alphas)).toBeGreaterThan(0.3);
+        s.destroy();
     });
 });

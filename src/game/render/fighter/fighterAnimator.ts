@@ -120,6 +120,7 @@ export class FighterAnimator {
             headBob: headBob(state, m.phase),
             hitFlash: motion.hitFlash,
             oneLeg: !!p.wound,
+            tankLit: typeof p.tankFuseAt === 'number',
             hop,
         };
     }

@@ -3,7 +3,6 @@ import { FighterFire, JET_MS } from './fighterFire';
 import { FighterAnimator } from './fighterAnimator';
 import { createMockPlayer, createMockState } from '../../../test/mocks';
 import { GameMode, Team, WeaponType } from '../../../types';
-import { FLAME_RANGE } from '../../systems/flameConstants';
 import { updateParticles } from '../../systems/particles';
 
 const NOW = 10_000;
@@ -49,57 +48,65 @@ describe('FighterFire.body', () => {
 });
 
 describe('FighterFire.jet', () => {
-    it('throws flames along the aim that reach about the flame range', () => {
+    it('sprays the hot glow stream of flameJet.ts (its own tests cover the stream)', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         new FighterFire().jet(state, 0, 0, 0, NOW);
         expect(state.particles.length).toBeGreaterThan(0);
-        let far = 0;
-        for (let i = 0; i < 120; i++) {
-            updateParticles(state);
-            for (const q of state.particles) far = Math.max(far, q.pos.x);
-        }
-        expect(far).toBeGreaterThan(FLAME_RANGE * 0.8);
-        expect(far).toBeLessThan(FLAME_RANGE * 1.2);
-    });
-
-    it('a held spray is one stream: flames all the way from the muzzle to the end of the range', () => {
-        const state = createMockState(GameMode.DEATHMATCH);
-        const fire = new FighterFire();
-        // Half a second of 60 Hz frames, two physics ticks (120 per second) per frame
-        for (let t = NOW; t < NOW + 500; t += FRAME_MS) {
-            fire.jet(state, 0, 0, 0, t);
-            updateParticles(state);
-            updateParticles(state);
-        }
-        const xs = state.particles.map(q => q.pos.x);
-        for (let from = 0; from < FLAME_RANGE; from += FLAME_RANGE / 3) {
-            expect(xs.filter(x => x >= from && x < from + FLAME_RANGE / 3).length).toBeGreaterThanOrEqual(5);
-        }
-    });
-
-    it('is rate-limited per fighter', () => {
-        const state = createMockState(GameMode.DEATHMATCH);
-        const fire = new FighterFire();
-        fire.jet(state, 0, 0, 0, NOW);
-        const once = state.particles.length;
-        fire.jet(state, 0, 0, 0, NOW + 1);
-        expect(state.particles).toHaveLength(once);
+        expect(state.particles.every(q => q.type === 'flame')).toBe(true);
     });
 });
 
 describe('FighterFire.tank', () => {
-    it('roars only while the tank is lit, in its own colours, unlike body flames', () => {
+    /** Half a second of a lit tank at `hz`, with the 120 Hz particle ticks in between. */
+    const roar = (hz: number) => {
+        const state = createMockState(GameMode.DEATHMATCH);
+        const fire = new FighterFire();
+        const p = burner({ tankFuseAt: NOW + 2000 });
+        let made = 0, far = 0, ticks = 0;
+        for (let t = 0; t < 500; t += 1000 / hz) {
+            const before = state.particles.length;
+            fire.tank(state, p, 0, 0, Math.PI, NOW + t);
+            made += state.particles.slice(before).filter(q => q.type === 'flame').length;
+            for (; ticks < ((t + 1000 / hz) * 120) / 1000; ticks++) {
+                updateParticles(state);
+                for (const q of state.particles) if (q.type === 'flame') far = Math.max(far, -q.pos.x);
+            }
+        }
+        return { state, made, far };
+    };
+
+    it('roars only while the tank is lit', () => {
         const state = createMockState(GameMode.DEATHMATCH);
         new FighterFire().tank(state, burner(), 0, 0, 0, NOW);
         expect(state.particles).toHaveLength(0);
+    });
 
+    it('is a long, dense jet of big hot glow sprites with pulses of light', () => {
+        const { state, made, far } = roar(60);
+        expect(made).toBeGreaterThan(60); // well over 100 flames a second
+        expect(far).toBeGreaterThan(55); // a long tongue of fire, not dots at the back
+        expect(state.particles.some(q => q.type === 'flash')).toBe(true);
+        const flames = state.particles.filter(q => q.type === 'flame');
+        expect(Math.max(...flames.map(q => q.size))).toBeGreaterThanOrEqual(10);
+    });
+
+    it('looks the same at 60 and 144 Hz', () => {
+        const a = roar(60).made, b = roar(144).made;
+        expect(Math.abs(a - b) / a).toBeLessThan(0.08);
+    });
+
+    it('in its own colours and kind, unlike body flames', () => {
+        const state = createMockState(GameMode.DEATHMATCH);
         new FighterFire().tank(state, burner({ tankFuseAt: NOW + 2000 }), 0, 0, 0, NOW);
-        const tankColors = new Set(state.particles.map(q => q.color));
+        const tankColors = new Set(state.particles.filter(q => q.type === 'flame').map(q => q.color));
         expect(tankColors.size).toBeGreaterThan(0);
 
         const body = createMockState(GameMode.DEATHMATCH);
         new FighterFire().body(body, burner({ burnUntil: NOW + 2000 }), NOW);
-        for (const q of body.particles) expect(tankColors.has(q.color)).toBe(false);
+        for (const q of body.particles) {
+            expect(q.type).toBe('fire');
+            expect(tankColors.has(q.color)).toBe(false);
+        }
     });
 });
 
@@ -113,7 +120,7 @@ describe('the animator and fire', () => {
             animator.frame(p, 0, NOW + i * FRAME_MS, {}, game);
             p.lastFired += i === 0 ? 100 : 0; // a new flame tick between the first and second frame
         }
-        return game.particles.filter(q => q.type === 'fire');
+        return game.particles.filter(q => q.type === 'fire' || q.type === 'flame');
     };
 
     it('sprays a jet right after a flamethrower tick, and not with another gun', () => {
@@ -130,11 +137,20 @@ describe('the animator and fire', () => {
         animator.frame(p, 0, NOW + 10, {}, game);
         game.particles = [];
         animator.frame(p, 0, NOW + 10 + JET_MS + 50, {}, game);
-        expect(game.particles.filter(q => q.type === 'fire')).toHaveLength(0);
+        expect(game.particles.filter(q => q.type === 'flame')).toHaveLength(0);
     });
 
     it('burns a burning fighter and a lit tank', () => {
         expect(animate(p => { p.lastFired = 0; p.burnUntil = NOW + 5000; }, 1).length).toBeGreaterThan(0);
         expect(animate(p => { p.lastFired = 0; p.tankFuseAt = NOW + 2000; }, 1).length).toBeGreaterThan(0);
+    });
+
+    it('a lit tank stays drawn on the back after a switch to another gun', () => {
+        const p = burner({ tankFuseAt: NOW + 2000 });
+        p.weapon.type = WeaponType.MACHINE_GUN;
+        const animator = new FighterAnimator();
+        expect(animator.frame(p, 0, NOW, {}, createMockState(GameMode.DEATHMATCH)).tankLit).toBe(true);
+        p.tankFuseAt = undefined;
+        expect(animator.frame(p, 0, NOW + FRAME_MS, {}, createMockState(GameMode.DEATHMATCH)).tankLit).toBe(false);
     });
 });

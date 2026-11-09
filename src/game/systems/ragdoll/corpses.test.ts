@@ -182,7 +182,7 @@ describe('corpse list', () => {
         addCorpse(state, death({ tank: 'tank_1' }));
         state.particles = [];
         for (let i = 0; i < 10; i++) updateCorpses(state);
-        expect(state.particles.some(p => p.type === 'fire')).toBe(true);
+        expect(state.particles.some(p => p.type === 'flame')).toBe(true);
     });
 
     it('corpse with nothing under it is removed on time', () => {
