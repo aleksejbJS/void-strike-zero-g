@@ -70,6 +70,16 @@ describe('LeaderboardScreen', () => {
         expect(screen.queryByText(/You ·/)).not.toBeInTheDocument();
     });
 
+    it('inside the shown ranks but under another nickname: no gap and no second own row', async () => {
+        // A stale own name (just renamed): the server says rank 3, yet no shown row carries the viewer's nickname.
+        fetchMock.mockResolvedValue({ top: topTen().map(row => ({ ...row, nickname: `p${row.rank}` })), me: { rank: 3, value: 900 } });
+        await mount();
+        expect(within(table()).queryByText('· · ·')).not.toBeInTheDocument();
+        expect(ownRow()).toBeUndefined();
+        expect(screen.queryByText(/You ·/)).not.toBeInTheDocument();
+        expect(within(table()).getAllByRole('row').filter(row => /p\d/.test(row.textContent ?? ''))).toHaveLength(10); // only the ten ranked rows
+    });
+
     it('logged in without a score: says not ranked yet', async () => {
         fetchMock.mockResolvedValue({ top: topTen().map(row => ({ ...row, nickname: `p${row.rank}` })), me: null });
         await mount();

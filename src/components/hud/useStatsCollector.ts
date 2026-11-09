@@ -46,6 +46,7 @@ export function useStatsCollector(state: MutableRefObject<GameState>, localId: M
         const timer = setInterval(poll, POLL_MS);
         return () => {
             clearInterval(timer);
+            poll(); // credit what happened since the last tick (up to POLL_MS) before the state goes away
             if (credited.current) {
                 credited.current = false;
                 notifyProgressChanged(); // a logged-in player's new totals go to the cloud

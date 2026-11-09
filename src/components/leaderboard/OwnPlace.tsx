@@ -42,6 +42,9 @@ export const OwnPlace: React.FC<Props> = ({ board, viewer, onRegister, t }) => {
         );
     }
     const lastShown = board.top.length > 0 ? board.top[board.top.length - 1].rank : 0;
+    // Inside the shown ranks but under another nickname (e.g. just renamed): the table already shows that place,
+    // a second "You" row would duplicate it.
+    if (board.me.rank <= lastShown) return null;
     return (
         <>
             {board.me.rank > lastShown + 1 && (

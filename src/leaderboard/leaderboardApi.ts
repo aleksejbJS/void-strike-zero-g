@@ -83,7 +83,10 @@ function toLeaderboardError(error: unknown): LeaderboardError {
     return new LeaderboardError(hasServerCode(error) ? 'unknown' : 'network', message);
 }
 
-/** Loads one board. supabase-js is imported here, on demand, so it stays out of the app's first bundle. */
+/**
+ * Loads one board. The Supabase client is resolved lazily here, but the menu and the tournament code import it
+ * statically, so this is a convenience (no import at module load), not a bundle-size saving.
+ */
 export async function fetchBoard(stat: RankedStat, period: Period): Promise<Board> {
     let data: unknown;
     try {

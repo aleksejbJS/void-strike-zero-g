@@ -40,4 +40,17 @@ describe('GameRoom — per-player stats', () => {
         expect(room.snapshot(3).statsSession).toBe(session);
         expect(room.snapshot(3).playerStats?.s1).toMatchObject({ botKills: 1, railgunKills: 1 });
     });
+
+    it('a player who leaves takes their counters out of the snapshot; the others keep theirs', () => {
+        const room = makeRoom(GameMode.DEATHMATCH);
+        room.join('s1', join);
+        room.join('s2', join);
+        room.state.playerStats = { s1: { kills: 2 }, s2: { botKills: 1 } };
+        expect(room.snapshot(1).playerStats).toHaveProperty('s1');
+
+        room.leave('s1');
+        const stats = room.snapshot(2).playerStats;
+        expect(stats).not.toHaveProperty('s1');
+        expect(stats?.s2).toEqual({ botKills: 1 });
+    });
 });

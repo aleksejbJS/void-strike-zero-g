@@ -7,7 +7,7 @@ import { formatValue } from './boardCategories';
 export const ROW_GRID = 'grid grid-cols-[52px_minmax(0,1fr)_minmax(72px,auto)] items-center gap-x-3 px-4 phone:grid-cols-[36px_minmax(0,1fr)_minmax(56px,auto)] phone:px-3';
 
 // Places 1-3: gold, white, bronze; the rest in dust
-const RANK_TINT: Record<number, string> = { 1: 'text-bay-hazard', 2: 'text-bay-chalk', 3: 'text-[#D08A4A]' };
+const RANK_TINT: Record<number, string> = { 1: 'text-bay-hazard', 2: 'text-bay-chalk', 3: 'text-bay-bronze' };
 
 interface RankedRowProps {
     rank: number;

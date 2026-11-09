@@ -132,6 +132,21 @@ describe('useStatsCollector', () => {
         stop();
     });
 
+    it('credits the counters of the last moments before leaving, and then signals the change', () => {
+        const changed = vi.fn();
+        const stop = onProgressChanged(changed);
+        const state = makeState();
+        const { unmount } = mount(state);
+        run(1000);
+        state.current.playerStats!.me = { kills: 2 };
+        run(100); // less than one poll interval: only the final poll on unmount can see this
+        expect(exportStats().kills ?? 0).toBe(0);
+        unmount();
+        expect(exportStats().kills).toBe(2);
+        expect(changed).toHaveBeenCalledTimes(1);
+        stop();
+    });
+
     it('stops polling when the screen is left', () => {
         const state = makeState();
         const { unmount } = mount(state);

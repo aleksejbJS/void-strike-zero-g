@@ -99,6 +99,9 @@ export class GameRoom {
         this.physics.removeBody(id);
         this.state.players = this.state.players.filter(p => p.id !== id);
         this.inputs.delete(id);
+        // Every snapshot carries the whole map, so a departed player's counters must not pile up for the room's life.
+        // Safe: a rejoin gets a new id, and clients key their credited high-water mark by id + stats session.
+        if (this.state.playerStats) delete this.state.playerStats[id];
     }
 
     /** Returns false if the input was dropped. */
