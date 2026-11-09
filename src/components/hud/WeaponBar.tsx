@@ -6,6 +6,7 @@ import { PANEL, WEAPON_ICON } from './hudIcons';
 import type { Translate } from '../menu/types';
 import { weaponLabel } from './weaponLabel';
 import { MAX_WEAPON_SLOTS } from './weaponSlots';
+import { ReloadBar } from './ReloadBar';
 
 const SLOTS = 6;
 /** Past this many slots each one narrows, so nine take the width of seven and stay clear of the side panels. */
@@ -39,16 +40,24 @@ export const WeaponBar: React.FC<{ inventory: Weapon[]; active: WeaponType | nul
     );
 };
 
-export const AmmoPanel: React.FC<{ t: Translate; weapon: Weapon | undefined; ammo: number }> = ({ t, weapon, ammo }) => {
+export const AmmoPanel: React.FC<{ t: Translate; weapon: Weapon | undefined; ammo: number; reload?: number }> = ({ t, weapon, ammo, reload }) => {
     if (!weapon) return null;
     const unlimited = weapon.maxAmmo > UNLIMITED_AMMO;
     return (
         <div className={`${PANEL} pointer-events-none absolute bottom-8 right-8 z-40 flex flex-col items-end px-[18px] py-3.5`}>
             <img src={WEAPON_ICON[weapon.type]} alt="" className="mb-1 h-14 w-[120px] object-contain" />
-            <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-[64px] font-black leading-[0.85] text-bay-hazard">{unlimited ? '∞' : ammo}</span>
-                {!unlimited && <span className="text-lg font-semibold text-bay-dust">/ {weapon.maxAmmo}</span>}
-            </div>
+            {reload !== undefined ? (
+                // Same height as the number it replaces, so the box does not jump
+                <div className="flex h-[54px] min-w-[150px] flex-col items-end justify-center gap-2">
+                    <span className="font-display text-xl font-black uppercase tracking-wide text-bay-hazard">{t('hud.reloading')}</span>
+                    <ReloadBar progress={reload} label={t('hud.reloading')} className="w-full" />
+                </div>
+            ) : (
+                <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-[64px] font-black leading-[0.85] text-bay-hazard">{unlimited ? '∞' : ammo}</span>
+                    {!unlimited && <span className="text-lg font-semibold text-bay-dust">/ {weapon.maxAmmo}</span>}
+                </div>
+            )}
             <span className="text-[15px] font-semibold">{weaponLabel(t, weapon.name)}</span>
         </div>
     );

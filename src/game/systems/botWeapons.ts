@@ -6,6 +6,7 @@ import { insideZone } from './hungerRound';
 import { buildNavGraph, HOP_RISE, solidAt, surfaceBelow } from './botNavGraph';
 import { routeReaches } from './botPathfinder';
 import { FLAME_RANGE } from './flameConstants';
+import { isMagazineFed } from './reload';
 
 const scoreWeaponForDistance = (weapon: Weapon, dist: number) => {
     // Higher score = better choice. Rough heuristics by role.
@@ -57,7 +58,7 @@ export const findWeaponPickup = (state: GameState, bot: Entity): Pickup | null =
         if (!item.active || item.type !== ItemType.WEAPON || !item.subtype || !pickupReachable(state, item)) return;
         if (!routeReaches(graph, bot.pos, item.pos)) return;
         const existing = bot.inventory.find(w => w.type === item.subtype);
-        const needsAmmo = existing ? existing.ammo < existing.maxAmmo * 0.4 : true;
+        const needsAmmo = existing ? !isMagazineFed(existing) && existing.ammo < existing.maxAmmo * 0.4 : true;
         if (item.subtype === WeaponType.SMOKE_LAUNCHER) return; // bots never use it
         if (!existing && item.subtype === WeaponType.MACHINE_GUN) return; // skip default gun duplicates
         if (!existing && item.subtype === bot.weapon.type && bot.weapon.ammo > bot.weapon.maxAmmo * 0.5) return;

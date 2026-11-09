@@ -33,12 +33,17 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.4.32', date: 'Nov 7, 2026', points: [
+        { version: '0.4.33', date: 'Nov 9, 2026', points: [
             'New weapon: the flamethrower. One per map, for close fights: a 300 px stream that hits everyone in it and sets them on fire',
             'Burning fighters lose 1 HP every half second for 5 seconds. The flame breaks wooden crates twice as fast and barely hurts metal ones',
             'The fuel tank on your back can catch fire when you are hit. Three seconds later it blows up, tearing you apart and hurting everyone nearby',
             'A corpse with a lit tank keeps burning and explodes when its time runs out',
             'Bots pick up the flamethrower and walk in close to use it',
+        ] },
+        { version: '0.4.32', date: 'Nov 9, 2026', points: [
+            'Machine Gun: a 50-round magazine and a 1-second automatic reload — the fighter lowers the gun and the empty magazine drops out',
+            'The ammo box shows the rounds left and a reload bar; the Machine Gun reloads in the background while you use another weapon',
+            'Bots reload by the same rules',
         ] },
         { version: '0.4.31', date: 'Nov 4, 2026', points: [
             'Infiltration: bots defending the intel now take cover behind crates too',
@@ -245,12 +250,17 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.4.32', date: '07.11.2026', points: [
+        { version: '0.4.33', date: '09.11.2026', points: [
             'Новое оружие — огнемёт. По одному на карту, для ближнего боя: струя на 300 px задевает всех на пути и поджигает',
             'Горящий боец теряет 1 HP каждые полсекунды в течение 5 секунд. Деревянные ящики огонь ломает вдвое быстрее, металлические почти не берёт',
             'Топливный бак за спиной может загореться от попадания. Через три секунды он взрывается, разрывает носителя и ранит всех рядом',
             'Труп с горящим баком продолжает гореть и взрывается, когда время выходит',
             'Боты подбирают огнемёт и подходят вплотную, чтобы им пользоваться',
+        ] },
+        { version: '0.4.32', date: '09.11.2026', points: [
+            'Пулемёт: магазин на 50 патронов и автоматическая перезарядка за 1 секунду — боец опускает ствол, пустой магазин выпадает',
+            'В HUD видно, сколько патронов осталось, и полоску перезарядки; пулемёт дозаряжается, пока вы стреляете из другого оружия',
+            'Боты перезаряжаются по тем же правилам',
         ] },
         { version: '0.4.31', date: '04.11.2026', points: [
             'Infiltration: боты, охраняющие интел, теперь тоже прячутся за ящиками',

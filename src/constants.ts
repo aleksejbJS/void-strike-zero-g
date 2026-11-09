@@ -99,10 +99,11 @@ export const WEAPONS_DATA: Record<WeaponType, Weapon> = {
     fireRate: 100,
     speed: 18,
     color: '#fbbf24',
-    ammo: 999,
-    maxAmmo: 999,
+    ammo: 50,
+    maxAmmo: 50, // one magazine; reloads automatically, the reserve never runs out
     recoil: 0.2,
     knockbackForce: 0.3,
+    reloadMs: 1000,
   },
   [WeaponType.SHOTGUN]: {
     type: WeaponType.SHOTGUN,

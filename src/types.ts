@@ -56,6 +56,8 @@ export interface Weapon {
   maxAmmo: number;
   recoil: number;
   knockbackForce: number; // force applied to target on hit
+  reloadMs?: number;      // set = magazine-fed: maxAmmo is the magazine, the reserve is unlimited
+  reloadEndsAt?: number;  // timestamp the running reload refills the magazine
 }
 
 export interface Pickup {
@@ -138,7 +140,7 @@ export interface Projectile {
   life?: number; // Ticks left before the projectile expires (grenades explode)
 }
 
-export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff' | 'debris' | 'soot' | 'flame';
+export type ParticleKind = 'blood' | 'spark' | 'smoke' | 'fire' | 'shell' | 'ember' | 'dust' | 'flash' | 'fireball' | 'ring' | 'puff' | 'debris' | 'soot' | 'flame' | 'magazine';
 
 export interface Particle {
   id: string;
