@@ -36,6 +36,7 @@ import { objectiveFor, Objective } from './hud/objective';
 import { buildMatchHud, MatchHud } from './hud/matchHud';
 import type { FlagBannerEvent } from './hud/flagBannerText';
 import { formatClock } from './hud/format';
+import { weaponSlotOfKey } from './hud/weaponSlots';
 import { isMatchOver } from '../game/systems/matchRound';
 import { ClientSession } from '../game/net/clientSession';
 import { parseJoinTarget, inviteLink as makeInviteLink } from '../game/net/serverAddress';
@@ -850,8 +851,8 @@ export default function GameCanvas() {
             onKeyDown = (e: KeyboardEvent) => {
                 keys.current[e.code] = true;
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
-                const num = parseInt(e.key);
-                if (!isNaN(num) && num >= 1 && num <= 7) selectWeapon(num - 1);
+                const slot = weaponSlotOfKey(e.key);
+                if (slot !== null) selectWeapon(slot);
                 if (e.code === 'F3') {
                     e.preventDefault();
                     debugVisibleRef.current = !debugVisibleRef.current;
@@ -990,7 +991,7 @@ export default function GameCanvas() {
         ? t(objective.key, objective.team ? t(objective.team === Team.RED ? 'obj.red' : 'obj.blue')
             : objective.timeMs !== undefined ? formatClock(Math.ceil(objective.timeMs / 1000)) : undefined)
         : null;
-    /** Keys 1–7, the mouse wheel and the touch weapon row: switch locally at once, and tell the host when online. */
+    /** Keys 1–9, the mouse wheel and the touch weapon row: switch locally at once, and tell the host when online. */
     const selectWeapon = (index: number) => {
         const local = gameState.current.players.find(p => p.id === localIdRef.current);
         const weapon = local?.inventory[index];

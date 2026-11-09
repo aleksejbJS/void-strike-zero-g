@@ -1,19 +1,19 @@
-// Bottom HUD: the weapon slots with their pictures (six, or seven with the duel loadout), plus the ammo box on the right.
+// Bottom HUD: the weapon slots with their pictures (six, more when the inventory holds more, up to nine), plus the ammo box on the right.
 
 import React from 'react';
 import { Weapon, WeaponType } from '../../types';
 import { PANEL, WEAPON_ICON } from './hudIcons';
 import type { Translate } from '../menu/types';
 import { weaponLabel } from './weaponLabel';
+import { MAX_WEAPON_SLOTS } from './weaponSlots';
 
 const SLOTS = 6;
-const MAX_SLOTS = 7; // the duel loadout; keys 1–7
 // Ammo pools this large are effectively unlimited
 export const UNLIMITED_AMMO = 1000;
 
 export const WeaponBar: React.FC<{ inventory: Weapon[]; active: WeaponType | null }> = ({ inventory, active }) => (
     <div className="pointer-events-none absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 gap-1.5">
-        {Array.from({ length: Math.min(MAX_SLOTS, Math.max(SLOTS, inventory.length)) }, (_, i) => {
+        {Array.from({ length: Math.min(MAX_WEAPON_SLOTS, Math.max(SLOTS, inventory.length)) }, (_, i) => {
             const weapon = inventory[i];
             if (!weapon) {
                 return (
