@@ -37,6 +37,9 @@ export const SHOTGUN_POINT_BLANK = 120;
 /** A blast of the arena, not of a weapon (a barrel or a fuel tank): hurts everyone, never moves the Gun Game ladder. */
 export const isHazardBlast = (source: DamageSource): boolean => !!source.barrel || !!source.tank;
 
+/** The carrier's own tank going off on their back (no damage number, no push: they are torn apart). */
+export const isOwnTankBlast = (source: DamageSource): boolean => !!source.tank && !!source.direct;
+
 /** An explosion's splash (rocket or grenade blast that did not hit the victim itself, a barrel or a tank blast), not a shot. */
 export const isSplash = (source: DamageSource): boolean =>
     isHazardBlast(source)

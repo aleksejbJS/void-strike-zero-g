@@ -9,7 +9,7 @@ import { distance, normalize, checkPointInRect, segmentRectEntry } from '../util
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
 import { trackKill } from './achievements';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
-import { deathKind, DamageSource, isHazardBlast, isSplash } from './deathKind';
+import { deathKind, DamageSource, isHazardBlast, isOwnTankBlast, isSplash } from './deathKind';
 import { shouldWound, inflictWound, killCredit } from './wound';
 import { absorbArmor } from './armor';
 import { emitFlag } from './flagEvents';
@@ -17,7 +17,7 @@ import { muzzleHeight } from './stance';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft, dropSpawnShield } from './spawnShield';
 import { railThroughCover, chainsawCover } from '../cover/coverHits';
-import { killWeaponName } from './killWeaponName';
+import { killAchievementWeapon, killWeaponName } from './killWeaponName';
 import { fireFlame } from './flamethrower';
 import { extinguish } from './burning';
 import { rollTankIgnition } from './fuelTank';
@@ -107,7 +107,7 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     const overkill = dmg - target.health; // after armor, against the health right before this hit
     target.health -= dmg;
 
-    if (!plainLoss) {
+    if (!plainLoss && !isOwnTankBlast(source)) { // a carrier torn apart by their own tank: no "9999" over them
         push();
         emitDamage(target.pos.x, target.pos.y - 40, dmg);
     }
@@ -188,10 +188,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     handleGunGameKill(state, killer);
                 }
 
-                // Track achievement only for player-controlled kills; a barrel or tank kill counts as a kill but is no weapon's
-                if (killer.type === 'player') {
-                    trackKill(isHazardBlast(source) ? undefined : credit.weapon ?? killer.weapon.type);
-                }
+                // Track achievement only for player-controlled kills
+                if (killer.type === 'player') trackKill(killAchievementWeapon(killer, credit.weapon, source));
             }
         }
     }

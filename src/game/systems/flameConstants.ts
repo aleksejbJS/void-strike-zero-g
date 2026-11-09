@@ -28,6 +28,10 @@ export const TANK_DAMAGE = 90;
 /** Weapon name in the kill feed for a death caused by a tank blast. */
 export const TANK_KILL_NAME = 'Fuel Tank';
 
+/** Extra blood droplets when a tank blast tears its carrier (alive or a corpse) apart; an ordinary death throws 40. */
+export const TANK_BLOOD = 60;
+export const TANK_BLOOD_COLOR = '#dc2626';
+
 /** Chance that one hit from this weapon sets a fuel tank on fire (rocket and grenade: direct or splash). */
 export const TANK_IGNITE_CHANCE: Record<WeaponType, number> = {
     [WeaponType.MACHINE_GUN]: 0.02,

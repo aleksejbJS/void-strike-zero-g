@@ -5,13 +5,11 @@
 import { GameState, Vector2 } from '../../../types';
 import { createParticles } from '../effectSpawn';
 import { spawnTankJet } from '../flameParticles';
+import { TANK_BLOOD, TANK_BLOOD_COLOR as BLOOD_COLOR } from '../flameConstants';
 import { RIG_SCALE } from '../../render/fighter/fighterPose';
 import { Corpse, CorpsePointId } from './corpseBody';
 import { addCorpse } from './corpses';
 
-/** Blood droplets when a tank blast tears a corpse apart (an ordinary death throws 40). */
-export const TANK_BLOOD = 60;
-const BLOOD_COLOR = '#dc2626';
 /** A burst of the tank's jet every this many corpse ticks (120 per second). */
 const FIRE_EVERY_TICKS = 3;
 /** The tank on a corpse's back: this far up the spine from the hip and this far behind it (rig units),

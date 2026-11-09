@@ -7,7 +7,8 @@ import { nextId } from '../utils/id';
 import { gameEvents } from './events';
 import { applyDamage } from './combat';
 import { createExplosion } from './explosion';
-import { TANK_DAMAGE, TANK_RADIUS } from './flameConstants';
+import { emitEffect } from './effects';
+import { TANK_BLOOD, TANK_BLOOD_COLOR, TANK_DAMAGE, TANK_RADIUS } from './flameConstants';
 
 /** Where the tank sits: on the fighter's back, a bit above the middle of the body. */
 export const tankPos = (p: Entity): Vector2 => ({
@@ -50,6 +51,7 @@ export const tickFuelTanks = (state: GameState, now: number): void => {
         const pos = tankPos(p);
         clearFuse(p); // first: the death must not drop this tank again
         applyDamage(state, p, by, 9999, { x: 0, y: 0 }, 0, { tank: true, direct: true, from: pos });
+        emitEffect('blood', pos.x, pos.y, TANK_BLOOD_COLOR, TANK_BLOOD); // extra blood, like a corpse torn by its tank
         blast(state, pos, by, p.id, now);
     }
     const tanks = state.litTanks ?? [];

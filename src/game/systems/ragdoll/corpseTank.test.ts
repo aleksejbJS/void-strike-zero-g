@@ -3,7 +3,8 @@ import { GameMode } from '../../../types';
 import { createMockState } from '../../../test/mocks';
 import type { DeathEvent, RagdollColors } from '../events';
 import { addCorpse } from './corpses';
-import { corpseTankFire, gibTankCorpse, TANK_BLOOD } from './corpseTank';
+import { corpseTankFire, gibTankCorpse } from './corpseTank';
+import { TANK_BLOOD } from '../flameConstants';
 
 const PARTS: RagdollColors = { head: '#111111', torso: '#222222', arm: '#333333', leg: '#444444' };
 
