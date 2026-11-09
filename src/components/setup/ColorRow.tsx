@@ -16,14 +16,14 @@ const ring = 'outline outline-[3px] outline-offset-2 outline-bay-hazard';
 export const ColorRow: React.FC<Props> = ({ label, groupLabel, customLabel, presets, value, onChange }) => {
     const isPreset = presets.some(p => p.color.toLowerCase() === value.toLowerCase());
     return (
-        <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3 border-b border-[#2E333B] py-2.5 last:border-b-0">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3 border-b border-[#806344] py-2.5 last:border-b-0">
             <span className="text-base font-semibold">{label}</span>
             <div role="radiogroup" aria-label={groupLabel} className="flex flex-wrap gap-2">
                 {presets.map(p => {
                     const on = p.color.toLowerCase() === value.toLowerCase();
                     return (
                         <button key={p.color} type="button" role="radio" aria-checked={on} aria-label={p.name} onClick={() => onChange(p.color)}
-                            className={`h-11 w-11 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-chalk ${on ? ring : ''}`}
+                            className={`ap-swatch h-11 w-11 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-chalk ${on ? ring : ''}`}
                             style={{ background: p.color }} />
                     );
                 })}

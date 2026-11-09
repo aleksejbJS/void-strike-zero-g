@@ -10,6 +10,7 @@ import { ModeInfo } from './modeInfo';
 import type { Translate } from './types';
 import { LIVE_SCENES } from './preview/liveScenes';
 import { LiveStage } from './preview/LiveStage';
+import { MenuModeIcon } from './MenuModeIcon';
 
 const SCENES: Record<GameMode, React.FC<{ t: Translate }>> = {
     [GameMode.DEATHMATCH]: DeathmatchScene,
@@ -26,13 +27,16 @@ export const ModePreview: React.FC<{ mode: GameMode; map: MapId; info: ModeInfo;
     const live = LIVE_SCENES[mode];
     const label = t('hb.previewLabel', info.name);
     return (
-        <div className="flex min-w-0 flex-col gap-4 phone:gap-1.5">
+        <div className="ap-preview flex min-w-0 flex-col gap-4 phone:gap-1.5">
             {/* key: restart the animations when the mode or map changes */}
-            {live
-                ? <LiveStage key={`${mode}-${map}`} mode={mode} map={map} live={live} label={label} t={t} Schematic={Scene} />
-                : <Stage key={mode} label={label}><Scene t={t} /></Stage>}
-            <div className="flex flex-col gap-2">
-                <h2 className="m-0 font-display text-[38px] font-black leading-none phone:sr-only">{info.name}</h2>
+            <div className="ap-preview-frame ap-panel">
+                <div className="ap-preview-title"><MenuModeIcon emblem="camera" className="ap-heading-icon" />{t('hb.previewTitle')}</div>
+                {live
+                    ? <LiveStage key={`${mode}-${map}`} mode={mode} map={map} live={live} label={label} t={t} Schematic={Scene} />
+                    : <Stage key={mode} label={label}><Scene t={t} /></Stage>}
+            </div>
+            <div className="ap-description ap-panel flex flex-col gap-2">
+                <h2 className="ap-painted-plate ap-description-plate m-0 font-display text-[38px] font-black leading-none phone:sr-only">{info.name}</h2>
                 <p className="m-0 text-[17px] text-bay-dust phone:text-xs phone:leading-snug">{info.desc}</p>
                 <ul className="m-0 mt-1.5 flex phone:hidden list-none flex-col gap-1.5 p-0">
                     {info.rules.map(rule => (

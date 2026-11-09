@@ -4,7 +4,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterPose, RIG_SCALE } from './fighterPose';
 import { FighterLook, flashLook, shade } from './fighterLook';
-import { boot, drawShoulderBadge, drawTorso, hand, jointedLimb } from './fighterParts';
+import { drawShoulderBadge, hand, jointedLimb } from './fighterParts';
 import { drawFlame, drawJetpack, flameMiddles } from './parts/jetpacks';
 import { flameColors } from './parts/flamePalette';
 import { drawHead, headKeyOf } from './parts/helmets';
@@ -16,6 +16,13 @@ import { glowTexture } from '../effects/glowTextures';
 import { GripPoints } from './weaponGrips';
 import { createMuzzleLight, drawMuzzle, muzzlePoint } from './muzzleFlash';
 import { drawStump } from './fighterStump';
+import { drawLegacyBody } from './legacyBody';
+import { syncFighterArt } from '../characters/fighterArt';
+import type { ArtRig } from '../characters/rigView';
+import type { BodyId } from '../../build/bodyTypes';
+import type { ColorMatrixFilter } from 'pixi.js';
+import type { FighterExpression } from '../characters/humanArtSelector';
+import type { HumanWounds } from '../characters/humanWounds';
 
 export interface FighterView {
     root: Container;
@@ -27,9 +34,14 @@ export interface FighterView {
     light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
     front: Graphics;   // hands and the front arm, over the weapon
     headKey: string;   // look the head was drawn for
+    illustrated?: ArtRig;
+    artFailure?: BodyId;
+    artFlash?: ColorMatrixFilter;
+    humanWounds?: HumanWounds;
 }
 
 export interface FighterFrame {
+    expression?: FighterExpression;
     pose: FighterPose;
     look: FighterLook;
     facing: number;    // 1 right, -1 left
@@ -86,30 +98,26 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     const squash = f.squash ?? 0;
     // The root's origin is at the feet, so scaling about it keeps them planted
     view.root.scale.set(f.facing * RIG_SCALE * (1 + SQUASH_WIDEN * squash), RIG_SCALE * (1 - SQUASH_FLATTEN * squash));
+    const illustrated = syncFighterArt(view, f);
 
     view.flameGlow.visible = f.flame;
     if (f.flame) placeFlameGlow(view.flameGlow, pose, look, f.flicker);
 
     const b = view.body.clear();
     // The flame goes over the tail (a tail just taking off still swings through it) and under the jetpack
-    drawTail(b, pose, look, f.parts);
+    if (!illustrated || look.build.tail !== 'none') drawTail(b, pose, look, f.parts);
     if (f.flame) drawFlame(b, pose, look, f.flicker);
     drawJetpack(b, pose, look, f.flame, f.parts);
-    const legDark = shade(look.leg, 0.72);
-    if (f.oneLeg) drawStump(b, pose, look);
+    if (!illustrated) drawLegacyBody(b, pose, look, f.oneLeg);
     else {
-        jointedLimb(b, pose.hip, pose.backLeg.joint, pose.backLeg.end, { widths: [6.2 * LIMB_W, 5.4 * LIMB_W], colors: [legDark, legDark] });
-        boot(b, pose.backLeg.end, 0x1b1f25);
+        if (f.oneLeg && !view.humanWounds) drawStump(b, pose, look);
     }
-    const armDark = shade(look.arm, 0.72);
-    jointedLimb(b, pose.shoulderBack, pose.backArm.joint, pose.backArm.end, { widths: [4.6 * LIMB_W, 4.2 * LIMB_W], colors: [armDark, armDark] });
-    drawTorso(b, pose, look);
-    jointedLimb(b, pose.hip, pose.frontLeg.joint, pose.frontLeg.end, { widths: [6.4 * LIMB_W, 5.6 * LIMB_W], colors: [look.leg, shade(look.leg, 0.9)] });
-    boot(b, pose.frontLeg.end, 0x252a32);
 
-    const headKey = headKeyOf(look);
+    const headLook = !illustrated && look.build.helmet === 'none'
+        ? { ...look, build: { ...look.build, helmet: 'round' as const, visor: 'strip' as const } } : look;
+    const headKey = headKeyOf(headLook);
     if (view.headKey !== headKey) {
-        drawHead(view.head.clear(), look);
+        drawHead(view.head.clear(), headLook);
         view.headKey = headKey;
     }
     drawEars(view.ears.clear(), look, f.parts);
@@ -130,10 +138,12 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     if (!f.weapon && !f.weaponless) drawFallbackGun(fr, f);
     if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     else view.light.visible = false;
-    hand(fr, pose.backArm.end);
-    jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });
+    if (!illustrated) {
+        hand(fr, pose.backArm.end);
+        jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });
+    }
     drawShoulderBadge(fr, pose, look, f.facing); // over the arm, under the hand
-    hand(fr, pose.frontArm.end);
+    if (!illustrated) hand(fr, pose.frontArm.end);
 };
 
 /** Plain gun shape when the weapon picture is missing. */

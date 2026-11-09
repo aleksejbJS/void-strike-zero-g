@@ -1,0 +1,186 @@
+/* Approved rural-atompunk menu. All selectors are scoped; match, HUD and setup keep their art. */
+.atompunk-menu {
+    --ap-cream: #f2dfb5;
+    --ap-dim: #bcb19b;
+    --ap-rust: #ad6334;
+    --ap-yellow: #edb82d;
+    color: var(--ap-cream);
+    background: radial-gradient(ellipse at 50% 0, #34302a, transparent 65%), #191a19;
+}
+.atompunk-menu .ap-shell { max-width: 1720px; gap: 18px; padding: 16px 20px 22px; }
+.atompunk-menu .ap-header { display: grid; grid-template-columns: minmax(240px, 420px) minmax(140px, 1fr) auto; align-items: center; gap: 24px; padding: 0 2px 14px; border-bottom: 2px solid #9d6437; box-shadow: 0 2px 0 #090b0a; }
+.atompunk-menu .ap-brand { min-width: 0; }
+.atompunk-menu .ap-logo { line-height: 0; }
+.atompunk-menu .ap-logo img { display: block; width: 100%; height: auto; max-height: 136px; object-fit: contain; }
+.atompunk-menu .ap-tagline { max-width: 410px; margin: 0 auto; font-family: 'Fira Sans Extra Condensed', 'Big Shoulders Display', sans-serif; font-weight: 700; font-style: italic; font-size: clamp(18px, 1.8vw, 29px); line-height: 1.25; color: var(--ap-cream); text-wrap: balance; }
+.atompunk-menu .ap-header-actions { align-items: center; align-self: center; }
+.atompunk-menu .ap-main { grid-template-columns: minmax(230px, 0.94fr) minmax(0, 1.65fr) minmax(260px, 1fr); gap: 16px; align-items: stretch; }
+.atompunk-menu .ap-panel,
+.atompunk-menu .ap-mode-button,
+.atompunk-menu .ap-header-actions button,
+.atompunk-menu .ap-play-panel button {
+    position: relative;
+    isolation: isolate;
+    border: 2px solid #9e6138;
+    border-radius: 11px;
+    background-color: #242522;
+    background-image: linear-gradient(125deg, #32332f99, transparent 45%, #11141088);
+    box-shadow: inset 0 0 0 1px #e5c48b80, inset 0 0 0 4px #191b18, 0 3px 0 #090c0b, 0 5px 12px #0004;
+}
+.atompunk-menu .ap-panel::before,
+.atompunk-menu .ap-mode-button::before,
+.atompunk-menu .ap-header-actions button::before,
+.atompunk-menu .ap-play-panel button::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+    opacity: .17; mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.52' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23a87645' filter='url(%23g)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
+}
+/* Edge-only wear and four bolt heads. No texture is placed over text or canvases. */
+.atompunk-menu .ap-panel::after,
+.atompunk-menu .ap-mode-button::after,
+.atompunk-menu .ap-header-actions button::after,
+.atompunk-menu .ap-play-panel button::after {
+    content: ''; position: absolute; inset: 5px; z-index: -1; pointer-events: none; border-radius: 5px;
+    background:
+        radial-gradient(circle at 3px 3px, #dfbb7a 0 1px, #50321f 1.5px 3px, #090c0b 3px 4px, transparent 4.5px),
+        radial-gradient(circle at calc(100% - 3px) 3px, #dfbb7a 0 1px, #50321f 1.5px 3px, #090c0b 3px 4px, transparent 4.5px),
+        radial-gradient(circle at 3px calc(100% - 3px), #dfbb7a 0 1px, #50321f 1.5px 3px, #090c0b 3px 4px, transparent 4.5px),
+        radial-gradient(circle at calc(100% - 3px) calc(100% - 3px), #dfbb7a 0 1px, #50321f 1.5px 3px, #090c0b 3px 4px, transparent 4.5px);
+    box-shadow: inset 0 1px 0 #eddbad22;
+}
+.atompunk-menu .ap-header-actions button { min-height: 46px; padding: 0 18px; border-width: 2px; color: var(--ap-cream); font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: 19px; text-transform: uppercase; }
+.atompunk-menu .ap-modes { padding: 12px; gap: 10px; }
+.atompunk-menu .ap-section-label { margin: 0 0 8px; padding: 11px 16px; border: 1px solid #8b531f; border-radius: 7px; background: linear-gradient(125deg, #f4ca57, #dfa220); color: #252219; box-shadow: inset 0 0 0 2px #f8d675, 0 2px 0 #080a09; font-size: clamp(21px, 2vw, 31px); font-weight: 900; text-transform: uppercase; line-height: 1.15; }
+.atompunk-menu .ap-mode-button { flex: 1 0 65px; height: auto; min-height: 65px; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 14px; padding: 12px 17px; color: var(--ap-cream); transition: background-color 120ms, border-color 120ms, transform 120ms; }
+.atompunk-menu .ap-mode-button[aria-pressed='true'],
+.atompunk-menu .ap-play-panel .ap-play-button,
+.atompunk-menu [data-ap-map] button[aria-pressed='true'] { color: #24221a; border-color: #b67a32; background-color: #eeb82b; background-image: linear-gradient(135deg, #f6cc53bb, transparent 55%, #c4841970); box-shadow: inset 0 0 0 1px #ffe2a3, inset 0 0 0 4px #ad741e, 0 3px 0 #10120f, 0 5px 12px #0004; }
+.atompunk-menu .ap-mode-icon { width: 34px; height: 34px; flex-shrink: 0; }
+.atompunk-menu .ap-mode-copy { display: flex; flex-direction: column; min-width: 0; gap: 6px; padding-left: 14px; border-left: 1px solid currentColor; }
+.atompunk-menu .ap-mode-copy > span:first-child { font-family: 'Fira Sans Extra Condensed', 'Big Shoulders Display', sans-serif; font-size: clamp(21px, 1.8vw, 29px); white-space: normal; line-height: 1.05; text-transform: uppercase; }
+.atompunk-menu .ap-mode-copy > span:last-child { color: var(--ap-dim); font-size: 12px; line-height: 1.2; }
+.atompunk-menu .ap-mode-button[aria-pressed='true'] .ap-mode-copy > span:last-child { color: #40341b; }
+.atompunk-menu .ap-preview { gap: 14px; }
+.atompunk-menu .ap-preview-frame { overflow: hidden; padding: 6px; }
+.atompunk-menu .ap-preview-title { position: relative; padding: 11px 15px 15px; font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: 25px; font-weight: 800; text-transform: uppercase; line-height: 1.15; }
+.atompunk-menu .ap-preview-frame > [role='img'] { border-radius: 4px; border-color: #9c7954; }
+.atompunk-menu .ap-description { flex: 1; padding: 18px 23px; gap: 10px; }
+.atompunk-menu .ap-description h2 { align-self: flex-start; padding: 6px 13px; border-radius: 4px; background: var(--ap-yellow); color: #24221a; font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: 30px; line-height: 1.1; font-style: italic; text-transform: uppercase; box-shadow: inset 0 0 0 1px #ffe3a0; }
+.atompunk-menu .ap-description p { color: var(--ap-cream); font-size: 17px; line-height: 1.4; }
+.atompunk-menu .ap-description ul { gap: 7px; }
+.atompunk-menu .ap-description li { font-size: 15px; color: #d6ccb8; }
+.atompunk-menu .ap-play-panel { padding: 23px; gap: 18px; color: var(--ap-cream); }
+.atompunk-menu .ap-play-panel > div:first-child > span { font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: 28px; font-weight: 800; text-transform: uppercase; color: var(--ap-cream); }
+.atompunk-menu [data-ap-map] { background: none; padding: 0; gap: 10px; }
+.atompunk-menu [data-ap-map] button { height: auto; min-height: 45px; padding: 8px 12px; font-size: 18px; font-family: 'Fira Sans Extra Condensed', sans-serif; font-weight: 800; text-transform: uppercase; color: var(--ap-cream); }
+.atompunk-menu .ap-play-panel .ap-play-button { min-height: 105px; padding: 18px 12px; }
+.atompunk-menu .ap-play-button > span:first-child { font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: clamp(28px, 2.8vw, 45px); text-transform: uppercase; line-height: 1.1; }
+.atompunk-menu .ap-play-button > span:last-child { font-size: 13px; line-height: 1.4; }
+.atompunk-menu .ap-play-panel > button:not(.ap-play-button) { height: auto; min-height: 52px; padding: 12px 16px; color: var(--ap-cream); font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: 22px; line-height: 1.2; text-transform: uppercase; }
+.atompunk-menu .ap-play-panel > h2 { font-family: 'Fira Sans Extra Condensed', sans-serif; font-size: 25px; line-height: 1.15; text-transform: uppercase; }
+.atompunk-menu .ap-play-panel > div[aria-hidden] { background: #b98a4e; opacity: .6; }
+.atompunk-menu .ap-play-panel input { border: 1px solid #b08a5a; border-radius: 6px; background: #151916; color: var(--ap-cream); box-shadow: inset 0 2px 4px #0006; }
+.atompunk-menu .ap-play-panel label { color: var(--ap-dim); }
+.atompunk-menu .ap-play-panel form button { min-width: 62px; padding: 0 12px; color: var(--ap-cream); }
+.atompunk-menu .ap-footer { padding: 15px 20px; }
+.atompunk-menu .ap-footer > div { gap: 12px 20px; color: var(--ap-dim); font-size: 13px; }
+.atompunk-menu .ap-footer kbd { border-color: #b18a56; background: #272a24; color: var(--ap-cream); }
+.atompunk-menu button:focus-visible, .atompunk-menu a:focus-visible, .atompunk-menu input:focus-visible { outline: 3px solid #ffdf81; outline-offset: 3px; }
+@media (hover: hover) {
+    .atompunk-menu .ap-mode-button:hover, .atompunk-menu .ap-header-actions button:hover, .atompunk-menu .ap-play-panel button:hover { filter: brightness(1.13); border-color: #e9b669; }
+}
+@media (max-width: 1199px) and (min-height: 501px) {
+    .atompunk-menu .ap-header { grid-template-columns: minmax(240px, 350px) auto; }
+    .atompunk-menu .ap-tagline { display: none; }
+    .atompunk-menu .ap-main { grid-template-columns: minmax(210px, .8fr) minmax(0, 1.4fr); }
+    .atompunk-menu .ap-play-panel { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+    .atompunk-menu .ap-play-panel > div[aria-hidden] { display: none; }
+}
+@media (max-width: 639px) and (min-height: 501px) {
+    .atompunk-menu .ap-shell { padding: 12px; gap: 14px; }
+    .atompunk-menu .ap-header { display: flex; flex-direction: column; gap: 13px; }
+    .atompunk-menu .ap-brand { width: min(100%, 360px); }
+    .atompunk-menu .ap-header-actions { align-self: center; flex-wrap: wrap; justify-content: center; }
+    .atompunk-menu .ap-header-actions button { min-height: 42px; padding: 0 12px; font-size: 17px; }
+    .atompunk-menu .ap-main { grid-template-columns: minmax(0, 1fr); }
+    .atompunk-menu .ap-play-panel { grid-column: auto; display: flex; }
+    .atompunk-menu .ap-modes { display: grid; grid-template-columns: 1fr 1fr; }
+    .atompunk-menu .ap-section-label { grid-column: 1 / -1; }
+    .atompunk-menu .ap-mode-button { min-height: 78px; padding: 10px; gap: 8px; }
+    .atompunk-menu .ap-mode-icon { width: 23px; height: 23px; }
+    .atompunk-menu .ap-mode-copy { padding-left: 8px; }
+    .atompunk-menu .ap-mode-copy > span:first-child { font-size: 21px; }
+    .atompunk-menu .ap-footer { padding: 16px; }
+}
+/* Preserve the existing one-screen landscape phone layout and live preview scaling. */
+@media (max-height: 500px) {
+    .atompunk-menu .ap-shell { height: 100%; gap: 8px; padding: 7px 10px; }
+    .atompunk-menu .ap-header { display: flex; justify-content: space-between; gap: 8px; padding-bottom: 7px; }
+    .atompunk-menu .ap-brand { width: 190px; }
+    .atompunk-menu .ap-logo img { max-height: 59px; }
+    .atompunk-menu .ap-tagline { display: none; }
+    .atompunk-menu .ap-header-actions button { min-height: 32px; height: 32px; padding: 0 10px; font-size: 15px; border-radius: 6px; }
+    .atompunk-menu .ap-main { min-height: 0; grid-template-columns: minmax(125px, .8fr) minmax(0, 1.7fr) minmax(180px, 1fr); gap: 8px; }
+    .atompunk-menu .ap-modes { min-height: 0; padding: 5px; gap: 4px; overflow-y: auto; }
+    .atompunk-menu .ap-modes .ap-section-label { display: none; }
+    .atompunk-menu .ap-mode-button { min-height: 31px; flex-basis: 31px; padding: 5px 9px; gap: 7px; border-radius: 5px; }
+    .atompunk-menu .ap-mode-icon { width: 18px; height: 18px; }
+    .atompunk-menu .ap-mode-copy { padding-left: 6px; }
+    .atompunk-menu .ap-mode-copy > span:first-child { font-size: 15px; }
+    .atompunk-menu .ap-mode-copy > span:last-child { display: none; }
+    .atompunk-menu .ap-preview { min-height: 0; gap: 5px; }
+    .atompunk-menu .ap-preview-title { display: none; }
+    .atompunk-menu .ap-preview-frame { padding: 3px; }
+    .atompunk-menu .ap-description { padding: 7px 11px; }
+    .atompunk-menu .ap-description h2, .atompunk-menu .ap-description ul { display: none; }
+    .atompunk-menu .ap-description p { font-size: 11px; line-height: 1.2; }
+    .atompunk-menu .ap-play-panel { align-self: stretch; min-height: 0; padding: 9px; gap: 7px; overflow-y: auto; }
+    .atompunk-menu .ap-play-panel > div:first-child > span, .atompunk-menu .ap-play-panel > h2, .atompunk-menu .ap-play-panel > div[aria-hidden] { display: none; }
+    .atompunk-menu [data-ap-map] button { min-height: 27px; padding: 4px; font-size: 13px; border-radius: 4px; }
+    .atompunk-menu .ap-play-panel .ap-play-button { min-height: 49px; padding: 5px; }
+    .atompunk-menu .ap-play-button > span:first-child { font-size: 22px; }
+    .atompunk-menu .ap-play-button > span:last-child { font-size: 10px; }
+    .atompunk-menu .ap-play-panel > button:not(.ap-play-button) { min-height: 30px; padding: 5px; font-size: 14px; }
+    .atompunk-menu .ap-play-panel input, .atompunk-menu .ap-play-panel form button { height: 32px; min-width: 0; padding: 0 7px; font-size: 12px; }
+    .atompunk-menu .ap-footer { display: none; }
+}
+
+/* Real painted rust, replacing the earlier barely visible procedural noise. */
+.atompunk-menu .ap-panel::before,
+.atompunk-menu .ap-mode-button::before,
+.atompunk-menu .ap-header-actions button::before,
+.atompunk-menu .ap-play-panel button::before {
+    background-image: url('/assets/menu/rust.webp');
+    background-size: 360px 360px;
+    background-repeat: repeat;
+    opacity: .95;
+    mix-blend-mode: normal;
+    -webkit-mask-image: linear-gradient(#000, transparent 23px, transparent calc(100% - 23px), #000), linear-gradient(90deg, #000, transparent 23px, transparent calc(100% - 23px), #000);
+    mask-image: linear-gradient(#000, transparent 23px, transparent calc(100% - 23px), #000), linear-gradient(90deg, #000, transparent 23px, transparent calc(100% - 23px), #000);
+}
+.atompunk-menu .ap-mode-button[aria-pressed='true']::before,
+.atompunk-menu .ap-play-panel .ap-play-button::before,
+.atompunk-menu [data-ap-map] button[aria-pressed='true']::before {
+    mix-blend-mode: multiply;
+    opacity: .86;
+}
+.atompunk-menu .ap-mode-icon.ap-skull-icon { width: 44px; height: 44px; }
+@media (max-width: 639px) and (min-height: 501px) {
+    .atompunk-menu .ap-mode-icon.ap-skull-icon { width: 30px; height: 30px; }
+}
+@media (max-height: 500px) {
+    .atompunk-menu .ap-mode-icon.ap-skull-icon { width: 23px; height: 23px; }
+}
+
+/* All mode marks are now solid, optically balanced stencil emblems. */
+.atompunk-menu .ap-section-label { display: flex; align-items: center; gap: 13px; }
+.atompunk-menu .ap-title-emblem { flex: 0 0 38px; width: 38px; height: 38px; }
+.atompunk-menu .ap-mode-icon.ap-stencil-icon { width: 46px; height: 46px; flex: 0 0 46px; }
+@media (max-width: 639px) and (min-height: 501px) {
+    .atompunk-menu .ap-title-emblem { flex-basis: 30px; width: 30px; height: 30px; }
+    .atompunk-menu .ap-mode-icon.ap-stencil-icon { flex-basis: 32px; width: 32px; height: 32px; }
+}
+@media (max-height: 500px) {
+    .atompunk-menu .ap-mode-icon.ap-stencil-icon { flex-basis: 23px; width: 23px; height: 23px; }
+    .atompunk-menu .ap-section-label { display: none; }
+}

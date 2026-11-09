@@ -1,5 +1,5 @@
 import { Weapon, WeaponType, ItemType } from './types';
-
+import { BODY_PRESETS } from './game/build/characterBases';
 // Physics - "Soldat" feel (Heavy but fast)
 export const GRAVITY = 0.36;
 export const GROUND_FRICTION = 0.85;       // harder stop on ground (was 0.9)
@@ -76,7 +76,6 @@ export const PHYSICS_TICK_RATE = 120;
 export const PROJECTILE_MAX_LIFE = 3 * PHYSICS_TICK_RATE; // ticks (3s) before a stray projectile is removed
 export const ROCKET_MOTOR_TICKS = PHYSICS_TICK_RATE / 2; // ticks (0.5s) a rocket flies straight before it starts to drop
 export const DEFAULT_MAX_FUEL = 100;      // jetpack tank size without the fuel pickup bonus
-
 export const SKINS = [
   { id: 'classic', name: 'Marine', color: '#3b82f6', style: 'human', palette: { torso: '#3b82f6', head: '#f59e0b', arms: '#3b82f6', legs: '#475569', jetpack: '#ef4444' } },
   { id: 'red', name: 'Red Baron', color: '#ef4444', style: 'human', palette: { torso: '#ef4444', head: '#f97316', arms: '#ef4444', legs: '#334155', jetpack: '#f59e0b' } },
@@ -89,6 +88,7 @@ export const SKINS = [
   { id: 'wolf', name: 'Cyber Wolf', color: '#9ca3af', accent: '#22c55e', style: 'beast', palette: { torso: '#6b7280', head: '#9ca3af', arms: '#6b7280', legs: '#334155', jetpack: '#22c55e' } },
   { id: 'raptor', name: 'Sky Raptor', color: '#8b5cf6', accent: '#38bdf8', style: 'beast', palette: { torso: '#8b5cf6', head: '#22c55e', arms: '#a855f7', legs: '#312e81', jetpack: '#38bdf8' } },
   { id: 'hopper', name: 'Junkyard Hopper', color: '#10b981', accent: '#fbbf24', style: 'alien', palette: { torso: '#10b981', head: '#14b8a6', arms: '#22c55e', legs: '#0f172a', jetpack: '#fbbf24' } },
+  ...BODY_PRESETS,
 ];
 
 export const WEAPONS_DATA: Record<WeaponType, Weapon> = {

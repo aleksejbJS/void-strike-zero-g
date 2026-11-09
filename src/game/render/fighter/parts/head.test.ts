@@ -36,11 +36,16 @@ const ACTIVE: PartMotionFrame = { ...IDLE_PARTS, earFlop: 1, lampOn: true };
 describe('drawHead', () => {
     for (const helmet of HELMETS) {
         for (const visor of VISORS) {
+            if (helmet === 'none' && visor === 'none') continue;
             it(`draws the ${helmet} helmet with the ${visor} visor`, () => {
                 expect(instructionCount(g => drawHead(g, lookWith({ helmet, visor })))).toBeGreaterThan(0);
             });
         }
     }
+
+    it('leaves the illustrated face unobstructed when helmet and visor are none', () => {
+        expect(instructionCount(g => drawHead(g, lookWith({ helmet: 'none', visor: 'none' })))).toBe(0);
+    });
 
     it('draws every ears option on every helmet without throwing', () => {
         for (const helmet of HELMETS) {

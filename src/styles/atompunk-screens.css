@@ -1,0 +1,101 @@
+.atompunk-ui .ap-page-shell { max-width: 1720px; padding: 16px 20px 22px; gap: 18px; }
+.atompunk-ui .ap-narrow-shell { max-width: 1040px; }
+.atompunk-ui .ap-screen-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding: 9px 18px;
+    min-height: 112px;
+    flex-shrink: 0;
+}
+.atompunk-ui .ap-screen-logo { width: clamp(180px, 23vw, 340px); flex-shrink: 0; }
+.atompunk-ui .ap-screen-logo img { display: block; width: 100%; height: auto; max-height: 104px; object-fit: contain; }
+.atompunk-ui .ap-screen-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: clamp(27px, 3vw, 46px);
+    font-weight: 600;
+    line-height: 1.05;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+.atompunk-ui .ap-screen-back { display: inline-flex; align-items: center; gap: 5px; padding: 10px 17px; text-decoration: none; }
+.atompunk-ui .ap-screen-meta { flex-basis: 100%; color: var(--ap-dim); }
+.atompunk-ui .ap-screen-meta:empty { display: none; }
+.atompunk-ui .ap-content-panel { padding-top: 22px; }
+.atompunk-ui .ap-tournament-row { gap: 20px; padding: 15px 18px; }
+.atompunk-ui .ap-seat { padding: 12px 15px; }
+.atompunk-ui .ap-seat-free::before { opacity: .3; }
+.atompunk-ui .ap-seat-free { border-style: dashed; }
+.atompunk-ui .ap-bracket-match { padding: 12px 14px; }
+.atompunk-ui .ap-builder { padding: 17px; }
+.atompunk-ui .ap-builder [role='tablist'] { gap: 8px; }
+.atompunk-ui .ap-builder [role='tab'] { font-size: 20px; }
+.atompunk-ui .ap-builder [role='group'] > h3 { color: var(--ap-dim); }
+.atompunk-ui .ap-character-preview { border-radius: 11px; }
+.atompunk-ui .ap-character-preview::before { opacity: .7; }
+.atompunk-ui .ap-profile-column { padding: 22px; }
+.atompunk-ui .ap-profile-summary .ap-panel { padding: 12px 16px; }
+.atompunk-ui .ap-profile-summary h1 { color: var(--ap-cream); font-size: 40px; }
+.atompunk-ui .ap-achievement { padding: 15px; }
+.atompunk-ui .ap-achievement.border-bay-edge { border-color: #9e6138; }
+.atompunk-ui .ap-achievement[class~='border-[#3D7BD9]'] { border-color: #3D7BD9; }
+.atompunk-ui .ap-achievement[class~='border-[#A35BE0]'] { border-color: #A35BE0; }
+.atompunk-ui .ap-achievement.border-bay-hazard { border-color: var(--ap-yellow); }
+.atompunk-ui .ap-achievement::before { opacity: .45; }
+.atompunk-ui .ap-modal-layer { background: #0a0c0fe0; }
+.atompunk-ui .ap-dialog { max-width: 440px; padding: 25px; font-family: var(--ap-font-body); }
+.atompunk-ui .ap-dialog [role='tablist'] { gap: 8px; padding-bottom: 12px; border-color: #9e6138; }
+.atompunk-ui .ap-dialog [role='tab'] { flex: 1; padding: 8px 10px; }
+.atompunk-ui.ap-modal-layer { background: #0a0c0fe0; }
+.atompunk-ui .ap-news { max-width: 560px; border-radius: 11px 0 0 11px; }
+.atompunk-ui .ap-news-header { padding-bottom: 15px; border-bottom: 1px solid #9e6138; }
+.atompunk-ui .ap-ad-card { padding: 22px; }
+.atompunk-ui .ap-ads-toolbar { padding: 19px; }
+.atompunk-ui .ap-banner-frame { border-color: #9e794f; background: #151916; }
+.atompunk-ui .ap-watch-header { border-color: #9e6138; background: #242522; padding: 10px 12px; }
+.atompunk-ui .ap-watch-tile { border-color: #9e6138; }
+.atompunk-ui .ap-watch-tile.border-bay-hazard { border-color: var(--ap-yellow); }
+.atompunk-ui .ap-strip-match { border-radius: 6px; padding: 5px 8px; }
+.atompunk-ui .ap-strip-match::before { opacity: .4; }
+.atompunk-ui .ap-watch-strip button { font-size: 13px; }
+.atompunk-ui .ap-tournament-create > div { flex-wrap: wrap; }
+.atompunk-ui .ap-tournament-create input { flex-basis: 180px; }
+@media (max-width: 639px) and (min-height: 501px) {
+    .atompunk-ui .ap-page-shell { padding: 12px; gap: 14px; }
+    .atompunk-ui .ap-screen-header { gap: 12px; padding: 14px; }
+    .atompunk-ui .ap-screen-logo { width: 100%; }
+    .atompunk-ui .ap-screen-logo img { max-height: 90px; width: min(100%, 300px); margin: auto; }
+    .atompunk-ui .ap-screen-title { font-size: 29px; }
+    .atompunk-ui .ap-screen-back { padding: 9px 12px; font-size: 16px; }
+    .atompunk-ui .ap-screen-meta { font-size: 13px; }
+    .atompunk-ui .ap-profile-column { padding: 16px; }
+    .atompunk-ui .ap-ad-card, .atompunk-ui .ap-ads-toolbar { padding: 17px; }
+    .atompunk-ui .ap-tournament-row { flex-wrap: wrap; gap: 12px; }
+    .atompunk-ui .ap-tournament-row > span { flex-basis: 100%; white-space: normal; }
+    .atompunk-ui .ap-builder { padding: 12px; }
+    .atompunk-ui .ap-builder [role='tab'] { font-size: 16px; }
+}
+@media (max-height: 500px) {
+    .atompunk-ui .ap-page-shell { padding: 7px 10px; gap: 8px; }
+    .atompunk-ui .ap-screen-header { min-height: 46px; padding: 5px 10px; gap: 10px; flex-wrap: nowrap; }
+    .atompunk-ui .ap-screen-logo { width: 145px; }
+    .atompunk-ui .ap-screen-logo img { max-height: 48px; }
+    .atompunk-ui .ap-screen-title { font-size: 24px; }
+    .atompunk-ui .ap-screen-back { padding: 5px 10px; }
+    .atompunk-ui .ap-screen-meta { display: none; }
+    .atompunk-ui .ap-content-panel { padding-top: 12px; }
+    .atompunk-ui .ap-builder { padding: 8px; }
+    .atompunk-ui .ap-builder [role='tablist'] { gap: 4px; }
+    .atompunk-ui .ap-builder [role='tab'] { font-size: 14px; }
+    .atompunk-ui .ap-profile-column { padding: 10px; }
+    .atompunk-ui .ap-profile-summary h1 { font-size: 24px; }
+    .atompunk-ui .ap-achievement { padding: 9px; }
+    .atompunk-ui .ap-dialog { padding: 16px; }
+    .atompunk-ui .ap-tournament-row { padding: 10px 13px; gap: 12px; }
+    .atompunk-ui .ap-seat { padding: 8px 12px; }
+    .atompunk-ui .ap-bracket-match { padding: 8px 12px; }
+    .atompunk-ui .ap-watch-header { padding: 5px 7px; }
+}

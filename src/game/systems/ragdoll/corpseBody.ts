@@ -9,12 +9,13 @@ import type { CorpsePiece } from '../../render/ragdoll/corpsePose';
 import { RIG_SCALE, solvePose, upperPoint } from '../../render/fighter/fighterPose';
 import { gripPoints } from '../../render/fighter/weaponGrips';
 import { nextId } from '../../utils/id';
+import type { BodyId } from '../../build/bodyTypes';
 
 export type CorpsePointId = 'hip' | 'neck' | 'head' | 'shF' | 'elF' | 'haF' | 'shB' | 'elB' | 'haB'
     | 'knF' | 'anF' | 'knB' | 'anB' | 'gunA' | 'gunB';
 
 /** A verlet point: current and previous position, so (x - px, y - py) is its velocity per tick. */
-export interface CorpsePoint { x: number; y: number; px: number; py: number }
+export interface CorpsePoint { x: number; y: number; px: number; py: number; supported?: boolean }
 
 /**
  * A distance constraint between two points.
@@ -78,9 +79,9 @@ const LIMITS: [CorpsePointId, CorpsePointId, number][] = [
 ];
 
 /** Joint positions of the standing fighter in rig space (feet on y = 0, facing right, y down). */
-const standingRig = (weapon: WeaponType | undefined): Record<CorpsePointId, Vector2> => {
+const standingRig = (weapon: WeaponType | undefined, body?: BodyId): Record<CorpsePointId, Vector2> => {
     const grip = gripPoints(weapon ?? WeaponType.MACHINE_GUN, GUN_ASPECT);
-    const pose = solvePose({ state: 'idle', aim: 0, t: 0, phase: 0, moveDir: 1, recoil: 0, grip });
+    const pose = solvePose({ state: 'idle', aim: 0, t: 0, phase: 0, moveDir: 1, recoil: 0, grip, body });
     const along = { x: Math.cos(pose.gunAngle), y: Math.sin(pose.gunAngle) };
     return {
         hip: pose.hip,
@@ -103,7 +104,7 @@ export const createCorpse = (e: CorpseSeed): Corpse => {
     // Older hosts may send a DEATH event without `facing`
     const facing: 1 | -1 = e.facing === -1 ? -1 : 1;
     const kind: DeathKind = e.kind ?? 'fall';
-    const rig = standingRig(e.weapon);
+    const rig = standingRig(e.weapon, e.parts?.build?.body);
     const points = {} as Record<CorpsePointId, CorpsePoint>;
     for (const id of Object.keys(rig) as CorpsePointId[]) {
         const x = e.x + facing * RIG_SCALE * rig[id].x;

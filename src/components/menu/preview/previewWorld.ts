@@ -5,6 +5,8 @@ import { Entity, GameMode, GameState, MapId, Platform, Team, Vector2, WeaponType
 import { WEAPONS_DATA } from '../../../constants';
 import { FighterBuild } from '../../../game/build/buildParts';
 import { ActorLook } from './previewScript';
+import { BODY_PRESETS } from '../../../game/build/characterBases';
+import { presetBuild } from '../../../game/build/buildPresets';
 
 export const STAGE_W = 620;  // CSS px, same as the menu's Stage
 export const STAGE_H = 340;
@@ -51,7 +53,10 @@ const colorsOf = (look: ActorLook, you: YouLook) => {
         };
     }
     const c = BOT_COLORS[look];
-    return { color: c, headColor: c, torsoColor: c, armColor: c, legColor: '#475569', jetpackColor: '#64748b', skinId: 'classic' };
+    const id = look === 'red' ? 'base-robot' : look === 'green' ? 'base-toxic' : 'base-human';
+    const preset = BODY_PRESETS.find(p => p.id === id)!;
+    return { color: c, headColor: preset.palette.head, torsoColor: c, armColor: preset.palette.arms,
+        legColor: preset.palette.legs, jetpackColor: preset.palette.jetpack, skinId: id, build: presetBuild(id) };
 };
 
 /** Ids are prefixed so the fighter animator's per-id memory never mixes them with a match's. */

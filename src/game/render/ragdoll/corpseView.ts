@@ -14,15 +14,18 @@ import { IDLE_PARTS } from '../fighter/parts/partMotionFrame';
 import { drawRagdollShape, lookOfCorpse } from '../ragdollView';
 import { cutLegsOf, piecesOf, poseFromCorpse } from './corpsePose';
 import { drawLegsHalf } from './cutHalves';
+import { CorpseArt, createCorpseArt, updateCorpseArt } from '../characters/corpseArt';
 
 export interface CorpseView {
     root: Container;
     fighter?: FighterView; // a whole body (fall, thrown)
+    illustrated?: CorpseArt; // torn pieces sampling the same source picture as the living fighter
     pieces?: Graphics[];   // a torn body (gib, cut), in the order of piecesOf
     gun: Sprite;
     head?: HeadRoll;       // a torn-off head (gib): it turns on its own, not with the neck it left
     legsLook?: FighterLook; // cut legs: redrawn when they move, bending at the knees with their points
     drawnAt?: number[];     // the points (x, y, x, y...) the body or cut legs were last drawn at
+    drawnContacts?: number; // a changed support state must redraw even when its points lie still
 }
 
 /** How far a torn-off head has turned, and where its point was when the turn was last updated. */
@@ -41,9 +44,11 @@ const STILL = 0.05;
 /** True when a point moved since the last draw (then the new positions are remembered as drawn). */
 const movedSinceDrawn = (v: CorpseView, c: Corpse): boolean => {
     const points = Object.values(c.points);
+    const contacts = points.reduce((mask, point, i) => mask | (point.supported ? 1 << i : 0), 0);
     const last = v.drawnAt;
-    if (last && points.every((p, i) => Math.abs(p.x - last[2 * i]) < STILL && Math.abs(p.y - last[2 * i + 1]) < STILL)) return false;
+    if (last && v.drawnContacts === contacts && points.every((p, i) => Math.abs(p.x - last[2 * i]) < STILL && Math.abs(p.y - last[2 * i + 1]) < STILL)) return false;
     v.drawnAt = points.flatMap(p => [p.x, p.y]);
+    v.drawnContacts = contacts;
     return true;
 };
 
@@ -91,6 +96,7 @@ export const updateCorpseView = (v: CorpseView, c: Corpse): void => {
     v.root.alpha = alphaOf(c);
     const redraw = movedSinceDrawn(v, c);
     if (v.fighter && redraw) drawBody(v.fighter, c);
+    if (v.illustrated && redraw) updateCorpseArt(v.illustrated, c, v.head ? rollHead(v.head, c) : undefined);
     if (v.pieces) {
         const pieces = v.pieces;
         piecesOf(c).forEach((p, i) => {
@@ -111,17 +117,24 @@ export const createCorpseView = (c: Corpse, textures: Textures): CorpseView => {
     root.addChild(gun); // the body lies over its gun
     let view: CorpseView;
     if (c.kind === 'gib' || c.kind === 'cut') {
-        const pieces = piecesOf(c).map(p => {
-            const g = new Graphics(); g.label = `corpse-${p.part}`;
-            drawRagdollShape(g, p.part, c.colors);
-            g.scale.set(c.facing * RIG_SCALE, RIG_SCALE);
-            return g;
-        });
-        root.addChild(...pieces);
-        // A gib head starts at its tilt at death and rolls on from there
+        const illustrated = createCorpseArt(c);
         const headPiece = c.kind === 'gib' ? piecesOf(c).find(p => p.part === 'head') : undefined;
-        view = { root, pieces, gun, head: headPiece && { turn: headPiece.rotation, x: c.points.head.x } };
-        if (c.kind === 'cut') view.legsLook = lookOfCorpse(c.colors);
+        const head = headPiece && { turn: headPiece.rotation, x: c.points.head.x };
+        if (illustrated) {
+            root.addChild(illustrated.root);
+            view = { root, illustrated, gun, head };
+        } else {
+            const pieces = piecesOf(c).map(p => {
+                const g = new Graphics(); g.label = `corpse-${p.part}`;
+                drawRagdollShape(g, p.part, c.colors);
+                g.scale.set(c.facing * RIG_SCALE, RIG_SCALE);
+                return g;
+            });
+            root.addChild(...pieces);
+            // A gib head starts at its tilt at death and rolls on from there
+            view = { root, pieces, gun, head };
+            if (c.kind === 'cut') view.legsLook = lookOfCorpse(c.colors);
+        }
     } else {
         const fighter = createFighterView();
         root.addChild(fighter.root);

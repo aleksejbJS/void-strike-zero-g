@@ -27,10 +27,15 @@ beforeEach(() => {
 });
 
 describe('MainMenu Tournaments button', () => {
-    it('is absent without a Supabase client', () => {
+    it('stays visible without a service and explains its availability without opening a broken list', () => {
         vi.mocked(getSupabase).mockReturnValue(null);
         renderMenu();
-        expect(screen.queryByRole('button', { name: 'Tournaments' })).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Tournaments' }));
+        expect(screen.getByRole('dialog', { name: 'Tournaments' })).toBeInTheDocument();
+        expect(screen.getByText('Tournaments are not available right now.')).toBeInTheDocument();
+        expect(store.state.tournamentNav).toBeNull();
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Play vs bots/ })).toBeInTheDocument();
     });
 

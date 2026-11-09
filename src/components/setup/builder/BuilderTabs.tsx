@@ -61,7 +61,7 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
     const pick = (slot: Slot) => (id: string) => onBuild({ [slot]: id } as Partial<FighterBuild>);
 
     return (
-        <div className="flex flex-col gap-4 rounded bg-bay-panel p-3 sm:p-5 lg:min-h-0 lg:flex-1 short:gap-3 short:p-4 phone:min-h-0 phone:flex-1 phone:gap-2 phone:p-2">
+        <div className="ap-panel ap-builder flex flex-col gap-4 rounded bg-bay-panel p-3 sm:p-5 lg:min-h-0 lg:flex-1 short:gap-3 short:p-4 phone:min-h-0 phone:flex-1 phone:gap-2 phone:p-2">
             <div role="tablist" aria-label={t('cs.tabs')} className="grid grid-cols-4 gap-1.5">
                 {TABS.map((item, index) => {
                     const on = item.id === tab;
@@ -69,7 +69,7 @@ export const BuilderTabs: React.FC<Props> = ({ build, colors, level, onBuild, on
                         <button key={item.id} ref={el => { tabRefs.current[index] = el; }} type="button" role="tab"
                             id={`${baseId}-tab-${item.id}`} aria-selected={on} aria-controls={`${baseId}-panel`} tabIndex={on ? 0 : -1}
                             onClick={() => setTab(item.id)} onKeyDown={e => onTabKey(e, index)}
-                            className={`h-11 min-w-0 truncate rounded px-1 font-display text-base font-extrabold uppercase sm:text-xl sm:tracking-wide phone:h-7 phone:text-sm ${on ? 'bg-bay-hazard text-bay-ink' : 'bg-bay-steel text-bay-chalk hover:bg-bay-plate'} ${focusRing}`}>
+                            className={`ap-button h-11 min-w-0 truncate rounded px-1 font-display text-base font-extrabold uppercase sm:text-xl sm:tracking-wide phone:h-7 phone:text-sm ${on ? 'bg-bay-hazard text-bay-ink' : 'bg-bay-steel text-bay-chalk hover:bg-bay-plate'} ${focusRing}`}>
                             {t(`cs.tab.${item.id}` as keyof TranslationKeys)}
                         </button>
                     );

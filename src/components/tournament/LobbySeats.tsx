@@ -17,7 +17,7 @@ export const LobbySeats: React.FC<Props> = ({ seats, creatorSeat, mySeat }) => {
     const { t } = useTranslation();
     const taken = [...seats].sort((a, b) => a.seat - b.seat).slice(0, SEATS);
     const free = SEATS - taken.length;
-    const tile = 'flex min-h-[40px] items-center justify-between gap-2 rounded border px-3 py-2 text-[15px] phone:min-h-0 phone:px-2 phone:py-1 phone:text-[13px]';
+    const tile = 'ap-panel ap-seat flex min-h-[40px] items-center justify-between gap-2 rounded border px-3 py-2 text-[15px] phone:min-h-0 phone:px-2 phone:py-1 phone:text-[13px]';
 
     return (
         <ul className="m-0 grid list-none grid-cols-2 gap-1.5 p-0">
@@ -31,7 +31,7 @@ export const LobbySeats: React.FC<Props> = ({ seats, creatorSeat, mySeat }) => {
                 </li>
             ))}
             {Array.from({ length: free }, (_, i) => (
-                <li key={`free-${i}`} className={`${tile} border-dashed border-bay-edge text-bay-dust`}>{t('tournament.lobby.free')}</li>
+                <li key={`free-${i}`} className={`${tile} ap-seat-free border-dashed border-bay-edge text-bay-dust`}>{t('tournament.lobby.free')}</li>
             ))}
         </ul>
     );

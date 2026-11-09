@@ -68,7 +68,7 @@ export const CharacterPreview: React.FC<{ look: CharacterLook; label: string; ba
     useEffect(redraw, [look.build, look.torso, look.head, look.arms, look.legs, look.jetpack]);
 
     return (
-        <div role="img" aria-label={label} className="relative h-[300px] shrink-0 overflow-hidden rounded bg-bay-panel lg:h-[clamp(320px,50vh,520px)] phone:h-auto phone:min-h-0 phone:flex-1 phone:shrink">
+        <div role="img" aria-label={label} className="ap-panel ap-character-preview relative h-[300px] shrink-0 overflow-hidden rounded bg-bay-panel lg:h-[clamp(320px,50vh,520px)] phone:h-auto phone:min-h-0 phone:flex-1 phone:shrink">
             <span className="absolute left-5 top-4 text-sm text-bay-dust phone:left-2 phone:top-1.5 phone:text-[10px]">{badge}</span>
             {/* The canvas sits on the platform and shrinks to the room above it, so a short panel (phones) never cuts the helmet */}
             <div ref={host} aria-hidden="true" className="absolute bottom-[74px] left-1/2 top-2 flex phone:bottom-[34px] -translate-x-1/2 items-end [&>canvas]:h-auto [&>canvas]:max-h-full [&>canvas]:w-auto" />

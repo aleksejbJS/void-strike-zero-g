@@ -16,7 +16,7 @@ export const COLORS = {
     hazard: '#FFC21A',
 };
 
-/** Fixed-size scene, scaled down to fit narrower columns (e.g. on phones). The live preview draws its own platforms. */
+/** Fixed-size scene, scaled proportionally to fill its column. The live preview draws its own platforms. */
 export const Stage: React.FC<{ label: string; schematic?: boolean; children: React.ReactNode }> = ({ label, schematic = true, children }) => {
     const outer = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
@@ -24,7 +24,7 @@ export const Stage: React.FC<{ label: string; schematic?: boolean; children: Rea
     useEffect(() => {
         const el = outer.current;
         if (!el || typeof ResizeObserver === 'undefined') return;
-        const observer = new ResizeObserver(([entry]) => setScale(Math.min(1, entry.contentRect.width / STAGE_W)));
+        const observer = new ResizeObserver(([entry]) => setScale(entry.contentRect.width / STAGE_W));
         observer.observe(el);
         return () => observer.disconnect();
     }, []);

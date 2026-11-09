@@ -1,0 +1,46 @@
+{
+  "method": "Byte-identical copies of the approved assembled samples; source polygons and UVs are defined in TypeScript. No pixels were rewritten.",
+  "sourceManifest": "art/characters/atompunk/base-samples/manifest.json",
+  "assets": [
+    {
+      "id": "human",
+      "source": "art/characters/atompunk/base-samples/human-base-v1.png",
+      "imagePath": "/assets/characters/atompunk/human.png",
+      "sha256": "c45b79ccb596a3c5f1fea772b374d8c3a5a048fa26d66dbe0521338f07feedec",
+      "width": 1024,
+      "height": 1536
+    },
+    {
+      "id": "human-female",
+      "source": "art/characters/atompunk/base-samples/human-female-base-v1.png",
+      "imagePath": "/assets/characters/atompunk/human-female.png",
+      "sha256": "38fc83e108df1bdcb1e6294226be66b79b8ee35e8672e7368ddac0baedaa4e4b",
+      "width": 1024,
+      "height": 1536
+    },
+    {
+      "id": "robot",
+      "source": "art/characters/atompunk/base-samples/robot-base-v1.png",
+      "imagePath": "/assets/characters/atompunk/robot.png",
+      "sha256": "6e3378e4980accdb9f8e0209b134619f7ae613a548ce7d74e31b06e205410765",
+      "width": 1024,
+      "height": 1536
+    },
+    {
+      "id": "toxic",
+      "source": "art/characters/atompunk/base-samples/toxic-base-v1.png",
+      "imagePath": "/assets/characters/atompunk/toxic.png",
+      "sha256": "35b115a1b688c33b62fdbd280d98393f5e7854bd769c03785e71bd250f55ad0e",
+      "width": 1024,
+      "height": 1536
+    },
+    {
+      "id": "cat",
+      "source": "art/characters/atompunk/base-samples/cat-base-v1.png",
+      "imagePath": "/assets/characters/atompunk/cat.png",
+      "sha256": "a850808cc87d8a55c9e139e17151061b5507008ef2eeb2f624325521db45773b",
+      "width": 1024,
+      "height": 1536
+    }
+  ]
+}

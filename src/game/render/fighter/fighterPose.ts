@@ -6,6 +6,9 @@ import { solveLimb, Limb } from './ik';
 import { GripPoints } from './weaponGrips';
 import { BOOT, HEAD_R, ROBOT_HEAD_K, TORSO_W } from './fighterStyle';
 import { HelmetId } from '../../build/buildParts';
+import type { BodyId } from '../../build/bodyTypes';
+import { illustratedPose } from '../characters/bodyPose';
+import { proneBodyFrame, proneWeaponLift } from './pronePose';
 
 export const RIG_SCALE = 1.12;
 export const THIGH = 14.5;
@@ -18,13 +21,13 @@ export const WALK_STRIDE = 7;  // walking: shorter steps, feet kept low, body up
 const WALK_LIFT = 3.5;
 const ANKLE_Y = -2.5;
 const CROUCH_TILT = 0.1; // largest head tilt while crouched (radians)
-const PRONE_LEAN = 1.38;  // upper body tipped forward almost flat
 const PRONE_TILT = 0.3;   // lying, the head follows the aim only a little
 const GRIP_REACH = 3;  // the rear hand sits this far down the barrel from the chest
 
 export type FighterState = 'idle' | 'walk' | 'run' | 'fly' | 'fall' | 'crouch' | 'prone';
 
 export interface PoseInput {
+    body?: BodyId;
     state: FighterState;
     aim: number;       // aim angle with the fighter facing right (radians, 0 = forward, negative = up)
     t: number;         // seconds, drives breathing and sway
@@ -35,6 +38,7 @@ export interface PoseInput {
 }
 
 export interface FighterPose {
+    state?: FighterState;
     hip: Vector2;
     lean: number;
     lift: number;
@@ -48,6 +52,8 @@ export interface FighterPose {
     headTilt: number;
     gunTopLeft: Vector2; // where the weapon picture's top-left corner goes
     gunAngle: number;
+    footContacts?: { front: boolean; back: boolean };
+    supported?: boolean;
 }
 
 /** Point in the upper-body frame (relative to the hip, before lean) → rig space. */
@@ -91,17 +97,8 @@ const lowerBody = (input: PoseInput) => {
         }
         case 'crouch':
             return { hip: { x: -3, y: -12 }, lean: 0.4, feet: [{ x: 8, y: ANKLE_Y }, { x: -7, y: ANKLE_Y }], lift: 0 };
-        case 'prone': {
-            // Lying along the ground: hips back so the head and torso stay over the hitbox, legs
-            // stretched behind; crawling shuffles the feet and rocks the hips a little
-            const crawl = Math.sin(input.phase);
-            return {
-                hip: { x: -15, y: -7 + Math.abs(crawl) * 0.6 },
-                lean: PRONE_LEAN,
-                feet: [{ x: -38 + crawl * 3, y: -2 }, { x: -36 - crawl * 3, y: -3.5 }],
-                lift: 0,
-            };
-        }
+        case 'prone':
+            return proneBodyFrame(input.phase);
         default:
             return {
                 hip: { x: 0, y: -30.5 + breath * 0.25 },
@@ -123,10 +120,11 @@ export const solvePose = (input: PoseInput): FighterPose => {
     const d = { x: Math.cos(gunAngle), y: Math.sin(gunAngle) };
     const n = { x: -d.y, y: d.x };
     const chest = upperPoint(frame, 5, -13.5);
+    let weaponLift = 0;
     const slide = GRIP_REACH - input.recoil * 3.5 - input.grip.grip.x; // picture's left edge along the barrel
     const onGun = (gx: number, gy: number) => ({
         x: chest.x + d.x * (gx + slide) + n.x * (gy - input.grip.axisY),
-        y: chest.y + d.y * (gx + slide) + n.y * (gy - input.grip.axisY),
+        y: chest.y + d.y * (gx + slide) + n.y * (gy - input.grip.axisY) - weaponLift,
     });
 
     // A crouched head stays nearly level so the head box does not swing out of the crouch hitbox
@@ -143,8 +141,9 @@ export const solvePose = (input: PoseInput): FighterPose => {
     const reach = UPPER_ARM + FOREARM - 0.2;
     let foreX = g.fore.x;
     while (foreX > g.grip.x && Math.hypot(onGun(foreX, g.fore.y).x - shoulderBack.x, onGun(foreX, g.fore.y).y - shoulderBack.y) > reach) foreX -= 0.5;
-    return {
-        hip, lean, lift,
+    if (input.state === 'prone') weaponLift = proneWeaponLift([onGun(g.grip.x, g.grip.y - 1), onGun(foreX, g.fore.y + 0.5)]);
+    const pose: FighterPose = {
+        state: input.state, hip, lean, lift,
         frontLeg: solveLimb(hip, feet[0], THIGH, SHIN, forward),
         backLeg: solveLimb(hip, feet[1], THIGH, SHIN, forward),
         frontArm: solveLimb(shoulderFront, onGun(g.grip.x, g.grip.y - 1), UPPER_ARM, FOREARM, lower),
@@ -156,6 +155,7 @@ export const solvePose = (input: PoseInput): FighterPose => {
         gunTopLeft: onGun(0, 0),
         gunAngle,
     };
+    return input.body ? illustratedPose(pose, input.body, input.state) : pose;
 };
 
 /** The corners of the head shape (the box helmet, rotated by the head tilt; a circle's extreme points otherwise). */

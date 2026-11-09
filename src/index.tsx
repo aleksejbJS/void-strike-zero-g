@@ -1,9 +1,14 @@
+import './styles/hazard.css';
+import './styles/atompunk-fonts.css';
+import './styles/atompunk.css';
+import './styles/atompunk-controls.css';
+import './styles/atompunk-rust.css';
+import './styles/atompunk-screens.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { UIProvider } from './store/uiStore';
 import { AccountProvider } from './account/AccountProvider';
-import './styles/hazard.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

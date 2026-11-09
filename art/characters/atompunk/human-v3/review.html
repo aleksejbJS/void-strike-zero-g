@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><title>Human — проверочный набор 2D</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#141a1e;color:#f0e0bd;font:18px Arial,sans-serif}h1{margin:0 0 8px;font-size:30px}p{margin:0 0 20px;color:#c7bda8}.grid{display:grid;grid-template-columns:repeat(2,700px);gap:16px}.card{border:1px solid #9b7544;background:#11171c;border-radius:10px;overflow:hidden}.card h2{font-size:20px;margin:0;padding:12px 18px;background:#20272b;color:#ffc330}.frame{height:420px;position:relative;overflow:hidden}.frame img{position:absolute;width:1500px;max-width:none;left:-450px;top:-420px}.prone img{left:-350px}.portrait{position:absolute;width:319px;height:363px;left:190px;top:26px;overflow:hidden}.portrait img{width:1305.6px;left:-337.45px;top:-54.4px}.note{padding:12px 18px;margin:0;font-size:15px}a{color:#ffce48}footer{margin-top:18px;color:#c7bda8}
+</style>
+<h1>Human — проверочный набор 2D</h1>
+<p>Отдельные ракурсы конечностей и ботинок для поз. Боль и смерть используют разные лица.</p>
+<div class="grid">
+<section class="card"><h2>Присед</h2><div class="frame"><img src="/.playwright-mcp/human-v3-crouch-final.png" alt="Human в приседе"></div><p class="note">Разные ближние и дальние детали. Колено направлено вперёд.</p></section>
+<section class="card"><h2>Положение лёжа</h2><div class="frame prone"><img src="/.playwright-mcp/human-v3-prone-final.png" alt="Human лёжа"></div><p class="note">Ботинки направлены назад; видны пятка и подошва.</p></section>
+<section class="card"><h2>Ранение</h2><div class="frame"><img src="/.playwright-mcp/human-v3-hurt-final.png" alt="Раненый Human"></div><p class="note">Выражение боли и кровь. Цвет головы сохраняется.</p></section>
+<section class="card"><h2>Мёртвое лицо</h2><div class="frame"><div class="portrait"><img src="/assets/characters/atompunk/human-v3/damage.png" alt="Мёртвое лицо Human"></div></div><p class="note">Закрытые глаза, расслабленный рот; применяется к ragdoll и голове после отрыва.</p></section>
+</div>
+<footer><a href="/character-rig.html?body=human">Проверить движение, ранения и разрывы</a>. Пилот Human; 3D-основа запланирована отдельно.</footer>
+</html>

@@ -9,8 +9,8 @@ export const XP_PER_LEVEL = 50;
 
 // Parts every fighter owns from the start.
 export const FREE_PARTS: Record<Slot, readonly string[]> = {
-    helmet: ['round', 'box'],
-    visor: ['strip'],
+    helmet: ['none', 'round', 'box'],
+    visor: ['none', 'strip'],
     ears: ['none', 'cat', 'antennae'],
     tail: ['none', 'cat', 'tentacle'],
     jetpack: ['pack'],

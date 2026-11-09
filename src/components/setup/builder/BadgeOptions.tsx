@@ -38,7 +38,7 @@ export const BadgeOptions: React.FC<Props> = ({ build, onBuild }) => {
                 const on = build.emblem === id;
                 return (
                     <button key={id} type="button" role="radio" aria-checked={on} onClick={() => onBuild({ emblem: id })}
-                        className={`h-11 rounded border-2 px-4 text-sm font-semibold ${on ? 'border-bay-hazard bg-bay-steel' : 'border-bay-edge hover:bg-bay-steel'} ${focusRing}`}>
+                        className={`ap-button h-11 rounded border-2 px-4 text-sm font-semibold ${on ? 'border-bay-hazard bg-bay-steel' : 'border-bay-edge hover:bg-bay-steel'} ${focusRing}`}>
                         {t(`cs.emblem.${id}` as keyof TranslationKeys)}
                     </button>
                 );

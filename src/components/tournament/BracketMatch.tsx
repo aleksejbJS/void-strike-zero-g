@@ -37,7 +37,7 @@ export const BracketMatch: React.FC<Props> = ({ cell, mine, mySeat }) => {
 
     return (
         <li aria-current={mine ? 'true' : undefined}
-            className={`relative flex flex-col gap-0.5 rounded border border-bay-plate bg-bay-steel px-2.5 py-1.5 text-sm phone:py-1 phone:text-xs ${mine ? 'outline outline-2 outline-bay-hazard' : ''}`}>
+            className={`ap-panel ap-bracket-match relative flex flex-col gap-0.5 rounded border border-bay-plate bg-bay-steel px-2.5 py-1.5 text-sm phone:py-1 phone:text-xs ${mine ? 'outline outline-2 outline-bay-hazard' : ''}`}>
             {(live || walkover) && (
                 <span className={`absolute -top-2 right-2 rounded-sm px-1 text-[10px] font-bold uppercase leading-4 ${live ? 'bg-bay-signal text-bay-chalk' : 'bg-bay-plate text-bay-dust'}`}>
                     {live ? t('tournament.bracket.live') : t('tournament.bracket.walkover')}

@@ -5,11 +5,14 @@ import { Vector2, WeaponType } from '../../../types';
 import { Corpse, CorpsePointId } from '../../systems/ragdoll/corpseBody';
 import { FighterPose, RIG_SCALE, solvePose, upperPoint } from '../fighter/fighterPose';
 import { gripPoints } from '../fighter/weaponGrips';
+import { BodyId, isBodyId } from '../../build/bodyTypes';
 
 /** The standing fighter every corpse starts from (the head and legs do not depend on the weapon). */
-export const STANDING_POSE = solvePose({
+const standingPose = (body?: BodyId) => solvePose({
     state: 'idle', aim: 0, t: 0, phase: 0, moveDir: 1, recoil: 0, grip: gripPoints(WeaponType.MACHINE_GUN, 0.23),
+    body,
 });
+export const STANDING_POSE = standingPose();
 
 /** Angle of a vector from straight up, clockwise positive (as Pixi rotates, y down). */
 const upAngle = (d: Vector2) => Math.atan2(d.x, -d.y);
@@ -22,6 +25,21 @@ const wrap = (a: number) => a - 2 * Math.PI * Math.ceil((a - Math.PI) / (2 * Mat
 const HEAD_REST = upAngle(minus(STANDING_POSE.head, upperPoint(STANDING_POSE, 0, -19))) - STANDING_POSE.lean;
 /** Hip → between the knees of the standing fighter. */
 const LEGS_REST = upAngle(minus(middle(STANDING_POSE.frontLeg.joint, STANDING_POSE.backLeg.joint), STANDING_POSE.hip));
+const LEGACY_REST = { head: HEAD_REST, legs: LEGS_REST };
+const BODY_REST = new Map<BodyId, typeof LEGACY_REST>();
+/** Rest offsets belong to the source anatomy, so a freshly cut illustrated body keeps its original frame. */
+const restOf = (c: Corpse): typeof LEGACY_REST => {
+    const body = c.colors?.build?.body;
+    if (!isBodyId(body)) return LEGACY_REST;
+    let rest = BODY_REST.get(body);
+    if (!rest) {
+        const pose = standingPose(body);
+        rest = { head: upAngle(minus(pose.head, upperPoint(pose, 0, -19))) - pose.lean,
+            legs: upAngle(minus(middle(pose.frontLeg.joint, pose.backLeg.joint), pose.hip)) };
+        BODY_REST.set(body, rest);
+    }
+    return rest;
+};
 /** Straight down: the rest direction of a torn leg's shin. */
 const DOWN = Math.PI;
 
@@ -39,7 +57,7 @@ const rigPoints = (c: Corpse): RigPoints => {
 };
 
 const leanOf = (r: RigPoints) => upAngle(minus(r.neck, r.hip));
-const headTiltOf = (r: RigPoints) => wrap(upAngle(minus(r.head, r.neck)) - HEAD_REST);
+const headTiltOf = (c: Corpse, r: RigPoints) => wrap(upAngle(minus(r.head, r.neck)) - restOf(c).head);
 
 /**
  * A whole corpse as a fighter pose around its hip; `origin` is the world hip. Lift is 0; the gun
@@ -60,9 +78,11 @@ export const poseFromCorpse = (c: Corpse): { pose: FighterPose; origin: Vector2 
             shoulderFront: r.shF,
             shoulderBack: r.shB,
             head: r.head,
-            headTilt: headTiltOf(r),
+            headTilt: headTiltOf(c, r),
             gunTopLeft: r.hip,
             gunAngle: 0,
+            footContacts: { front: !!c.points.anF.supported, back: !!c.points.anB.supported },
+            supported: Object.entries(c.points).some(([id, point]) => !id.startsWith('gun') && point.supported),
         },
     };
 };
@@ -95,16 +115,16 @@ const gibPieces = (c: Corpse, r: RigPoints): CorpsePiece[] => [
     piece(c, 'leg-front', world(c, 'knF'), upAngle(minus(r.anF, r.knF)) - DOWN),
     piece(c, 'arm-front', world(c, 'elF'), upAngle(minus(r.shF, r.elF))),
     // Right only at death: the head has left its neck, so the corpse view rolls it on its own from there
-    piece(c, 'head', world(c, 'head'), headTiltOf(r)),
+    piece(c, 'head', world(c, 'head'), headTiltOf(c, r)),
 ];
 
 /** How far the cut legs have turned from standing (rig space): the hip → between the knees line. */
-const legsTurn = (r: RigPoints) => upAngle(minus(middle(r.knF, r.knB), r.hip)) - LEGS_REST;
+const legsTurn = (c: Corpse, r: RigPoints) => upAngle(minus(middle(r.knF, r.knB), r.hip)) - restOf(c).legs;
 
 /** Rail cut, back to front: the legs turn with the knees, the upper half (torso top, head, arms) with the neck → head line. */
 const cutPieces = (c: Corpse, r: RigPoints): CorpsePiece[] => [
-    piece(c, 'legs', world(c, 'hip'), legsTurn(r)),
-    piece(c, 'upper', world(c, 'neck'), headTiltOf(r)),
+    piece(c, 'legs', world(c, 'hip'), legsTurn(c, r)),
+    piece(c, 'upper', world(c, 'neck'), headTiltOf(c, r)),
 ];
 
 const tornPieces = (c: Corpse): CorpsePiece[] => {
@@ -138,6 +158,6 @@ const unturn = (p: Vector2, a: number): Vector2 => {
  */
 export const cutLegsOf = (c: Corpse): CutLegs => {
     const r = rigPoints(c);
-    const a = legsTurn(r);
+    const a = legsTurn(c, r);
     return { knF: unturn(r.knF, a), anF: unturn(r.anF, a), knB: unturn(r.knB, a), anB: unturn(r.anB, a) };
 };

@@ -19,17 +19,17 @@ export const ProfileAccountActions: React.FC<Props> = ({ onProtect, onLogOut }) 
     if (status === 'loggedIn') {
         return (
             <button type="button" onClick={onLogOut}
-                className={`h-10 self-start rounded border-2 border-bay-edge bg-bay-steel px-4 text-[15px] font-semibold hover:bg-bay-plate phone:h-7 phone:px-3 phone:text-xs ${focusRing}`}>
+                className={`ap-button h-10 self-start rounded border-2 border-bay-edge bg-bay-steel px-4 text-[15px] font-semibold hover:bg-bay-plate phone:h-7 phone:px-3 phone:text-xs ${focusRing}`}>
                 {t('pf.logout')}
             </button>
         );
     }
     if (status !== 'guest') return null;
     return (
-        <div className="flex flex-col gap-1.5 rounded border-2 border-bay-edge bg-bay-panel p-3 phone:gap-1 phone:p-2">
+        <div className="ap-panel flex flex-col gap-1.5 rounded border-2 border-bay-edge bg-bay-panel p-3 phone:gap-1 phone:p-2">
             <p className="m-0 text-[13px] leading-snug text-bay-dust phone:text-[11px] phone:leading-tight">{t('pf.protect.hint')}</p>
             <button type="button" onClick={onProtect}
-                className={`h-10 rounded bg-bay-hazard px-4 font-display text-xl font-black text-bay-ink hover:bg-[#FFD24D] phone:h-7 phone:text-base ${focusRing}`}>
+                className={`ap-button ap-primary h-10 rounded bg-bay-hazard px-4 font-display text-xl font-black text-bay-ink hover:bg-[#FFD24D] phone:h-7 phone:text-base ${focusRing}`}>
                 <span aria-hidden="true">🔒</span> {t('pf.protect')}
             </button>
         </div>

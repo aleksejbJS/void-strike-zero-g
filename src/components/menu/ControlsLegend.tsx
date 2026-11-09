@@ -8,13 +8,13 @@ const Key: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 export const ControlsLegend: React.FC<{ t: Translate }> = ({ t }) => (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[15px] text-bay-dust">
+    <div className="ap-controls flex flex-wrap items-center gap-x-6 gap-y-2 text-[15px] text-bay-dust">
         <span className="flex items-center gap-2"><Key>WASD</Key>{t('ctl.move')}</span>
         <span className="flex items-center gap-2"><Key>Space</Key>{t('ctl.jetpack')}</span>
         <span className="flex items-center gap-2"><Key>{t('ctl.leftClick')}</Key>{t('ctl.fire')}</span>
-        <span className="flex items-center gap-2"><Key>{t('ctl.rightClick')}</Key>{t('ctl.or')}<Key>Shift</Key>{t('ctl.grapple')}</span>
+        <span title={`${t('ctl.rightClick')} ${t('ctl.or')} Shift`} className="flex items-center gap-2"><Key>Shift</Key>{t('ctl.grapple')}</span>
         <span className="flex items-center gap-2"><Key>S</Key>{t('ctl.crouch')}</span>
-        <span className="flex items-center gap-2"><Key>Z</Key>{t('ctl.prone')}</span>
-        <span className="flex items-center gap-2"><Key>1–7</Key>{t('ctl.or')}<Key>{t('ctl.wheel')}</Key>{t('ctl.weapons')}</span>
+        <span title={t('ctl.prone')} className="flex items-center gap-2"><Key>Z</Key>{t('ctl.proneShort')}</span>
+        <span title={`1–7 ${t('ctl.or')} ${t('ctl.wheel')}`} className="flex items-center gap-2"><Key>1–7</Key>{t('ctl.weapons')}</span>
     </div>
 );

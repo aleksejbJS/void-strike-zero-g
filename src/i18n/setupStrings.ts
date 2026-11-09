@@ -1,8 +1,9 @@
 // UI strings for the character setup screen. Merged into the main translation table in locales.ts.
 
 import { Language } from '../types';
+import { BodyId } from '../game/build/bodyTypes';
 
-export interface SetupKeys {
+export interface SetupKeys extends Record<`cs.base.${BodyId}`, string> {
     'cs.title': string;
     'cs.backToMenu': string;
     'cs.nextOffline': string;
@@ -57,6 +58,11 @@ export const setupStrings: Record<Language, SetupKeys> = {
         'cs.startHost': 'Create game',
         'cs.startJoin': 'Join game',
         'cs.preview': 'Your character',
+        'cs.base.human': 'Human',
+        'cs.base.human-female': 'Female human',
+        'cs.base.robot': 'Robot',
+        'cs.base.toxic': 'Toxic',
+        'cs.base.cat': 'Cat',
         'cs.style.human': 'Human',
         'cs.style.robot': 'Robot',
         'cs.style.beast': 'Beast',
@@ -86,6 +92,11 @@ export const setupStrings: Record<Language, SetupKeys> = {
         'cs.startHost': 'Создать игру',
         'cs.startJoin': 'Войти в игру',
         'cs.preview': 'Ваш персонаж',
+        'cs.base.human': 'Человек',
+        'cs.base.human-female': 'Девушка',
+        'cs.base.robot': 'Робот',
+        'cs.base.toxic': 'Токсик',
+        'cs.base.cat': 'Кот',
         'cs.style.human': 'Человек',
         'cs.style.robot': 'Робот',
         'cs.style.beast': 'Зверь',

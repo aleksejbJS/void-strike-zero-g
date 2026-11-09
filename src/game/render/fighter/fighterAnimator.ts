@@ -13,6 +13,7 @@ import { BleedDrips } from './fighterBleed';
 import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
+import { humanBleedAnchor } from '../characters/humanBleedAnchor';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
 const cyclePx = (stride: number) => 4 * stride * RIG_SCALE; // ground covered by one full step cycle
@@ -87,7 +88,8 @@ export class FighterAnimator {
 
         const weapon = textures[heldWeaponKey(p.weapon.type)];
         const grip = gripPoints(p.weapon.type, weapon ? weapon.height / weapon.width : FALLBACK_ASPECT);
-        const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip });
+        const look = lookFromEntity(p);
+        const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip, body: look.build.body });
 
         // Tail, ears and wings answer to the speed along the facing, in px/s, not to the world direction
         const localVel = localVelocity({ x: p.vel.x * VEL_TO_PX_PER_S, y: p.vel.y * VEL_TO_PX_PER_S }, facing);
@@ -102,13 +104,13 @@ export class FighterAnimator {
         // A fighter without a leg hops along instead of running, and drips blood from the stump
         const hop = p.wound ? hopLift(state, m.phase, moveDir) : 0;
         if (p.wound) {
-            const tip = stumpTip(pose);
+            const tip = humanBleedAnchor(look.build.body, pose) ?? stumpTip(pose);
             m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now);
         }
         return {
             pose, grip, weapon, facing,
             weaponType: p.weapon.type,
-            look: lookFromEntity(p),
+            look,
             flame: state === 'fly',
             flicker: Math.random(),
             parts,
@@ -116,6 +118,7 @@ export class FighterAnimator {
             squash: motion.squash,
             headBob: headBob(state, m.phase),
             hitFlash: motion.hitFlash,
+            expression: p.health <= 40 || p.wound || motion.hitFlash > 0 ? 'hurt' : 'normal',
             oneLeg: !!p.wound,
             hop,
         };

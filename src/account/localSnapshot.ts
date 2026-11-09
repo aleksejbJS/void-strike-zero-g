@@ -5,6 +5,8 @@
 import { BUILD_KEY, loadBuild, saveBuild } from '../game/build/buildStorage';
 import { XP_KEY, loadXp, setXp } from '../game/build/progress';
 import { sanitizeBuild } from '../game/build/sanitizeBuild';
+import { BODY_PRESETS } from '../game/build/characterBases';
+import { migrateCharacter } from '../game/build/characterMigration';
 import { achievementManager } from '../game/systems/achievements';
 import {
     PLAYER_KEYS, loadArmColor, loadHeadColor, loadJetpackColor, loadLegColor, loadPlayerColor,
@@ -104,9 +106,24 @@ const sameLook = (a: Omit<FighterLook, 'savedAt'>, b: Omit<FighterLook, 'savedAt
  * without a stamp (savedAt stays 0) and can never beat a customised look from the cloud.
  */
 export function saveLookIfChanged(next: Omit<FighterLook, 'savedAt'>): boolean {
-    if (sameLook(currentLook(), next)) {
+    const previous = currentLook();
+    if (sameLook(previous, next)) {
         if (!hasStoredLook()) writeLookKeys(next); // the match reads the saved build
         return false;
+    }
+    if (!previous.build.body && BODY_PRESETS.some(preset => preset.id === next.skinId)) {
+        const migrated = migrateCharacter(previous.skinId, previous.build, previous.colors, {
+            headIsFallback: readStored(PLAYER_KEYS.head) === null,
+        });
+        const equivalent = {
+            build: migrated.build, skinId: BODY_PRESETS[migrated.presetIndex].id,
+            colors: { ...migrated.colors, player: migrated.colors.torso },
+        };
+        if (sameLook(equivalent, next)) {
+            // Artwork migration is not a user edit: keep its stamp so a cloud customization can win.
+            writeLookKeys(next);
+            return false;
+        }
     }
     writeLook({ ...next, savedAt: Date.now() });
     return true;

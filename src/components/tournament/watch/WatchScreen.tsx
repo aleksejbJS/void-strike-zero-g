@@ -73,7 +73,7 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
 
     const back = () => actions.openTournament(id);
     const header = !openId && (
-        <header className="flex shrink-0 items-center gap-4 border-b-2 border-bay-plate bg-bay-panel px-4 py-1.5 phone:gap-2 phone:px-2 phone:py-1">
+        <header className="ap-panel ap-watch-header flex shrink-0 items-center gap-4 border-b-2 border-bay-plate bg-bay-panel px-4 py-1.5 phone:gap-2 phone:px-2 phone:py-1">
             <BackButton onBack={back} />
             {snapshot ? (
                 <WatchStrip columns={bracketColumns(snapshot)} size={snapshot.tournament.size ?? 8} watched={new Set(ids)}
@@ -83,7 +83,7 @@ export const WatchScreen: React.FC<{ id: string }> = ({ id }) => {
     );
 
     return (
-        <div className="flex h-viewport flex-col overflow-hidden bg-bay-ink font-body text-bay-chalk">
+        <div className="atompunk-ui flex h-viewport flex-col overflow-hidden bg-bay-ink font-body text-bay-chalk">
             {header}
             {snapshot && <MyMatchBanner snapshot={snapshot} />}
             <main data-testid="watch-tiles" {...(phone ? swipe : {})}
