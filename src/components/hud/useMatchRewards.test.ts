@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { GameMode, GameState } from '../../types';
 import { onProgressChanged } from '../../account/progressEvents';
+import { exportStats } from '../../game/stats/lifetimeStats';
 import { useMatchRewards } from './useMatchRewards';
 
 // Only the fields detectMatchEnd reads.
@@ -86,6 +87,33 @@ describe('useMatchRewards', () => {
         expect(store.fighterXp).toBe('50');
         expect(result.current).toMatchObject({ gained: 50, levelBefore: 1, levelAfter: 2 });
         expect(result.current?.unlocked.map(u => `${u.slot}:${u.id}`)).toEqual(['ears:wolf']);
+    });
+
+    it('counts a won match once, as a bot-match win when the only human fought bots', () => {
+        const state = makeState({ players: [{ id: 'me', type: 'player' }, { id: 'bot', type: 'bot' }] as GameState['players'] });
+        renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250);
+        Object.assign(state.current, { matchEndsAt: 10_000, matchWinner: { playerId: 'me' } });
+        run(2000);
+        expect(exportStats()).toMatchObject({ botWins: 1, wins: 0 });
+    });
+
+    it('counts a lost match as no win', () => {
+        const state = makeState({ players: [{ id: 'me', type: 'player' }, { id: 'bot', type: 'bot' }] as GameState['players'] });
+        renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250);
+        Object.assign(state.current, { matchEndsAt: 10_000, matchWinner: { playerId: 'bot' } });
+        run(250);
+        expect(exportStats()).toMatchObject({ botWins: 0, wins: 0 });
+    });
+
+    it('counts a Hunger Games round won against humans as a win and a Hunger Games win', () => {
+        const state = makeState({ players: [{ id: 'me', type: 'player' }, { id: 'pal', type: 'player' }] as GameState['players'] });
+        renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250);
+        Object.assign(state.current, { hungerRoundEndsAt: 5_000, hungerWinnerId: 'me' });
+        run(2000);
+        expect(exportStats()).toMatchObject({ wins: 1, hungerWins: 1 });
     });
 
     it('does not pay a player who joins while the result is already on screen', () => {

@@ -2,6 +2,7 @@
 import type { FighterBuild } from './game/build/buildParts';
 import type { Corpse } from './game/systems/ragdoll/corpseBody';
 import type { Cover } from './game/cover/coverTypes';
+import type { Stats } from './game/stats/statKeys';
 
 export type Vector2 = { x: number; y: number };
 
@@ -253,6 +254,8 @@ export interface GameState {
   beams: Beam[];
   smokes?: SmokeCloud[]; // smoke clouds; readers use `state.smokes ?? []`
   cover?: Cover[]; // destructible cover; readers use `state.cover ?? []`
+  playerStats?: Record<string, Stats>; // per-player counters of this room/game, by player id (stats/playerStats.ts)
+  statsSession?: string; // id of this room/game, so counters of one session are added to totals once
   litTanks?: LitTank[]; // host-only: lit tanks of dead carriers (fuelTankBlast.ts); readers use `state.litTanks ?? []`
 }
 

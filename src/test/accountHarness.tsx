@@ -17,7 +17,7 @@ type UIState = ReturnType<typeof useUIStore>['state'];
 
 export const ALEX: AccountUser = { id: 'user-1', nickname: 'Alex' };
 export const BO: AccountUser = { id: 'user-2', nickname: 'Bo' };
-export const snap = (xp: number): PlayerSnapshot => ({ achievements: {}, xp, look: null });
+export const snap = (xp: number): PlayerSnapshot => ({ achievements: {}, xp, look: null, stats: {} });
 export const networkError = (): AccountError => new AccountError('network', 'offline');
 
 /** A promise the test settles by hand, to hold an api call in flight. */

@@ -7,7 +7,7 @@ import { gameEvents } from './events';
 import { nextId } from '../utils/id';
 import { distance, normalize, checkPointInRect, segmentRectEntry } from '../utils/math';
 import { resetFlagToBase, handleGunGameKill, handleGunGameDeath, scheduleHungerZoneShrink } from './gamemodes';
-import { trackKill } from './achievements';
+import { creditKill } from '../stats/creditKill';
 import { emitEffect, emitDamage, emitDeath, emitLimb } from './effects';
 import { deathKind, DamageSource, isHazardBlast, isOwnTankBlast, isSplash } from './deathKind';
 import { shouldWound, inflictWound, killCredit } from './wound';
@@ -189,8 +189,8 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
                     handleGunGameKill(state, killer);
                 }
 
-                // Track achievement only for player-controlled kills
-                if (killer.type === 'player') trackKill(killAchievementWeapon(killer, credit.weapon, source));
+                // Stats count only human kills (creditKill checks); a burn counts for the flamethrower, a hazard blast for no weapon
+                creditKill(state, killer, target, killAchievementWeapon(killer, credit.weapon, source));
             }
         }
     }

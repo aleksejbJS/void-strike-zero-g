@@ -44,6 +44,7 @@ export type Snapshot = Pick<GameState,
     'mode' | 'currentMap' | 'scores' | 'players' | 'projectiles' | 'pickups'
     | 'beams' | 'smokes' | 'hungerZone' | 'hungerWinnerId' | 'hungerRoundEndsAt' | 'hungerRoundStartedAt' | 'hungerEndReason' | 'gunGameWinnerId'
     | 'matchStartedAt' | 'matchEndsAt' | 'matchWinner' | 'matchEndReason' | 'lastHTFScore' | 'infiltrationEndTime'
+    | 'playerStats' | 'statsSession'
 > & { serverTime: number; coverStatus?: CoverStatus[] };
 
 export interface JoinAccepted {
@@ -92,6 +93,8 @@ export const buildSnapshot = (state: GameState, now: number): Snapshot => ({
     gunGameWinnerId: state.gunGameWinnerId,
     lastHTFScore: state.lastHTFScore,
     infiltrationEndTime: state.infiltrationEndTime,
+    playerStats: state.playerStats,
+    statsSession: state.statsSession,
     serverTime: now,
     coverStatus: coverStatusOf(state.cover ?? []),
 });

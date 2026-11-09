@@ -33,6 +33,11 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.35', date: 'Nov 9, 2026', points: [
+            'New Top screen: six boards (XP, kills, bot kills, wins, wins against bots, tournament titles) for this week, this month and all time, with your own place',
+            'Online kills, flag captures and item pickups now count toward your progress',
+            'The Veteran, King of the Hill and Survivor achievements can now be earned',
+        ] },
         { version: '0.4.34', date: 'Nov 9, 2026', points: [
             'New weapon: the flamethrower. One per map, for close fights: a 300 px stream that hits everyone in it and sets them on fire',
             'Burning fighters lose 1 HP every half second for 5 seconds. The flame breaks wooden crates twice as fast and barely hurts metal ones',
@@ -253,6 +258,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.35', date: '09.11.2026', points: [
+            'Новый экран «Топ»: шесть таблиц (XP, убийства, убийства ботов, победы, победы над ботами, турниры) за неделю, месяц и всё время, с вашим местом',
+            'Убийства, захваты флага и подобранные предметы в онлайне теперь засчитываются в ваш прогресс',
+            'Достижения Veteran, King of the Hill и Survivor теперь можно получить',
+        ] },
         { version: '0.4.34', date: '09.11.2026', points: [
             'Новое оружие — огнемёт. По одному на карту, для ближнего боя: струя на 300 px задевает всех на пути и поджигает',
             'Горящий боец теряет 1 HP каждые полсекунды в течение 5 секунд. Деревянные ящики огонь ломает вдвое быстрее, металлические почти не берёт',

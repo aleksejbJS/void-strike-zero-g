@@ -57,11 +57,13 @@ import { addShake, explosionShake } from '../game/render/screenShake';
 import { spawnPointFor } from '../game/net/roomSetup';
 import { currentBuild } from '../game/build/currentBuild';
 import { useMatchRewards } from './hud/useMatchRewards';
+import { useStatsCollector } from './hud/useStatsCollector';
 import { useTournamentMatch } from './hud/useTournamentMatch';
 import { openTournamentNet } from './hud/tournamentNet';
 import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
+import { newStatsSession } from '../game/stats/playerStats';
 import { nextId } from '../game/utils/id';
 
 const NO_MOVE_KEYS = { KeyW: false, KeyS: false, KeyA: false, KeyD: false, Walk: false, KeyZ: false };
@@ -116,6 +118,7 @@ export default function GameCanvas() {
         hungerWinnerId: null
     });
     const reward = useMatchRewards(gameState, localIdRef); // XP for the match that just ended
+    useStatsCollector(gameState, localIdRef); // lifetime counters and play time for leaderboards
     const tournamentRun = state.tournamentMatch; // a tournament duel: always online, see useTournamentMatch
     const tourney = useTournamentMatch(gameState, localIdRef, tournamentRun);
 
@@ -245,7 +248,9 @@ export default function GameCanvas() {
         hungerWinnerId: null,
         gunGameWinnerId: null,
         beams: [],
-        smokes: []
+        smokes: [],
+        playerStats: {},
+        statsSession: newStatsSession()
     });
 
     const initLevel = () => {

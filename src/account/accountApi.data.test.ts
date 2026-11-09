@@ -3,7 +3,7 @@ import { AccountError, createAccountApi } from './accountApi';
 import { PlayerSnapshot } from './snapshot';
 import { failed, makeFakeSupabase as makeFake, ok } from '../test/fakeSupabase';
 
-const snapshot: PlayerSnapshot = { achievements: { killer: { progress: 3, unlocked: false } }, xp: 40, look: null };
+const snapshot: PlayerSnapshot = { achievements: { killer: { progress: 3, unlocked: false } }, xp: 40, look: null, stats: { kills: 6 } };
 
 afterEach(() => {
     vi.restoreAllMocks();
@@ -44,7 +44,7 @@ describe('fetchSnapshot', () => {
 
     it('sanitizes garbage stored in data', async () => {
         const fake = makeFake({ progress: ok({ data: { achievements: 'x', xp: -5, look: 7 } }) });
-        expect(await createAccountApi(fake.client).fetchSnapshot('u1')).toEqual({ achievements: {}, xp: 0, look: null });
+        expect(await createAccountApi(fake.client).fetchSnapshot('u1')).toEqual({ achievements: {}, xp: 0, look: null, stats: {} });
     });
 
     it('returns a valid stored snapshot unchanged', async () => {

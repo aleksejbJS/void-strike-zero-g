@@ -6,7 +6,8 @@ import { pickupRect } from '../utils/pickupRect';
 import { updateBotAI } from './bot';
 import { checkPointInRect, checkRectOverlap, distance, segmentIntersectsRect, segmentRectEntry } from '../utils/math';
 import { baseFlagPos, HTF_FLAG_POS, EXTRACTION_ZONE, INTEL_POS } from '../data/level';
-import { trackFlagCapture, trackItemPickup } from './achievements';
+import { bumpStat } from '../stats/playerStats';
+import { tickFlagHold } from '../stats/flagHold';
 import { resetFlagToBase, applyGunGameLoadout, tickHungerZoneShrink } from './gamemodes';
 import { applyDamage, fireWeapon, isTeammate } from './combat';
 import { createExplosion } from './explosion';
@@ -290,9 +291,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                             p.hasFlag = Team.NONE;
                             gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                             emitFlag('ctf', 'captured', p.team);
-
-                            // Track achievement for flag capture
-                            trackFlagCapture();
+                            if (p.type === 'player') bumpStat(state, p.id, 'flagCaptures');
                         } else if (!item.active) {
                             // Ничего — флаг временно унесен
                         } else if (Math.abs(item.pos.x - (item.team === Team.BLUE ? -350 : 2350)) > 100) {
@@ -310,10 +309,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                     gameEvents.emit({ type: 'SOUND', sound: 'pickup' });
                 }
 
-                // Track achievement for item pickup
-                if (collected && p.type === 'player') {
-                    trackItemPickup();
-                }
+                if (collected && p.type === 'player') bumpStat(state, p.id, 'itemPickups');
             }
         });
     });
@@ -389,6 +385,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     });
     state.beams = state.beams.filter(b => b.life > 0);
     updateSmokes(state, now);
+
+    tickFlagHold(state); // flag time for the stats, once per tick
 
     // Hold The Flag scoring tick
     if (state.mode === GameMode.HOLD_THE_FLAG) {

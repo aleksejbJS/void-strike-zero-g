@@ -16,7 +16,7 @@ const Spy: React.FC = () => { store = useUIStore(); return null; };
 const renderMenu = () => render(
     <UIProvider><Spy />
         <AccountContext.Provider value={stubAccount({ status: 'disabled' })}>
-            <MainMenu onCustomize={vi.fn()} onOpenProfile={vi.fn()} />
+            <MainMenu onCustomize={vi.fn()} onOpenProfile={vi.fn()} onOpenLeaderboard={vi.fn()} />
         </AccountContext.Provider>
     </UIProvider>,
 );

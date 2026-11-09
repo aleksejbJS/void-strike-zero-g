@@ -10,6 +10,7 @@ import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../system
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks } from '../build/botLooks';
 import { JoinRequest } from './protocol';
+import { newStatsSession } from '../stats/playerStats';
 
 export const isTeamMode = (mode: GameMode) =>
     mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -59,6 +60,8 @@ export const createRoomState = (mode: GameMode, map: MapId): GameState => ({
     gunGameWinnerId: null,
     beams: [],
     smokes: [],
+    playerStats: {},
+    statsSession: newStatsSession(), // kept by resetMatch / resetHungerRound: one session per room
     litTanks: [],
 });
 

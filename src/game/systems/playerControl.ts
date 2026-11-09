@@ -8,7 +8,7 @@ import { distance, normalize } from '../utils/math';
 import { castRay } from './combat';
 import { applyMovement, MovementInput } from './movement';
 import { applyGrappleRelease } from './grapple';
-import { trackHookUse } from './achievements';
+import { bumpStat } from '../stats/playerStats';
 import { applyStance } from './stance';
 
 const MAP_CEILING_Y = -500;
@@ -50,7 +50,7 @@ export const updateGrapple = (state: GameState, p: Entity, hookPressed: boolean,
             p.grapple.active = true;
             p.grapple.pos = hit;
             p.grapple.length = distance(p.pos, hit);
-            if (p.type === 'player') trackHookUse();
+            if (p.type === 'player') bumpStat(state, p.id, 'hookUses');
         }
     } else if (!hookPressed && p.grapple.active) {
         applyGrappleRelease(p);
