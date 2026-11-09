@@ -39,6 +39,7 @@ export interface HazardKeys {
     'ctl.or': string;
     'ctl.wheel': string;
     'pv.you': string;
+    'pv.tuning': string;
     'pv.killLine': string;
     'pv.killsThisWeapon': string;
     'pv.upgrade': string;
@@ -90,6 +91,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.or': 'or',
         'ctl.wheel': 'Mouse wheel',
         'pv.you': 'You',
+        'pv.tuning': 'Tuning in…',
         'pv.killLine': '{0} fragged {1}',
         'pv.killsThisWeapon': 'Kills this weapon: {0}',
         'pv.upgrade': 'Upgrade',
@@ -139,6 +141,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.or': 'или',
         'ctl.wheel': 'Колесо',
         'pv.you': 'Вы',
+        'pv.tuning': 'Настройка сигнала…',
         'pv.killLine': '{0}: фраг — {1}',
         'pv.killsThisWeapon': 'Убийств этим оружием: {0}',
         'pv.upgrade': 'Апгрейд',
