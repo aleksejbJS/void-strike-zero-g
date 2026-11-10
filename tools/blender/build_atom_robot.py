@@ -66,21 +66,24 @@ def build_trunk(b, m, joints):
 
 def build_legs(b, m, joints):
     for side, sx, slot in (('R', 545, 'Front'), ('L', 708, 'Back')):
-        hip, knee, ankle = W(sx, 725), W(sx, 900), W(sx, 1095)
+        hip, knee, boot_top = W(sx, 725), W(sx, 900), W(sx, 1095)
+        # The ankle pivot sits inside the boot, about 3 rig units above the drawn sole like the painted
+        # bases: corpse physics rests a foot on that ankle height (corpseRadii JOINT_RADII anF/anB = 3)
+        ankle = boot_top + Vector((0, 0, -0.12))
         b.rod(b.part(f'thigh{slot}'), f'thigh_{side}', hip, knee, 0.072, m['metal'])
         c = b.part(f'shin{slot}')
         b.ball(c, f'knee_{side}', knee, 0.1, m['metal'])
-        guard = Vector((knee.x, knee.y, (knee.z - 0.07 + ankle.z) / 2))
-        tall = knee.z - 0.07 - ankle.z + 0.02
+        guard = Vector((knee.x, knee.y, (knee.z - 0.07 + boot_top.z) / 2))
+        tall = knee.z - 0.07 - boot_top.z + 0.02
         b.box(c, f'shin_frame_{side}', guard, (0.16, 0.2, tall), m['paint'], bevel=0.025)
         b.box(c, f'shin_guard_{side}', guard + Vector((0.012, 0, 0)), (0.16, 0.17, tall - 0.03), m['red'], bevel=0.025)
         b.rivets(c, f'shin_{side}', [guard + Vector((0.093, dy, dz)) for dy in (-0.06, 0.06) for dz in (0.11, -0.11)],
                  m['metal'])
         c = b.part(f'foot{slot}')
-        b.box(c, f'boot_{side}', ankle + Vector((0.07, 0, -0.105)), (0.4, 0.3, 0.2), m['paint'], bevel=0.06)
-        b.box(c, f'boot_sole_{side}', ankle + Vector((0.07, 0, -0.19)), (0.42, 0.32, 0.03), m['metal'], bevel=0.01)
+        b.box(c, f'boot_{side}', boot_top + Vector((0.07, 0, -0.105)), (0.4, 0.3, 0.2), m['paint'], bevel=0.06)
+        b.box(c, f'boot_sole_{side}', boot_top + Vector((0.07, 0, -0.19)), (0.42, 0.32, 0.03), m['metal'], bevel=0.01)
         joints[f'hip{slot}'], joints[f'knee{slot}'], joints[f'ankle{slot}'] = hip, knee, ankle
-        joints[f'sole{slot}'] = ankle + Vector((0.07, 0, -0.205))
+        joints[f'sole{slot}'] = boot_top + Vector((0.07, 0, -0.205))
 
 
 def build_arms(b, m, joints):

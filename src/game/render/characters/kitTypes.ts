@@ -1,5 +1,6 @@
 // Data shape of a body rendered from a 3D model as a two-layer puppet kit (tools/blender/render_kit.py).
-import type { ArtChannel, ArtPartId, XY } from './artTypes';
+import type { BodyId } from '../../build/bodyTypes';
+import type { ArtChannel, ArtPartId, BodyArtDefinition, SourcePart, XY } from './artTypes';
 
 /** One part of a kit: its anatomy in frame pixels, and where its pictures sit in the atlas. */
 export interface KitPartData {
@@ -19,3 +20,22 @@ export interface BodyKitData {
     neck: XY;                    // frame px
     parts: Partial<Record<ArtPartId, KitPartData>>;
 }
+
+/**
+ * The kit as the renderer's two definitions: `anatomy` places joints in frame pixels (poses, corpses),
+ * `runtime` draws atlas pictures at the frame's scale, with the paint picture `paintOffset` away.
+ */
+export const kitDefinitions = (kit: BodyKitData, id: BodyId): { anatomy: BodyArtDefinition; runtime: BodyArtDefinition } => {
+    const pixelScale = 19 / Math.hypot(kit.neck[0] - kit.hip[0], kit.neck[1] - kit.hip[1]);
+    const anatomyParts: Partial<Record<ArtPartId, SourcePart>> = {};
+    const atlasParts: Partial<Record<ArtPartId, SourcePart>> = {};
+    for (const [part, data] of Object.entries(kit.parts) as [ArtPartId, KitPartData][]) {
+        anatomyParts[part] = { polygon: data.polygon, origin: data.origin, axisEnd: data.axisEnd, channel: data.channel };
+        atlasParts[part] = {
+            polygon: data.atlas.polygon, origin: data.atlas.origin, axisEnd: data.atlas.axisEnd, channel: data.channel,
+            texture: 'atlas', pixelScale, paintOffset: data.paintOffset, supportHeight: data.supportHeight,
+        };
+    }
+    const anatomy: BodyArtDefinition = { id, imagePath: kit.atlas.imagePath, size: kit.frame, hip: kit.hip, neck: kit.neck, parts: anatomyParts };
+    return { anatomy, runtime: { ...anatomy, anatomy, atlas: kit.atlas, parts: atlasParts } };
+};

@@ -84,3 +84,18 @@ def save_webp(pixels: np.ndarray, path: str, quality: int = 88) -> None:
         img.save(filepath=path, quality=quality)
     finally:
         bpy.data.images.remove(img)
+
+
+def save_alpha_png(alpha: np.ndarray, path: str) -> None:
+    """Writes a top-row-first alpha mask as an RGBA PNG (white, alpha = mask) for the contact tests."""
+    h, w = alpha.shape
+    rgba = np.ones((h, w, 4), dtype=np.float32)
+    rgba[:, :, 3] = alpha
+    img = bpy.data.images.new('kit_alpha', w, h, alpha=True)
+    try:
+        img.pixels = rgba[::-1].ravel()
+        img.file_format = 'PNG'
+        img.filepath_raw = path
+        img.save()
+    finally:
+        bpy.data.images.remove(img)

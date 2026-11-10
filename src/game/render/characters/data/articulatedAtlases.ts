@@ -36,19 +36,6 @@ export const PART_ATLASES: Partial<Record<BodyId, AtlasArtData>> = {
             foot: part([1152, 512, 1536, 1024], [1268, 852.21], undefined, 0.038, 'none'),
         },
     },
-    robot: {
-        imagePath: '/assets/characters/atompunk/articulated-v2/robot.png', size: [1536, 1024],
-        parts: {
-            torso: part([0, 0, 384, 490], [196, 545], [196, 130], 0.043, 'torso'),
-            pelvis: part([384, 0, 768, 490], [576, 280], [576, -140], 0.043, 'torso'),
-            upperArm: part([768, 0, 1152, 490], [957, 128], [946, 395], 0.033, 'arm'),
-            forearm: part([1152, 0, 1536, 490], [1338, 112], [1330, 404], 0.033, 'arm'),
-            hand: part([0, 512, 384, 1024], [184, 760], undefined, 0.026, 'arm'),
-            thigh: part([384, 512, 768, 1024], [578, 600], [568, 873], 0.034, 'leg'),
-            shin: part([768, 512, 1152, 1024], [952, 612], [952, 907], 0.033, 'leg'),
-            foot: part([1152, 512, 1536, 1024], [1275, 841.21], undefined, 0.038, 'none'),
-        },
-    },
     toxic: {
         imagePath: '/assets/characters/atompunk/articulated-v2/toxic.png', size: [1536, 1024],
         parts: {

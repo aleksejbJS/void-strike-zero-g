@@ -14,7 +14,9 @@ const paeth = (a: number, b: number, c: number) => {
 /** Decode the actual PNG alpha without a browser or an additional image dependency. */
 const pngAlpha = (imagePath: string): AlphaImage => {
     const cached = pictures.get(imagePath); if (cached) return cached;
-    const file = readFileSync(resolve('public', imagePath.replace(/^\//, '')));
+    // 3D kits serve a WebP atlas; their renderer also writes the PNG silhouette these checks decode
+    const kitAlpha = imagePath.match(/^\/assets\/characters\/kit\/(.+)\.webp$/);
+    const file = readFileSync(kitAlpha ? resolve('art/3d/kit-alpha', `${kitAlpha[1]}.png`) : resolve('public', imagePath.replace(/^\//, '')));
     if (!file.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) throw new Error(`Not a PNG: ${imagePath}`);
     let width = 0, height = 0, channels = 0, color = 0;
     let transparency: Buffer | undefined;

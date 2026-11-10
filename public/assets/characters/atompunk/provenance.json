@@ -19,14 +19,6 @@
       "height": 1536
     },
     {
-      "id": "robot",
-      "source": "art/characters/atompunk/base-samples/robot-base-v1.png",
-      "imagePath": "/assets/characters/atompunk/robot.png",
-      "sha256": "6e3378e4980accdb9f8e0209b134619f7ae613a548ce7d74e31b06e205410765",
-      "width": 1024,
-      "height": 1536
-    },
-    {
       "id": "toxic",
       "source": "art/characters/atompunk/base-samples/toxic-base-v1.png",
       "imagePath": "/assets/characters/atompunk/toxic.png",

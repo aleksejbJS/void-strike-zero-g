@@ -22,6 +22,7 @@ export interface SourcePart {
     pixelScale?: number; // World units per authored pixel, independent of source anatomy coordinates.
     supportHeight?: number; // Painted sole below the ankle pivot, in rig units for planted feet.
     preserveBlood?: boolean; // Custom head tint leaves original painted blood pixels crimson.
+    paintOffset?: XY; // 3D kits: atlas px from this (untinted) picture to its tintable paint picture.
 }
 
 export interface BodyArtDefinition {

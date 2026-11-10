@@ -14,7 +14,7 @@ from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from kit_atlas import alpha_box, convex_hull, load_rgba, save_webp, shelf_pack  # noqa: E402
+from kit_atlas import alpha_box, convex_hull, load_rgba, save_alpha_png, save_webp, shelf_pack  # noqa: E402
 from kit_module import write_module                                              # noqa: E402
 
 ARGS = sys.argv[sys.argv.index('--') + 1:]
@@ -110,7 +110,8 @@ def main():
             raise SystemExit(f'part {part} rendered empty')
         x0, y0, x1, y1 = box
         has_paint = bool((paint[:, :, 3] > 0.02).any())
-        crops[part] = dict(box=box, hull=convex_hull(mask), origin=px(joints[origin]),
+        crops[part] = dict(box=box, hull=convex_hull(mask), union=mask[y0:y1, x0:x1].astype(np.float32),
+                           origin=px(joints[origin]),
                            axisEnd=px(joints[axis_end]) if axis_end else None,
                            fixed=fixed[y0:y1, x0:x1], paint=paint[y0:y1, x0:x1] if has_paint else None)
         sizes[(part, 'fixed')] = (x1 - x0, y1 - y0)
@@ -124,6 +125,12 @@ def main():
     out_img = os.path.join(REPO, 'public' + ATLAS_URL)
     os.makedirs(os.path.dirname(out_img), exist_ok=True)
     save_webp(atlas, out_img)
+    # The served atlas is WebP; the contact tests read this PNG silhouette (paint + fixed) instead
+    silhouette = np.zeros((height, 2048), dtype=np.float32)
+    for (part, layer), (sx, sy) in slots.items():
+        if layer == 'fixed':
+            u = crops[part]['union']; silhouette[sy:sy + u.shape[0], sx:sx + u.shape[1]] = u
+    save_alpha_png(silhouette, os.path.join(REPO, 'art/3d/kit-alpha/robot.png'))
     sole = {s: px(joints[f'sole{s}']) for s in SIDES}
     write_module(os.path.join(REPO, 'src/game/render/characters/data/robotKit.ts'), crops, slots,
                  frame=[W, H], atlas=(ATLAS_URL, [2048, height]), hip=px(joints['hip']), neck=px(joints['neck']), sole=sole)

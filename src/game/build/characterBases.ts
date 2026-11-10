@@ -17,7 +17,8 @@ export interface BodyPreset {
 export const BODY_PALETTES: Record<BodyId, BodyPalette> = {
     human: { head: 0xa56b47, torso: 0xe4d4ab, arm: 0xa56b47, leg: 0x514d42 },
     'human-female': { head: 0xa56b47, torso: 0xe4d4ab, arm: 0xa56b47, leg: 0x514d42 },
-    robot: { head: 0xd9cda8, torso: 0xd9cda8, arm: 0xb65842, leg: 0x6b716a },
+    // The 3D-kit robot's paint is neutral; this cream tints it to the approved look (tools/blender)
+    robot: { head: 0xead9ba, torso: 0xead9ba, arm: 0xead9ba, leg: 0xead9ba },
     toxic: { head: 0xa6ba43, torso: 0xb6bf46, arm: 0xa6ba43, leg: 0x526344 },
     cat: { head: 0x919082, torso: 0xc8bea2, arm: 0x919082, leg: 0x55584e },
 };

@@ -11,7 +11,7 @@ import { solvePose, upperPoint, RIG_SCALE, type FighterPose, type FighterState }
 import { gripPoints } from '../fighter/weaponGrips';
 import type { BodyArtDefinition, XY } from './artTypes';
 import { illustratedPose, sourceBodyPoint } from './bodyPose';
-import { BODY_ART } from './definitions';
+import { BODY_ART, KIT_ART } from './definitions';
 import { artScale, partGeometry, placePart } from './placement';
 import { expectedFeet } from './footTargetsTestKit';
 
@@ -91,7 +91,8 @@ describe('illustrated anatomy pose', () => {
         }
     });
 
-    it.each(BODY_IDS)('keeps %s source geometry, UVs and approved image bytes unchanged', body => {
+    // Painted bases only: 3D-kit bodies (KIT_ART) are rendered by tools/blender, not approved paintings
+    it.each(BODY_IDS.filter(id => !KIT_ART[id]))('keeps %s source geometry, UVs and approved image bytes unchanged', body => {
         const definition = BODY_ART[body], before = structuredClone(definition);
         const uvs = Object.values(definition.parts).map(part => [...partGeometry(part, definition.size).uvs]);
         const source = resolve(`art/characters/atompunk/base-samples/${body}-base-v1.png`);

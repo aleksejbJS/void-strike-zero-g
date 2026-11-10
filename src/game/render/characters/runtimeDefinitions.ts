@@ -1,7 +1,7 @@
 // Complete atlas parts share the original picture's anatomical anchors and identity pixels.
 import { BODY_IDS, type BodyId } from '../../build/bodyTypes';
 import type { ArtPartId, BodyArtDefinition, SourcePart, XY } from './artTypes';
-import { BODY_ART } from './definitions';
+import { BODY_ART, KIT_ART } from './definitions';
 import { PART_ATLASES } from './data/articulatedAtlases';
 
 export type AtlasPartId = 'torso' | 'pelvis' | 'upperArm' | 'forearm' | 'hand' | 'thigh' | 'shin' | 'foot';
@@ -27,4 +27,4 @@ export const createRuntimeArt = (original: BodyArtDefinition, atlas?: AtlasArtDa
 };
 
 export const RUNTIME_BODY_ART = Object.fromEntries(BODY_IDS.map(id =>
-    [id, createRuntimeArt(BODY_ART[id], PART_ATLASES[id])])) as Record<BodyId, BodyArtDefinition>;
+    [id, KIT_ART[id]?.runtime ?? createRuntimeArt(BODY_ART[id], PART_ATLASES[id])])) as Record<BodyId, BodyArtDefinition>;

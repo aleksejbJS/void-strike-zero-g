@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import type { BodyArtDefinition, SourcePart, XY } from '../artTypes';
 import { partGeometry } from '../placement';
 
-const ids = ['human', 'human-female', 'robot', 'toxic', 'cat'] as const;
+// Painted bases only: the Robot is a 3D kit with its own invariants in robotKit.test.ts
+const ids = ['human', 'human-female', 'toxic', 'cat'] as const;
 const requiredParts = [
     'head', 'torso', 'pelvis', 'upperArmFront', 'upperArmBack',
     'forearmFront', 'forearmBack', 'handFront', 'handBack',

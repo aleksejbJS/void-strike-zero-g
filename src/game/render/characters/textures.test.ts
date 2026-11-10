@@ -14,7 +14,7 @@ const makeTexture = () => {
     return texture;
 };
 const asLoadResult = (texture: Texture) => texture as unknown as Record<string, unknown>;
-const imageUrl = (id: string) => assetUrl(`assets/characters/atompunk/${id}.png`);
+const imageUrl = (id: keyof typeof BODY_ART) => assetUrl(BODY_ART[id].imagePath);
 
 const declared = { ...RUNTIME_BODY_ART };
 const pictures = HUMAN_PICTURES as HumanPicture[], declaredPictures = [...pictures];
