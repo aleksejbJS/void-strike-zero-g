@@ -9,7 +9,7 @@ import { gripPoints } from './weaponGrips';
 import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
-import { BleedDrips } from './fighterBleed';
+import { BleedDrips, StumpSparks } from './fighterBleed';
 import { FighterFire } from './fighterFire';
 import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
@@ -39,6 +39,7 @@ interface AnimMemory {
     motion: FighterMotion;    // landing squash and hit flash
     dust: DustBudget;
     bleed: BleedDrips;        // blood from the stump of a wounded fighter
+    sparks: StumpSparks;      // a robot stump's shorting cables
     fire: FighterFire;        // flame jet, burning body, lit fuel tank
     parts: PartMotion;        // springs for tail, ears, lamp and wings
     magazine: MagazineDrop;   // drops the empty magazine when a reload starts
@@ -114,8 +115,9 @@ export class FighterAnimator {
         const hop = p.wound ? hopLift(state, m.phase, moveDir) : 0;
         if (p.wound) {
             const tip = humanBleedAnchor(look.build.body, pose) ?? stumpTip(pose);
-            m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now,
-                look.build.body === 'robot' ? ROBOT_OIL : undefined); // a robot stump drips oil
+            const robot = look.build.body === 'robot', at = { x: p.pos.x + tip.x * facing * RIG_SCALE, y: p.pos.y + tip.y * RIG_SCALE - hop };
+            m.bleed.spawn(game, at.x, at.y, now, robot ? ROBOT_OIL : undefined); // a robot stump drips oil
+            if (robot) m.sparks.spawn(game, at.x, at.y, now);                     // and its torn cables spark
         }
         m.fire.update(game, p, { pose, grip, facing, hop }, since, now);
         return {
@@ -145,7 +147,7 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), fire: new FighterFire(),
+                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), sparks: new StumpSparks(), fire: new FighterFire(),
                 parts: new PartMotion(),
                 magazine: new MagazineDrop(),
             };

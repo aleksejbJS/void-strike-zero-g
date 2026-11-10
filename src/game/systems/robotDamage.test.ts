@@ -6,7 +6,7 @@ import { gameEvents, GameEvent } from './events';
 import { applyEffectEvent } from './effects';
 import { emitHitEffect } from './robotHits';
 import { OIL_DECAL, ROBOT_OIL, ROBOT_SPARK, isRobotEntity } from './robotDamage';
-import { BleedDrips } from '../render/fighter/fighterBleed';
+import { BleedDrips, StumpSparks } from '../render/fighter/fighterBleed';
 
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
@@ -56,6 +56,15 @@ describe('robot victims spark and leak oil instead of bleeding', () => {
         expect(state.particles.some(p => p.type === 'blood' && p.color === ROBOT_OIL)).toBe(true);
         expect(state.particles.some(p => p.type === 'spark' && p.color === ROBOT_SPARK)).toBe(true);
         expect(state.particles.some(p => p.type === 'blood' && p.color !== ROBOT_OIL)).toBe(false);
+    });
+
+    it('sparks from a robot stump every 0.6 to 1.2 seconds', () => {
+        const state = createMockState(GameMode.DEATHMATCH), sparks = new StumpSparks();
+        const bursts = (now: number) => { const before = state.particles.length; sparks.spawn(state, 0, 0, now); return state.particles.length > before; };
+        expect(bursts(1000)).toBe(true);
+        expect(bursts(1500)).toBe(false); // too soon: at least 0.6 s apart
+        expect(bursts(2300)).toBe(true);  // at most 1.2 s apart
+        expect(state.particles.every(p => p.type === 'spark' && p.color === ROBOT_SPARK)).toBe(true);
     });
 
     it('drips oil from a robot stump', () => {

@@ -23,6 +23,7 @@ import type { BodyId } from '../../build/bodyTypes';
 import type { ColorMatrixFilter } from 'pixi.js';
 import type { FighterExpression } from '../characters/humanArtSelector';
 import type { HumanWounds } from '../characters/humanWounds';
+import type { RobotWounds } from '../characters/robotWounds';
 import { drawFuelHose, drawFuelTank } from './fuelTankBack';
 
 export interface FighterView {
@@ -39,6 +40,7 @@ export interface FighterView {
     artFailure?: BodyId;
     artFlash?: ColorMatrixFilter;
     humanWounds?: HumanWounds;
+    robotWounds?: RobotWounds; // 3D-kit robot: torn sockets with cables
 }
 
 export interface FighterFrame {
@@ -116,7 +118,7 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     drawJetpack(b, pose, look, f.flame, f.parts);
     if (!illustrated) drawLegacyBody(b, pose, look, f.oneLeg);
     else {
-        if (f.oneLeg && !view.humanWounds) drawStump(b, pose, look);
+        if (f.oneLeg && !view.humanWounds && !view.robotWounds) drawStump(b, pose, look);
     }
 
     const headLook = !illustrated && look.build.helmet === 'none'

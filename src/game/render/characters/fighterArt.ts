@@ -8,20 +8,46 @@ import { bodyAtlasTexture, bodyPictureTexture, bodyTexture } from './textures';
 import { selectHumanArt } from './humanArtSelector';
 import { HUMAN_WOUNDS } from './data/humanPoseVariants';
 import { createHumanWounds, destroyHumanWounds, humanLiveWoundTargets, updateHumanWounds } from './humanWounds';
-import { createArtRig, destroyArtRig, updateArtRig } from './rigView';
+import { createArtRig, destroyArtRig, updateArtRig, type ArtRig } from './rigView';
+import { createRobotWounds, destroyRobotWounds, updateRobotWounds } from './robotWounds';
+import { liveSockets } from './robotSockets';
+import type { Texture } from 'pixi.js';
 import { liveRigTargets } from './rigTargets';
 import { drawPattern } from '../fighter/parts/patterns';
 import { torsoPoint } from '../fighter/fighterDetails';
 
-const clearWounds = (view: FighterView): void => {
+const clearHumanWounds = (view: FighterView): void => {
     if (view.humanWounds) destroyHumanWounds(view.humanWounds);
     view.humanWounds = undefined;
+};
+
+/** Every wound view goes when the illustrated body goes. */
+const clearWounds = (view: FighterView): void => {
+    clearHumanWounds(view);
+    if (view.robotWounds) destroyRobotWounds(view.robotWounds);
+    view.robotWounds = undefined;
+};
+
+/** A 3D-kit robot that lost its leg shows a torn hip with cables (instead of the blood stump). */
+const syncRobotWounds = (view: FighterView, frame: FighterFrame, rig: ArtRig, atlas: Texture | undefined): void => {
+    if (rig.definition.id !== 'robot' || !atlas) {
+        if (view.robotWounds) destroyRobotWounds(view.robotWounds);
+        view.robotWounds = undefined;
+        return;
+    }
+    if (!view.robotWounds) {
+        const wounds = createRobotWounds(atlas);
+        if (!wounds) return;
+        view.robotWounds = wounds;
+        view.root.addChildAt(wounds.root, view.root.getChildIndex(rig.body)); // under the shorts and torso
+    }
+    updateRobotWounds(view.robotWounds, liveSockets(rig.definition, frame.pose, !!frame.oneLeg), performance.now() / 1000);
 };
 
 const syncWounds = (view: FighterView, frame: FighterFrame): void => {
     const definition = view.illustrated?.definition, image = HUMAN_WOUNDS.leg?.image;
     if (definition?.id !== 'human' || !image || !bodyPictureTexture(image.imagePath)) {
-        clearWounds(view); return;
+        clearHumanWounds(view); return;
     }
     if (!view.humanWounds && frame.oneLeg) {
         view.humanWounds = createHumanWounds(definition, bodyPictureTexture, ['hipBack']);
@@ -72,6 +98,7 @@ export const syncFighterArt = (view: FighterView, frame: FighterFrame): boolean 
         frame.oneLeg, frame.headBob, frame.weaponless);
     updateArtRig(rig, targets, frame.look, frame.look.build.helmet !== 'none', frame.look.build.tail !== 'none');
     syncWounds(view, frame);
+    syncRobotWounds(view, frame, rig, bodyAtlasTexture(id));
     drawPattern(rig.overlay.clear(), (x, y) => torsoPoint(frame.pose, x, y), frame.look);
     const flash = frame.hitFlash ?? 0;
     if (flash > 0) {

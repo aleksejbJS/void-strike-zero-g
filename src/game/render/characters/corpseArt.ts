@@ -11,6 +11,8 @@ import { lookOfCorpse } from '../ragdollView';
 import { BODY_ART } from './definitions';
 import { RUNTIME_BODY_ART } from './runtimeDefinitions';
 import { corpseRigTargets } from './corpseTargets';
+import { createRobotWounds, updateRobotWounds, type RobotWounds } from './robotWounds';
+import { corpseSockets } from './robotSockets';
 import { ArtRig, createArtRig, updateArtRig } from './rigView';
 import { bodyAtlasTexture, bodyPictureTexture, bodyTexture } from './textures';
 import { drawPattern } from '../fighter/parts/patterns';
@@ -27,6 +29,7 @@ export interface CorpseArt {
     upperPaint: Graphics; lowerPaint: Graphics; badge: Graphics; tail: Graphics; jetpack: Graphics;
     upperMask?: Graphics; lowerMask?: Graphics;
     wounds?: HumanWounds;
+    robotWounds?: RobotWounds; // 3D-kit robot: torn sockets with cables on the body and every piece
 }
 
 const bodyFrame = (layer: Container, target?: ArtTarget): void => {
@@ -53,6 +56,8 @@ export const createCorpseArt = (c: Corpse): CorpseArt | undefined => {
         art.jetpack.label = 'corpse-jetpack';
         // rig.under (3D-kit palms) stays hidden on corpses but must be parented so the view destroys it
         root.addChild(rig.tail, art.tail, art.jetpack, rig.back, rig.body, art.upperPaint, art.lowerPaint, art.badge, rig.head, rig.under, rig.front, rig.overlay);
+        const robotWounds = id === 'robot' && atlas ? createRobotWounds(atlas) : undefined;
+        if (robotWounds) { art.robotWounds = robotWounds; root.addChildAt(robotWounds.root, root.getChildIndex(rig.head)); }
         art.wounds = createHumanWounds(definition, bodyPictureTexture);
         if (art.wounds) root.addChild(art.wounds.root);
         if (c.kind === 'cut') {
@@ -75,6 +80,7 @@ export const updateCorpseArt = (art: CorpseArt, c: Corpse, headTurn?: number): v
     art.root.scale.set(c.facing * RIG_SCALE, RIG_SCALE);
     updateArtRig(art.rig, targets, look, look.build.helmet !== 'none', look.build.tail !== 'none');
     if (art.wounds) updateHumanWounds(art.wounds, humanCorpseWoundTargets(art.rig.definition, c, targets));
+    if (art.robotWounds) updateRobotWounds(art.robotWounds, corpseSockets(art.rig.definition, c, targets), performance.now() / 1000);
     bodyFrame(art.upperPaint, targets.torso);
     bodyFrame(art.lowerPaint, c.kind === 'cut' ? targets.pelvis : undefined);
     bodyFrame(art.badge, targets.torso);

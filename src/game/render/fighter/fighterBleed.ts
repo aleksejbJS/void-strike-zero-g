@@ -3,6 +3,7 @@
 
 import { GameState } from '../../../types';
 import { createParticles } from '../../systems/effectSpawn';
+import { sparksAt } from '../../systems/robotDamage';
 
 export const DRIP_MS = 150;
 const DRIP_COLOR = '#dc2626';
@@ -16,5 +17,16 @@ export class BleedDrips {
         if (now >= this.lastAt && now - this.lastAt < DRIP_MS) return;
         this.lastAt = now;
         createParticles(state, x, y, 1, color, 'blood', { vel: { x: (Math.random() - 0.5) * 2 * DRIFT, y: 0 } });
+    }
+}
+
+/** A robot stump's cables short out now and then: a small burst every 0.6-1.2 s (never twice in one window). */
+export class StumpSparks {
+    private nextAt = -Infinity;
+
+    spawn(state: GameState, x: number, y: number, now: number): void {
+        if (now < this.nextAt) return;
+        this.nextAt = now + 600 + Math.random() * 600;
+        sparksAt(state, x, y, 4);
     }
 }
