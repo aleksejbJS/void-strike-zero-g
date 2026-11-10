@@ -6,32 +6,36 @@ import { ART_PARTS, ArtPartId, BodyArtDefinition } from './artTypes';
 import { artScale, partGeometry, placePart } from './placement';
 import type { RigTargets } from './rigTargets';
 import { BloodTintFilter } from './bloodTintFilter';
+import { createPaintMesh, syncPaint } from './rigLayers';
 
 export interface ArtRig {
     definition: BodyArtDefinition;
     scale: number;
     tail: Container;
+    under: Container; // 3D-kit palms, drawn just under the weapon picture
     back: Container;
     body: Container;
     head: Container;
     front: Container;
     overlay: Graphics;
     meshes: Partial<Record<ArtPartId, Mesh>>;
+    paint: Partial<Record<ArtPartId, Mesh>>; // 3D-kit tinted paint, one under each painted part
     bloodTint?: BloodTintFilter;
 }
 
-const GROUPS: Record<'tail' | 'back' | 'body' | 'head' | 'front', readonly ArtPartId[]> = {
+const GROUPS: Record<'tail' | 'back' | 'body' | 'head' | 'under' | 'front', readonly ArtPartId[]> = {
     tail: ['tail'],
     back: ['thighBack', 'shinBack', 'footBack', 'upperArmBack', 'forearmBack'],
     body: ['torso', 'thighFront', 'shinFront', 'footFront', 'pelvis'],
     head: ['head'],
-    front: ['handBack', 'upperArmFront', 'forearmFront', 'handFront'],
+    under: ['palmFront', 'palmBack'],
+    front: ['handBack', 'handBackGrip', 'upperArmFront', 'forearmFront', 'handFront', 'handFrontGrip'],
 };
 
 export const createArtRig = (definition: BodyArtDefinition, texture: Texture, atlasTexture?: Texture,
     resolveImage?: (imagePath: string) => Texture | undefined): ArtRig => {
-    const rig: ArtRig = { definition, scale: artScale(definition), meshes: {},
-        tail: new Container(), back: new Container(), body: new Container(), head: new Container(), front: new Container(), overlay: new Graphics() };
+    const rig: ArtRig = { definition, scale: artScale(definition), meshes: {}, paint: {}, tail: new Container(), under: new Container(),
+        back: new Container(), body: new Container(), head: new Container(), front: new Container(), overlay: new Graphics() };
     try {
         for (const group of Object.keys(GROUPS) as (keyof typeof GROUPS)[]) {
             rig[group].label = `art-${group}`;
@@ -47,6 +51,12 @@ export const createArtRig = (definition: BodyArtDefinition, texture: Texture, at
                 mesh.label = `art-${id}`;
                 mesh.on('destroyed', () => geometry.destroy(true));
                 rig.meshes[id] = mesh;
+                const paint = createPaintMesh(source, size, picture);
+                if (paint) {
+                    paint.label = `art-${id}-paint`;
+                    rig.paint[id] = paint;
+                    rig[group].addChild(paint);
+                }
                 rig[group].addChild(mesh);
             }
         }
@@ -64,6 +74,8 @@ export const updateArtRig = (rig: ArtRig, targets: RigTargets, look: FighterLook
         const mesh = rig.meshes[id], source = rig.definition.parts[id], target = targets[id];
         if (!mesh || !source) continue;
         mesh.visible = !!target && !(hideHead && id === 'head') && !(hideTail && id === 'tail');
+        const paint = rig.paint[id];
+        if (paint) paint.visible = mesh.visible;
         if (!target || !mesh.visible) continue;
         const at = placePart(source, target, rig.scale);
         mesh.visible = at.visible;
@@ -72,6 +84,12 @@ export const updateArtRig = (rig: ArtRig, targets: RigTargets, look: FighterLook
         mesh.scale.set(at.scaleX, at.scaleY);
         const channel = source.channel;
         const desired = channel === 'none' ? 0xffffff : look[channel];
+        if (paint) {
+            // Kit part: neutral paint always takes the colour, the fixed picture (metal, rust, outline) never does
+            mesh.tint = 0xffffff;
+            syncPaint(paint, mesh, desired);
+            continue;
+        }
         const custom = channel !== 'none' && desired !== palette[channel];
         if (id === 'head' && source.preserveBlood && custom) {
             if (!rig.bloodTint) {

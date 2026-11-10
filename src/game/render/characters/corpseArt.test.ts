@@ -30,9 +30,11 @@ describe('illustrated corpse rendering', () => {
         const c = make(body), v = createCorpseView(c, {});
         expect(v.illustrated?.rig.definition.id).toBe(body);
         expect(v.pieces).toBeUndefined();
-        for (const mesh of Object.values(v.illustrated!.rig.meshes)) {
+        for (const [id, mesh] of Object.entries(v.illustrated!.rig.meshes)) {
             expect(mesh!.texture).toBe(Texture.WHITE);
-            expect(mesh!.visible).toBe(true);
+            // 3D-kit grip poses belong to armed fighters; a corpse shows its open hands instead
+            const gripPose = id.startsWith('palm') || id.endsWith('Grip');
+            expect(mesh!.visible, id).toBe(!gripPose);
         }
         const rig = v.illustrated!.rig;
         if (body === 'human') {
@@ -41,6 +43,10 @@ describe('illustrated corpse rendering', () => {
             expect(rig.bloodTint?.headTint).toBe(0x112233);
             const tint = rig.bloodTint!.resources.headTintUniforms.uniforms.uHeadTint;
             expect(tint[0]).toBeCloseTo(17 / 255); expect(tint[1]).toBeCloseTo(34 / 255); expect(tint[2]).toBeCloseTo(51 / 255);
+        } else if (rig.paint.head) {
+            // 3D kit: the colour rides on the neutral paint layer, the fixed picture stays untinted
+            expect(rig.paint.head.tint).toBe(0x112233);
+            expect(rig.meshes.head!.tint).toBe(0xffffff);
         } else expect(rig.meshes.head!.tint).toBe(0x112233);
         destroyCorpseView(v);
     });

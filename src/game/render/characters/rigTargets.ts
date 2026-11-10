@@ -31,7 +31,13 @@ export const liveRigTargets = (definition: BodyArtDefinition, pose: FighterPose,
         const legVisible = side === 'Front' || !oneLeg;
         targets[`upperArm${side}`] = { start: shoulder, end: arm.joint };
         targets[`forearm${side}`] = { start: arm.joint, end: arm.end };
-        targets[`hand${side}`] = { start: arm.end, rotation: handTurn(definition, side, arm.joint, arm.end) };
+        if (definition.parts[`hand${side}Grip`] && !looseFeet) {
+            // 3D kits hold the weapon: palm under it, fingers over it, both turning with the gun
+            targets[`palm${side}`] = { start: arm.end, rotation: pose.gunAngle };
+            targets[`hand${side}Grip`] = { start: arm.end, rotation: pose.gunAngle };
+        } else {
+            targets[`hand${side}`] = { start: arm.end, rotation: handTurn(definition, side, arm.joint, arm.end) };
+        }
         const anatomy = definition.anatomy ?? definition;
         const thigh = anatomy.parts[`thigh${side}`];
         targets[`thigh${side}`] = { start: sourceBodyPoint(anatomy, pose, thigh?.origin ?? anatomy.hip), end: leg.joint, visible: legVisible };

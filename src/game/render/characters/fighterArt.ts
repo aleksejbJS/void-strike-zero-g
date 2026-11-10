@@ -56,6 +56,7 @@ export const syncFighterArt = (view: FighterView, frame: FighterFrame): boolean 
             view.root.addChildAt(rig.overlay, view.root.getChildIndex(view.ears));
             view.root.addChildAt(rig.head, view.root.getChildIndex(view.head));
             view.root.addChildAt(rig.front, view.root.getChildIndex(view.front));
+            view.root.addChildAt(rig.under, view.root.getChildIndex(view.weapon));
             view.headKey = '';
         } catch (error) {
             view.artFailure = id;
