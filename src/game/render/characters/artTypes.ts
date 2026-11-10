@@ -6,6 +6,8 @@ export const ART_PARTS = [
     'head', 'torso', 'pelvis',
     'upperArmFront', 'upperArmBack', 'forearmFront', 'forearmBack', 'handFront', 'handBack',
     'thighFront', 'thighBack', 'shinFront', 'shinBack', 'footFront', 'footBack', 'tail',
+    // 3D-kit hand poses: palms under the weapon, gripping fingers over it (only kit bodies have them)
+    'palmFront', 'palmBack', 'handFrontGrip', 'handBackGrip',
 ] as const;
 export type ArtPartId = typeof ART_PARTS[number];
 export type ArtChannel = 'head' | 'torso' | 'arm' | 'leg' | 'none';
