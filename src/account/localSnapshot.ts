@@ -6,7 +6,7 @@ import { BUILD_KEY, loadBuild, saveBuild } from '../game/build/buildStorage';
 import { XP_KEY, loadXp, setXp } from '../game/build/progress';
 import { sanitizeBuild } from '../game/build/sanitizeBuild';
 import { BODY_PRESETS } from '../game/build/characterBases';
-import { migrateCharacter } from '../game/build/characterMigration';
+import { migrateCharacter, migrateRobotDefaults } from '../game/build/characterMigration';
 import { clearStats, exportStats, replaceStats } from '../game/stats/lifetimeStats';
 import { achievementManager } from '../game/systems/achievements';
 import {
@@ -88,7 +88,12 @@ export function writeLocalSnapshot(snapshot: PlayerSnapshot): void {
     achievementManager.replaceProgress(clean.achievements);
     setXp(clean.xp);
     replaceStats(clean.stats); // silent: the achievements above already carry the merged progress
-    if (clean.look) writeLook(clean.look);
+    if (clean.look) {
+        // A cloud look can still hold the painted robot's defaults; store it as the 3D kit's defaults
+        const { colors, build } = clean.look;
+        const kit = migrateRobotDefaults(colors, build.body);
+        writeLook({ ...clean.look, colors: { ...kit, player: migrateRobotDefaults({ ...kit, torso: colors.player }, build.body).torso } });
+    }
 }
 
 /** Forgets the whole local player: progress, XP, counters, look and name (used on logout). */

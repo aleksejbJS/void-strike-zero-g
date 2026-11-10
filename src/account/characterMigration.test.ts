@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { presetBuild } from '../game/build/buildPresets';
 import { BODY_PRESETS } from '../game/build/characterBases';
 import { readLocalSnapshot, saveLookIfChanged, writeLocalSnapshot } from './localSnapshot';
+import { migrateStoredRobotLook } from './robotColorMigration';
 import { mergeSnapshots, PlayerSnapshot } from './snapshot';
 
 const canonical = {
@@ -65,5 +66,35 @@ describe('illustrated look migration', () => {
         expect(saveLookIfChanged({ ...canonical, build: { ...canonical.build, helmet: 'box' } })).toBe(true);
         expect(store.fighterLookSavedAt).toBe('456');
         now.mockRestore();
+    });
+});
+
+describe('3D-kit robot colour migration', () => {
+    const robotBuild = JSON.stringify({ ...presetBuild('base-robot'), body: 'robot' });
+    const cream = '#ead9ba';
+
+    it('rewrites stored old robot defaults without stamping the look as a player edit', () => {
+        Object.assign(store, { fighterBuild: robotBuild, headColor: '#d9cda8', torsoColor: '#d9cda8', playerColor: '#d9cda8',
+            armColor: '#b65842', legColor: '#6b716a', fighterLookSavedAt: '123' });
+        migrateStoredRobotLook();
+        expect(store).toMatchObject({ headColor: cream, torsoColor: cream, playerColor: cream, armColor: cream, legColor: cream });
+        expect(store.fighterLookSavedAt).toBe('123');
+    });
+
+    it('keeps a customised stored colour and touches nothing for other bodies', () => {
+        Object.assign(store, { fighterBuild: robotBuild, armColor: '#3b82f6', legColor: '#6b716a' });
+        migrateStoredRobotLook();
+        expect(store).toMatchObject({ armColor: '#3b82f6', legColor: cream });
+        store = { fighterBuild: JSON.stringify(presetBuild('base-human')), legColor: '#6b716a' };
+        migrateStoredRobotLook();
+        expect(store.legColor).toBe('#6b716a');
+    });
+
+    it('migrates a cloud snapshot that still carries the old robot defaults', () => {
+        const remote: PlayerSnapshot = { achievements: {}, xp: 10, stats: {}, look: { skinId: 'base-robot', savedAt: 99,
+            build: { ...presetBuild('base-robot'), body: 'robot' },
+            colors: { player: '#d9cda8', head: '#d9cda8', torso: '#d9cda8', arms: '#b65842', legs: '#9900ff', jetpack: '#ef4444' } } };
+        writeLocalSnapshot(mergeSnapshots(readLocalSnapshot(), remote));
+        expect(store).toMatchObject({ headColor: cream, armColor: cream, legColor: '#9900ff' });
     });
 });

@@ -32,6 +32,9 @@ const base = (id: string, body: BodyId, name: string, style: BodyPreset['style']
     };
 };
 
+/** The painted robot's defaults before the 3D kit; saved looks still holding them are migrated. */
+export const ROBOT_LEGACY_PALETTE = { head: '#d9cda8', torso: '#d9cda8', arms: '#b65842', legs: '#6b716a' } as const;
+
 export const BODY_PRESETS: readonly BodyPreset[] = [
     base('base-human', 'human', 'Human', 'human'),
     base('base-female', 'human-female', 'Female human', 'human'),
