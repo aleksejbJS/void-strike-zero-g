@@ -49,6 +49,22 @@ describe('robot wounds', () => {
         expect(view.robotWounds!.cables.visible).toBe(false);
     });
 
+    it('flashes sparks over a hurt robot at least once a period, and never over a healthy one', () => {
+        const view = createFighterView(); views.push(view);
+        const seen = (expression: 'hurt' | 'normal') => {
+            let visible = 0;
+            for (let t = 0; t < 700; t += 10) {
+                vi.spyOn(performance, 'now').mockReturnValue(10_000 + t);
+                drawFighter(view, { ...frame(false), expression });
+                if (view.robotWounds!.sparks.visible) visible++;
+            }
+            return visible;
+        };
+        expect(seen('hurt')).toBeGreaterThan(0);
+        expect(seen('normal')).toBe(0);
+        expect(view.root.children.at(-1)).toBe(view.robotWounds!.sparks); // over the arms and the weapon
+    });
+
     it('opens ten sockets on a gibbed robot and two on a cut one, and destroys them with the corpse', () => {
         for (const [kind, count] of [['gib', 10], ['cut', 2]] as const) {
             const v = createCorpseView(corpse(kind), {});
@@ -57,6 +73,7 @@ describe('robot wounds', () => {
             const flange = wounds.root.children.find(child => child.label === 'robot-flange')!;
             destroyCorpseView(v);
             expect(flange.destroyed).toBe(true);
+            expect(wounds.sparks.destroyed).toBe(true); // a corpse never sparks, but owns the layer
         }
     });
 });

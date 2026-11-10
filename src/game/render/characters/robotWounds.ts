@@ -12,6 +12,7 @@ const INK = 0x24160f, COPPER = 0xd08a4a;
 export interface RobotWounds {
     root: Container;
     cables: Graphics;
+    sparks: Graphics; // hurt sparks: a separate layer over the whole fighter, placed by its owner
     flanges: Mesh[];
     source: SourcePart;
     texture: Texture;
@@ -36,7 +37,11 @@ export const createRobotWounds = (atlas: Texture): RobotWounds | undefined => {
     root.addChild(cables);
     const geometry = new MeshGeometry(partGeometry(source, ROBOT_KIT.atlas.size));
     root.on('destroyed', () => geometry.destroy(true));
-    return { root, cables, flanges: [], source, texture: atlas, geometry, seed: Math.floor(Math.random() * 1e6) };
+    const sparks = new Graphics();
+    sparks.label = 'robot-hurt-sparks';
+    sparks.visible = false;
+    root.addChild(sparks); // parented (and so destroyed) with the wounds until a live fighter lifts it on top
+    return { root, cables, sparks, flanges: [], source, texture: atlas, geometry, seed: Math.floor(Math.random() * 1e6) };
 };
 
 const flangeAt = (w: RobotWounds, i: number): Mesh => {
@@ -74,4 +79,5 @@ export const updateRobotWounds = (w: RobotWounds, sockets: readonly Socket[], ti
 
 export const destroyRobotWounds = (w: RobotWounds): void => {
     if (!w.root.destroyed) w.root.destroy({ children: true, context: true });
+    if (!w.sparks.destroyed) w.sparks.destroy({ context: true });
 };

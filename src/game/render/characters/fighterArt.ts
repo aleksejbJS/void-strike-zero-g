@@ -11,6 +11,8 @@ import { createHumanWounds, destroyHumanWounds, humanLiveWoundTargets, updateHum
 import { createArtRig, destroyArtRig, updateArtRig, type ArtRig } from './rigView';
 import { createRobotWounds, destroyRobotWounds, updateRobotWounds } from './robotWounds';
 import { liveSockets } from './robotSockets';
+import { drawHurtSparks, hurtBurst } from './robotHurtSparks';
+import { upperPoint } from '../fighter/fighterPose';
 import type { Texture } from 'pixi.js';
 import { liveRigTargets } from './rigTargets';
 import { drawPattern } from '../fighter/parts/patterns';
@@ -29,7 +31,7 @@ const clearWounds = (view: FighterView): void => {
 };
 
 /** A 3D-kit robot that lost its leg shows a torn hip with cables (instead of the blood stump). */
-const syncRobotWounds = (view: FighterView, frame: FighterFrame, rig: ArtRig, atlas: Texture | undefined): void => {
+const syncRobotWounds = (view: FighterView, frame: FighterFrame, rig: ArtRig, atlas: Texture | undefined, hurt: boolean): void => {
     if (rig.definition.id !== 'robot' || !atlas) {
         if (view.robotWounds) destroyRobotWounds(view.robotWounds);
         view.robotWounds = undefined;
@@ -41,7 +43,13 @@ const syncRobotWounds = (view: FighterView, frame: FighterFrame, rig: ArtRig, at
         view.robotWounds = wounds;
         view.root.addChildAt(wounds.root, view.root.getChildIndex(rig.body)); // under the shorts and torso
     }
-    updateRobotWounds(view.robotWounds, liveSockets(rig.definition, frame.pose, !!frame.oneLeg), performance.now() / 1000);
+    const now = performance.now(), pose = frame.pose;
+    updateRobotWounds(view.robotWounds, liveSockets(rig.definition, pose, !!frame.oneLeg), now / 1000);
+    // A hurt robot shorts out at its joints, drawn over the arms and the weapon
+    const sparks = view.robotWounds.sparks;
+    if (sparks.parent !== view.root || view.root.children.at(-1) !== sparks) view.root.addChild(sparks);
+    const anchors = [pose.head, upperPoint(pose, 0, -19), pose.shoulderFront, upperPoint(pose, 4, -12), pose.hip, pose.frontArm.joint, pose.frontLeg.joint];
+    drawHurtSparks(sparks, hurt ? hurtBurst(anchors, view.robotWounds.seed, now) : null);
 };
 
 const syncWounds = (view: FighterView, frame: FighterFrame): void => {
@@ -98,7 +106,7 @@ export const syncFighterArt = (view: FighterView, frame: FighterFrame): boolean 
         frame.oneLeg, frame.headBob, frame.weaponless);
     updateArtRig(rig, targets, frame.look, frame.look.build.helmet !== 'none', frame.look.build.tail !== 'none');
     syncWounds(view, frame);
-    syncRobotWounds(view, frame, rig, bodyAtlasTexture(id));
+    syncRobotWounds(view, frame, rig, bodyAtlasTexture(id), expression === 'hurt');
     drawPattern(rig.overlay.clear(), (x, y) => torsoPoint(frame.pose, x, y), frame.look);
     const flash = frame.hitFlash ?? 0;
     if (flash > 0) {
