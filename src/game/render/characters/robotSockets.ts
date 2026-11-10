@@ -15,6 +15,8 @@ export interface Socket { at: Vector2; dir: Vector2; radius: number; kind: Socke
 /** Rig units: the flange's own radius (0.075 m at 19 rig units per 0.6 m) times its size per joint. */
 const FLANGE_RADIUS = 2.375;
 const SIZE: Record<SocketKind, number> = { neck: 1.0, shoulder: 0.8, hip: 0.9, waist: 1.3 };
+/** Rig units from the thigh joint down to the lower edge of the robot's shorts. */
+const SHORTS_EDGE = 3;
 
 const unit = (v: Vector2): Vector2 => { const l = Math.hypot(v.x, v.y) || 1; return { x: v.x / l, y: v.y / l }; };
 const minus = (a: Vector2, b: Vector2): Vector2 => ({ x: a.x - b.x, y: a.y - b.y });
@@ -28,7 +30,9 @@ export const liveSockets = (definition: BodyArtDefinition, pose: FighterPose, on
     if (!oneLeg) return [];
     const anatomy = definition.anatomy ?? definition, thigh = anatomy.parts.thighBack;
     const hip = sourceBodyPoint(anatomy, pose, thigh?.origin ?? anatomy.hip);
-    return [socket('hip', hip, minus(pose.hip, upperPoint(pose, 0, -19)))];
+    // The thigh joint sits inside the shorts: show the torn flange at their lower edge instead
+    const down = socket('hip', hip, minus(pose.hip, upperPoint(pose, 0, -19)));
+    return [{ ...down, at: { x: hip.x + down.dir.x * SHORTS_EDGE, y: hip.y + down.dir.y * SHORTS_EDGE } }];
 };
 
 /** The body frame a torso target describes: hip at its start, leaning along it. */
