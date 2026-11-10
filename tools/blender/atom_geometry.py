@@ -16,7 +16,7 @@ def W(x_px: float, y_px: float, depth_px: float = 0.0) -> Vector:
 class Builder:
     """Creates part collections under `root` and dresses every mesh with outline and wear."""
 
-    def __init__(self, root: bpy.types.Collection, outline: bpy.types.Material, wear: bpy.types.Material):
+    def __init__(self, root: bpy.types.Collection, outline: bpy.types.Material, wear: bpy.types.Material | None):
         self.root, self.outline, self.wear = root, outline, wear
 
     def part(self, name: str) -> bpy.types.Collection:
@@ -34,7 +34,7 @@ class Builder:
         sol.thickness = outline; sol.offset = 1; sol.use_flip_normals = True; sol.material_offset = 1
         for p in obj.data.polygons:
             p.use_smooth = True
-        if mat.get('layer') == 'paint':
+        if mat.get('layer') == 'paint' and self.wear is not None:  # bodies without wear (the cat) skip the twin
             self._wear_twin(obj, coll, bevel)
         return obj
 
@@ -61,11 +61,15 @@ class Builder:
             obj.rotation_euler = rot
         return self._finish(obj, coll, mat, bevel)
 
-    def ball(self, coll, name, center, radius, mat):
+    def ball(self, coll, name, center, radius, mat, scale=None, rot=None):
         me = bpy.data.meshes.new(name); bm = bmesh.new()
         bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=radius)
+        if scale:  # an ellipsoid: (x, y, z) stretch of the sphere
+            bmesh.ops.scale(bm, vec=Vector(scale), verts=bm.verts)
         bm.to_mesh(me); bm.free()
         obj = bpy.data.objects.new(name, me); obj.location = center
+        if rot:
+            obj.rotation_euler = rot
         return self._finish(obj, coll, mat, 0.0)
 
     def rod(self, coll, name, a, b, r1, mat, r2=None, bevel=0.0):
