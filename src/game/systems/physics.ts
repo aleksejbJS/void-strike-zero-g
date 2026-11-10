@@ -32,6 +32,7 @@ import { updateMatch } from './matchRound';
 import { duelLoadout, duelSpawnPoint } from './duelRules';
 import { spawnSmoke, updateSmokes } from './smoke';
 import { isMagazineFed, tickReloads } from './reload';
+import { emitHitEffect } from './robotHits';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -368,7 +369,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             }
             // Any weapon hitting a fighter draws blood; a wall hit throws sparks. An explosive keeps its
             // own spark either way (it is part of the blast, not of the hit).
-            if (hitFighter) emitEffect('blood', proj.pos.x, proj.pos.y, '#ef4444', 6);
+            if (hitFighter && target) emitHitEffect(target, proj.pos.x, proj.pos.y);
             if (explosive || (!hitFighter && !smokeRound)) emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
         }
     });

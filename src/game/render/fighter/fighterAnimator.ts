@@ -17,6 +17,7 @@ import { PartMotion, localVelocity } from './parts/partMotion';
 import { humanBleedAnchor } from '../characters/humanBleedAnchor';
 import { MagazineDrop } from './fighterMagazine';
 import { reloadProgress } from '../../systems/reload';
+import { ROBOT_OIL } from '../../systems/robotDamage';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
 const cyclePx = (stride: number) => 4 * stride * RIG_SCALE; // ground covered by one full step cycle
@@ -113,7 +114,8 @@ export class FighterAnimator {
         const hop = p.wound ? hopLift(state, m.phase, moveDir) : 0;
         if (p.wound) {
             const tip = humanBleedAnchor(look.build.body, pose) ?? stumpTip(pose);
-            m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now);
+            m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now,
+                look.build.body === 'robot' ? ROBOT_OIL : undefined); // a robot stump drips oil
         }
         m.fire.update(game, p, { pose, grip, facing, hop }, since, now);
         return {

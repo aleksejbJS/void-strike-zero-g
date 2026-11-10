@@ -23,6 +23,7 @@ import { extinguish } from './burning';
 import { rollTankIgnition } from './fuelTank';
 import { dropLitTank } from './fuelTankBlast';
 import { canFire, startReloadIfEmpty } from './reload';
+import { emitHitEffect } from './robotHits';
 
 // --- Teams ---
 
@@ -252,7 +253,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
         }
 
         // Blood where the beam enters a fighter, blue sparks where it stops at a wall
-        if (hitPlayer) emitEffect('blood', hitPos.x, hitPos.y, '#ef4444', 6);
+        if (hitPlayer) emitHitEffect(hitPlayer, hitPos.x, hitPos.y);
         else emitEffect('spark', hitPos.x, hitPos.y, '#38bdf8', 10);
 
         if (!state.beams) state.beams = [];
@@ -276,7 +277,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             if (dist < 60) {
                 applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce,
                     { weapon: WeaponType.CHAINSAW, from: origin });
-                emitEffect('blood', tgt.pos.x, tgt.pos.y - 20, '#ef4444', 6);
+                emitHitEffect(tgt, tgt.pos.x, tgt.pos.y - 20);
             }
         });
         chainsawCover(state, attackPos, p.id, Date.now());

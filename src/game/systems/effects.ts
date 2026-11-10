@@ -19,6 +19,7 @@ import { insideSmoke } from './smoke';
 import { applyCoverEvent } from './coverEffects';
 import { gibTankCorpse } from './ragdoll/corpseTank';
 import { fuelFireball } from './flameParticles';
+import { OIL_DECAL, isRobotBuild, oilAt, sparksAt } from './robotDamage';
 
 // The blast without its scorch mark (marks are page-wide: the menu preview must not leave any)
 export { explosionBurst };
@@ -145,18 +146,22 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
         case 'DAMAGE':
             floatText(state, e.x, e.y, String(e.amount), '#ef4444');
             break;
-        case 'DEATH':
-            bloodAt(state, e.x, e.y, 40, e.color, sideAway(e.x, e.from));
+        case 'DEATH': {
+            const robot = isRobotBuild(e.parts?.build); // a robot leaks oil and sparks instead of bleeding
+            if (robot) { oilAt(state, e.x, e.y, 40, sideAway(e.x, e.from)); sparksAt(state, e.x, e.y, 20); }
+            else bloodAt(state, e.x, e.y, 40, e.color, sideAway(e.x, e.from));
             state.decals.push({
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
-                rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
+                rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: robot ? OIL_DECAL : 0x7f1d1d, alpha: robot ? 0.85 : 0.8
             });
             addCorpse(state, { ...e, parts: safeParts(e.parts) });
             break;
+        }
         case 'LIMB': {
             const leg = addLimb(state, { ...e, parts: safeParts(e.parts) });
             const hip = leg.points.hip; // the leg starts where the fighter stands: the wound is at its hip
-            bloodAt(state, hip.x, hip.y, LIMB_BLOOD, LIMB_BLOOD_COLOR, sideAway(e.x, e.from));
+            if (isRobotBuild(e.parts?.build)) { oilAt(state, hip.x, hip.y, LIMB_BLOOD, sideAway(e.x, e.from)); sparksAt(state, hip.x, hip.y, 14); }
+            else bloodAt(state, hip.x, hip.y, LIMB_BLOOD, LIMB_BLOOD_COLOR, sideAway(e.x, e.from));
             break;
         }
         case 'FLOAT_TEXT':

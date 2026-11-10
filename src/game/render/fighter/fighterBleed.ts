@@ -12,9 +12,9 @@ export class BleedDrips {
     private lastAt = -Infinity;
 
     /** One drop at (x, y) unless one fell less than DRIP_MS ago. A clock that steps back starts a new count. */
-    spawn(state: GameState, x: number, y: number, now: number): void {
+    spawn(state: GameState, x: number, y: number, now: number, color = DRIP_COLOR): void {
         if (now >= this.lastAt && now - this.lastAt < DRIP_MS) return;
         this.lastAt = now;
-        createParticles(state, x, y, 1, DRIP_COLOR, 'blood', { vel: { x: (Math.random() - 0.5) * 2 * DRIFT, y: 0 } });
+        createParticles(state, x, y, 1, color, 'blood', { vel: { x: (Math.random() - 0.5) * 2 * DRIFT, y: 0 } });
     }
 }
