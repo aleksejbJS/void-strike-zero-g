@@ -10,6 +10,7 @@ import { solvePose } from '../fighter/fighterPose';
 import { gripPoints } from '../fighter/weaponGrips';
 import { IDLE_PARTS } from '../fighter/parts/partMotionFrame';
 import { loadBodyTextures, resetBodyTextures } from './textures';
+import { PERIOD_MS } from './robotHurtSparks';
 
 vi.mock('../effects/glowTextures', () => ({ glowTexture: () => Texture.WHITE, stripTexture: () => Texture.WHITE }));
 
@@ -53,8 +54,9 @@ describe('robot wounds', () => {
         const view = createFighterView(); views.push(view);
         const seen = (expression: 'hurt' | 'normal') => {
             let visible = 0;
-            for (let t = 0; t < 700; t += 10) {
-                vi.spyOn(performance, 'now').mockReturnValue(10_000 + t);
+            // Exactly one whole period: its burst always falls inside it, whatever the random seed
+            for (let t = 0; t < PERIOD_MS; t += 10) {
+                vi.spyOn(performance, 'now').mockReturnValue(PERIOD_MS * 15 + t);
                 drawFighter(view, { ...frame(false), expression });
                 if (view.robotWounds!.sparks.visible) visible++;
             }
