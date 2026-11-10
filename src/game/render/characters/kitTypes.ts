@@ -19,6 +19,7 @@ export interface BodyKitData {
     hip: XY;                     // frame px
     neck: XY;                    // frame px
     parts: Partial<Record<ArtPartId, KitPartData>>;
+    extras?: { woundFlange?: KitPartData }; // pictures that are not body parts: a torn socket flange
 }
 
 /**

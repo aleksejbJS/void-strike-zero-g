@@ -31,6 +31,14 @@ describe('robot 3D kit', () => {
         }
     });
 
+    it('carries an untinted torn flange for wound sockets', () => {
+        const flange = ROBOT_KIT.extras?.woundFlange;
+        expect(flange).toBeDefined();
+        expect(inside(flange!.atlas.origin, flange!.atlas.polygon)).toBe(true);
+        expect(flange!.paintOffset).toBeUndefined();
+        expect(flange!.channel).toBe('none');
+    });
+
     it('gives every bone part a real axis and both feet a sole', () => {
         for (const id of ['torso', 'pelvis', 'thighFront', 'shinFront', 'upperArmBack', 'forearmBack'] as const) {
             const { origin, axisEnd } = ROBOT_KIT.parts[id]!;

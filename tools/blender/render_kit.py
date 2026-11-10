@@ -27,7 +27,8 @@ AXES = {'head': ('head', None), 'torso': ('hip', 'neck'), 'pelvis': ('hip', 'nec
             ('thigh', 'hip', 'knee'), ('shin', 'knee', 'ankle'), ('foot', 'ankle', None),
             ('upperArm', 'shoulder', 'elbow'), ('forearm', 'elbow', 'wrist'), ('hand', 'wrist', None),
             ('palm', 'grip', None))},
-        **{f'hand{s}Grip': (f'grip{s}', None) for s in SIDES}}
+        **{f'hand{s}Grip': (f'grip{s}', None) for s in SIDES},
+        'woundFlange': ('woundFlange', 'woundFlangeEnd')}
 
 scene = bpy.context.scene
 root = bpy.data.collections['AtomRobot']

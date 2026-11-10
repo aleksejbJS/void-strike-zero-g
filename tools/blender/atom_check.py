@@ -8,12 +8,13 @@ PARTS = (
     'thighFront', 'shinFront', 'footFront', 'thighBack', 'shinBack', 'footBack',
     'upperArmFront', 'forearmFront', 'upperArmBack', 'forearmBack',
     'handFront', 'handBack', 'palmFront', 'palmBack', 'handFrontGrip', 'handBackGrip',
+    'woundFlange',
 )
 JOINTS = (
     'head', 'hip', 'neck',
     'hipFront', 'kneeFront', 'ankleFront', 'soleFront', 'hipBack', 'kneeBack', 'ankleBack', 'soleBack',
     'shoulderFront', 'elbowFront', 'wristFront', 'shoulderBack', 'elbowBack', 'wristBack',
-    'gripFront', 'gripBack',
+    'gripFront', 'gripBack', 'woundFlange', 'woundFlangeEnd',
 )
 LAYERS = ('paint', 'fixed')
 

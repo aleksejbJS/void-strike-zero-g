@@ -14,6 +14,7 @@ from atom_check import check            # noqa: E402
 from atom_geometry import W, Builder    # noqa: E402
 from atom_hands import build_hands      # noqa: E402
 from atom_materials import palette      # noqa: E402
+from atom_wounds import build_flange    # noqa: E402
 
 ROOT = 'AtomRobot'
 
@@ -109,6 +110,7 @@ def main() -> list[str]:
     for step in (build_head, build_trunk, build_legs, build_arms):
         step(b, mats, joints)
     build_hands(b, mats, joints)
+    build_flange(b, mats, joints)
     bpy.context.scene['atom_robot_joints'] = json.dumps({k: list(v) for k, v in joints.items()})
     return check(ROOT)
 
