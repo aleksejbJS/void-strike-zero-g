@@ -3,6 +3,11 @@ import { createCorpse, Corpse, CorpsePointId } from '../../systems/ragdoll/corps
 import { RIG_SCALE } from '../fighter/fighterPose';
 import { BODY_ART } from './definitions';
 import { corpseRigTargets } from './corpseTargets';
+import { artScale, placePart } from './placement';
+import { RUNTIME_BODY_ART } from './runtimeDefinitions';
+import { liveRigTargets } from './rigTargets';
+import { poseFromCorpse } from '../ragdoll/corpsePose';
+import { IDLE_PARTS } from '../fighter/parts/partMotionFrame';
 
 const make = (kind: 'gib' | 'cut' = 'gib', facing: 1 | -1 = 1) => createCorpse({ x: 100, y: 500, kind, facing });
 const set = (c: Corpse, id: CorpsePointId, x: number, y: number) => {
@@ -11,6 +16,19 @@ const set = (c: Corpse, id: CorpsePointId, x: number, y: number) => {
 };
 
 describe('illustrated corpse bone targets', () => {
+    it('keeps the robot shorts on the hip along a lying torso', () => {
+        const c = createCorpse({ x: 100, y: 500, kind: 'fall', facing: 1,
+            parts: { head: '#fff', torso: '#fff', arm: '#fff', leg: '#fff', build: { body: 'robot' } as never } });
+        set(c, 'neck', -17, -6); // lying almost flat, head to the left
+        // A whole corpse is drawn as the fighter in its lying pose (corpseView.drawBody)
+        const definition = RUNTIME_BODY_ART.robot;
+        const targets = liveRigTargets(definition, poseFromCorpse(c).pose, IDLE_PARTS, false, 0, true);
+        const torso = placePart(definition.parts.torso!, targets.torso!, artScale(definition));
+        const pelvis = placePart(definition.parts.pelvis!, targets.pelvis!, artScale(definition));
+        expect(pelvis.rotation).toBeCloseTo(torso.rotation, 5);
+        expect([pelvis.x, pelvis.y]).toEqual([torso.x, torso.y]);
+    });
+
     it('reconstructs detached thigh from its own shin, independently of the torso', () => {
         const c = make();
         set(c, 'knF', 60, 70); set(c, 'anF', 72, 70);
