@@ -31,3 +31,4 @@ dist-ssr
 
 # Playwright MCP screenshots and scripts (local verification scratch)
 .playwright-mcp/
+*.blend1
