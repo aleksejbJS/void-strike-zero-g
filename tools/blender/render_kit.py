@@ -22,7 +22,7 @@ REPO, BODY = os.path.abspath(ARGS[0]), ARGS[1]
 W, H, PX_PER_M = 1600, 2400, 1000
 YAW = math.radians(90 if 'front' in ARGS else 32)
 ATLAS_URL = f'/assets/characters/kit/{BODY}.webp'
-ROOT = {'robot': 'AtomRobot', 'cat': 'AtomCat'}[BODY]
+ROOT = f"Atom{BODY.title().replace('-', '')}"  # AtomRobot, AtomCat, ... (import_generated.py uses the same)
 SIDES = ('Front', 'Back')
 AXES = {'head': ('head', None), 'torso': ('hip', 'neck'), 'pelvis': ('hip', 'neck'),
         **{f'{b}{s}': (f'{j0}{s}', f'{j1}{s}' if j1 else None) for s in SIDES for b, j0, j1 in (
