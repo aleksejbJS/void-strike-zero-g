@@ -26,6 +26,13 @@ const make = (body = 'human' as typeof BODY_IDS[number], kind: 'gib' | 'cut' | '
 });
 
 describe('illustrated corpse rendering', () => {
+    it.each(['gib', 'cut'] as const)('destroys the robot kit palm layer with a %s corpse view', kind => {
+        const v = createCorpseView(make('robot', kind), {});
+        const palm = v.illustrated!.rig.meshes.palmFront!;
+        destroyCorpseView(v);
+        expect(palm.destroyed).toBe(true);
+    });
+
     it.each(BODY_IDS)('keeps %s artwork on every detached anatomy part', body => {
         const c = make(body), v = createCorpseView(c, {});
         expect(v.illustrated?.rig.definition.id).toBe(body);

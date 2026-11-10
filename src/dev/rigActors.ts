@@ -8,10 +8,14 @@ import { createFighterView, drawFighter, FighterView } from '../game/render/figh
 import { FighterState, RIG_SCALE, solvePose } from '../game/render/fighter/fighterPose';
 import { gripPoints } from '../game/render/fighter/weaponGrips';
 import { IDLE_PARTS } from '../game/render/fighter/parts/partMotionFrame';
-import { BODY_ART } from '../game/render/characters/definitions';
+import { BODY_ART, KIT_ART } from '../game/render/characters/definitions';
+import { RUNTIME_BODY_ART } from '../game/render/characters/runtimeDefinitions';
 import { ArtRig, createArtRig, updateArtRig } from '../game/render/characters/rigView';
 import type { RigTargets } from '../game/render/characters/rigTargets';
-import { bodyTexture } from '../game/render/characters/textures';
+import { bodyAtlasTexture, bodyTexture } from '../game/render/characters/textures';
+
+/** The armed-only 3D-kit hand poses; the source assembly shows open hands. */
+const GRIP_POSE = /^palm|Grip$/;
 
 export const RIG_GROUND = 200;
 export const RIG_WIDTH = 1400;
@@ -22,13 +26,18 @@ export interface DemoActor { root: Container; live: FighterView; source: ArtRig;
 export const createDemoActors = (world: Container, humanOnly = false, zoom = RIG_ZOOM): DemoActor[] => {
     const presets = humanOnly ? BODY_PRESETS.filter(p => p.body === 'human') : BODY_PRESETS;
     return presets.map((preset, index) => {
+    // A 3D kit draws from its atlas definition; joints still come from its frame-pixel anatomy
+    const kit = !!KIT_ART[preset.body];
     const definition = BODY_ART[preset.body], texture = bodyTexture(preset.body);
+    const drawn = kit ? RUNTIME_BODY_ART[preset.body] : definition;
     if (!texture) throw new Error(`Character ${preset.body} is not loaded for inspection`);
     const look = lookFromSetup(preset.palette, presetBuild(preset.id));
-    const root = new Container(), live = createFighterView(), source = createArtRig(definition, texture), sourceRoot = new Container();
+    const atlas = kit ? bodyAtlasTexture(preset.body) : undefined;
+    if (kit && !atlas) throw new Error(`Character ${preset.body} atlas is not loaded for inspection`);
+    const root = new Container(), live = createFighterView(), source = createArtRig(drawn, texture, atlas), sourceRoot = new Container();
     const x = (index + 0.5) * RIG_WIDTH / zoom / presets.length;
     root.position.set(x, 0);
-    sourceRoot.addChild(source.tail, source.back, source.body, source.head, source.front);
+    sourceRoot.addChild(source.tail, source.back, source.body, source.head, source.under, source.front);
     sourceRoot.scale.set(RIG_SCALE);
     root.addChild(sourceRoot, live.root);
     world.addChild(root);
@@ -36,6 +45,7 @@ export const createDemoActors = (world: Container, humanOnly = false, zoom = RIG
     const at = (p: readonly [number, number]) => ({ x: (p[0] - definition.hip[0]) * source.scale,
         y: (p[1] - definition.hip[1]) * source.scale });
     for (const [id, part] of Object.entries(definition.parts)) {
+        if (GRIP_POSE.test(id)) continue;
         targets[id as keyof RigTargets] = { start: at(part.origin), end: part.axisEnd ? at(part.axisEnd) : undefined };
     }
     updateArtRig(source, targets, look);

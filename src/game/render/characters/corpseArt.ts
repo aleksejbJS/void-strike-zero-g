@@ -51,7 +51,8 @@ export const createCorpseArt = (c: Corpse): CorpseArt | undefined => {
             badge: new Graphics(), tail: new Graphics(), jetpack: new Graphics() };
         root.label = 'corpse-art';
         art.jetpack.label = 'corpse-jetpack';
-        root.addChild(rig.tail, art.tail, art.jetpack, rig.back, rig.body, art.upperPaint, art.lowerPaint, art.badge, rig.head, rig.front, rig.overlay);
+        // rig.under (3D-kit palms) stays hidden on corpses but must be parented so the view destroys it
+        root.addChild(rig.tail, art.tail, art.jetpack, rig.back, rig.body, art.upperPaint, art.lowerPaint, art.badge, rig.head, rig.under, rig.front, rig.overlay);
         art.wounds = createHumanWounds(definition, bodyPictureTexture);
         if (art.wounds) root.addChild(art.wounds.root);
         if (c.kind === 'cut') {
