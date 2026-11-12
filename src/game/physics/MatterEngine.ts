@@ -7,6 +7,7 @@ import { coverRect, intactCover, isIntact } from '../cover/coverGeometry';
 const GROUND_ABOVE = 3; // the solver often leaves a resting body ~2 px above the surface
 const GROUND_BELOW = 4;
 const RISING = -0.5; // moving up faster than this (jetpack, rocket jump) is not standing
+const PLAYER_CORNER_RADIUS = 3;
 
 const standsOnPlatform = (player: Entity, platforms: Pick<Platform, 'x' | 'y' | 'w'>[]) => {
     if (player.dead || player.vel.y < RISING) return false;
@@ -120,6 +121,9 @@ export class MatterPhysicsEngine {
             frictionAir: 0,      // Force Pipeline owns all air resistance
             restitution: 0,
             inertia: Infinity,
+            // Rounded corners: a sharp corner caught the seam between two flush blocks (a jetpack
+            // flight along a ceiling lost all its speed there). 2 is enough, 3 leaves a margin.
+            chamfer: { radius: PLAYER_CORNER_RADIUS },
             label: 'player'
         });
 
