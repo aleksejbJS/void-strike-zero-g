@@ -1,9 +1,10 @@
-// One physics tick of a corpse: verlet motion, link relaxation with joint limits, platform collision.
+// One physics tick of a corpse: verlet motion, link relaxation with joint limits and hinges, platform collision.
 // Pure math on the corpse data; runs on the client only, at the fixed 120 ticks/s.
 
 import { GRAVITY, PHYSICS_TICK_RATE } from '../../../constants';
 import { Platform, Vector2 } from '../../../types';
 import { Corpse, CorpseLink, CorpsePoint } from './corpseBody';
+import { activeHinges, bendHinges } from './corpseHinge';
 
 /**
  * Corpse gravity in units per tick²: the rate living fighters really fall at. GRAVITY is added each tick
@@ -173,10 +174,11 @@ export const stepCorpseAmong = (c: Corpse, platforms: Platform[]): void => {
         const embedded = stuck[i];
         if (embedded) creepOut(p, embedded);
     });
-    const landed = new Set<CorpsePoint>();
-    const braced = new Set<CorpsePoint>();
+    const landed = new Set<CorpsePoint>(), braced = new Set<CorpsePoint>();
+    const hinges = activeHinges(c);
     for (let pass = 0; pass < PASSES; pass++) {
         for (const link of c.links) relax(c, link, braced);
+        bendHinges(c, hinges); // knees and elbows never bend the wrong way
         points.forEach((p, i) => {
             for (const r of platforms) {
                 if (r === stuck[i]) continue;
