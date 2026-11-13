@@ -24,6 +24,7 @@ import { rollTankIgnition } from './fuelTank';
 import { dropLitTank } from './fuelTankBlast';
 import { canFire, startReloadIfEmpty } from './reload';
 import { emitHitEffect } from './robotHits';
+import { hitRect } from './hitZone';
 
 // --- Teams ---
 
@@ -231,8 +232,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
 
         state.players.forEach(tgt => {
             if (tgt.id === p.id || tgt.dead || isTeammate(p, tgt)) return;
-            const rect = { x: tgt.pos.x - 15, y: tgt.pos.y - tgt.height, w: 30, h: tgt.height };
-            const t = segmentRectEntry(origin, end, rect);
+            const t = segmentRectEntry(origin, end, hitRect(tgt)); // the drawn head counts too
             if (t !== null && t < closestT) { closestT = t; hitPlayer = tgt; }
         });
 
