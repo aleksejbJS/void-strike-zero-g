@@ -7,6 +7,14 @@
 - `prepareAudio()` (`src/game/systems/audio.ts`) builds the context, gains and buffers when the match loads (`GameCanvas` setup); `initAudio()` now only resumes it and also runs on key presses, so sound wakes up before the first shot even where the browser starts the context suspended (Safari)
 - Nothing plays while the context is suspended (`playSound`, `sfxOutput`), so sounds are not queued on a frozen clock and burst out together on resume. Tests: `audio.prepare.test.ts`
 
+## Version 0.4.36 (2026-11-13)
+
+### 🌐 Online timing
+- Found with a P2P-host benchmark (browser host with bots + a guest over PeerJS, simulated 70–100 ms ping with jitter)
+- Snapshots follow simulation ticks (`src/game/net/roomHost.ts`): one every `PHYSICS_TICK_RATE / SNAPSHOT_RATE` = 4 ticks, keeping the remainder, a single snapshot after a long catch-up. Before, a millisecond counter was reset to 0 after each send and lost the overshoot of the 4 ms loop timer: 27.8 snapshots/s instead of 30
+- The room no longer snaps elapsed time (`FixedStepper` got a `snapToleranceMs` argument, 0 for `RoomHost`). Snapping is meant for rAF frames; on the ~4 ms timer it counted 4.0 ms as 4.17 ms, so the browser host ran 121–122 ticks/s, or slower when the timer fired late
+- Input backlog control (`src/game/net/inputQueue.ts`): the queue watches its smallest size over 0.25 s windows and skips one input when even that stays above 2. Before, only the 12-input cap applied, so a client whose clock ran slightly ahead sat 100 ms behind for good (measured: the host's own player averaged 11.4 queued inputs; now 2.1–2.6). Jitter swings are left alone; a skipped or overflowing input is preferably one whose buttons repeat the next, so presses and releases get through
+
 ## Version 0.4.35 (2026-11-09)
 
 ### 🏅 Leaderboards
