@@ -1,6 +1,6 @@
-# Ragdoll hinge joints + rounded player corners — spec (2026-11-12)
+# Ragdoll hinge joints, rounded player corners, diagonal takeoff — spec (2026-11-12)
 
-Two small physics fixes from the external physics review. Matter.js stays (future dynamic physics).
+Small physics fixes from the external physics review. Matter.js stays (future dynamic physics).
 
 ## 1. Knees and elbows bend one way only
 
@@ -36,6 +36,31 @@ margin). Bounds, feet position and grounding are unchanged; crouch scaling keeps
 **Done when.** A regression test flies along a ceiling seam without losing speed and the other
 three seam cases stay clean.
 
+Checked afterwards: the rounded corners do not make a fighter slide off a ledge edge (it still
+stands with 1 unit of footing, as before).
+
+## 3. Diagonal jetpack takeoff no longer sticks to the floor
+
+**Problem.** Holding W + D on the floor, the fighter stayed "grounded" for ~13 ticks (0.1 s): the
+grounding band (feet within 3 units of a top) kept it on the ground, every tick the vertical speed
+was reset to the floor-contact value and the thrust only crept it up 0.25 a tick, while ground
+friction braked it sideways. Height after 10/20/40 ticks: 2.5 / 8.4 / 55. W alone (boost) was fine.
+
+**Fix.** In the Force Pipeline a fighter thrusting up (jetpack on, not diving) is treated as airborne
+for gravity, input and friction, even while its feet are still in the grounding band. `isGrounded`
+itself is unchanged (animation, bots, fuel recharge keep using it).
+
+**Result.** Height after 10/20/40 ticks: 6.6 / 25 / 95; a takeoff from the floor climbs like the same
+thrust started 4 units up. Standing and diving along the floor are unchanged.
+
+## 4. Point-only (legacy) corpses — checked, no change
+
+Illustrated bodies (0.5.0) have contact radii, so their bones never pass through platforms (0% of
+ticks). Point-only corpses still do (7–9%), but in 0.5.0 every local fighter gets an illustrated body
+on the character setup screen before a match and all bots are illustrated; only a remote player on
+an old cached client could still send a body-less build. Not worth changing.
+
 ## Out of scope
 
-Coyote time, ceiling corner correction, render interpolation, a corpse sleep state.
+Coyote time, ceiling corner correction, render interpolation, a corpse sleep state, a separate
+speed cap for rocket and hook impulses (next: a test branch to compare the feel).
