@@ -114,3 +114,19 @@ export const paintedBottom = (definition: BodyArtDefinition, id: ArtPartId, targ
         return placement.y + localX * placement.scaleX * s + localY * placement.scaleY * c;
     }));
 };
+
+/** Highest opaque painted point of a placed part, in rig units (feet line y = 0, up is negative). */
+export const paintedTop = (definition: BodyArtDefinition, id: ArtPartId, target?: ArtTarget): number => {
+    const part = definition.parts[id];
+    if (!part || !target || target.visible === false) return Infinity;
+    const file = part.image?.imagePath ?? (part.texture === 'atlas' ? definition.atlas?.imagePath : definition.imagePath);
+    if (!file) throw new Error(`Part ${id} has no source image`);
+    const placement = placePart(part, target, artScale(definition));
+    const dx = part.axisEnd ? part.axisEnd[0] - part.origin[0] : 0, dy = part.axisEnd ? part.axisEnd[1] - part.origin[1] : 1;
+    const length = Math.hypot(dx, dy), c = Math.cos(placement.rotation), s = Math.sin(placement.rotation);
+    return Math.min(...paintedHull(file, part.polygon).map(([x, y]) => {
+        const rx = x - part.origin[0], ry = y - part.origin[1];
+        const localX = (rx * dy - ry * dx) / length, localY = (rx * dx + ry * dy) / length;
+        return placement.y + localX * placement.scaleX * s + localY * placement.scaleY * c;
+    }));
+};

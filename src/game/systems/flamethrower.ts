@@ -14,12 +14,10 @@ import { spawnShieldLeft } from './spawnShield';
 import { hungerShieldLeft } from './hungerRound';
 import { FLAME_COVER_MULT, FLAME_HALF_ANGLE, FLAME_RANGE } from './flameConstants';
 import { rayStop } from './flameReach';
+import { hitRect } from './hitZone';
 
 /** The three rays: the aim line and one on each edge of the cone. */
 const RAY_ANGLES = [-FLAME_HALF_ANGLE, 0, FLAME_HALF_ANGLE];
-
-/** A fighter's hitbox: pos is (centerX, bottomY). */
-const hitbox = (e: Entity) => ({ x: e.pos.x - e.width / 2, y: e.pos.y - e.height, w: e.width, h: e.height });
 
 /**
  * One tick of the flame stream from `origin` along the unit vector `dir`. Every living enemy a ray enters takes the
@@ -41,7 +39,7 @@ export const fireFlame = (state: GameState, p: Entity, origin: Vector2, dir: Vec
         if (stop.cover) scorched.add(stop.cover);
         for (const tgt of state.players) {
             if (tgt.id === p.id || tgt.dead || isTeammate(p, tgt)) continue;
-            const t = segmentRectEntry(origin, end, hitbox(tgt));
+            const t = segmentRectEntry(origin, end, hitRect(tgt)); // the drawn head counts too
             if (t !== null && t <= stop.t) victimIds.add(tgt.id);
         }
     }

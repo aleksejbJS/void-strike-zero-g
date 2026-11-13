@@ -33,6 +33,7 @@ import { duelLoadout, duelSpawnPoint } from './duelRules';
 import { spawnSmoke, updateSmokes } from './smoke';
 import { isMagazineFed, tickReloads } from './reload';
 import { emitHitEffect } from './robotHits';
+import { hitRect } from './hitZone';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -341,7 +342,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             let nearest = Infinity;
             for (const p of state.players) {
                 if (p.id === proj.ownerId || p.dead || (owner && isTeammate(owner, p))) continue;
-                const entry = segmentRectEntry(prevPos, proj.pos, { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height });
+                const entry = segmentRectEntry(prevPos, proj.pos, hitRect(p)); // the drawn head counts too
                 if (entry !== null && entry < nearest) { nearest = entry; target = p; }
             }
             if (target) {
