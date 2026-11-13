@@ -1,5 +1,12 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.4.37 (2026-11-13)
+
+### 🔊 First-shot freeze
+- The first mouse click in a match froze the game for ~250 ms: `initAudio()` created the `AudioContext` there, and constructing one is slow on macOS (measured 261 ms the first time, 0.2 ms after; generating the procedural buffers takes ~7 ms)
+- `prepareAudio()` (`src/game/systems/audio.ts`) builds the context, gains and buffers when the match loads (`GameCanvas` setup); `initAudio()` now only resumes it and also runs on key presses, so sound wakes up before the first shot even where the browser starts the context suspended (Safari)
+- Nothing plays while the context is suspended (`playSound`, `sfxOutput`), so sounds are not queued on a frozen clock and burst out together on resume. Tests: `audio.prepare.test.ts`
+
 ## Version 0.4.36 (2026-11-13)
 
 ### 🌐 Online timing

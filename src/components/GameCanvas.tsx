@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Application, Container, Graphics, Texture, Sprite } from 'pixi.js';
 import { GameState, GameMode, Team, WeaponType, ItemType, NetworkMode, MapId, Vector2 } from '../types';
 import { WEAPONS_DATA, INFILTRATION_TIMER, GUN_GAME_LADDER, GUN_GAME_KILLS_PER_LEVEL } from '../constants';
-import { initAudio } from '../game/systems/audio';
+import { initAudio, prepareAudio } from '../game/systems/audio';
 import { generateAssets } from '../game/systems/assets';
 import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
@@ -465,6 +465,8 @@ export default function GameCanvas() {
         };
 
         const setup = async () => {
+            // Creating the audio context stalls ~250 ms: do it while the match loads, not on the first shot
+            prepareAudio().catch(err => console.error('Audio prepare failed:', err));
             await app.init({ resizeTo: window, backgroundColor: 0x020617, antialias: true, autoDensity: true });
 
             if (!isMounted) {
@@ -854,6 +856,8 @@ export default function GameCanvas() {
 
             // Inputs
             onKeyDown = (e: KeyboardEvent) => {
+                // Browsers unlock audio on a gesture: a key counts too, so sound starts before the first shot
+                initAudio().catch(err => console.error('Audio init failed:', err));
                 keys.current[e.code] = true;
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const slot = weaponSlotOfKey(e.key);

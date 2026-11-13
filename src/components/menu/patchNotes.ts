@@ -33,6 +33,9 @@ const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.4.37', date: 'Nov 13, 2026', points: [
+            'No more quarter-second freeze on your first shot in a match: sound now starts while the match loads',
+        ] },
         { version: '0.4.36', date: 'Nov 13, 2026', points: [
             'Online games: controls react up to ~80 ms faster — the host no longer lets your inputs pile up in a queue',
             'The host sends the full 30 world updates per second (was about 28) and keeps exact game time',
@@ -262,6 +265,9 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.4.37', date: '13.11.2026', points: [
+            'Больше нет фриза на четверть секунды при первом выстреле в матче: звук запускается, пока матч загружается',
+        ] },
         { version: '0.4.36', date: '13.11.2026', points: [
             'Онлайн: управление отзывается до ~80 мс быстрее — хост больше не копит ваши нажатия в очереди',
             'Хост отправляет все 30 обновлений мира в секунду (было около 28) и держит точное игровое время',
