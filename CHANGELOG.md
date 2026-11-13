@@ -1,5 +1,15 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.5.0 (unreleased)
+
+### 🔥 Volumetric flame
+- Spec: `docs/plans/2026-11-13-flame-fx-spec.md`; the owner's PixiJS v7 reference demo (class `Flamethrower`) is kept in `docs/plans/flame-fx-reference/`. Looks only: damage, range, cone, burning and the fuel tank are unchanged, and nothing new runs in the simulation or on the server
+- New engine `src/game/render/flame/`: a pure simulation (`flameSim.ts`, `flameStream.ts`, `particleMotion.ts`, `firePatches.ts`, `scorchMarks.ts`, fixed pools in `particlePool.ts`) and a Pixi side (`flameFx.ts`, `particleSprites.ts`, `patchSprites.ts`, `flameGlows.ts`, canvas textures in `flameTextures.ts`). One `FlameFx` per view (game screen: `high`, `medium` on touch devices; tournament match tiles: `low`), all sprites, no per-frame `Graphics`. Tuning lives in `flameTuning.ts`: the demo's numbers scaled by 0.55, stream speed 700 px/s so the faint tail ends at `FLAME_RANGE`
+- The stream: stretched flame cores that curl in noise and rise, a white-blue nozzle jet, a pilot light while the weapon is held, sparks that bounce on floors, smoke from the older flame and glows at the nozzle and over the flame. Cores collide with platforms and intact cover along their whole frame's flight (no tunnelling through thin platforms on slow frames); where they hit, splash fire burns ~1.2 s and leaves a soot mark (~8 s, in the decal layer)
+- Burning fighters carry a moving fire of tongue flames sized to the body (`FighterFire` now gives orders to `FighterAnimator.flames`, drawn by the view's `FlameFx` in `syncVisuals`). `flameJet.ts` and the body-fire particles (`addFlame`) are gone; the lit fuel tank's jet and fireball keep their particles
+- Sound (`src/game/systems/flameRoar.ts`): one looping brown-noise rumble and hiss, raised by every `flame/spray` tick and dropping 150 ms after the last, a whoomp when a stream starts, crackle on ticks and from fire burning in place (`playFlameCrackle`, game screen). The tank's ignite sound is unchanged
+- Measured on the owner's MacBook (Chrome, 120 Hz): four fighters spraying at once keep 120 fps (frame avg 8.35 ms, p99 9.4 ms). Tests: `flameSim.test.ts`, `flameSurfaces.test.ts`, updated `fighterFire.test.ts` and `flameAudio.test.ts`
+
 ## Version 0.4.37 (2026-11-13)
 
 ### 🔊 First-shot freeze

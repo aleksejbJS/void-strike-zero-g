@@ -109,6 +109,7 @@ export const createMatchView = async (host: HTMLElement): Promise<MatchView> => 
             // Its fighters' animation memory is its own (cache.animator): nothing page-wide to forget
             cache.projectileView?.clear();
             cache.particleView?.clear();
+            cache.flameFx?.clear();
             cache.beamView?.clear();
             cache.smokeView?.clear();
             cache.coverView?.clear();

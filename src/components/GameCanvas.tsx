@@ -8,6 +8,7 @@ import { updatePhysics } from '../game/systems/physics';
 import { syncVisuals, getPickupSpriteScale, drawZoneOverlay } from '../game/systems/renderer';
 import { drawBotPaths } from '../game/render/botPathOverlay';
 import { ParticleView } from '../game/render/effects/particleView';
+import type { FlameFx } from '../game/render/flame/flameFx';
 import { drawMarks } from '../game/render/effects/marksView';
 import { destroyApp } from '../game/render/pixiApp';
 import { screenToWorld, toView, viewportOf, worldToScreen, Viewport } from '../game/render/viewport';
@@ -50,7 +51,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { gameEvents } from '../game/systems/events';
 import { playSound } from '../game/systems/audio';
 import { playCoverSoundEvent } from '../game/systems/coverAudio';
-import { playFlameSoundEvent } from '../game/systems/flameAudio';
+import { playFlameCrackle, playFlameSoundEvent } from '../game/systems/flameAudio';
 import { MatterPhysicsEngine } from '../game/physics/MatterEngine';
 import { applyEffectEvent } from '../game/systems/effects';
 import { addShake, explosionShake } from '../game/render/screenShake';
@@ -126,6 +127,8 @@ export default function GameCanvas() {
         players: new Map(),
         projectileView: null as ProjectileView | null,
         particleView: null as ParticleView | null,
+        flameFx: null as FlameFx | null,
+        flameQuality: detectMobile() ? 'medium' as const : 'high' as const,
         pickups: new Map(),
         decals: new Map(),
         floatingTexts: new Map(),
@@ -566,6 +569,8 @@ export default function GameCanvas() {
                 visualCache.current.projectileView = null;
                 visualCache.current.particleView?.clear();
                 visualCache.current.particleView = null;
+                visualCache.current.flameFx?.clear();
+                visualCache.current.flameFx = null;
                 visualCache.current.beamView?.clear();
                 visualCache.current.beamView = null;
                 visualCache.current.smokeView?.clear();
@@ -816,6 +821,8 @@ export default function GameCanvas() {
                 const view = viewNow();
                 look.update(gameState.current.camera, now, view.w, view.h);
                 adsLayer?.update(gameState.current, now, view.w, view.h, view.zoom);
+                // Fire burning in place (splash fire, burning fighters) crackles
+                playFlameCrackle(visualCache.current.flameFx?.burning ?? 0, app.ticker.deltaMS, isMutedRef.current);
             });
 
             // Load assets async
@@ -959,6 +966,8 @@ export default function GameCanvas() {
             visualCache.current.projectileView = null;
             visualCache.current.particleView?.clear();
             visualCache.current.particleView = null;
+            visualCache.current.flameFx?.clear();
+            visualCache.current.flameFx = null;
             visualCache.current.beamView?.clear();
             visualCache.current.beamView = null;
             visualCache.current.smokeView?.clear();

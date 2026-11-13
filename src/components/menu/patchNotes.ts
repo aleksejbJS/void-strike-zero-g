@@ -30,9 +30,18 @@ const shots = (name: string, ext = 'jpg') => ({ before: assetUrl(`assets/patch/$
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
 const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
+const FLAME = shots('flame');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.5.0', date: null, groups: [
+            { title: 'Flamethrower', points: [
+                'A new look for the flamethrower: a thick, living stream of fire that curls and rises, with a white-hot jet at the nozzle, sparks and smoke',
+                'Where the stream hits a wall, floor or crate, the fire splashes along it for a moment and leaves a soot mark',
+                'Burning fighters are wrapped in flickering tongues of flame',
+                'The stream roars and the fire crackles',
+            ], comparisons: [{ caption: 'Flamethrower', ...FLAME }] },
+        ] },
         { version: '0.4.37', date: 'Nov 13, 2026', points: [
             'No more quarter-second freeze on your first shot in a match: sound now starts while the match loads',
         ] },
@@ -265,6 +274,14 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.5.0', date: null, groups: [
+            { title: 'Огнемёт', points: [
+                'Новый вид огнемёта: густая живая струя огня, которая закручивается и поднимается вверх, с раскалённым добела выхлопом у сопла, искрами и дымом',
+                'Там, где струя бьёт в стену, пол или ящик, огонь на мгновение растекается по ним и оставляет пятно копоти',
+                'Горящих бойцов охватывают пляшущие языки пламени',
+                'Струя ревёт, огонь потрескивает',
+            ], comparisons: [{ caption: 'Огнемёт', ...FLAME }] },
+        ] },
         { version: '0.4.37', date: '13.11.2026', points: [
             'Больше нет фриза на четверть секунды при первом выстреле в матче: звук запускается, пока матч загружается',
         ] },
