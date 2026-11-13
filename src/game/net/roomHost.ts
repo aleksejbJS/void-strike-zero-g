@@ -6,8 +6,11 @@ import { FixedStepper } from '../systems/fixedStep';
 import { validateJoin, validateInput } from './validation';
 import { MSG, SNAPSHOT_RATE, SPECTATOR_CAP, JoinAccepted, JoinRejected, WatchAccepted } from './protocol';
 import { LOCAL_LINK_ID } from './hostProtocol';
+import { PHYSICS_TICK_RATE } from '../../constants';
 
-const SNAPSHOT_INTERVAL_MS = 1000 / SNAPSHOT_RATE;
+// Snapshots follow simulation ticks, not wall time: counting milliseconds and resetting
+// the counter lost the overshoot of every interval (27.8 snapshots/s instead of 30)
+const TICKS_PER_SNAPSHOT = Math.max(1, Math.round(PHYSICS_TICK_RATE / SNAPSHOT_RATE));
 // Timer granularity for the loop; the FixedStepper turns real elapsed time into exact ticks
 const LOOP_INTERVAL_MS = 4;
 
@@ -25,7 +28,7 @@ export class RoomHost {
     /** When each joined link last sent input (or joined): for rooms that drop silent players (idleKickMs). */
     private readonly lastInputAt = new Map<string, number>();
     private readonly stepper = new FixedStepper();
-    private sinceSnapshot = 0;
+    private ticksSinceSnapshot = 0;
 
     constructor(readonly room: GameRoom) {}
 
@@ -81,11 +84,10 @@ export class RoomHost {
     /** Advance by `elapsedMs` of real time; sends events and snapshots to joined clients and spectators. */
     update(elapsedMs: number, now = Date.now()) {
         this.dropIdle(now);
-        this.stepper.advance(elapsedMs, () => this.room.tick());
-
-        this.sinceSnapshot += elapsedMs;
-        if (this.sinceSnapshot < SNAPSHOT_INTERVAL_MS) return;
-        this.sinceSnapshot = 0;
+        this.ticksSinceSnapshot += this.stepper.advance(elapsedMs, () => this.room.tick());
+        if (this.ticksSinceSnapshot < TICKS_PER_SNAPSHOT) return;
+        // One snapshot even after a catch-up of many ticks; keep the remainder so the rate stays exact
+        this.ticksSinceSnapshot %= TICKS_PER_SNAPSHOT;
 
         const events = this.room.drainEvents();
         const snapshot = this.room.snapshot(now);
