@@ -40,8 +40,15 @@ export interface MovementInput {
  * Optionally pass GameState to emit jetpack particles.
  */
 export const applyMovement = (p: Entity, input: MovementInput, state?: GameState): void => {
+    // On the hook W/Space only reels in: the jetpack stays off and refills (humans and bots alike)
+    const flying = input.isFlying && !p.grapple.active;
+    // Thrusting up off a floor is flight already. Otherwise the floor contact reset the climb to a
+    // creep every tick and ground friction held a diagonal (W + D) takeoff for ~0.1 s.
+    const liftingOff = flying && p.jetpackFuel > 0 && !input.wantsDown;
+    const grounded = p.isGrounded && !liftingOff;
+
     // --- 1. Gravity ---
-    if (!p.isGrounded) {
+    if (!grounded) {
         p.vel.y += GRAVITY;
     } else if (p.vel.y <= 0) {
         // Maintain platform contact: tiny downward vel keeps Matter.js collision
@@ -49,11 +56,8 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
         p.vel.y = 0.1;
     }
 
-    // On the hook W/Space only reels in: the jetpack stays off and refills (humans and bots alike)
-    const flying = input.isFlying && !p.grapple.active;
-
     // --- 2. Player/Bot horizontal input ---
-    if (p.isGrounded) {
+    if (grounded) {
         // A wounded fighter (lost a leg) can only hop at crawl speed
         const speed = p.isProne || p.wound ? PRONE_SPEED : p.isCrouching ? CROUCH_SPEED : MOVE_SPEED;
         p.vel.x += input.inputX * speed;
@@ -106,7 +110,7 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
     }
 
     // --- 5. Friction ---
-    if (p.isGrounded) {
+    if (grounded) {
         p.vel.x *= GROUND_FRICTION;
     } else {
         p.vel.x *= AIR_RESISTANCE;
