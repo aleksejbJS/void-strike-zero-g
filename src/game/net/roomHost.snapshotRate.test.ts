@@ -42,6 +42,12 @@ describe('RoomHost snapshot rate', () => {
         expect(snapshots()).toBe(SNAPSHOT_RATE * 2);
     });
 
+    it('runs real time with the 4 ms loop timer, not a snapped 4.17 ms', () => {
+        const { host, snapshots } = hostWithPlayer();
+        for (let i = 0; i < 251; i++) host.update(4); // 1004 ms: 120 ticks, or 125 if snapped
+        expect(snapshots()).toBe(SNAPSHOT_RATE);
+    });
+
     it('sends a single snapshot, not a burst, after a long stall', () => {
         const { host, snapshots } = hostWithPlayer();
         host.update(500);

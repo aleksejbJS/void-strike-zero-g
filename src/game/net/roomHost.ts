@@ -27,7 +27,9 @@ export class RoomHost {
     private readonly spectators = new Set<string>();
     /** When each joined link last sent input (or joined): for rooms that drop silent players (idleKickMs). */
     private readonly lastInputAt = new Map<string, number>();
-    private readonly stepper = new FixedStepper();
+    // No vsync snapping: the loop runs on a ~4 ms timer, which snapping would count as 4.17 ms
+    // and run the room ~1-4% fast, so it would repeat players' inputs it never received
+    private readonly stepper = new FixedStepper(undefined, undefined, 0);
     private ticksSinceSnapshot = 0;
 
     constructor(readonly room: GameRoom) {}
