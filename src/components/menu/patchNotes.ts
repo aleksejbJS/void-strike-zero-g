@@ -30,11 +30,29 @@ const shots = (name: string, ext = 'jpg') => ({ before: assetUrl(`assets/patch/$
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
 const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
-const FLAME = shots('flame');
+const FLAME = shots('flame'), MENU = shots('menu'), FIGHTERS = shots('fighters');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.5.0', date: null, groups: [
+            { title: 'New look', points: [
+                'The menu and all its screens got a new atompunk look: rusty metal panels, rivets and yellow painted plates',
+                'Top, Profile, Character setup, Tournaments and What\'s new all match the new style',
+                'While the gameplay preview starts, an old monitor shows static instead of a schematic picture',
+                'The "Protect your nickname" button in Profile no longer cuts off its label',
+            ], comparisons: [{ caption: 'Main menu', ...MENU }] },
+            { title: 'Fighters', points: [
+                'Five new hand-drawn fighters: Human, Female human, Robot, Toxic and Cat',
+                'The Robot is built from a 3D model: it grips the gun with real fingers and takes your paint colours',
+                'Robots do not bleed: hits throw sparks and oil, torn limbs leave sockets with dangling cables, and a badly hurt robot shorts out',
+                'Standing fighters stand straight: legs no longer cross in an X',
+            ], comparisons: [{ caption: 'Fighters', ...FIGHTERS }] },
+            { title: 'Hits and physics', points: [
+                'Shots, railgun beams and flames hit the drawn head: a shot in the Cat\'s face used to do nothing',
+                'Dead bodies no longer bend their knees and elbows backwards',
+                'Flying with your head against a ceiling no longer stops dead at the seam between two blocks',
+                'Taking off diagonally (up and sideways) no longer sticks you to the floor for a moment',
+            ] },
             { title: 'Flamethrower', points: [
                 'A new look for the flamethrower: a thick, living stream of fire that curls and rises, with a white-hot jet at the nozzle, sparks and smoke',
                 'Where the stream hits a wall, floor or crate, the fire splashes along it for a moment and leaves a soot mark',
@@ -275,6 +293,24 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ],
     ru: [
         { version: '0.5.0', date: null, groups: [
+            { title: 'Новый облик', points: [
+                'Меню и все его экраны в новом атомпанк-стиле: ржавые металлические панели, заклёпки и жёлтые крашеные таблички',
+                'Топ, Профиль, Настройка персонажа, Турниры и «Что нового» выполнены в том же стиле',
+                'Пока запускается превью геймплея, на старом мониторе идут помехи вместо схематичной картинки',
+                'Кнопка «Защитить ник» в Профиле больше не обрезает надпись',
+            ], comparisons: [{ caption: 'Главное меню', ...MENU }] },
+            { title: 'Бойцы', points: [
+                'Пять новых рисованных бойцов: Человек, Девушка, Робот, Токсик и Кот',
+                'Робот собран из 3D-модели: держит оружие настоящими пальцами и красится в ваши цвета',
+                'Роботы не истекают кровью: от попаданий летят искры и масло, на месте оторванных конечностей — гнёзда с болтающимися кабелями, а сильно раненый робот коротит',
+                'Бойцы стоят ровно: ноги больше не перекрещиваются буквой X',
+            ], comparisons: [{ caption: 'Бойцы', ...FIGHTERS }] },
+            { title: 'Попадания и физика', points: [
+                'Пули, луч рельсотрона и огонь попадают по нарисованной голове: раньше выстрел Коту в лицо ничего не делал',
+                'У погибших бойцов колени и локти больше не гнутся в обратную сторону',
+                'Полёт головой вдоль потолка больше не застревает на стыке двух блоков',
+                'Взлёт по диагонали (вверх и вбок) больше не прилипает к полу на мгновение',
+            ] },
             { title: 'Огнемёт', points: [
                 'Новый вид огнемёта: густая живая струя огня, которая закручивается и поднимается вверх, с раскалённым добела выхлопом у сопла, искрами и дымом',
                 'Там, где струя бьёт в стену, пол или ящик, огонь на мгновение растекается по ним и оставляет пятно копоти',

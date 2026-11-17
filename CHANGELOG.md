@@ -2,6 +2,31 @@
 
 ## Version 0.5.0 (unreleased)
 
+One big release (owner's decision, 2026-11-12) instead of separate 0.4.x versions: the atompunk redesign, the 3D robot kit, two physics/combat fixes and the volumetric flame.
+
+### 🛠️ Atompunk look
+- Specs: `docs/plans/2026-11-07-menu-style-rollout-spec.md`, `...-menu-material-fidelity-spec.md` and the rollout plan. The main menu, its header (logo, Top / Profile / What's new / language plates) and every menu screen share one atompunk style: rust texture, riveted metal rims, cream type and yellow painted plates for the picked or main action (`public/assets/menu/*`, new fonts in `public/assets/fonts`)
+- Restyled screens: Character setup and the fighter builder, Profile and account dialogs, Top (shared riveted header, metal panels, the table as a dark inset well, the viewer's own row painted like a button; laptop, narrow portrait and phone-sideways layouts), Tournaments (list, create, lobby, bracket, watch), the ads admin page and the What's new panel
+- The menu's gameplay preview shows old-monitor static with a "Tuning in..." caption for the ~1 s the live scene needs to start; the Hazard Bay schematic scene stays only as the fallback when the live scene cannot run
+- Profile: the "Protect your nickname" button grows with its text (the English label wrapped and was clipped) and uses a dark SVG lock instead of the yellow emoji that blended into the plate
+- The November 7 menu backup copies (`menu-backups/`) are dropped from the tree; git history keeps them
+
+### 🧍 Fighters
+- Specs: `docs/plans/2026-11-07-atompunk-character-bases-spec.md`, `...-character-articulation-repair-spec.md`, `...-character-rig-plan.md`, `2026-11-08-human-pose-views-and-damage-spec.md`. Five illustrated bases (`src/game/build/characterBases.ts`, art in `public/assets/characters/atompunk`): Human, Female human, Robot, Toxic and Cat, drawn as body-part pictures on the existing animated rig, so aiming, locomotion, corpses and equipment keep working. The character preview page `character-rig.html` shows them in every pose
+- Standing, walking, running and airborne illustrated legs carry each foot along with its own hip and use the painted thigh and shin lengths, so a standing fighter stands straight like the source art (before, the shared pose planted the near foot forward and the legs crossed in an X). Prone and crouch keep their authored ground contact
+
+### 🤖 Robot kit
+- Specs: `docs/plans/2026-11-10-robot-3d-kit-spec.md`, `...-robot-3d-kit-plan.md`, `...-robot-damage-spec.md`. The Robot base is a procedural Blender model (`tools/blender/*`, sources in `art/3d`) rendered into a two-layer 3/4 atlas (`public/assets/characters/kit`): a tinted paint mesh under an untinted fixed picture per part. `kitDefinitions()` turns the generated kit into the anatomy and runtime definitions; the ankle pivot sits inside the boot so corpses rest on the sole. Saved default robot colours migrate to the kit palette
+- Armed kit fighters hold the weapon with a palm under it and gripping fingers over it, turning with the gun; weaponless fighters and corpses show open hands
+- Robots spark and leak oil instead of bleeding: hits throw sparks and a few oil drops, a death or torn leg throws oil and sparks and leaves an oil puddle, a stump drips oil (existing spark/blood effects with an oil colour, no protocol change). Torn hips and gibbed pieces show a socket flange with swaying cables and occasional sparks; a hurt robot (health 40 or less, a fresh hit, or a lost leg) shorts out with a spark burst at a joint every 0.7 s
+- Kit tools: `render_kit.py` takes the body id so other bodies can reuse it; `import_generated.py` turns a rigged `.glb` (Meshy, Tripo, Rodin, Mixamo, Rigify...) into a kit source `.blend` cut into the game's parts by skin weight
+
+### 🎯 Hits and physics
+- Spec: `docs/plans/2026-11-13-body-hit-zones-spec.md`. Damage checks used the 30×72 movement box (45 crouched, 26 prone) for every body, but the illustrated bodies are drawn taller: the Cat's head sat almost entirely above the box. `hitRect()` raises the top of the box to the top of each body's drawing per stance (a table checked against the pictures' pixels by `hitZone.test.ts`). Bullets, the railgun beam and flamethrower rays use it; movement, pickups, the chainsaw and explosions keep the plain box
+- Spec: `docs/plans/2026-11-12-ragdoll-hinges-player-corners-spec.md`. Ragdoll knees and elbows bend one way only: a hinge constraint in the relaxation loop moves a joint bent the wrong way back onto the line between its ends, with an opposite share on the ends so the body gains no speed; skipped once a bone is torn off (before: 291 of 300 fall kills bent a joint backwards, worst 155°)
+- The player body has a 3-unit chamfer, so a flight with the head against a ceiling of two flush blocks no longer loses its horizontal speed at the seam (8 → 0.35 in one tick before)
+- A fighter thrusting up is airborne for the Force Pipeline even while its feet are still in the grounding band, so a diagonal jetpack takeoff no longer sticks to the floor for ~0.1 s (height after 20 ticks: 8 → 25)
+
 ### 🔥 Volumetric flame
 - Spec: `docs/plans/2026-11-13-flame-fx-spec.md`; the owner's PixiJS v7 reference demo (class `Flamethrower`) is kept in `docs/plans/flame-fx-reference/`. Looks only: damage, range, cone, burning and the fuel tank are unchanged, and nothing new runs in the simulation or on the server
 - New engine `src/game/render/flame/`: a pure simulation (`flameSim.ts`, `flameStream.ts`, `particleMotion.ts`, `firePatches.ts`, `scorchMarks.ts`, fixed pools in `particlePool.ts`) and a Pixi side (`flameFx.ts`, `particleSprites.ts`, `patchSprites.ts`, `flameGlows.ts`, canvas textures in `flameTextures.ts`). One `FlameFx` per view (game screen: `high`, `medium` on touch devices; tournament match tiles: `low`), all sprites, no per-frame `Graphics`. Tuning lives in `flameTuning.ts`: the demo's numbers scaled by 0.55, stream speed 700 px/s so the faint tail ends at `FLAME_RANGE`
