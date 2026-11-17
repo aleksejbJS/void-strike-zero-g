@@ -45,6 +45,9 @@ export const createPlayerVisual = (p: Entity): Container => {
 
 export const forgetPlayerVisual = (id: string, animator: FighterAnimator = pageAnimator) => animator.forget(id);
 
+/** The animator a view's fighters use: its own (a watched match) or the game screen's. */
+export const viewAnimator = (animator?: FighterAnimator): FighterAnimator => animator ?? pageAnimator;
+
 const aimOf = (p: Entity, camera: Vector2, mouse: Vector2, screenW: number, screenH: number, isLocal: boolean) => {
     if (isLocal) {
         const shoulderX = p.pos.x - camera.x + screenW / 2;

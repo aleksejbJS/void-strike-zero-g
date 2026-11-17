@@ -1,5 +1,30 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.5.0 (unreleased)
+
+### 🔥 Volumetric flame
+- Spec: `docs/plans/2026-11-13-flame-fx-spec.md`; the owner's PixiJS v7 reference demo (class `Flamethrower`) is kept in `docs/plans/flame-fx-reference/`. Looks only: damage, range, cone, burning and the fuel tank are unchanged, and nothing new runs in the simulation or on the server
+- New engine `src/game/render/flame/`: a pure simulation (`flameSim.ts`, `flameStream.ts`, `particleMotion.ts`, `firePatches.ts`, `scorchMarks.ts`, fixed pools in `particlePool.ts`) and a Pixi side (`flameFx.ts`, `particleSprites.ts`, `patchSprites.ts`, `flameGlows.ts`, canvas textures in `flameTextures.ts`). One `FlameFx` per view (game screen: `high`, `medium` on touch devices; tournament match tiles: `low`), all sprites, no per-frame `Graphics`. Tuning lives in `flameTuning.ts`: the demo's numbers scaled by 0.55, stream speed 700 px/s so the faint tail ends at `FLAME_RANGE`
+- The stream: stretched flame cores that curl in noise and rise, a white-blue nozzle jet, a pilot light while the weapon is held, sparks that bounce on floors, smoke from the older flame and glows at the nozzle and over the flame. Cores collide with platforms and intact cover along their whole frame's flight (no tunnelling through thin platforms on slow frames); where they hit, splash fire burns ~1.2 s and leaves a soot mark (~8 s, in the decal layer)
+- Burning fighters carry a moving fire of tongue flames sized to the body (`FighterFire` now gives orders to `FighterAnimator.flames`, drawn by the view's `FlameFx` in `syncVisuals`). `flameJet.ts` and the body-fire particles (`addFlame`) are gone; the lit fuel tank's jet and fireball keep their particles
+- Sound (`src/game/systems/flameRoar.ts`): one looping brown-noise rumble and hiss, raised by every `flame/spray` tick and dropping 150 ms after the last, a whoomp when a stream starts, crackle on ticks and from fire burning in place (`playFlameCrackle`, game screen). The tank's ignite sound is unchanged
+- Measured on the owner's MacBook (Chrome, 120 Hz): four fighters spraying at once keep 120 fps (frame avg 8.35 ms, p99 9.4 ms). Tests: `flameSim.test.ts`, `flameSurfaces.test.ts`, updated `fighterFire.test.ts` and `flameAudio.test.ts`
+
+## Version 0.4.37 (2026-11-13)
+
+### 🔊 First-shot freeze
+- The first mouse click in a match froze the game for ~250 ms: `initAudio()` created the `AudioContext` there, and constructing one is slow on macOS (measured 261 ms the first time, 0.2 ms after; generating the procedural buffers takes ~7 ms)
+- `prepareAudio()` (`src/game/systems/audio.ts`) builds the context, gains and buffers when the match loads (`GameCanvas` setup); `initAudio()` now only resumes it and also runs on key presses, so sound wakes up before the first shot even where the browser starts the context suspended (Safari)
+- Nothing plays while the context is suspended (`playSound`, `sfxOutput`), so sounds are not queued on a frozen clock and burst out together on resume. Tests: `audio.prepare.test.ts`
+
+## Version 0.4.36 (2026-11-13)
+
+### 🌐 Online timing
+- Found with a P2P-host benchmark (browser host with bots + a guest over PeerJS, simulated 70–100 ms ping with jitter)
+- Snapshots follow simulation ticks (`src/game/net/roomHost.ts`): one every `PHYSICS_TICK_RATE / SNAPSHOT_RATE` = 4 ticks, keeping the remainder, a single snapshot after a long catch-up. Before, a millisecond counter was reset to 0 after each send and lost the overshoot of the 4 ms loop timer: 27.8 snapshots/s instead of 30
+- The room no longer snaps elapsed time (`FixedStepper` got a `snapToleranceMs` argument, 0 for `RoomHost`). Snapping is meant for rAF frames; on the ~4 ms timer it counted 4.0 ms as 4.17 ms, so the browser host ran 121–122 ticks/s, or slower when the timer fired late
+- Input backlog control (`src/game/net/inputQueue.ts`): the queue watches its smallest size over 0.25 s windows and skips one input when even that stays above 2. Before, only the 12-input cap applied, so a client whose clock ran slightly ahead sat 100 ms behind for good (measured: the host's own player averaged 11.4 queued inputs; now 2.1–2.6). Jitter swings are left alone; a skipped or overflowing input is preferably one whose buttons repeat the next, so presses and releases get through
+
 ## Version 0.4.35 (2026-11-09)
 
 ### 🏅 Leaderboards

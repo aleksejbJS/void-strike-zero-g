@@ -17,15 +17,18 @@ const MUSIC_TRACKS = {
   victory: 'victory_theme'
 };
 
-export const initAudio = async () => {
+/**
+ * Build the context, gains and procedural buffers ahead of time (at match load). Needs no user
+ * gesture: the context may start suspended. Creating it is the slow part (~250 ms on macOS),
+ * so doing it here keeps that stall off the first shot.
+ */
+export const prepareAudio = async () => {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    await audioCtx.resume();
+    const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctor) throw new Error('Web Audio is not supported in this browser');
+    audioCtx = new Ctor();
   }
 
-  // Initialize gain nodes
   if (!sfxGain) {
     sfxGain = audioCtx.createGain();
     sfxGain.connect(audioCtx.destination);
@@ -38,10 +41,19 @@ export const initAudio = async () => {
     musicGain.gain.value = 0.3;
   }
 
-  // Generate procedural audio buffers once — initAudio runs on every click
+  // Generate procedural audio buffers once
   if (!proceduralAudioPromise) proceduralAudioPromise = generateProceduralAudio();
   await proceduralAudioPromise;
 };
+
+/** Wake the audio up; call from a user gesture (click or key), as browsers require. Cheap after prepareAudio. */
+export const initAudio = async () => {
+  await prepareAudio();
+  if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+};
+
+/** A context that is not running yet would queue sounds on a frozen clock and play them all at once later. */
+const running = () => audioCtx !== null && audioCtx.state === 'running';
 
 const generateProceduralAudio = async () => {
   if (!audioCtx) return;
@@ -168,12 +180,12 @@ export const setSFXVolume = (volume: number) => {
   }
 };
 
-/** The sound-effects output for synths in other files (none until initAudio has run after a click). */
+/** The sound-effects output for synths in other files (none until the audio runs after a click or key). */
 export const sfxOutput = (): { ctx: AudioContext; out: GainNode } | null =>
-  audioCtx && sfxGain ? { ctx: audioCtx, out: sfxGain } : null;
+  audioCtx && sfxGain && running() ? { ctx: audioCtx, out: sfxGain } : null;
 
 export const playSound = (type: 'shoot' | 'hit' | 'explosion' | 'jump' | 'pickup' | 'shell' | 'score' | 'dash' | 'hook' | 'reload' | 'kill' | 'respawn', weaponType?: WeaponType, isMuted: boolean = false) => {
-  if (isMuted || !audioCtx || !sfxGain) return;
+  if (isMuted || !audioCtx || !sfxGain || !running()) return;
 
   try {
     const ctx = audioCtx;

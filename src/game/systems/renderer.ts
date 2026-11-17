@@ -2,7 +2,8 @@ import { Container, Graphics, Sprite, Text, Texture, BlurFilter, Filter, GlProgr
 // Bloom filter replaced with BlurFilter for glow effect
 import { GameState, Platform, Entity, WeaponType, ItemType, Pickup, Team, MapId } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
-import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../render/playerVisual';
+import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual, viewAnimator } from '../render/playerVisual';
+import { FlameFx } from '../render/flame/flameFx';
 import { nextHungerZone } from './gamemodes';
 import { ParticleView } from '../render/effects/particleView';
 import { ProjectileView } from '../render/projectiles/projectileView';
@@ -474,6 +475,10 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     // Particles: pooled sprites and graphics, one per live particle
     cache.particleView ??= new ParticleView(gameLayer);
     cache.particleView.sync(state.particles);
+
+    // Flamethrower streams and burning fighters: the orders the fighters gave while animated above
+    cache.flameFx ??= new FlameFx(gameLayer, decalLayer, cache.flameQuality ?? 'high');
+    cache.flameFx.update(now, viewAnimator(cache.animator).flames, state);
 
     // Floating Text
     for (const [id, txt] of cache.floatingTexts.entries()) { if (!state.floatingTexts.find(t => t.id === id)) { gameLayer.removeChild(txt); txt.destroy(); cache.floatingTexts.delete(id); } }

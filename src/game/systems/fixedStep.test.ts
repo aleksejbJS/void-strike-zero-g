@@ -47,4 +47,16 @@ describe('FixedStepper', () => {
         stepper.advance(-50, () => ticks++);
         expect(ticks).toBe(0);
     });
+
+    it('counts timer intervals at face value when snapping is off', () => {
+        const runFor = (stepper: FixedStepper) => {
+            let ticks = 0;
+            for (let i = 0; i < 2500; i++) stepper.advance(4, () => ticks++); // 10 s of a 4 ms timer
+            return ticks;
+        };
+        // Snapping treats 4 ms as a half tick (4.17 ms) and runs ~4% fast; a timer loop must not snap
+        expect(runFor(new FixedStepper())).toBeGreaterThan(1240);
+        expect(runFor(new FixedStepper(undefined, undefined, 0))).toBeGreaterThanOrEqual(1199);
+        expect(runFor(new FixedStepper(undefined, undefined, 0))).toBeLessThanOrEqual(1200);
+    });
 });

@@ -11,6 +11,7 @@ import { FighterMotion, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
 import { BleedDrips, StumpSparks } from './fighterBleed';
 import { FighterFire } from './fighterFire';
+import { FlameOrders } from '../flame/flameOrders';
 import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
@@ -69,6 +70,8 @@ export const faceAim = (aim: number) => {
 
 export class FighterAnimator {
     private readonly memory = new Map<string, AnimMemory>();
+    /** Flame the fighters asked for this frame; the view's FlameFx draws and clears it. */
+    readonly flames = new FlameOrders();
 
     frame(p: Entity, aim: number, now: number, textures: Record<string, Texture | undefined>, game: GameState): FighterFrame {
         const m = this.memoryFor(p.id, now);
@@ -119,7 +122,7 @@ export class FighterAnimator {
             m.bleed.spawn(game, at.x, at.y, now, robot ? ROBOT_OIL : undefined); // a robot stump drips oil
             if (robot) m.sparks.spawn(game, at.x, at.y, now);                     // and its torn cables spark
         }
-        m.fire.update(game, p, { pose, grip, facing, hop }, since, now);
+        m.fire.update(game, this.flames, p, { pose, grip, facing, hop }, since, now);
         return {
             pose, grip, weapon, facing,
             weaponType: p.weapon.type,

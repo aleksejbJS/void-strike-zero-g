@@ -1,17 +1,15 @@
-// Flame particles shared by burning fighters (render/fighter/fighterFire.ts, flameJet.ts), burning corpses
-// (ragdoll/corpseTank.ts) and tank blasts (effects.ts): a capped body flame, a hot flame (glow sprite), one burst
-// of a lit fuel tank's jet and the ball of burning fuel a tank throws when it blows.
+// Flame particles of the fuel tank, shared by fighters (render/fighter/fighterFire.ts), corpses (ragdoll/corpseTank.ts)
+// and tank blasts (effects.ts): a hot flame (glow sprite), one burst of a lit tank's jet and the ball of burning fuel
+// a tank throws when it blows. The flamethrower's stream and burning fighters are drawn by render/flame instead.
 // Pure state writes, no Pixi: corpses are imported by the simulation's module graph (server and worker host).
 
 import { GameState, Vector2 } from '../../types';
 import { createParticles } from './effectSpawn';
 
-/** With this many live particles (a big fight full of blasts), no new body fire is added. */
-export const FIRE_CAP = 1200;
 /**
- * Hot flames (the stream and a lit tank's jet) have priority: they are still added up to this many live
- * particles, so a scene full of blasts never starves them. They are bounded anyway: each stream or jet
- * spawns a fixed number per second and its flames live a fraction of a second.
+ * Hot flames (a lit tank's jet, burning fuel) are still added up to this many live particles, so a scene full of
+ * blasts never starves them. They are bounded anyway: each jet spawns a fixed number per second and its flames live
+ * a fraction of a second.
  */
 export const HOT_FLAME_CAP = 2400;
 
@@ -28,12 +26,6 @@ const DRIFT = 0.5;
 
 const between = (min: number, max: number) => min + Math.random() * (max - min);
 const pick = (colors: string[]) => colors[Math.floor(Math.random() * colors.length)];
-
-/** One 'fire' particle in one of `colors`, unless the scene is already full of particles. */
-export const addFlame = (state: GameState, at: Vector2, colors: string[], vel: Vector2, size: number, decay?: number): void => {
-    if (state.particles.length >= FIRE_CAP) return;
-    createParticles(state, at.x, at.y, 1, pick(colors), 'fire', { vel, size, ...(decay !== undefined && { decay }) });
-};
 
 /** One hot 'flame' glow sprite of glow radius `size`; only HOT_FLAME_CAP stops it. */
 export const addHotFlame = (state: GameState, at: Vector2, color: string, vel: Vector2, size: number, decay: number): void => {
