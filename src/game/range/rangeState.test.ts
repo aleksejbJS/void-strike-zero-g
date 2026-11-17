@@ -25,7 +25,7 @@ describe('range state', () => {
         expect(seen).toEqual(['crouch', 'prone', 'stand', 'crouch']);
     });
 
-    it('brings a dead dummy back after 3 seconds', () => {
+    it('sets the dummy return delay to 3000 ms', () => {
         expect(DUMMY_RETURN_MS).toBe(3000);
     });
 });
