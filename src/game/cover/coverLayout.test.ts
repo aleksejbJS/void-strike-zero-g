@@ -20,6 +20,7 @@ const CASES: Case[] = [
     { name: 'Hold the Flag', mode: GameMode.HOLD_THE_FLAG, map: MapId.DEFAULT, key: 'htf', count: 9 },
     { name: 'Infiltration', mode: GameMode.INFILTRATION, map: MapId.DEFAULT, key: 'infiltration', count: 13 },
     { name: 'Duel (The Pit)', mode: GameMode.DUEL, map: MapId.PIT, key: null, count: 0 },
+    { name: 'Test range', mode: GameMode.RANGE, map: MapId.DEFAULT, key: 'range', count: 4 },
 ];
 
 const rectOf = (c: Cover) => {
