@@ -26,6 +26,7 @@ import { updateParticles, updateFloatingTexts, updateDecals } from './particles'
 import { updateCorpses } from './ragdoll/corpses';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { applyStance, clampProneAim } from './stance';
+import { dummyControls } from '../range/dummyControls';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
@@ -196,6 +197,10 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 p.hasFlag = Team.NONE;
                 emitFlag('hold', 'lost', p.team);
             }
+        } else if (p.dummy) {
+            // A range dummy has no brain: it only holds the stance set on the range
+            controls = dummyControls(p, state.range);
+            applyStance(p, controls);
         } else {
             // Bots press the same controls a player has
             const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
