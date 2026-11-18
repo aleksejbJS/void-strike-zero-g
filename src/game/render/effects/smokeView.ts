@@ -3,7 +3,8 @@
 // clouds it draws the flamethrower's soot plumes (see smoke/sootPlumes), which replace the flame's own smoke sprites.
 // Without a working shader (no WebGL, a failed upload) it logs once and draws the old grey circles (see smokePuffs)
 // from then on; a failing plume path logs once and draws no soot. Owns the frame's stir feed: stirs are gathered once
-// per frame and shared by the clouds and the plumes.
+// per frame and shared by the clouds and the plumes. On its first frame it warms the smoke up (see smoke/smokeWarmup),
+// so the first smoke round of the match does not stall a frame compiling the shader and the solver.
 // It is the top effect view: above fighters, projectiles, particles and beams.
 
 import { Container, Graphics } from 'pixi.js';
@@ -14,6 +15,7 @@ import { CloudField, type SmokeFrame } from '../smoke/cloudField';
 import { SootPlumes, sootWanted } from '../smoke/sootPlumes';
 import { StirFeed } from '../smoke/stirFeed';
 import { smokeMeterForView } from '../smoke/smokeMeter';
+import { SmokeWarmup } from '../smoke/smokeWarmup';
 import { cloudCircles } from './smokePuffs';
 import { keepOnTop } from './keepOnTop';
 
@@ -29,6 +31,8 @@ export class SmokeView {
     private readonly meter = smokeMeterForView(); // dev builds: the CPU time of each sync, as window.__smokeMs
     private field: CloudField | null = null;    // made when the first cloud appears
     private plumes: SootPlumes | null = null;   // made when the flame first leaves soot
+    private warmup: SmokeWarmup | null = null;  // drawn on the first frame only
+    private warmed = false;
     private stack: Container[] = [this.gfx];    // what stays on top of the layer, bottom to top: the soot plumes, the clouds, the outline
     private failed = false;                     // the shader clouds failed: circles from now on, no retry
     private sootFailed = false;                 // the plumes failed: no soot from now on, no retry
@@ -50,6 +54,7 @@ export class SmokeView {
     }
 
     private syncNow(smokes: readonly SmokeCloud[], now: number, silhouette: SmokeSilhouette | null, frame: SmokeFrame | null): void {
+        this.warm(now, frame);
         const stirs = this.stirsOf(smokes, now, frame);
         const circles = !this.drive(smokes, now, frame, stirs);
         this.driveSoot(now, frame, stirs);
@@ -81,6 +86,8 @@ export class SmokeView {
         this.plumes?.destroy();
         this.plumes = null;
         this.feed.idle();
+        this.warmup?.destroy();
+        this.warmup = null;
         const { gfx } = this;
         gfx.parent?.removeChild(gfx);
         if (!gfx.destroyed) gfx.destroy({ children: true, context: true });
@@ -127,6 +134,22 @@ export class SmokeView {
             this.plumes?.destroy();
             this.plumes = null;
             this.stack = this.stackOf();
+        }
+    }
+
+    // The first frame with a frame builds the warm-up (a shader failure there switches to circles at once); the next frees it
+    private warm(now: number, frame: SmokeFrame | null): void {
+        if (this.warmup) {
+            this.warmup.destroy();
+            this.warmup = null;
+        }
+        if (this.warmed || !frame || this.failed) return;
+        this.warmed = true;
+        try {
+            this.warmup = new SmokeWarmup(frame.quality, now);
+            this.layer.addChildAt(this.warmup.layer, 0);
+        } catch (err) {
+            this.fail(err);
         }
     }
 
