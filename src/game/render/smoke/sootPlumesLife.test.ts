@@ -101,8 +101,8 @@ describe('SootPlumes in the world', () => {
     });
 
     it('does nothing, and does not even list the soot, while the flame has none and no plume lives', () => {
-        const soot = vi.fn(() => []);
-        const plumes = make(), frame = { ...sootFrame([]), flame: { ...airOf([]), soot } };
+        const soot = vi.fn();
+        const plumes = make(), frame = { ...sootFrame([]), flame: { ...airOf([]), forEachSoot: soot } };
         runFrames(plumes, frame, 20, T0);
         expect(soot).not.toHaveBeenCalled();
         expect(plumes.count).toBe(0);

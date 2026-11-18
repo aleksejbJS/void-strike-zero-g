@@ -13,7 +13,7 @@ export type Point = { x: number; y: number };
 /** A flame view whose soot is whatever `points` holds right now (the test edits the array between frames). */
 export const airOf = (points: Point[]): FlameAir => ({
     streams: () => [],
-    soot: () => points.map(p => ({ ...p, age: 0, ttl: 2 })),     // fresh particles: they leave their full amount
+    forEachSoot: (visit) => { for (const p of points) visit(p.x, p.y, 0, 2); },    // fresh particles: they leave their full amount
     hasSoot: () => points.length > 0,
 });
 

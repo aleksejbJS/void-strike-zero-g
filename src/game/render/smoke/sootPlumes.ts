@@ -7,6 +7,7 @@
 import { Container } from 'pixi.js';
 import type { Box, Stir } from './airGrid';
 import type { SmokeFrame } from './cloudField';
+import type { SootVisitor } from './flameAir';
 import { SootPlume } from './sootPlume';
 import { safeFrameDt } from './smokeStirs';
 import { GRID_N, IMPULSE_DT, PLUME_CAP, PLUME_FULL_RATE, VIEW_MARGIN } from './smokeTuning';
@@ -30,6 +31,11 @@ export class SootPlumes {
     private readonly awake: SootPlume[] = [];   // the plumes in view this frame, reused
     private readonly reach: Box = { x: 0, y: 0, w: 0, h: 0 };   // the view and its margin, reused
     private destroyed = false;
+    // The frame being fed, read by onSoot (one callback for the whole walk: no closure per frame)
+    private feedNow = 0;
+    private feedDt = 0;
+    private feedFrame: SmokeFrame | null = null;
+    private readonly onSoot: SootVisitor = (x, y, age, ttl) => this.deposit(x, y, age, ttl);
 
     /** How many plumes are alive. */
     get count(): number {
@@ -86,13 +92,18 @@ export class SootPlumes {
     // Every smoke particle in reach adds to the plume that holds it, or makes one. A particle out of reach adds nothing: no
     // plume with a particle in reach sleeps (its box overlaps the reach), so no sleeping plume misses a deposit.
     private feed(now: number, frame: SmokeFrame, dt: number): void {
-        const { reach } = this;
-        const x1 = reach.x + reach.w, y1 = reach.y + reach.h;
-        for (const p of frame.flame!.soot()) {
-            if (p.x < reach.x || p.x > x1 || p.y < reach.y || p.y > y1) continue;
-            const plume = this.holding(p.x, p.y) ?? this.make(p.x, p.y, now, frame);
-            plume?.add(p.x, p.y, dt * lifeLeft(p.age, p.ttl), now);
-        }
+        this.feedNow = now;
+        this.feedDt = dt;
+        this.feedFrame = frame;
+        frame.flame!.forEachSoot(this.onSoot);
+        this.feedFrame = null;
+    }
+
+    private deposit(x: number, y: number, age: number, ttl: number): void {
+        const { reach, feedFrame: frame } = this;
+        if (!frame || x < reach.x || x > reach.x + reach.w || y < reach.y || y > reach.y + reach.h) return;
+        const plume = this.holding(x, y) ?? this.make(x, y, this.feedNow, frame);
+        plume?.add(x, y, this.feedDt * lifeLeft(age, ttl), this.feedNow);
     }
 
     private holding(x: number, y: number): SootPlume | undefined {

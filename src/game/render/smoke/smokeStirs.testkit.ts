@@ -19,7 +19,7 @@ export const frame = (f: Partial<Pick<GameState, 'projectiles' | 'particles' | '
 
 export const flameWith = (streams: { x: number; y: number; angle: number; firing: boolean; power: number }[]): FlameAir => ({
     streams: () => streams,
-    soot: () => [],
+    forEachSoot: () => {},
     hasSoot: () => false,
 });
 

@@ -44,7 +44,9 @@ describe('FlameFx smoke', () => {
     it.each(['high', 'medium'] as FlameQuality[])('draws no smoke sprites on %s, but keeps simulating the smoke that feeds the soot plumes', (quality) => {
         const { fx, layer } = sprayed(quality);
         expect(fx.air().hasSoot()).toBe(true);
-        expect([...fx.air().soot()].length).toBeGreaterThan(10);
+        let soot = 0;
+        fx.air().forEachSoot(() => { soot++; });
+        expect(soot).toBeGreaterThan(10);
         expect(smokeSprites(layer)).toBe(0);
         fx.clear();
     });
