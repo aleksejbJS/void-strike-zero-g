@@ -9,6 +9,7 @@ import { ParticleView } from '../render/effects/particleView';
 import { ProjectileView } from '../render/projectiles/projectileView';
 import { BeamView } from '../render/projectiles/beamView';
 import { SmokeView } from '../render/effects/smokeView';
+import { smokeFrameOf } from '../render/smoke/smokeFrame';
 import { CoverView } from '../render/cover/coverView';
 import { smokeSilhouette } from '../render/smokeVisibility';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
@@ -493,8 +494,10 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     cache.beamView.sync(state.beams ?? []);
 
     // Smoke clouds, last so they cover everything drawn before; your own fighter in smoke as an outline
+    // (the frame says what the clouds need: the state, the flame streams, the visible world rect, the grid quality)
     cache.smokeView ??= new SmokeView(gameLayer);
-    cache.smokeView.sync(state.smokes ?? [], now, smokeSilhouette(state, state.players.find(pl => pl.id === localPlayerId), now));
+    cache.smokeFrame = smokeFrameOf(cache.smokeFrame ?? null, state, cache.flameFx?.air() ?? null, view, cache.flameQuality ?? 'high');
+    cache.smokeView.sync(state.smokes ?? [], now, smokeSilhouette(state, state.players.find(pl => pl.id === localPlayerId), now), cache.smokeFrame);
 
     // Cursor
     let cursor = uiLayer.getChildByLabel('cursor') as Graphics;

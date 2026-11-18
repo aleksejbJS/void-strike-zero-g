@@ -1,15 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import type { Mesh } from 'pixi.js';
-import type { Projectile } from '../../../types';
-import { WeaponType } from '../../../types';
 import { CloudField } from './cloudField';
 import { SmokeQuad } from './smokeQuad';
-import { SmokeStirs } from './smokeStirs';
 import type { Stir } from './airGrid';
-import { FRAME_MS, T0, VIEW, cloud, frameOf, runFrames, runner, stateOf, watchGrids } from './cloudField.testkit';
-
-const shot = (x: number, y: number, vx: number): Projectile =>
-    ({ id: 'r1', ownerId: 'a', pos: { x, y }, vel: { x: vx, y: 0 }, type: WeaponType.ROCKET_LAUNCHER, radius: 4, active: true });
+import { FRAME_MS, T0, VIEW, cloud, frameOf, runFrames, runner, stateOf, syncFed, watchGrids } from './cloudField.testkit';
 
 describe('CloudField stirs, drawing and waking', () => {
     beforeAll(() => { vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null); });
@@ -29,20 +23,10 @@ describe('CloudField stirs, drawing and waking', () => {
     };
     const reach26 = (calls: { st: Stir; dt: number }[] | undefined) => (calls ?? []).filter(c => c.st.r === 26);
 
-    it('collects the stirs once per frame, however many clouds, in view or not', () => {
-        const field = makeField(), collect = spyOn(SmokeStirs.prototype, 'collect');
-        const smokes = [cloud('a', 800, 450), cloud('b', 900, 450), cloud('far', 9000, 450)];
-        field.sync(smokes, T0, frameOf());
-        runFrames(field, smokes, 9, frameOf(), T0);
-        expect(collect).toHaveBeenCalledTimes(10);
-        runFrames(field, [cloud('far', 9000, 450)], 3, frameOf(), T0 + 9 * FRAME_MS);       // only an off-view cloud left
-        expect(collect).toHaveBeenCalledTimes(13);
-    });
-
     it('applies each queued stir once, with the time it carries and not the step\'s: a half-rate cloud gets two frames\' worth', () => {
         const w = watch(), field = makeField();
         const smokes = [0, 1, 2, 3, 4].map(i => cloud(`c${i}`, 800, 450));      // the same spot: the fifth is the half-rate one
-        field.sync(smokes, T0, frameOf());
+        syncFed(field, smokes, T0, frameOf());
         runFrames(field, smokes, 10, frameOf(stateOf({ players: [runner(800, 476)] })), T0);
         const full = reach26(w.stirs.get(field.gridOf('c0')!)), half = reach26(w.stirs.get(field.gridOf('c4')!));
         expect(full.length).toBe(10);
@@ -53,15 +37,15 @@ describe('CloudField stirs, drawing and waking', () => {
 
     it('a stir carries at most 0.1 s of a long frame', () => {
         const w = watch(), field = makeField(), smokes = [cloud('a', 800, 450)];
-        field.sync(smokes, T0, frameOf());
-        field.sync(smokes, T0 + 2000, frameOf(stateOf({ players: [runner(800, 476)] })));
+        syncFed(field, smokes, T0, frameOf());
+        syncFed(field, smokes, T0 + 2000, frameOf(stateOf({ players: [runner(800, 476)] })));
         expect(reach26(w.stirs.get(field.gridOf('a')!)).map(c => c.dt)).toEqual([0.1]);
     });
 
     it('applies the queue on the first catch-up step only', () => {
         const w = watch(), field = makeField(), smokes = [cloud('a', 800, 450)];
-        field.sync(smokes, T0, frameOf());
-        field.sync(smokes, T0 + 100, frameOf(stateOf({ players: [runner(800, 476)] })));   // 100 ms: three steps
+        syncFed(field, smokes, T0, frameOf());
+        syncFed(field, smokes, T0 + 100, frameOf(stateOf({ players: [runner(800, 476)] })));   // 100 ms: three steps
         expect(w.steps.get(field.gridOf('a')!)!.length).toBe(3);
         expect(reach26(w.stirs.get(field.gridOf('a')!)).length).toBe(1);
     });
@@ -69,7 +53,7 @@ describe('CloudField stirs, drawing and waking', () => {
     it('drops the stirs of a cloud out of view instead of saving them up', () => {
         const w = watch(), field = makeField(), smokes = [cloud('a', 5000, 450)];
         const state = stateOf({ players: [runner(5000, 476)] });
-        field.sync(smokes, T0, frameOf(state));
+        syncFed(field, smokes, T0, frameOf(state));
         runFrames(field, smokes, 10, frameOf(state), T0);                          // the runner is in its box, the box out of view
         expect(reach26(w.stirs.get(field.gridOf('a')!)).length).toBe(0);
         runFrames(field, smokes, 1, frameOf(state, { ...VIEW, x: 4300 }), T0 + 10 * FRAME_MS);
@@ -80,38 +64,18 @@ describe('CloudField stirs, drawing and waking', () => {
         const w = watch(), field = makeField();
         const smokes = [0, 1, 2, 3, 4].map(i => cloud(`c${i}`, 800, 450));      // the fifth is the half-rate one
         const busy = frameOf(stateOf({ players: [runner(800, 476)] })), away = frameOf(stateOf({ players: [runner(800, 476)] }), { ...VIEW, x: 10_000 });
-        field.sync(smokes, T0, frameOf());
+        syncFed(field, smokes, T0, frameOf());
         let t = runFrames(field, smokes, 1, busy, T0);                           // queued, no step due yet
         t = runFrames(field, smokes, 1, away, t);                                // asleep: the queue goes
         runFrames(field, smokes, 2, busy, t);                                    // back: its first step comes with the second frame
         expect(reach26(w.stirs.get(field.gridOf('c4')!)).length).toBe(2);
     });
 
-    it('forgets what it followed when the clouds were gone, so old positions do not make a long chain', () => {
-        const field = makeField(), collect = spyOn(SmokeStirs.prototype, 'collect');
-        const smokes = [cloud('a', 800, 450)];
-        field.sync(smokes, T0, frameOf(stateOf({ projectiles: [shot(100, 450, 10)] })));
-        field.sync([], T0 + FRAME_MS, frameOf(stateOf({ projectiles: [shot(2000, 450, 10)] })));
-        field.sync(smokes, T0 + 2 * FRAME_MS, frameOf(stateOf({ projectiles: [shot(5100, 450, 10)] })));
-        const last = collect.mock.calls[collect.mock.calls.length - 1][2] as Stir[];
-        expect(collect).toHaveBeenCalledTimes(2);                                  // not while no cloud existed
-        expect(last.length).toBe(2);                                              // one tick back (5090 -> 5100), not 100 -> 5100
-    });
-
-    it('also forgets what it followed across frames that had no stirs to collect', () => {
-        const field = makeField(), collect = spyOn(SmokeStirs.prototype, 'collect');
-        const smokes = [cloud('a', 800, 450)];
-        field.sync(smokes, T0, frameOf(stateOf({ projectiles: [shot(100, 450, 10)] })));
-        field.sync(smokes, T0 + FRAME_MS, null);
-        field.sync(smokes, T0 + 2 * FRAME_MS, frameOf(stateOf({ projectiles: [shot(5100, 450, 10)] })));
-        expect((collect.mock.calls[collect.mock.calls.length - 1][2] as Stir[]).length).toBe(2);
-    });
-
     it('uploads every visible cloud each frame with the time in seconds and the fade, and skips those out of view', () => {
         const field = makeField(), upload = spyOn(SmokeQuad.prototype, 'upload');
         const now = 2_500_000, born = now - 1000;
         const smokes = [cloud('a', 800, 450, born), cloud('b', 900, 450, born, now + 1000), cloud('far', 9000, 450, born)];
-        field.sync(smokes, now, frameOf());
+        syncFed(field, smokes, now, frameOf());
         upload.mockClear();
         runFrames(field, smokes, 4, frameOf(), now);
         const calls = upload.mock.calls as [number, number][];
@@ -125,16 +89,16 @@ describe('CloudField stirs, drawing and waking', () => {
     it('hides a cloud whose time is up without uploading it', () => {
         const field = makeField(), upload = spyOn(SmokeQuad.prototype, 'upload');
         const smokes = [cloud('a', 800, 450, 0, T0 + 50)];
-        field.sync(smokes, T0, frameOf());
+        syncFed(field, smokes, T0, frameOf());
         upload.mockClear();
-        field.sync(smokes, T0 + 100, frameOf());
+        syncFed(field, smokes, T0 + 100, frameOf());
         expect((field.layer.children[0] as Mesh).visible).toBe(false);
         expect(upload).not.toHaveBeenCalled();
     });
 
     it('fills a cloud as a settled one when it comes back after being out of view for over a second', () => {
         const field = makeField(), smokes = [cloud('a', 800, 450)], away = { ...VIEW, x: 10_000 };
-        field.sync(smokes, T0, frameOf());
+        syncFed(field, smokes, T0, frameOf());
         const g = field.gridOf('a')!, settled = g.mass();
         g.d.fill(0);
         let t = runFrames(field, smokes, 1, frameOf(stateOf(), away), T0);
@@ -145,7 +109,7 @@ describe('CloudField stirs, drawing and waking', () => {
 
     it('does not refill a cloud that was out of view for under a second', () => {
         const field = makeField(), smokes = [cloud('a', 800, 450)], away = { ...VIEW, x: 10_000 };
-        field.sync(smokes, T0, frameOf());
+        syncFed(field, smokes, T0, frameOf());
         const g = field.gridOf('a')!, settled = g.mass();
         g.d.fill(0);
         const t = runFrames(field, smokes, 10, frameOf(stateOf(), away), T0);

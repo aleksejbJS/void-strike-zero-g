@@ -3,7 +3,6 @@ import type { Mesh } from 'pixi.js';
 import type { GameState } from '../../../types';
 import { AirGrid } from './airGrid';
 import { CloudField } from './cloudField';
-import { SmokeStirs } from './smokeStirs';
 import { STEP_HZ } from './smokeTuning';
 import type { Cover } from '../../cover/coverTypes';
 import { FRAME_MS, T0, VIEW, cloud, frameOf, runFrames, stateOf, stepCount, watchGrids } from './cloudField.testkit';
@@ -107,25 +106,19 @@ describe('CloudField', () => {
 
     it('steps every cloud at full rate, with no stirs and no culling, when there is no frame', () => {
         const w = watch(), field = makeField();
-        const collect = vi.spyOn(SmokeStirs.prototype, 'collect');
         const smokes = [0, 1, 2, 3, 4, 5].map(i => cloud(`c${i}`, 100 + 3000 * i, 450));      // all far from any view
         field.sync(smokes, T0, null);
         runFrames(field, smokes, 10, null, T0);
         for (let i = 0; i < 6; i++) expect(stepCount(w.steps, field.gridOf(`c${i}`))).toBe(10);
-        expect(collect).not.toHaveBeenCalled();
         for (const calls of w.stirs.values()) expect(calls.length).toBe(10 * 5);     // the clouds' own churn stirs, 5 a step: nothing else
         expect(field.layer.children.every(m => m.visible)).toBe(true);
-        collect.mockRestore();
     });
 
     it('does nothing and keeps the layer empty while there are no clouds', () => {
         const w = watch(), field = makeField();
-        const collect = vi.spyOn(SmokeStirs.prototype, 'collect');
         runFrames(field, [], 20, frameOf(), T0);
         expect(field.layer.children.length).toBe(0);
-        expect(collect).not.toHaveBeenCalled();
         expect(w.steps.size).toBe(0);
-        collect.mockRestore();
     });
 });
 

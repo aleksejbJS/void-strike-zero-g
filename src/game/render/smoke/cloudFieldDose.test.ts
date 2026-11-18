@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { CloudField } from './cloudField';
 import type { AirGrid, Stir } from './airGrid';
-import { T0, cloud, frameOf, runner, stateOf, watchGrids } from './cloudField.testkit';
+import { T0, cloud, frameOf, runner, stateOf, syncFed, watchGrids } from './cloudField.testkit';
 import { projectile } from './smokeStirs.testkit';
 
 // A stir must push the air by the same amount per second of play on a 60, 120 or 144 Hz screen, at full rate and at half rate.
@@ -18,7 +18,7 @@ describe('CloudField stir dose by frame rate', () => {
         const field = new CloudField();
         cleanups.push(w.restore, () => field.destroy());
         const smokes = [0, 1, 2, 3, 4].map(i => cloud(`c${i}`, 800, 450));
-        field.sync(smokes, T0, frameOf());
+        syncFed(field, smokes, T0, frameOf());
         const grid = field.gridOf(role === 'full' ? 'c0' : 'c4') as AirGrid;
         return { field, smokes, grid, calls: () => w.stirs.get(grid) ?? [] };
     };
@@ -30,7 +30,7 @@ describe('CloudField stir dose by frame rate', () => {
         const { field, smokes, grid, calls } = setup(role);
         const state = stateOf({ players: [runner(800, 476)] });
         let now = T0;
-        for (let i = 0; i < Math.round(seconds * hz); i++) { now += 1000 / hz; field.sync(smokes, now, frameOf(state)); }
+        for (let i = 0; i < Math.round(seconds * hz); i++) { now += 1000 / hz; syncFed(field, smokes, now, frameOf(state)); }
         const k = Math.floor((800 - grid.x0) / grid.cell) + Math.floor((450 - grid.y0) / grid.cell) * grid.n;
         return { applied: sum(calls(), 26), speed: grid.u[k] };
     };
@@ -57,9 +57,9 @@ describe('CloudField stir dose by frame rate', () => {
                 let now = T0, x = 450;
                 for (let i = 0; x < 1150; i++) {                          // 840 px/s: 14 px per 60 Hz frame, 7 px per 120 Hz frame
                     now += 1000 / hz; x += 840 / hz;
-                    field.sync(smokes, now, frameOf(stateOf({ projectiles: [projectile('r1', x, 450, 14, 0)] })));
+                    syncFed(field, smokes, now, frameOf(stateOf({ projectiles: [projectile('r1', x, 450, 14, 0)] })));
                 }
-                for (let i = 0; i < 8; i++) { now += 1000 / hz; field.sync(smokes, now, frameOf()); }   // let a half-rate cloud use its queue
+                for (let i = 0; i < 8; i++) { now += 1000 / hz; syncFed(field, smokes, now, frameOf()); }   // let a half-rate cloud use its queue
                 return sum(calls(), 16);
             };
             const at60 = cross(60), at120 = cross(120);

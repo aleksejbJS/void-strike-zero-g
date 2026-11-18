@@ -5,6 +5,7 @@ import type { GameState, SmokeCloud } from '../../../types';
 import { SMOKE_RADIUS } from '../../systems/smoke';
 import { AirGrid, type Box, type Stir } from './airGrid';
 import type { CloudField, SmokeFrame } from './cloudField';
+import { StirFeed } from './stirFeed';
 import type { SmokeQuality } from './smokeTuning';
 
 export const FRAME_MS = 1000 / 60;
@@ -26,10 +27,21 @@ export const frameOf = (state: GameState = stateOf(), view: Box = VIEW, quality:
 export const runner = (x: number, y: number): GameState['players'][number] =>
     ({ id: 'p1', pos: { x, y }, vel: { x: 5, y: 0 }, width: 20, height: 52, dead: false }) as unknown as GameState['players'][number];
 
-/** Call `field.sync` for `n` frames of `FRAME_MS` after `start`; returns the time of the last one. */
+const feeds = new WeakMap<CloudField, StirFeed>();
+
+/** `field.sync` as SmokeView calls it: the frame's stirs come from a feed that belongs to the field, and are none
+ *  while there is no smoke or no frame (the feed then forgets what it followed). */
+export function syncFed(field: CloudField, smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null): void {
+    let feed = feeds.get(field);
+    if (!feed) { feed = new StirFeed(); feeds.set(field, feed); }
+    const stirs = frame && smokes.length > 0 ? feed.collect(frame.state, frame.flame, now) : feed.idle();
+    field.sync(smokes, now, frame, stirs);
+}
+
+/** Call `syncFed` for `n` frames of `FRAME_MS` after `start`; returns the time of the last one. */
 export function runFrames(field: CloudField, smokes: readonly SmokeCloud[], n: number, frame: SmokeFrame | null, start: number): number {
     let now = start;
-    for (let i = 0; i < n; i++) { now += FRAME_MS; field.sync(smokes, now, frame); }
+    for (let i = 0; i < n; i++) { now += FRAME_MS; syncFed(field, smokes, now, frame); }
     return now;
 }
 

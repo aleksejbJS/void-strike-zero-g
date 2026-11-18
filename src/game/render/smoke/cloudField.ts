@@ -1,15 +1,14 @@
 // The smoke clouds of one game view: one air grid and one shader quad per gameplay cloud (CloudEntry), made
-// when a cloud first appears and freed when it goes. Each frame the field gathers the frame's stirs once,
-// decides which clouds are worth stepping (the four nearest the view centre every frame, the others at half
-// rate, those outside the view and a margin not at all) and draws the ones in view. Visual only.
+// when a cloud first appears and freed when it goes. Each frame the field takes the frame's stirs (gathered once
+// by the caller's StirFeed), decides which clouds are worth stepping (the four nearest the view centre every frame,
+// the others at half rate, those outside the view and a margin not at all) and draws the ones in view. Visual only.
 
 import { Container } from 'pixi.js';
 import type { GameState, SmokeCloud } from '../../../types';
 import type { AirGrid, Box, Stir } from './airGrid';
 import { CloudEntry } from './cloudEntry';
 import type { FlameAir } from './flameAir';
-import { SmokeStirs } from './smokeStirs';
-import { GRID_N, IMPULSE_DT, type SmokeQuality } from './smokeTuning';
+import { GRID_N, type SmokeQuality } from './smokeTuning';
 
 /** What a frame of drawing knows: the game state, the flame engine's view of its streams, the visible world rect, the grid quality. */
 export type SmokeFrame = { state: GameState; flame: FlameAir | null; view: Box; quality: SmokeQuality };
@@ -18,17 +17,15 @@ const FULL_RATE_CLOUDS = 4;                     // clouds nearest the view centr
 const VIEW_MARGIN = 200;                        // px: a cloud this far outside the view still steps, so it is ready when it comes in
 const FALLBACK_QUALITY: SmokeQuality = 'low';   // grid size when there is no frame to say (previews, tests)
 
+const NO_STIRS: readonly Stir[] = [];
+
 const byDistance = (a: CloudEntry, b: CloudEntry): number => a.dist2 - b.dist2;
 
 export class CloudField {
     readonly layer = new Container();
     private readonly entries = new Map<string, CloudEntry>();
-    private readonly stirs = new SmokeStirs();
-    private readonly frameStirs: Stir[] = [];   // this frame's stirs, rebuilt by SmokeStirs.collect
     private readonly inView: CloudEntry[] = []; // reused each frame
     private stamp = 0;
-    private lastNow = 0;                       // time (ms) of the last sync that collected stirs
-    private watching = false;                   // did the last sync collect stirs (so the stir memory is current)
     private destroyed = false;
 
     /** The air grid of a cloud, for tests. */
@@ -36,29 +33,21 @@ export class CloudField {
         return this.entries.get(id)?.grid;
     }
 
-    /** Show exactly `smokes`: make, step, draw and free clouds. `now` is in ms. Without a `frame` every cloud
-     *  steps at full rate with no stirs, none is left out and its grid size is the fallback quality's. */
-    sync(smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null): void {
+    /** Show exactly `smokes`: make, step, draw and free clouds. `now` is in ms. `stirs` are this frame's stirs, gathered
+     *  once by the caller (the list is read, not kept). Without a `frame` every cloud steps at full rate, none is left
+     *  out and its grid size is the fallback quality's. */
+    sync(smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null, stirs: readonly Stir[] = NO_STIRS): void {
         if (this.destroyed) return;
         if (smokes.length === 0) {
-            if (this.watching || this.entries.size > 0) this.dropAll();
+            if (this.entries.size > 0) this.dropAll();
             return;
         }
         this.track(smokes, now, frame);
         if (!frame) {
-            this.watching = false;
             for (const entry of this.entries.values()) this.stepAndShow(entry, now, true, null);
             return;
         }
-        // The stirs follow what changes from frame to frame: after a frame that did not collect, their memory is stale
-        // and there is no frame time to measure (a 60 Hz frame is assumed)
-        let frameDt = IMPULSE_DT;
-        if (this.watching) frameDt = (now - this.lastNow) / 1000;
-        else this.stirs.reset();
-        this.watching = true;
-        this.lastNow = now;
-        this.stirs.collect(frame.state, frame.flame, this.frameStirs, frameDt);
-        this.stepInView(now, frame);
+        this.stepInView(now, frame, stirs);
     }
 
     destroy(): void {
@@ -95,12 +84,10 @@ export class CloudField {
         for (const entry of this.entries.values()) entry.destroy();
         this.entries.clear();
         this.inView.length = 0;
-        this.frameStirs.length = 0;
-        this.watching = false;
     }
 
     // Clouds in the view (plus margin) share the work, nearest the view centre first; the rest sleep
-    private stepInView(now: number, frame: SmokeFrame): void {
+    private stepInView(now: number, frame: SmokeFrame, stirs: readonly Stir[]): void {
         const { view, state } = frame;
         const vx0 = view.x - VIEW_MARGIN, vx1 = view.x + view.w + VIEW_MARGIN;
         const vy0 = view.y - VIEW_MARGIN, vy1 = view.y + view.h + VIEW_MARGIN;
@@ -118,7 +105,7 @@ export class CloudField {
         }
         inView.sort(byDistance);
         for (let i = 0; i < inView.length; i++) {
-            inView[i].queueStirs(this.frameStirs);
+            inView[i].queueStirs(stirs);
             this.stepAndShow(inView[i], now, i < FULL_RATE_CLOUDS, state);
         }
     }
