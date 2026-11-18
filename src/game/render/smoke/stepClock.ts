@@ -35,6 +35,12 @@ export class StepClock {
         return 1;
     }
 
+    /** Would tick(now, full) run a step? Changes nothing: a caller that does not tick now keeps the time for later. */
+    wouldStep(now: number, full: boolean): boolean {
+        const held = Math.min(this.held + Math.max(0, now - this.last) / 1000, CAP_S);
+        return held + EPS_S >= (full ? STEP_S : 2 * STEP_S);
+    }
+
     /** Time passes with no steps (the grid is out of view): it gathers nothing, so it does not catch up later. */
     skip(now: number): void {
         this.last = now;

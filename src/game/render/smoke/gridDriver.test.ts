@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { AirGrid, type Stir } from './airGrid';
 import { GridDriver } from './gridDriver';
+import { StepBudget } from './stepBudget';
 import { STEP_HZ } from './smokeTuning';
 
 const make = () => {
@@ -54,5 +55,29 @@ describe('GridDriver', () => {
         driver.clear();
         driver.run(5000, 1);
         expect(pushes.length).toBe(0);
+    });
+
+    it('waits one frame with a due step when the frame\'s step budget is spent, then runs it whatever the budget', () => {
+        const { driver } = make();
+        const budget = new StepBudget(100), frame = 1000 / 120;
+        budget.refill();
+        budget.spend(1, 100);                                                       // someone else used it all
+        expect(driver.due(2 * frame, true, budget)).toBe(0);                        // due, but it waits
+        budget.refill();
+        budget.spend(1, 100);
+        expect(driver.due(3 * frame, true, budget)).toBe(1);                        // waited once: it runs now
+        expect(budget.spent).toBe(true);
+        budget.refill();
+        expect(driver.due(4 * frame, true, budget)).toBe(1);                        // back on its schedule, one frame later
+        expect(budget.left).toBe(100 - 64);                                         // an 8 x 8 grid's step spent 64 cells
+    });
+
+    it('a grid that has no step due does not wait, whatever the budget', () => {
+        const { driver } = make();
+        const budget = new StepBudget(0);
+        budget.refill();
+        expect(driver.due(1000 / 120, true, budget)).toBe(0);
+        expect(driver.due(2000 / 120, true, budget)).toBe(0);                       // due now, the budget is spent: waits
+        expect(driver.due(3000 / 120, true, budget)).toBe(1);
     });
 });

@@ -9,6 +9,7 @@ export const GRID_N: Record<SmokeQuality, number> = { high: 48, medium: 32, low:
 export const STEP_HZ = 60;               // fixed simulation steps per second, whatever the frame rate
 export const VIEW_MARGIN = 200;          // px: a grid this far outside the view still steps, so it is ready when it comes in
 export const MAX_CATCHUP_STEPS = 3;      // most steps one frame may run to catch up after a hitch
+export const FRAME_STEP_CELLS = 3 * GRID_N.high ** 2;  // cell steps one frame may start (three high-quality cloud steps); a grid due past it waits a frame
 export const PRESSURE_ITERS = 18;        // Gauss-Seidel sweeps per pressure solve
 export const VORTICITY = 3.5;            // vorticity confinement strength: keeps small swirls alive
 export const BUOYANCY = 260;             // upward acceleration of fully hot air, px/s^2 per unit of heat

@@ -16,6 +16,8 @@ import { SootPlumes, sootWanted } from '../smoke/sootPlumes';
 import { StirFeed } from '../smoke/stirFeed';
 import { smokeMeterForView } from '../smoke/smokeMeter';
 import { SmokeWarmup } from '../smoke/smokeWarmup';
+import { StepBudget } from '../smoke/stepBudget';
+import { FRAME_STEP_CELLS } from '../smoke/smokeTuning';
 import { cloudCircles } from './smokePuffs';
 import { keepOnTop } from './keepOnTop';
 
@@ -28,6 +30,7 @@ export class SmokeView {
     private readonly gfx = new Graphics();      // the outline of your fighter; the grey circles too, if the shader failed
     private readonly context = this.gfx.context; // kept here: a Graphics destroyed with the stage forgets its context
     private readonly feed = new StirFeed();
+    private readonly budget = new StepBudget(FRAME_STEP_CELLS); // grid steps one frame may start, clouds first, then plumes
     private readonly meter = smokeMeterForView(); // dev builds: the CPU time of each sync, as window.__smokeMs
     private field: CloudField | null = null;    // made when the first cloud appears
     private plumes: SootPlumes | null = null;   // made when the flame first leaves soot
@@ -55,6 +58,7 @@ export class SmokeView {
 
     private syncNow(smokes: readonly SmokeCloud[], now: number, silhouette: SmokeSilhouette | null, frame: SmokeFrame | null): void {
         this.warm(now, frame);
+        this.budget.refill();
         const stirs = this.stirsOf(smokes, now, frame);
         const circles = !this.drive(smokes, now, frame, stirs);
         this.driveSoot(now, frame, stirs);
@@ -111,7 +115,7 @@ export class SmokeView {
                 this.field = new CloudField();
                 this.stack = this.stackOf();
             }
-            this.field.sync(smokes, now, frame, stirs);
+            this.field.sync(smokes, now, frame, stirs, this.budget);
             return true;
         } catch (err) {
             this.fail(err);
@@ -127,7 +131,7 @@ export class SmokeView {
                 this.plumes = new SootPlumes();
                 this.stack = this.stackOf();
             }
-            this.plumes.sync(now, frame, stirs, this.feed.frameDt);
+            this.plumes.sync(now, frame, stirs, this.feed.frameDt, this.budget);
         } catch (err) {
             console.error('Soot plumes failed, the flame draws no soot:', err);
             this.sootFailed = true;

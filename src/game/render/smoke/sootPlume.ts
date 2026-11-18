@@ -6,6 +6,7 @@ import { AirGrid, type Box, type Stir } from './airGrid';
 import { GridDriver } from './gridDriver';
 import { SmokeQuad } from './smokeQuad';
 import { SolidTracker, type SolidSource } from './solidTracker';
+import type { StepBudget } from './stepBudget';
 import {
     PLUME_BOX, PLUME_DECAY_PER_S, PLUME_EDGE, PLUME_DENS_PER_S, PLUME_EMIT_AT, PLUME_GONE_PEAK, PLUME_HEAT_PER_S, PLUME_IDLE_S,
     PLUME_REACH_CELLS, PLUME_SOOT_PER_S, SMOKE_SOOT,
@@ -63,9 +64,10 @@ export class SootPlume {
         this.driver.queueStirs(stirs);
     }
 
-    /** Run the steps due at `now` (ms): `full` is the fast schedule, otherwise half rate; `state` re-reads the solids. */
-    advance(now: number, full: boolean, state: SolidSource): void {
-        const steps = this.driver.due(now, full);
+    /** Run the steps due at `now` (ms): `full` is the fast schedule, otherwise half rate; `state` re-reads the solids;
+     *  a spent `budget` makes a due step wait a frame (see GridDriver.due). */
+    advance(now: number, full: boolean, state: SolidSource, budget?: StepBudget): void {
+        const steps = this.driver.due(now, full, budget);
         if (steps === 0) return;
         this.solids.refresh(state);
         this.driver.run(now, steps, this.fade);

@@ -3,11 +3,13 @@
 // (so a grid that steps every second frame gets the same push per second as one that steps every frame). Visual only.
 
 import type { AirGrid, Box, Stir } from './airGrid';
+import type { StepBudget } from './stepBudget';
 import { StepClock } from './stepClock';
 
 export class GridDriver {
     private readonly clock: StepClock;
     private readonly queue: Stir[] = [];
+    private waited = false;                     // the last due step waited for the budget: the next one runs
 
     /** `box` is the world rect of `grid`: only the stirs that reach it are kept. */
     constructor(private readonly grid: AirGrid, private readonly box: Box, now: number) {
@@ -28,9 +30,18 @@ export class GridDriver {
         }
     }
 
-    /** How many steps of `dt` seconds are due at `now` (ms): the fast schedule if `full`, otherwise half rate. */
-    due(now: number, full: boolean): number {
-        return this.clock.tick(now, full);
+    /** How many steps of `dt` seconds are due at `now` (ms): the fast schedule if `full`, otherwise half rate. With a
+     *  `budget` that is spent, a due step waits for the next frame (the time is kept, nothing is lost), but only once in
+     *  a row; the steps run are spent from the budget. */
+    due(now: number, full: boolean, budget?: StepBudget): number {
+        if (budget?.spent && !this.waited && this.clock.wouldStep(now, full)) {
+            this.waited = true;
+            return 0;
+        }
+        this.waited = false;
+        const steps = this.clock.tick(now, full);
+        budget?.spend(steps, this.grid.d.length);
+        return steps;
     }
 
     /** Run `steps` steps (from due()): the queued stirs go in once, before the first; `before(dt, at)` runs ahead of each
@@ -47,6 +58,7 @@ export class GridDriver {
     /** Out of view: time passes with no steps, and the waiting stirs are dropped. */
     skip(now: number): void {
         this.queue.length = 0;
+        this.waited = false;
         this.clock.skip(now);
     }
 

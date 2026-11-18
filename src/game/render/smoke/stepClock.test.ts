@@ -54,4 +54,14 @@ describe('StepClock', () => {
         expect(clock.tick(500, true)).toBe(0);
         expect(clock.tick(500 + 1000 / 60, true)).toBe(1);
     });
+
+    it('wouldStep says whether tick would step now, and changes nothing', () => {
+        const clock = new StepClock(0), frame = 1000 / 120;
+        expect(clock.wouldStep(frame, true)).toBe(false);
+        expect(clock.wouldStep(2 * frame, true)).toBe(true);
+        expect(clock.wouldStep(2 * frame, false)).toBe(false);                // half rate needs two step periods
+        expect(clock.wouldStep(4 * frame, false)).toBe(true);
+        expect(clock.tick(2 * frame, true)).toBe(1);                          // the questions did not use the time up
+    });
 });
+

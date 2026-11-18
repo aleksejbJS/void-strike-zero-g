@@ -11,6 +11,7 @@ import type { SmokeFrame } from './cloudField';
 import type { SootVisitor } from './flameAir';
 import { SootPlume } from './sootPlume';
 import { safeFrameDt } from './smokeStirs';
+import type { StepBudget } from './stepBudget';
 import { GRID_N, IMPULSE_DT, PLUME_CAP, PLUME_FULL_RATE, VIEW_MARGIN } from './smokeTuning';
 
 const DROP_AFTER_MS = 1000;                     // out of view this long: freed (it would be stale on its return; soot is short-lived)
@@ -51,7 +52,7 @@ export class SootPlumes {
     /** Feed, step and draw the plumes at `now` (ms). `stirs` are this frame's stirs, gathered once by the caller (read, not
      *  kept); `dt` is the frame's time in s, which the deposits last, so the soot per second does not depend on the frame rate.
      *  Without a `frame` (a preview) or on a quality with no plumes, none is kept. */
-    sync(now: number, frame: SmokeFrame | null, stirs: readonly Stir[] = NO_STIRS, dt: number = IMPULSE_DT): void {
+    sync(now: number, frame: SmokeFrame | null, stirs: readonly Stir[] = NO_STIRS, dt: number = IMPULSE_DT, budget?: StepBudget): void {
         if (this.destroyed) return;
         if (!frame || PLUME_CAP[frame.quality] === 0) {
             if (this.plumes.length > 0) this.dropAll();
@@ -60,7 +61,7 @@ export class SootPlumes {
         if (this.plumes.length === 0 && !frame.flame?.hasSoot()) return;     // nothing alive, nothing coming
         this.watchView(now, frame.view);
         if (frame.flame?.hasSoot()) this.feed(now, frame, safeFrameDt(dt));
-        this.stepAndShow(now, frame, stirs);
+        this.stepAndShow(now, frame, stirs, budget);
     }
 
     destroy(): void {
@@ -133,7 +134,7 @@ export class SootPlumes {
     }
 
     // The plumes nearest the view centre step every frame, the others at half rate; a plume with nothing left is freed
-    private stepAndShow(now: number, frame: SmokeFrame, stirs: readonly Stir[]): void {
+    private stepAndShow(now: number, frame: SmokeFrame, stirs: readonly Stir[], budget?: StepBudget): void {
         const { awake } = this, { view } = frame;
         const cx = view.x + view.w / 2, cy = view.y + view.h / 2;
         for (const plume of awake) plume.dist2 = (plume.box.x + plume.box.w / 2 - cx) ** 2 + (plume.box.y + plume.box.h / 2 - cy) ** 2;
@@ -142,7 +143,7 @@ export class SootPlumes {
         for (let i = 0; i < awake.length; i++) {
             const plume = awake[i];
             plume.queueStirs(stirs);
-            plume.advance(now, i < PLUME_FULL_RATE, frame.state);
+            plume.advance(now, i < PLUME_FULL_RATE, frame.state, budget);
             plume.show(now);
             if (plume.isSpent(now)) { plume.destroy(); spent = true; }
         }

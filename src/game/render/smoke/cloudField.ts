@@ -8,6 +8,7 @@ import type { GameState, SmokeCloud } from '../../../types';
 import type { AirGrid, Box, Stir } from './airGrid';
 import { CloudEntry } from './cloudEntry';
 import type { FlameAir } from './flameAir';
+import type { StepBudget } from './stepBudget';
 import { GRID_N, VIEW_MARGIN, type SmokeQuality } from './smokeTuning';
 
 /** What a frame of drawing knows: the game state, the flame engine's view of its streams, the visible world rect, the grid quality. */
@@ -33,9 +34,9 @@ export class CloudField {
     }
 
     /** Show exactly `smokes`: make, step, draw and free clouds. `now` is in ms. `stirs` are this frame's stirs, gathered
-     *  once by the caller (the list is read, not kept). Without a `frame` every cloud steps at full rate, none is left
-     *  out and its grid size is the fallback quality's. */
-    sync(smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null, stirs: readonly Stir[] = NO_STIRS): void {
+     *  once by the caller (the list is read, not kept); `budget` is the frame's step budget, shared with the plumes.
+     *  Without a `frame` every cloud steps at full rate, none is left out and its grid size is the fallback quality's. */
+    sync(smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null, stirs: readonly Stir[] = NO_STIRS, budget?: StepBudget): void {
         if (this.destroyed) return;
         if (smokes.length === 0) {
             if (this.entries.size > 0) this.dropAll();
@@ -46,7 +47,7 @@ export class CloudField {
             for (const entry of this.entries.values()) this.stepAndShow(entry, now, true, null);
             return;
         }
-        this.stepInView(now, frame, stirs);
+        this.stepInView(now, frame, stirs, budget);
     }
 
     destroy(): void {
@@ -86,7 +87,7 @@ export class CloudField {
     }
 
     // Clouds in the view (plus margin) share the work, nearest the view centre first; the rest sleep
-    private stepInView(now: number, frame: SmokeFrame, stirs: readonly Stir[]): void {
+    private stepInView(now: number, frame: SmokeFrame, stirs: readonly Stir[], budget?: StepBudget): void {
         const { view, state } = frame;
         const vx0 = view.x - VIEW_MARGIN, vx1 = view.x + view.w + VIEW_MARGIN;
         const vy0 = view.y - VIEW_MARGIN, vy1 = view.y + view.h + VIEW_MARGIN;
@@ -105,12 +106,12 @@ export class CloudField {
         inView.sort(byDistance);
         for (let i = 0; i < inView.length; i++) {
             inView[i].queueStirs(stirs);
-            this.stepAndShow(inView[i], now, i < FULL_RATE_CLOUDS, state);
+            this.stepAndShow(inView[i], now, i < FULL_RATE_CLOUDS, state, budget);
         }
     }
 
-    private stepAndShow(entry: CloudEntry, now: number, full: boolean, state: GameState | null): void {
-        entry.advance(now, full, state);
+    private stepAndShow(entry: CloudEntry, now: number, full: boolean, state: GameState | null, budget?: StepBudget): void {
+        entry.advance(now, full, state, budget);
         entry.show(now);
     }
 }

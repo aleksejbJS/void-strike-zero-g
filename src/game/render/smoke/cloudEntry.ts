@@ -10,6 +10,7 @@ import { CloudShaper } from './cloudShape';
 import { GridDriver } from './gridDriver';
 import { SmokeQuad } from './smokeQuad';
 import { SolidTracker, type SolidSource } from './solidTracker';
+import type { StepBudget } from './stepBudget';
 import { SMOKE_WHITE } from './smokeTuning';
 
 /** The grid box reaches this far past the circle's radius, so the billows and the burst have room. */
@@ -50,10 +51,11 @@ export class CloudEntry {
         this.driver.queueStirs(stirs);
     }
 
-    /** Run the steps due at `now` (ms). `full` is the fast schedule, otherwise half rate; `state` re-reads the solids. */
-    advance(now: number, full: boolean, state: SolidSource | null): void {
+    /** Run the steps due at `now` (ms). `full` is the fast schedule, otherwise half rate; `state` re-reads the solids;
+     *  a spent `budget` makes a due step wait a frame (see GridDriver.due). */
+    advance(now: number, full: boolean, state: SolidSource | null, budget?: StepBudget): void {
         const woke = this.wake(now);
-        const steps = this.driver.due(now, full);
+        const steps = this.driver.due(now, full, budget);
         if (steps === 0 && !woke) return;
         if (state) this.solids.refresh(state);
         if (woke) this.shaper.prefill(now);
