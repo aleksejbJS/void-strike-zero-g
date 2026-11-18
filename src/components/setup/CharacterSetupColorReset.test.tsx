@@ -8,7 +8,7 @@ import CharacterSetup from './CharacterSetup';
 vi.mock('./CharacterPreview', () => ({ CharacterPreview: () => <div /> }));
 vi.mock('./builder/usePartThumbnails', () => ({ usePartThumbnails: () => ({}) }));
 
-const renderOnRedBaron = () => {
+const renderOnSecondPreset = () => {
     render(<UIProvider><AccountProvider api={null}><CharacterSetup onContinue={vi.fn()} onBack={vi.fn()} /></AccountProvider></UIProvider>);
     // The arrows load the preset's exact colours, so every row starts at its original
     fireEvent.click(screen.getByRole('button', { name: 'Next preset' }));
@@ -22,7 +22,7 @@ beforeEach(() => {
 
 describe('CharacterSetup colour reset', () => {
     it('shows a row reset only once its colour differs from the preset', () => {
-        renderOnRedBaron();
+        renderOnSecondPreset();
         fireEvent.click(screen.getByRole('tab', { name: 'Colors' }));
         expect(resetButton('Arms')).not.toBeInTheDocument();
 
@@ -32,14 +32,16 @@ describe('CharacterSetup colour reset', () => {
     });
 
     it('puts back just that colour and keeps parts and other colours', () => {
-        renderOnRedBaron();
+        renderOnSecondPreset();
         fireEvent.click(within(screen.getByRole('group', { name: 'Helmet' })).getByRole('button', { name: 'Robot' }));
         fireEvent.click(screen.getByRole('tab', { name: 'Colors' }));
         fireEvent.click(swatch('Arms', 'Purple'));
         fireEvent.click(swatch('Legs', 'Cyan'));
 
         fireEvent.click(resetButton('Arms')!);
-        expect(swatch('Arms', 'Red')).toHaveAttribute('aria-checked', 'true');
+        // The second base (Female human) has skin-tone arms, which are not one of the swatches
+        expect(swatch('Arms', 'Purple')).toHaveAttribute('aria-checked', 'false');
+        expect(screen.getByLabelText('Arms color: Custom')).toHaveValue('#a56b47');
         expect(resetButton('Arms')).not.toBeInTheDocument();
         expect(swatch('Legs', 'Cyan')).toHaveAttribute('aria-checked', 'true');
 
@@ -48,7 +50,7 @@ describe('CharacterSetup colour reset', () => {
     });
 
     it('resets the visor glow on the Head tab and a custom colour too', () => {
-        renderOnRedBaron();
+        renderOnSecondPreset();
         fireEvent.change(screen.getByLabelText('Visor glow color: Custom'), { target: { value: '#123456' } });
         fireEvent.click(resetButton('Visor glow')!);
         expect(swatch('Visor glow', 'Ice')).toHaveAttribute('aria-checked', 'true');

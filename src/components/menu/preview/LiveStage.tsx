@@ -1,5 +1,5 @@
-// A mode preview drawn by the game: the live canvas once it is running, the schematic scene
-// while it starts and whenever it cannot run (no WebGL, failed start).
+// A mode preview drawn by the game: old-monitor static while it starts, the live canvas once
+// it is running, the schematic scene only when it cannot run (no WebGL, failed start).
 
 import React, { useMemo, useState } from 'react';
 import { GameMode, MapId } from '../../../types';
@@ -9,6 +9,7 @@ import { Stage } from '../previewParts';
 import type { Translate } from '../types';
 import { LiveScene } from './liveScenes';
 import { PreviewCanvas } from './PreviewCanvas';
+import { PreviewStatic } from './PreviewStatic';
 import { YouLook } from './previewWorld';
 
 type Status = 'starting' | 'running' | 'failed';
@@ -26,11 +27,13 @@ export const LiveStage: React.FC<Props> = ({ mode, map, live, label, t, Schemati
     const [status, setStatus] = useState<Status>('starting');
     const you = useYouLook();
     const running = status === 'running';
+    const failed = status === 'failed';
 
     return (
-        <Stage label={label} schematic={!running}>
-            {!running && <Schematic t={t} />}
-            {status !== 'failed' && (
+        <Stage label={label} schematic={failed}>
+            {failed && <Schematic t={t} />}
+            {status === 'starting' && <PreviewStatic t={t} />}
+            {!failed && (
                 <div className={running ? '' : 'invisible'}>
                     <PreviewCanvas script={live.script} mode={mode} map={map} you={you} youText={t('pv.you')}
                         onReady={() => setStatus('running')} onFail={() => setStatus('failed')} />

@@ -34,7 +34,7 @@ export const CreateTournamentForm: React.FC<Props> = ({ nickname, onCancel }) =>
     };
 
     return (
-        <form onSubmit={submit} className="flex flex-col gap-2">
+        <form onSubmit={submit} className="ap-tournament-create flex flex-col gap-2">
             <label htmlFor="tournament-name" className="text-sm text-bay-dust">{t('tournament.create.label')}</label>
             <div className="flex gap-2">
                 <input id="tournament-name" value={name} maxLength={MAX_NAME} autoFocus onChange={e => setName(e.target.value)}

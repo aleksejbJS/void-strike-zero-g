@@ -2,6 +2,7 @@
 // Every field is checked on its own: a bad one falls back, the good ones are kept.
 
 import { DEFAULT_BUILD, EMBLEMS, FighterBuild, SLOTS, Slot } from './buildParts';
+import { isBodyId } from './bodyTypes';
 
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const MAX_BADGE_NUMBER = 99;
@@ -30,6 +31,7 @@ export function sanitizeBuild(raw: unknown, fallback: FighterBuild = DEFAULT_BUI
         visorColor: pickColor(raw.visorColor, fallback.visorColor),
         patternColor: pickColor(raw.patternColor, fallback.patternColor),
     };
+    if (isBodyId(raw.body)) result.body = raw.body;
     for (const slot of Object.keys(SLOTS) as Slot[]) {
         // One cast per slot: the slot key ties the list to the matching field type.
         (result[slot] as string) = pick(SLOTS[slot] as readonly string[], raw[slot], fallback[slot]);

@@ -1,0 +1,35 @@
+/* Local variable fonts cover Latin and Cyrillic without per-glyph fallback. */
+@font-face {
+    font-family: 'Oswald';
+    src: url('/assets/fonts/Oswald-Variable.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 200 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Roboto Condensed';
+    src: url('/assets/fonts/RobotoCondensed-Variable.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Roboto Condensed';
+    src: url('/assets/fonts/RobotoCondensed-Italic-Variable.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 100 900;
+    font-display: swap;
+}
+.atompunk-menu,
+.atompunk-ui {
+    --ap-font-display: 'Oswald', 'Arial Narrow', sans-serif;
+    --ap-font-body: 'Roboto Condensed', 'Arial Narrow', sans-serif;
+    font-synthesis: style;
+}
+.atompunk-menu.font-body,
+.atompunk-ui.font-body { font-family: var(--ap-font-body); }
+.atompunk-menu .font-display,
+.atompunk-ui :is(h1, h2, h3, .font-display) {
+    font-family: var(--ap-font-display);
+    font-weight: 600;
+}

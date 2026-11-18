@@ -15,7 +15,7 @@ export const MyMatchBanner: React.FC<{ snapshot: TournamentSnapshot }> = ({ snap
     const starting = !alreadyPlayed && (turn.kind === 'host' || turn.kind === 'join' || turn.kind === 'wait-host');
     if (!starting) return null;
     return (
-        <p role="status" className="m-0 shrink-0 bg-bay-hazard px-3 py-1 text-center font-display text-sm font-extrabold uppercase text-bay-ink">
+        <p role="status" className="ap-panel ap-primary m-0 shrink-0 bg-bay-hazard px-3 py-1 text-center font-display text-sm font-extrabold uppercase text-bay-ink">
             {t('tournament.banner.starting')}
         </p>
     );

@@ -1,0 +1,56 @@
+@media (max-width: 1199px) and (min-height: 501px) {
+    .atompunk-menu .ap-header { grid-template-columns: minmax(240px, 350px) auto; }
+    .atompunk-menu .ap-main { grid-template-columns: minmax(210px, .8fr) minmax(0, 1.4fr); }
+    .atompunk-menu .ap-play-panel { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+    .atompunk-menu .ap-play-panel > div[aria-hidden] { display: none; }
+}
+@media (max-width: 639px) and (min-height: 501px) {
+    .atompunk-menu .ap-shell { padding: 12px; gap: 14px; }
+    .atompunk-menu .ap-header { display: flex; flex-direction: column; gap: 13px; }
+    .atompunk-menu .ap-brand { width: min(100%, 360px); }
+    .atompunk-menu .ap-header-actions { align-self: center; flex-wrap: wrap; justify-content: center; }
+    .atompunk-menu .ap-header-actions button { min-height: 42px; padding: 0 12px; font-size: 17px; }
+    .atompunk-menu .ap-main { grid-template-columns: minmax(0, 1fr); }
+    .atompunk-menu .ap-play-panel { grid-column: auto; display: flex; }
+    .atompunk-menu .ap-modes { display: grid; grid-template-columns: 1fr 1fr; }
+    .atompunk-menu .ap-section-label { grid-column: 1 / -1; }
+    .atompunk-menu .ap-mode-button { min-height: 78px; padding: 10px; gap: 8px; }
+    .atompunk-menu .ap-mode-icon { width: 23px; height: 23px; }
+    .atompunk-menu .ap-mode-copy { padding-left: 8px; }
+    .atompunk-menu .ap-mode-copy > span:first-child { font-size: 21px; }
+    .atompunk-menu .ap-footer { padding: 16px; }
+}
+/* Preserve the existing one-screen landscape phone layout and live preview scaling. */
+@media (max-height: 500px) {
+    .atompunk-menu .ap-shell { height: 100%; gap: 8px; padding: 7px 10px; }
+    .atompunk-menu .ap-header { display: flex; justify-content: space-between; gap: 8px; padding-bottom: 7px; }
+    .atompunk-menu .ap-brand { width: 190px; }
+    .atompunk-menu .ap-logo img { max-height: 59px; }
+    .atompunk-menu .ap-header-actions button { min-height: 32px; height: 32px; padding: 0 10px; font-size: 15px; border-radius: 6px; }
+    .atompunk-menu .ap-main { min-height: 0; grid-template-columns: minmax(125px, .8fr) minmax(0, 1.7fr) minmax(180px, 1fr); gap: 8px; }
+    .atompunk-menu .ap-modes { min-height: 0; padding: 5px; gap: 4px; overflow-y: auto; }
+    .atompunk-menu .ap-modes .ap-section-label { display: none; }
+    .atompunk-menu .ap-mode-button { min-height: 31px; flex-basis: 31px; padding: 5px 9px; gap: 7px; border-radius: 5px; }
+    .atompunk-menu .ap-mode-icon { width: 18px; height: 18px; }
+    .atompunk-menu .ap-mode-copy { padding-left: 6px; }
+    .atompunk-menu .ap-mode-copy > span:first-child { font-size: 15px; }
+    .atompunk-menu .ap-mode-copy > span:last-child { display: none; }
+    .atompunk-menu .ap-preview { min-height: 0; gap: 5px; }
+    .atompunk-menu .ap-preview-title { display: none; }
+    .atompunk-menu .ap-preview-frame { padding: 3px; }
+    .atompunk-menu .ap-description { padding: 7px 11px; }
+    .atompunk-menu .ap-description h2, .atompunk-menu .ap-description ul { display: none; }
+    .atompunk-menu .ap-description p { font-size: 11px; line-height: 1.2; }
+    .atompunk-menu .ap-play-panel { align-self: stretch; min-height: 0; padding: 9px; gap: 7px; overflow-y: auto; }
+    .atompunk-menu .ap-play-panel > div:first-child > span, .atompunk-menu .ap-play-panel > h2, .atompunk-menu .ap-play-panel > div[aria-hidden] { display: none; }
+    .atompunk-menu [data-ap-map] button { min-height: 27px; padding: 4px; font-size: 13px; border-radius: 4px; }
+    .atompunk-menu .ap-play-panel .ap-play-button { min-height: 49px; padding: 5px; }
+    .atompunk-menu .ap-play-button > span:first-child { font-size: 22px; }
+    .atompunk-menu .ap-play-button > span:last-child { font-size: 10px; }
+    .atompunk-menu .ap-play-panel > button:not(.ap-play-button) { min-height: 30px; padding: 5px; font-size: 14px; }
+    .atompunk-menu .ap-play-panel input, .atompunk-menu .ap-play-panel form button { height: 32px; min-width: 0; padding: 0 7px; font-size: 12px; }
+    .atompunk-menu .ap-play-panel form button { padding-inline: 14px; }
+    .atompunk-menu .ap-play-panel form button::before { border-image-width: 12px; }
+    .atompunk-menu .ap-footer { display: none; }
+}
+

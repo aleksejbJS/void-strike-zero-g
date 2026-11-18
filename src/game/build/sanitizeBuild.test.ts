@@ -9,6 +9,20 @@ const valid: FighterBuild = {
 };
 
 describe('sanitizeBuild', () => {
+    it('keeps each illustrated body identity and free face choices', () => {
+        for (const body of ['human', 'human-female', 'robot', 'toxic', 'cat']) {
+            expect(sanitizeBuild({ ...valid, body, helmet: 'none', visor: 'none' }))
+                .toMatchObject({ body, helmet: 'none', visor: 'none' });
+        }
+    });
+
+    it('rejects unknown body identities without adding a field to legacy builds', () => {
+        expect(sanitizeBuild({ ...valid, body: 'dragon' })).toEqual(valid);
+        expect(sanitizeBuild({ ...valid, body: null })).toEqual(valid);
+        expect(sanitizeBuild({ ...valid, body: 'dragon' }, { ...valid, body: 'cat' } as FighterBuild))
+            .toHaveProperty('body', 'cat');
+    });
+
     it('keeps a valid build', () => {
         expect(sanitizeBuild(valid)).toEqual(valid);
     });

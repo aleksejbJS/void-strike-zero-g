@@ -81,6 +81,7 @@ const drawAngular = (g: Graphics, look: FighterLook) => {
 /** Head drawn around its own origin; the view positions and tilts it. */
 export const drawHead = (g: Graphics, look: FighterLook) => {
     const { helmet, visor } = look.build;
+    if (helmet === 'none') { drawVisor(g, visor, helmet, look.visor); drawFrontEars(g, look); return; }
     if (helmet === 'round') drawRound(g, look);
     else if (helmet === 'box') drawBox(g, look);
     else if (helmet === 'dome') drawDome(g, look);

@@ -6,9 +6,11 @@ import { COVER_SPECS, Cover } from './coverTypes';
 
 /**
  * Which cover list a mode/map plays on. Mirrors the branching of getPlatforms (level.ts):
- * only Deathmatch looks at the map, Gun Game shares the CTF platforms, and the duel arena has no cover.
+ * only Deathmatch looks at the map, Gun Game shares the CTF platforms, the test range has its own row,
+ * and the duel arena has no cover.
  */
 export const layoutKeyFor = (mode: GameMode, map: MapId): CoverLayoutKey | null => {
+    if (mode === GameMode.RANGE) return 'range';
     if (mode === GameMode.DUEL) return null;
     if (mode === GameMode.DEATHMATCH) return map === MapId.TUNNELS ? 'tunnels' : 'dm';
     if (mode === GameMode.HUNGER_GAMES) return 'hunger';

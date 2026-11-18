@@ -5,8 +5,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AdConfig, AdPlaceConfig, loadAdConfig } from '../../game/ads/adConfig';
 import { AD_PLACES, clearDraft, loadDraft, newConfig, parseConfigText, saveDraft, serialize, withAllPlaces } from './adsDraft';
 import { AdPlaceCard } from './AdPlaceCard';
+import { MenuScreenHeader } from '../menu/MenuScreenHeader';
 
-const BUTTON = 'rounded border-2 px-4 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard';
+const BUTTON = 'ap-button rounded border-2 px-4 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard';
 
 export const AdsAdmin: React.FC = () => {
     const [config, setConfig] = useState<AdConfig>(() => loadDraft() ?? newConfig());
@@ -52,20 +53,19 @@ export const AdsAdmin: React.FC = () => {
 
     // The game turns off page scrolling (body overflow: hidden), so this page scrolls itself
     return (
-        <main className="h-screen overflow-y-auto bg-bay-ink font-body text-bay-chalk">
-            <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
-                <header className="flex flex-col gap-3">
-                    <div aria-hidden="true" className="hazard-stripes h-3 w-64" />
-                    <h1 className="m-0 font-display text-5xl font-black leading-none">Реклама на картах</h1>
+        <main className="atompunk-ui h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
+            <div className="ap-page-shell ap-narrow-shell mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
+                <MenuScreenHeader title="Реклама на картах" backLabel="Вернуться в игру" backHref="#" />
+                <div className="ap-panel flex flex-col gap-3 p-5">
                     <p className="m-0 max-w-[66ch] text-bay-dust">
                         Каждое место на карте — отдельный спот TrafficStars. Вставьте код спота нужного размера, проверьте его и скачайте ads.json.
                         Черновик хранится только в этом браузере; игроки увидят изменения после того, как файл окажется в <code>public/ads.json</code> и игра будет выложена заново.
                     </p>
                     <p className="m-0 text-sm">Включено мест: <b>{active}</b> из {AD_PLACES.length}</p>
-                </header>
+                </div>
 
-                <div className="flex flex-wrap items-end gap-3">
-                    <button type="button" onClick={download} className={`${BUTTON} border-bay-hazard bg-bay-hazard text-bay-ink hover:brightness-110`}>Скачать ads.json</button>
+                <div className="ap-panel ap-ads-toolbar flex flex-wrap items-end gap-3">
+                    <button type="button" onClick={download} className={`${BUTTON} ap-primary border-bay-hazard bg-bay-hazard text-bay-ink hover:brightness-110`}>Скачать ads.json</button>
                     <button type="button" onClick={() => fileInput.current?.click()} className={`${BUTTON} border-bay-plate bg-bay-steel hover:bg-bay-plate`}>Загрузить ads.json</button>
                     <input ref={fileInput} type="file" accept="application/json,.json" className="hidden"
                         onChange={e => {
@@ -82,13 +82,13 @@ export const AdsAdmin: React.FC = () => {
                         с
                     </label>
                 </div>
-                {notice && <p role="status" className="m-0 rounded bg-bay-steel px-3 py-2 text-sm">{notice}</p>}
+                {notice && <p role="status" className="ap-notice m-0 rounded bg-bay-steel px-3 py-2 text-sm">{notice}</p>}
 
                 {AD_PLACES.map(info => (
                     <AdPlaceCard key={info.id} info={info} cfg={config.places[info.id]} onChange={cfg => updatePlace(info.id, cfg)} />
                 ))}
 
-                <a href="#" className="self-start text-sm text-bay-dust underline hover:text-bay-chalk">← Вернуться в игру</a>
+                <a href="#" className="ap-button ap-screen-back self-start text-sm text-bay-dust underline hover:text-bay-chalk">← Вернуться в игру</a>
             </div>
         </main>
     );

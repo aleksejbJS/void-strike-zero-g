@@ -9,13 +9,16 @@ import { gripPoints } from './weaponGrips';
 import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob, hopLift } from './fighterMotion';
 import { DustBudget } from './fighterDust';
-import { BleedDrips } from './fighterBleed';
+import { BleedDrips, StumpSparks } from './fighterBleed';
 import { FighterFire } from './fighterFire';
+import { FlameOrders } from '../flame/flameOrders';
 import { stumpTip } from './fighterStump';
 import { flashStrength, hasMuzzleFlash } from './muzzleEnvelope';
 import { PartMotion, localVelocity } from './parts/partMotion';
+import { humanBleedAnchor } from '../characters/humanBleedAnchor';
 import { MagazineDrop } from './fighterMagazine';
 import { reloadProgress } from '../../systems/reload';
+import { ROBOT_OIL } from '../../systems/robotDamage';
 
 const VEL_TO_PX_PER_S = 60;      // Matter measures body velocity per 60 Hz frame
 const cyclePx = (stride: number) => 4 * stride * RIG_SCALE; // ground covered by one full step cycle
@@ -37,6 +40,7 @@ interface AnimMemory {
     motion: FighterMotion;    // landing squash and hit flash
     dust: DustBudget;
     bleed: BleedDrips;        // blood from the stump of a wounded fighter
+    sparks: StumpSparks;      // a robot stump's shorting cables
     fire: FighterFire;        // flame jet, burning body, lit fuel tank
     parts: PartMotion;        // springs for tail, ears, lamp and wings
     magazine: MagazineDrop;   // drops the empty magazine when a reload starts
@@ -66,6 +70,8 @@ export const faceAim = (aim: number) => {
 
 export class FighterAnimator {
     private readonly memory = new Map<string, AnimMemory>();
+    /** Flame the fighters asked for this frame; the view's FlameFx draws and clears it. */
+    readonly flames = new FlameOrders();
 
     frame(p: Entity, aim: number, now: number, textures: Record<string, Texture | undefined>, game: GameState): FighterFrame {
         const m = this.memoryFor(p.id, now);
@@ -92,8 +98,9 @@ export class FighterAnimator {
 
         const weapon = textures[heldWeaponKey(p.weapon.type)];
         const grip = gripPoints(p.weapon.type, weapon ? weapon.height / weapon.width : FALLBACK_ASPECT);
+        const look = lookFromEntity(p);
         const reload = reloadProgress(p.weapon, now) ?? undefined;
-        const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip, reload });
+        const pose = solvePose({ state, aim: local, t: now / 1000, phase: m.phase, moveDir, recoil, grip, reload, body: look.build.body });
         const hand = pose.frontArm.end; // the grip, where the magazine sits
         m.magazine.update(game, p.weapon, { x: p.pos.x + hand.x * facing * RIG_SCALE, y: p.pos.y + hand.y * RIG_SCALE }, facing);
 
@@ -110,14 +117,16 @@ export class FighterAnimator {
         // A fighter without a leg hops along instead of running, and drips blood from the stump
         const hop = p.wound ? hopLift(state, m.phase, moveDir) : 0;
         if (p.wound) {
-            const tip = stumpTip(pose);
-            m.bleed.spawn(game, p.pos.x + tip.x * facing * RIG_SCALE, p.pos.y + tip.y * RIG_SCALE - hop, now);
+            const tip = humanBleedAnchor(look.build.body, pose) ?? stumpTip(pose);
+            const robot = look.build.body === 'robot', at = { x: p.pos.x + tip.x * facing * RIG_SCALE, y: p.pos.y + tip.y * RIG_SCALE - hop };
+            m.bleed.spawn(game, at.x, at.y, now, robot ? ROBOT_OIL : undefined); // a robot stump drips oil
+            if (robot) m.sparks.spawn(game, at.x, at.y, now);                     // and its torn cables spark
         }
-        m.fire.update(game, p, { pose, grip, facing, hop }, since, now);
+        m.fire.update(game, this.flames, p, { pose, grip, facing, hop }, since, now);
         return {
             pose, grip, weapon, facing,
             weaponType: p.weapon.type,
-            look: lookFromEntity(p),
+            look,
             flame: state === 'fly',
             flicker: Math.random(),
             parts,
@@ -125,6 +134,7 @@ export class FighterAnimator {
             squash: motion.squash,
             headBob: headBob(state, m.phase),
             hitFlash: motion.hitFlash,
+            expression: p.health <= 40 || p.wound || motion.hitFlash > 0 ? 'hurt' : 'normal',
             oneLeg: !!p.wound,
             tankLit: typeof p.tankFuseAt === 'number',
             hop,
@@ -140,7 +150,7 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), fire: new FighterFire(),
+                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), sparks: new StumpSparks(), fire: new FighterFire(),
                 parts: new PartMotion(),
                 magazine: new MagazineDrop(),
             };

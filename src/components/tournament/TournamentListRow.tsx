@@ -49,7 +49,7 @@ export const TournamentListRow: React.FC<Props> = ({ item, hasSeat, busy, onSign
     })();
 
     return (
-        <li className="flex items-center justify-between gap-3 rounded border border-bay-plate bg-bay-steel px-4 py-2.5 phone:px-2.5 phone:py-1.5">
+        <li className="ap-panel ap-tournament-row flex items-center justify-between gap-3 rounded border border-bay-plate bg-bay-steel px-4 py-2.5 phone:px-2.5 phone:py-1.5">
             <span className="min-w-0 truncate text-[15px] phone:text-[13px]">
                 <b className="font-semibold">{tournament.name}</b>{' '}
                 <span className="text-sm text-bay-dust phone:text-xs">· {detail}</span>

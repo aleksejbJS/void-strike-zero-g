@@ -2,12 +2,14 @@
 import { Assets, Texture } from 'pixi.js';
 import { ItemType } from '../../types';
 import { assetUrl } from '../../assetUrl';
+import { loadBodyTextures } from '../render/characters/textures';
 
 // Cache for loaded textures to avoid re-loading
 let cachedTextures: Record<string, Texture> | null = null;
 let loadingPromise: Promise<Record<string, Texture>> | null = null;
 
 export const generateAssets = async (): Promise<Record<string, Texture>> => {
+    await loadBodyTextures();
     // Return cached textures if already loaded
     if (cachedTextures) {
         return cachedTextures;

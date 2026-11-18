@@ -2,10 +2,12 @@
 // Picking a preset replaces everything; any later edit marks the preset as changed.
 
 import { useState } from 'react';
-import { SKINS } from '../../../constants';
 import { FighterBuild } from '../../../game/build/buildParts';
 import { presetBuild } from '../../../game/build/buildPresets';
+import { BODY_PRESETS, BodyPreset } from '../../../game/build/characterBases';
+import { migrateCharacter, sameBuild } from '../../../game/build/characterMigration';
 import { currentBuild } from '../../../game/build/currentBuild';
+import { PLAYER_KEYS, readStored } from '../../../store/playerStorage';
 import { BodyColor, BodyPart } from '../colorPresets';
 
 interface Draft {
@@ -15,37 +17,45 @@ interface Draft {
     changed: boolean;
 }
 
-const sameBuild = (a: FighterBuild, b: FighterBuild) =>
-    (Object.keys(a) as (keyof FighterBuild)[]).every(key => a[key] === b[key]);
+interface FighterDraft extends Draft {
+    preset: BodyPreset;
+    originals: Record<BodyPart, string>;
+    stepPreset: (step: number) => void;
+    patchBuild: (patch: Partial<FighterBuild>) => void;
+    setColor: (part: BodyColor, color: string) => void;
+}
 
 const presetColors = (index: number): Record<BodyColor, string> => {
-    const { palette } = SKINS[index];
+    const { palette } = BODY_PRESETS[index];
     return { torso: palette.torso, head: palette.head, arms: palette.arms, legs: palette.legs, jetpack: palette.jetpack };
 };
 
 /** Every colour the preset starts with: its palette for the body, its starting build for visor and pattern. */
 const presetOriginals = (index: number): Record<BodyPart, string> => {
-    const { visorColor, patternColor } = presetBuild(SKINS[index].id);
+    const { visorColor, patternColor } = presetBuild(BODY_PRESETS[index].id);
     return { ...presetColors(index), visor: visorColor, pattern: patternColor };
 };
 
 /** `skinId` and `colors` are the saved choices; the saved build is loaded with locked parts already removed. */
-export const useFighterDraft = (skinId: string, colors: Record<BodyColor, string>) => {
+export const useFighterDraft = (skinId: string, colors: Record<BodyColor, string>): FighterDraft => {
     const [draft, setDraft] = useState<Draft>(() => {
-        const presetIndex = Math.max(0, SKINS.findIndex(s => s.id === skinId));
-        const build = currentBuild();
-        // Colours saved before presets existed are not compared: a fresh player would show as changed.
-        return { presetIndex, build, colors, changed: !sameBuild(build, presetBuild(SKINS[presetIndex].id)) };
+        const migrated = migrateCharacter(skinId, currentBuild(), colors, {
+            headIsFallback: readStored(PLAYER_KEYS.head) === null,
+        });
+        const preset = BODY_PRESETS[migrated.presetIndex];
+        const changed = !sameBuild(migrated.build, presetBuild(preset.id))
+            || (Object.keys(colors) as BodyColor[]).some(part => migrated.colors[part] !== preset.palette[part]);
+        return { ...migrated, changed };
     });
 
     // Functional updates: rapid clicks on the arrows each count
     return {
         ...draft,
-        preset: SKINS[draft.presetIndex],
+        preset: BODY_PRESETS[draft.presetIndex],
         originals: presetOriginals(draft.presetIndex),
         stepPreset: (step: number) => setDraft(d => {
-            const presetIndex = (d.presetIndex + step + SKINS.length) % SKINS.length;
-            return { presetIndex, build: presetBuild(SKINS[presetIndex].id), colors: presetColors(presetIndex), changed: false };
+            const presetIndex = (d.presetIndex + step + BODY_PRESETS.length) % BODY_PRESETS.length;
+            return { presetIndex, build: presetBuild(BODY_PRESETS[presetIndex].id), colors: presetColors(presetIndex), changed: false };
         }),
         patchBuild: (patch: Partial<FighterBuild>) => setDraft(d => {
             const build = { ...d.build, ...patch };

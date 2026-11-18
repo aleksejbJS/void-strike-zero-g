@@ -1,0 +1,92 @@
+/* Wear is baked into opaque material art; never mirror its directional lighting. */
+.atompunk-menu { background-position: 35% 20%; }
+.atompunk-ui { background-position: 65% 35%; }
+.atompunk-menu .ap-modes {
+    --ap-steel: var(--ap-steel-b);
+    --ap-grain-position: 20% 15%;
+}
+.atompunk-menu .ap-preview-frame {
+    --ap-frame: var(--ap-frame-c);
+    --ap-grain-position: 35% 10%;
+}
+.atompunk-menu .ap-description {
+    --ap-steel: var(--ap-steel-b);
+    --ap-frame: var(--ap-frame-b);
+    --ap-grain-position: 45% 80%;
+}
+.atompunk-menu .ap-play-panel {
+    --ap-frame: var(--ap-frame-b);
+    --ap-grain-position: 75% 30%;
+}
+.atompunk-menu .ap-footer {
+    --ap-steel: var(--ap-steel-b);
+    --ap-frame: var(--ap-frame-c);
+    --ap-grain-position: 15% 65%;
+}
+.atompunk-menu .ap-mode-button {
+    --ap-frame: var(--ap-frame-a);
+    --ap-paint-position: 50% 55%;
+}
+.atompunk-menu .ap-mode-button:nth-of-type(2) {
+    --ap-paint: var(--ap-paint-b);
+    --ap-steel: var(--ap-steel-a);
+    --ap-frame: var(--ap-frame-c);
+    --ap-grain-position: 80% 15%;
+}
+.atompunk-menu .ap-mode-button:nth-of-type(3) {
+    --ap-frame: var(--ap-frame-b);
+    --ap-grain-position: 20% 85%;
+}
+.atompunk-menu .ap-mode-button:nth-of-type(4) {
+    --ap-paint: var(--ap-paint-b);
+    --ap-steel: var(--ap-steel-a);
+    --ap-grain-position: 65% 45%;
+}
+.atompunk-menu .ap-mode-button:nth-of-type(5) {
+    --ap-frame: var(--ap-frame-c);
+    --ap-grain-position: 30% 65%;
+}
+.atompunk-menu .ap-mode-button:nth-of-type(6) {
+    --ap-paint: var(--ap-paint-b);
+    --ap-steel: var(--ap-steel-a);
+    --ap-frame: var(--ap-frame-b);
+    --ap-grain-position: 40% 95%;
+}
+.atompunk-menu .ap-header-actions button:nth-child(2),
+.atompunk-menu [data-ap-map] button:nth-child(2) {
+    --ap-steel: var(--ap-steel-b);
+    --ap-frame: var(--ap-frame-c);
+    --ap-grain-position: 70% 55%;
+}
+.atompunk-menu .ap-header-actions button:last-child {
+    --ap-frame: var(--ap-frame-b);
+    --ap-grain-position: 25% 90%;
+}
+.atompunk-menu .ap-play-panel > button:nth-of-type(2) { --ap-frame: var(--ap-frame-a); }
+.atompunk-menu .ap-create-button { --ap-frame: var(--ap-frame-c); --ap-grain-position: 45% 85%; }
+.atompunk-ui .ap-panel:nth-of-type(2n) {
+    --ap-steel: var(--ap-steel-b);
+    --ap-frame: var(--ap-frame-b);
+    --ap-grain-position: 75% 15%;
+}
+.atompunk-ui .ap-panel:nth-of-type(3n),
+.atompunk-ui .ap-button:nth-of-type(3n) { --ap-frame: var(--ap-frame-c); --ap-grain-position: 35% 65%; }
+.atompunk-ui .ap-button:nth-of-type(2n) { --ap-steel: var(--ap-steel-b); --ap-frame: var(--ap-frame-b); }
+.atompunk-ui .ap-character-preview { --ap-steel: var(--ap-steel-b); --ap-grain-position: 15% 30%; }
+
+/* Distinct paint crops keep yellow plates as worn as the surrounding steel. */
+.atompunk-menu .ap-section-label { --ap-paint-position: 50% 12%; }
+.atompunk-menu .ap-description-plate {
+    --ap-paint: var(--ap-paint-b);
+    --ap-paint-position: 50% 80%;
+}
+.atompunk-menu .ap-play-button { --ap-paint: var(--ap-paint-b); --ap-paint-position: 50% 45%; }
+.atompunk-menu [data-ap-map] button { --ap-paint-position: 50% 90%; }
+.atompunk-ui .ap-button:nth-of-type(2n),
+.atompunk-ui .ap-primary { --ap-paint: var(--ap-paint-b); }
+.atompunk-ui .ap-button:nth-of-type(3n) { --ap-paint-position: 30% 75%; }
+.atompunk-ui .ap-builder [role='group']:nth-of-type(2) .ap-part {
+    --ap-paint: var(--ap-paint-b);
+    --ap-paint-position: 70% 25%;
+}
+.atompunk-ui .ap-builder [role='group']:nth-of-type(3) .ap-part { --ap-paint-position: 20% 85%; }

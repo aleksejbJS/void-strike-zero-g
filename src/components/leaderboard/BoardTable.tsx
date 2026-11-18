@@ -25,8 +25,7 @@ const Body: React.FC<Omit<Props, 'valueLabel'>> = ({ state, viewer, onRetry, onR
         return (
             <MessageRow className={messageRow}>
                 <span className="text-bay-chalk">{t('lb.error')}</span>
-                <button type="button" onClick={onRetry}
-                    className="h-8 rounded border-2 border-bay-edge bg-bay-steel px-4 text-sm font-semibold text-bay-chalk hover:bg-bay-plate focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard">
+                <button type="button" onClick={onRetry} className="ap-button h-9 px-4 phone:h-7 phone:px-3">
                     {t('lb.retry')}
                 </button>
             </MessageRow>
@@ -47,7 +46,7 @@ const Body: React.FC<Omit<Props, 'valueLabel'>> = ({ state, viewer, onRetry, onR
 
 export const BoardTable: React.FC<Props> = ({ valueLabel, ...rest }) => (
     <div role="table" aria-label={valueLabel} aria-busy={rest.state.status === 'loading'}
-        className="min-w-0 rounded border-2 border-bay-plate bg-bay-panel pb-1">
+        className="ap-board-table min-w-0 pb-1">
         <div role="row" className={`${ROW_GRID} h-9 border-b-2 border-bay-plate text-xs font-semibold uppercase tracking-[1px] text-bay-dust phone:h-7 phone:text-[11px]`}>
             <span role="columnheader">#</span>
             <span role="columnheader">{rest.t('lb.col.player')}</span>

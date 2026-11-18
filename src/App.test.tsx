@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
-import { SKINS } from './constants';
+import { BODY_PRESETS } from './game/build/characterBases';
 import { AccountContext } from './account/useAccount';
 import { UIProvider } from './store/uiStore';
 import { stubAccount } from './test/accountStub';
@@ -45,14 +45,14 @@ describe('App profile navigation', () => {
         renderApp(stubAccount({ status: 'loggedIn', nickname: 'Alex' }));
         fireEvent.click(playButton());
         fireEvent.click(screen.getByRole('button', { name: 'Next preset' }));
-        expect(screen.getByText(SKINS[1].name)).toBeInTheDocument();
+        expect(screen.getByText(BODY_PRESETS[1].name)).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Profile →' }));
         expect(screen.getByRole('list', { name: 'Achievements' })).toBeInTheDocument();
         clickBack();
 
         expect(screen.queryByRole('list', { name: 'Achievements' })).not.toBeInTheDocument();
-        expect(hidden(screen.getByText(SKINS[1].name))).toBe(false);
+        expect(hidden(screen.getByText(BODY_PRESETS[1].name))).toBe(false);
         expect(screen.queryByRole('button', { name: /Play vs bots/, hidden: true })).not.toBeInTheDocument(); // on setup, not the menu
     });
 });

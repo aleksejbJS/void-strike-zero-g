@@ -144,6 +144,32 @@ describe('useMatchRewards', () => {
         expect(store.fighterXp).toBeUndefined();
     });
 
+    it('pays nothing and shows no reward in the test range', () => {
+        const changed = vi.fn();
+        const stop = onProgressChanged(changed);
+        const countersBefore = exportStats(); // lifetime counters outlive a test: compare, don't expect empty
+        const state = makeState({ mode: GameMode.RANGE });
+        const { result } = renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250); // play seen first, as a real match would
+        Object.assign(state.current, { matchEndsAt: 10_000, matchWinner: { playerId: 'me' } });
+        run(3000);
+        expect(result.current).toBeNull();
+        expect(store.fighterXp).toBeUndefined();
+        expect(exportStats()).toEqual(countersBefore);
+        expect(changed).not.toHaveBeenCalled();
+        stop();
+    });
+
+    it('pays the very same end in an ordinary mode', () => {
+        const state = makeState({ mode: GameMode.DEATHMATCH });
+        const { result } = renderHook(() => useMatchRewards(state, { current: 'me' }));
+        run(250);
+        Object.assign(state.current, { matchEndsAt: 10_000, matchWinner: { playerId: 'me' } });
+        run(250);
+        expect(store.fighterXp).toBe('50');
+        expect(result.current?.gained).toBe(50);
+    });
+
     it('stops polling when the screen is left', () => {
         const state = makeState();
         const { unmount } = renderHook(() => useMatchRewards(state, { current: 'me' }));

@@ -1,0 +1,48 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "assets": [
+    {
+      "path": "public/assets/menu/materials/depth/steel-depth-a.png",
+      "transparent": false,
+      "prompt": "Use case: stylized-concept. Asset type: physically shaded game UI material, square 1254x1254, full-bleed opaque texture. Attached Void Strike menu is a STYLE REFERENCE ONLY. Generate ONLY the dark painted steel of its panels, no text, no frames, no bolts. This must read as three-dimensional aged metal at 500px display size: tiny deep oxide pits with black cores, granular reddish-brown scale at the bottom, thin exposed steel rims, raised curling black paint lips with restrained upper-left edge highlights and contact shadows just below-right. Wear must be physically part of the metal, not an orange pattern printed on top. Matte charcoal base #202225, a mixture of blackened brown oxide #542f20, deep burnt sienna #8e4825, a few orange #b26731 pinpoints, tiny desaturated steel scratches. 85–90% of area stays dark and calm for cream UI text. No glow, no smoke, no clouds, no vignette, no massive rust blobs, no uniform coloured noise, no repeating corner spray. Consistent soft grazing light from upper left; no bright specular spotlight. Fine tactile depth, crisp small chips, painterly game-interface realism matching the supplied menu. Pits and raised lips should remain visible after downsizing to 500x500, so details are mainly 3–12px wide at source resolution. Natural scattered wear, no symmetrical border. Wear layout A: irregular small pitting islands run loosely across the top third and left-middle, a few hairline scrape arcs and isolated lower-right chips. Several differently sized connected 15–50px fields of tiny pits, separated by large calm metal spaces; no solid orange patches.",
+      "reference_images": [
+        "/Users/AleksejB/Downloads/Void Strike atompunk desktop menu.png"
+      ]
+    },
+    {
+      "path": "public/assets/menu/materials/depth/steel-depth-b.png",
+      "transparent": false,
+      "prompt": "Use case: stylized-concept. Asset type: physically shaded game UI material, square 1254x1254, full-bleed opaque texture. Attached Void Strike menu is a STYLE REFERENCE ONLY. Generate ONLY the dark painted steel of its panels, no text, no frames, no bolts. This must read as three-dimensional aged metal at 500px display size: tiny deep oxide pits with black cores, granular reddish-brown scale at the bottom, thin exposed steel rims, raised curling black paint lips with restrained upper-left edge highlights and contact shadows just below-right. Wear must be physically part of the metal, not an orange pattern printed on top. Matte charcoal base #202225, a mixture of blackened brown oxide #542f20, deep burnt sienna #8e4825, a few orange #b26731 pinpoints, tiny desaturated steel scratches. 85–90% of area stays dark and calm for cream UI text. No glow, no smoke, no clouds, no vignette, no massive rust blobs, no uniform coloured noise, no repeating corner spray. Consistent soft grazing light from upper left; no bright specular spotlight. Fine tactile depth, crisp small chips, painterly game-interface realism matching the supplied menu. Pits and raised lips should remain visible after downsizing to 500x500, so details are mainly 3–12px wide at source resolution. Natural scattered wear, no symmetrical border. Wear layout B: a completely different unsymmetrical map of tiny pitting, a few small abraded steel scratches across the middle-right, thin rough oxidation toward the lower half and isolated upper-left chips. Dark centre stays readable; no repeat of two diagonally opposed corner clusters.",
+      "reference_images": [
+        "/Users/AleksejB/Downloads/Void Strike atompunk desktop menu.png"
+      ]
+    },
+    {
+      "path": "public/assets/menu/materials/depth/frame-depth-a.png",
+      "transparent": true,
+      "prompt": "Use case: precise-object-edit. Asset type: RGBA nine-slice game UI frame. Image 1 is the EDIT TARGET; image 2 is a STYLE REFERENCE. Keep image 1's square canvas, rounded outer silhouette, four corner screw positions, thin border geometry, and fully transparent centre and outer corners. Change only the material and wear. Replace the polished, uniform trim with more substantial matte aged steel: a dark recessed groove beside a restrained worn silver bevel, oxidized brown-black cavities, tiny layered paint chips and lifted lips. Real micro contact shadows and tiny bright exposed steel edges convey DEPTH; light consistently from upper left. Make corner slotted screw heads feel recessed in a dark socket with individual corrosion and small rust halos. Keep all material within the existing outer 100px so nine-slicing stays valid. No extra bolts, no new shapes, no text, no central fill, no perspective, no big corrosion blobs, no glowing orange outline, no evenly repeated dot pattern. Preserve functional geometry but make the texture organically uneven and asymmetric. Variant A: uneven nibbled paint along the top-left rim, small exposed steel islands midway along the bottom edge, left screws more scuffed than right. Dark micro-crevices immediately under the lifted edges.",
+      "reference_images": [
+        "/Users/AleksejB/Documents/void-strike_-zero-g/public/assets/menu/materials/riveted-frame.png",
+        "/Users/AleksejB/Downloads/Void Strike atompunk desktop menu.png"
+      ]
+    },
+    {
+      "path": "public/assets/menu/materials/depth/frame-depth-b.png",
+      "transparent": true,
+      "prompt": "Use case: precise-object-edit. Asset type: RGBA nine-slice game UI frame. Image 1 is the EDIT TARGET; image 2 is a STYLE REFERENCE. Keep image 1's square canvas, rounded outer silhouette, four corner screw positions, thin border geometry, and fully transparent centre and outer corners. Change only the material and wear. Replace the polished, uniform trim with more substantial matte aged steel: a dark recessed groove beside a restrained worn silver bevel, oxidized brown-black cavities, tiny layered paint chips and lifted lips. Real micro contact shadows and tiny bright exposed steel edges convey DEPTH; light consistently from upper left. Make corner slotted screw heads feel recessed in a dark socket with individual corrosion and small rust halos. Keep all material within the existing outer 100px so nine-slicing stays valid. No extra bolts, no new shapes, no text, no central fill, no perspective, no big corrosion blobs, no glowing orange outline, no evenly repeated dot pattern. Preserve functional geometry but make the texture organically uneven and asymmetric. Variant B: distinct worn pattern concentrated in small separated pits along the right rim and lower-left curve; upper edge mostly intact but scratched. Right screws have darker recessed rust halos and one slight scraped slot; no duplicated wear from variant A.",
+      "reference_images": [
+        "/Users/AleksejB/Documents/void-strike_-zero-g/public/assets/menu/materials/riveted-frame.png",
+        "/Users/AleksejB/Downloads/Void Strike atompunk desktop menu.png"
+      ]
+    },
+    {
+      "path": "public/assets/menu/materials/depth/frame-depth-c.png",
+      "transparent": true,
+      "prompt": "Use case: precise-object-edit. Asset type: RGBA nine-slice game UI frame. Image 1 is the EDIT TARGET; image 2 is a STYLE REFERENCE. Keep image 1's square canvas, rounded outer silhouette, four corner screw positions, thin border geometry, and fully transparent centre and outer corners. Change only the material and wear. Replace the polished, uniform trim with more substantial matte aged steel: a dark recessed groove beside a restrained worn silver bevel, oxidized brown-black cavities, tiny layered paint chips and lifted lips. Real micro contact shadows and tiny bright exposed steel edges convey DEPTH; light consistently from upper left. Make corner slotted screw heads feel recessed in a dark socket with individual corrosion and small rust halos. Keep all material within the existing outer 100px so nine-slicing stays valid. No extra bolts, no new shapes, no text, no central fill, no perspective, no big corrosion blobs, no glowing orange outline, no evenly repeated dot pattern. Preserve functional geometry but make the texture organically uneven and asymmetric. Variant C: different fine abraded wear along short sections of the upper-right and lower-middle rims; left edge has a few tiny cold-silver chips and black recessed holes. Individual screw weathering differs between all corners. Frame remains the same geometry, but this is a separate organically aged object.",
+      "reference_images": [
+        "/Users/AleksejB/Documents/void-strike_-zero-g/public/assets/menu/materials/riveted-frame.png",
+        "/Users/AleksejB/Downloads/Void Strike atompunk desktop menu.png"
+      ]
+    }
+  ]
+}

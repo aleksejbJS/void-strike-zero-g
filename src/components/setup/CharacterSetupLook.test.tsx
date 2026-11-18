@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { AccountProvider } from '../../account/AccountProvider';
-import { UIProvider } from '../../store/uiStore';
+import { UIProvider, useUIStore } from '../../store/uiStore';
 import CharacterSetup from './CharacterSetup';
 
 vi.mock('./CharacterPreview', () => ({ CharacterPreview: () => <div /> }));
@@ -12,8 +12,16 @@ let store: Record<string, string>;
 const setItem = localStorage.setItem as Mock;
 const stampWrites = () => setItem.mock.calls.filter(([key]) => key === 'fighterLookSavedAt').length;
 
+const StoredSetup = () => {
+    const { actions } = useUIStore();
+    const [ready, setReady] = React.useState(false);
+    React.useEffect(() => { actions.reloadPlayer(); setReady(true); }, [actions]);
+    return ready ? <CharacterSetup onContinue={vi.fn()} onBack={vi.fn()} /> : null;
+};
+
 const startMatch = (change?: () => void) => {
-    render(<UIProvider><AccountProvider api={null}><CharacterSetup onContinue={vi.fn()} onBack={vi.fn()} /></AccountProvider></UIProvider>);
+    // A full page visit reads storage again; UIProvider's module-level initial state survives test remounts.
+    render(<UIProvider><AccountProvider api={null}><StoredSetup /></AccountProvider></UIProvider>);
     change?.();
     fireEvent.click(screen.getByRole('button', { name: 'Start match' }));
     cleanup();

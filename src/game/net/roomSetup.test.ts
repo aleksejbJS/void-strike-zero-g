@@ -7,21 +7,28 @@ import { createMockPlayer } from '../../test/mocks';
 import { damageCover } from '../cover/coverDamage';
 import { isIntact } from '../cover/coverGeometry';
 import { COVER_SPECS, Cover } from '../cover/coverTypes';
+import { BODY_PRESETS } from '../build/characterBases';
 
 describe('createBots looks', () => {
     it.each([GameMode.DEATHMATCH, GameMode.GUN_GAME, GameMode.HUNGER_GAMES])(
         '%s bots each wear their own skin and build', mode => {
             const bots = createBots(mode);
-            expect(new Set(bots.map(b => b.skinId)).size).toBe(bots.length);
+            expect(new Set(bots.map(b => b.skinId)).size).toBe(Math.min(bots.length, BODY_PRESETS.length));
             for (const bot of bots) expect(bot.build).toBeDefined();
         });
 
     it.each([GameMode.CTF, GameMode.HOLD_THE_FLAG, GameMode.INFILTRATION])(
         '%s bots keep their team colour', mode => {
-            for (const bot of createBots(mode)) {
+            const bots = createBots(mode);
+            expect(new Set(bots.map(bot => bot.skinId)).size).toBe(Math.min(bots.length, BODY_PRESETS.length));
+            for (const bot of bots) {
                 expect(bot.torsoColor).toBe(bot.team === Team.RED ? '#ef4444' : '#3b82f6');
-                expect(bot.skinId).toBe('classic');
-                expect(bot.build).toBeUndefined();
+                expect(bot.jetpackColor).toBe(bot.torsoColor);
+                const preset = BODY_PRESETS.find(candidate => candidate.id === bot.skinId);
+                expect(preset).toBeDefined();
+                expect(bot.build).toMatchObject({ body: preset!.body, helmet: 'none', visor: 'none' });
+                expect(bot.headColor).toBe(preset!.palette.head);
+                expect(bot.armColor).toBe(preset!.palette.arms);
             }
         });
 });

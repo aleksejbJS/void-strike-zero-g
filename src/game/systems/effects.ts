@@ -3,7 +3,7 @@
 // Whoever displays the game turns events into particles with applyEffectEvent,
 // so offline play and every online client look the same.
 
-import { Entity, GameState, Projectile, Vector2, WeaponType } from '../../types';
+import { Entity, GameState, Vector2 } from '../../types';
 import { gameEvents, GameEvent, DeathEvent, EffectKind, LimbEvent, RagdollColors } from './events';
 import type { DeathKind } from './deathKind';
 import { nextId } from '../utils/id';
@@ -19,6 +19,7 @@ import { insideSmoke } from './smoke';
 import { applyCoverEvent } from './coverEffects';
 import { gibTankCorpse } from './ragdoll/corpseTank';
 import { fuelFireball } from './flameParticles';
+import { OIL_DECAL, isRobotBuild, oilAt, sparksAt } from './robotDamage';
 
 // The blast without its scorch mark (marks are page-wide: the menu preview must not leave any)
 export { explosionBurst };
@@ -145,18 +146,22 @@ export const applyEffectEvent = (state: GameState, e: GameEvent) => {
         case 'DAMAGE':
             floatText(state, e.x, e.y, String(e.amount), '#ef4444');
             break;
-        case 'DEATH':
-            bloodAt(state, e.x, e.y, 40, e.color, sideAway(e.x, e.from));
+        case 'DEATH': {
+            const robot = isRobotBuild(e.parts?.build); // a robot leaks oil and sparks instead of bleeding
+            if (robot) { oilAt(state, e.x, e.y, 40, sideAway(e.x, e.from)); sparksAt(state, e.x, e.y, 20); }
+            else bloodAt(state, e.x, e.y, 40, e.color, sideAway(e.x, e.from));
             state.decals.push({
                 id: nextId('dc_'), pos: { x: e.x, y: e.y + 20 },
-                rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: 0x7f1d1d, alpha: 0.8
+                rotation: Math.random() * Math.PI * 2, scale: 1 + Math.random(), color: robot ? OIL_DECAL : 0x7f1d1d, alpha: robot ? 0.85 : 0.8
             });
             addCorpse(state, { ...e, parts: safeParts(e.parts) });
             break;
+        }
         case 'LIMB': {
             const leg = addLimb(state, { ...e, parts: safeParts(e.parts) });
             const hip = leg.points.hip; // the leg starts where the fighter stands: the wound is at its hip
-            bloodAt(state, hip.x, hip.y, LIMB_BLOOD, LIMB_BLOOD_COLOR, sideAway(e.x, e.from));
+            if (isRobotBuild(e.parts?.build)) { oilAt(state, hip.x, hip.y, LIMB_BLOOD, sideAway(e.x, e.from)); sparksAt(state, hip.x, hip.y, 14); }
+            else bloodAt(state, hip.x, hip.y, LIMB_BLOOD, LIMB_BLOOD_COLOR, sideAway(e.x, e.from));
             break;
         }
         case 'FLOAT_TEXT':
@@ -180,16 +185,4 @@ export const jetpackTrail = (state: GameState, p: Entity, thrustX = 0, intense =
     if (insideSmoke(state, { x: p.pos.x, y: p.pos.y - p.height / 2 }, now)) return; // the trail would give them away
     const color = flameColors(p.build?.flame ?? 'fire').particle;
     createParticles(state, p.pos.x - thrustX * 30, p.pos.y + 18, intense ? 2 : 1, color, 'fire');
-};
-
-// Smoke leaves a rocket from its tail, so the puffs do not cover the drawn hull
-const ROCKET_TAIL = 10;
-
-/** Smoke behind rockets: small puffs born at the tail, 10 px back along the flight direction. */
-export const projectileTrail = (state: GameState, proj: Projectile) => {
-    if (proj.type !== WeaponType.ROCKET_LAUNCHER || Math.random() >= 0.5) return;
-    const speed = Math.hypot(proj.vel.x, proj.vel.y) || 1; // a rocket at rest has no heading: spawn on it
-    const x = proj.pos.x - (proj.vel.x / speed) * ROCKET_TAIL;
-    const y = proj.pos.y - (proj.vel.y / speed) * ROCKET_TAIL;
-    createParticles(state, x, y, 1, '#9ca3af', 'smoke', { size: 3 + Math.random() * 2 });
 };

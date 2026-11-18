@@ -2,9 +2,10 @@
 // Entry = [kind, x, y]: x is the object's centre, y the top of the platform it stands on.
 // Source: docs/plans/2026-11-04-destructible-cover-spec.md, "Placement", with its known fixes.
 
+import { RANGE_COVER } from '../range/rangeMap';
 import type { CoverKind } from './coverTypes';
 
-export type CoverLayoutKey = 'dm' | 'tunnels' | 'hunger' | 'ctf' | 'htf' | 'infiltration';
+export type CoverLayoutKey = 'dm' | 'tunnels' | 'hunger' | 'ctf' | 'htf' | 'infiltration' | 'range';
 export type CoverEntry = readonly [kind: CoverKind, x: number, y: number];
 
 export const COVER_LAYOUTS: Record<CoverLayoutKey, readonly CoverEntry[]> = {
@@ -51,4 +52,5 @@ export const COVER_LAYOUTS: Record<CoverLayoutKey, readonly CoverEntry[]> = {
         ['glass', 2610, 0],
         ['barrel', 1600, 800], ['barrel', 3050, 600], ['barrel', 600, 800],
     ],
+    range: RANGE_COVER,
 };

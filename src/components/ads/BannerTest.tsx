@@ -32,7 +32,7 @@ export const BannerTest: React.FC<{ code: string; size: string; kind: string }> 
     const scale = Math.min(1, 300 / bw);
     return (
         <div className="flex flex-col gap-2">
-            <div className="overflow-hidden rounded border-4 border-[#2a323c] bg-[#0b0e12]" style={{ width: bw * scale + 8, height: bh * scale + 8 }}>
+            <div className="ap-banner-frame overflow-hidden rounded border-4 border-[#2a323c] bg-[#0b0e12]" style={{ width: bw * scale + 8, height: bh * scale + 8 }}>
                 <div style={{ width: bw, height: bh, transform: `scale(${scale})`, transformOrigin: '0 0', filter: FRAME[kind] }}>
                     <iframe ref={frame} title="Проверка спота" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
                         srcDoc={bannerDocument(code, token)} width={bw} height={bh} style={{ border: 0, display: 'block' }} />

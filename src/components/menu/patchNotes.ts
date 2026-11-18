@@ -30,9 +30,47 @@ const shots = (name: string, ext = 'jpg') => ({ before: assetUrl(`assets/patch/$
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
 const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
+const FLAME = shots('flame'), MENU = shots('menu'), FIGHTERS = shots('fighters'), SMOKE = shots('smoke');
+const BLAST = shots('blast');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.5.0', date: 'Nov 19, 2026', groups: [
+            { title: 'New look', points: [
+                'The menu and all its screens got a new atompunk look: rusty metal panels, rivets and yellow painted plates',
+                'Top, Profile, Character setup, Tournaments and What\'s new all match the new style',
+                'While the gameplay preview starts, an old monitor shows static instead of a schematic picture',
+                'The "Protect your nickname" button in Profile no longer cuts off its label',
+            ], comparisons: [{ caption: 'Main menu', ...MENU }] },
+            { title: 'Fighters', points: [
+                'Five new hand-drawn fighters: Human, Female human, Robot, Toxic and Cat',
+                'The Robot is built from a 3D model: it grips the gun with real fingers and takes your paint colours',
+                'Robots do not bleed: hits throw sparks and oil, torn limbs leave sockets with dangling cables, and a badly hurt robot shorts out',
+                'Standing fighters stand straight: legs no longer cross in an X',
+            ], comparisons: [{ caption: 'Fighters', ...FIGHTERS }] },
+            { title: 'Hits and physics', points: [
+                'Shots, railgun beams and flames hit the drawn head: a shot in the Cat\'s face used to do nothing',
+                'Dead bodies no longer bend their knees and elbows backwards',
+                'Flying with your head against a ceiling no longer stops dead at the seam between two blocks',
+                'Taking off diagonally (up and sideways) no longer sticks you to the floor for a moment',
+            ] },
+            { title: 'Flamethrower', points: [
+                'A new look for the flamethrower: a thick, living stream of fire that curls and rises, with a white-hot jet at the nozzle, sparks and smoke',
+                'Where the stream hits a wall, floor or crate, the fire splashes along it for a moment and leaves a soot mark',
+                'Burning fighters are wrapped in flickering tongues of flame',
+                'The stream roars and the fire crackles',
+            ], comparisons: [{ caption: 'Flamethrower', ...FLAME }] },
+            { title: 'Smoke', points: [
+                'The smoke launcher now makes real rolling smoke: it lies on the floor and flows around crates',
+                'Bullets, rockets, blasts and the flamethrower punch through it, push it and light it up, and the holes close again',
+                'The flamethrower leaves dark soot that rises and fades',
+            ], comparisons: [{ caption: 'Smoke launcher', ...SMOKE }] },
+            { title: 'Explosions', points: [
+                'Every explosion got a new look: a bright fireball that rolls up into a thick cloud of dark smoke, lit orange from inside',
+                'Rockets leave a dense smoke trail instead of a dotted line, and flying debris trails thin smoke',
+                'Rockets, grenades, barrels and fuel tanks all blow up the new way',
+            ], comparisons: [{ caption: 'Rocket hit', ...BLAST }] },
+        ] },
         { version: '0.4.37', date: 'Nov 13, 2026', points: [
             'No more quarter-second freeze on your first shot in a match: sound now starts while the match loads',
         ] },
@@ -265,6 +303,42 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.5.0', date: '19.11.2026', groups: [
+            { title: 'Новый облик', points: [
+                'Меню и все его экраны в новом атомпанк-стиле: ржавые металлические панели, заклёпки и жёлтые крашеные таблички',
+                'Топ, Профиль, Настройка персонажа, Турниры и «Что нового» выполнены в том же стиле',
+                'Пока запускается превью геймплея, на старом мониторе идут помехи вместо схематичной картинки',
+                'Кнопка «Защитить ник» в Профиле больше не обрезает надпись',
+            ], comparisons: [{ caption: 'Главное меню', ...MENU }] },
+            { title: 'Бойцы', points: [
+                'Пять новых рисованных бойцов: Человек, Девушка, Робот, Токсик и Кот',
+                'Робот собран из 3D-модели: держит оружие настоящими пальцами и красится в ваши цвета',
+                'Роботы не истекают кровью: от попаданий летят искры и масло, на месте оторванных конечностей — гнёзда с болтающимися кабелями, а сильно раненый робот коротит',
+                'Бойцы стоят ровно: ноги больше не перекрещиваются буквой X',
+            ], comparisons: [{ caption: 'Бойцы', ...FIGHTERS }] },
+            { title: 'Попадания и физика', points: [
+                'Пули, луч рельсотрона и огонь попадают по нарисованной голове: раньше выстрел Коту в лицо ничего не делал',
+                'У погибших бойцов колени и локти больше не гнутся в обратную сторону',
+                'Полёт головой вдоль потолка больше не застревает на стыке двух блоков',
+                'Взлёт по диагонали (вверх и вбок) больше не прилипает к полу на мгновение',
+            ] },
+            { title: 'Огнемёт', points: [
+                'Новый вид огнемёта: густая живая струя огня, которая закручивается и поднимается вверх, с раскалённым добела выхлопом у сопла, искрами и дымом',
+                'Там, где струя бьёт в стену, пол или ящик, огонь на мгновение растекается по ним и оставляет пятно копоти',
+                'Горящих бойцов охватывают пляшущие языки пламени',
+                'Струя ревёт, огонь потрескивает',
+            ], comparisons: [{ caption: 'Огнемёт', ...FLAME }] },
+            { title: 'Дым', points: [
+                'Дымовой гранатомёт теперь делает настоящий клубящийся дым: он стелется по полу и обтекает ящики',
+                'Пули, ракеты, взрывы и огнемёт пробивают дым насквозь, разгоняют его и подсвечивают, а проделанные дыры потом затягиваются',
+                'Огнемёт оставляет тёмную копоть: она поднимается вверх и тает',
+            ], comparisons: [{ caption: 'Дымовой гранатомёт', ...SMOKE }] },
+            { title: 'Взрывы', points: [
+                'У всех взрывов новый вид: яркий огненный шар, который превращается в густое облако тёмного дыма, подсвеченного огнём изнутри',
+                'Ракета оставляет плотный дымный след вместо пунктира, а разлетающиеся обломки тянут за собой тонкий дым',
+                'По-новому взрываются ракеты, гранаты, бочки и топливные баки',
+            ], comparisons: [{ caption: 'Попадание ракеты', ...BLAST }] },
+        ] },
         { version: '0.4.37', date: '13.11.2026', points: [
             'Больше нет фриза на четверть секунды при первом выстреле в матче: звук запускается, пока матч загружается',
         ] },

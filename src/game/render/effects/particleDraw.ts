@@ -78,14 +78,11 @@ const DRAWERS: Record<GraphicKind, GraphicDrawer> = {
         g.rect(-2.5, -4.5, 5, 9).fill({ color: MAG_BODY, alpha }).stroke({ width: 1, color: MAG_EDGE, alpha });
         g.rect(-1.5, -6, 3, 1.5).fill({ color: BRASS, alpha });
     },
-    ring: (g, p) => {
-        const t = 1 - p.life;
-        g.circle(0, 0, p.size + t * 70).stroke({ width: 2 + t * 3, color: p.color, alpha: 0.6 * p.life });
-    },
+    ring: () => {},                // a blast marker: render/blast draws the blast from it
 };
 
 // Kinds that glow instead of just being coloured
-const ADDITIVE: ReadonlySet<ParticleKind> = new Set(['spark', 'ember', 'fire', 'ring']);
+const ADDITIVE: ReadonlySet<ParticleKind> = new Set(['spark', 'ember', 'fire']);
 
 /** Repaint a Graphics-backed particle (everything except flash and fireball). */
 export const drawGraphic = (g: Graphics, p: Particle) => {

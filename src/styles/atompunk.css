@@ -1,0 +1,88 @@
+/* Generated materials and a reusable nine-slice frame from the approved reference. */
+.atompunk-menu,
+.atompunk-ui {
+    --ap-cream: #f2dfb5;
+    --ap-dim: #bcb19b;
+    --ap-rust: #ad6334;
+    --ap-yellow: #ffc20f;
+    --ap-steel-a: url('/assets/menu/materials/depth/steel-depth-a.png');
+    --ap-steel-b: url('/assets/menu/materials/depth/steel-depth-b.png');
+    --ap-frame-a: url('/assets/menu/materials/depth/frame-depth-a.png');
+    --ap-frame-b: url('/assets/menu/materials/depth/frame-depth-b.png');
+    --ap-frame-c: url('/assets/menu/materials/depth/frame-depth-c.png');
+    --ap-steel: var(--ap-steel-a);
+    --ap-paint-a: url('/assets/menu/materials/depth/yellow-worn-a.png');
+    --ap-paint-b: url('/assets/menu/materials/depth/yellow-worn-b.png');
+    --ap-paint: var(--ap-paint-a);
+    --ap-frame: var(--ap-frame-a);
+    color: var(--ap-cream);
+    background: #191b1d var(--ap-steel-b) center / cover no-repeat;
+}
+
+:is(.atompunk-menu, .atompunk-ui) .ap-panel,
+.atompunk-menu .ap-mode-button,
+.atompunk-menu .ap-header-actions button,
+.atompunk-menu .ap-play-panel button,
+.atompunk-menu .ap-painted-plate,
+.atompunk-ui .ap-button {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid #191816;
+    border-radius: 11px;
+    background-color: #202124;
+    background-image: var(--ap-steel);
+    background-size: cover;
+    background-position: var(--ap-grain-position, 50% 50%);
+    background-repeat: no-repeat;
+    box-shadow: inset 0 1px 0 #b9ad952c, inset 0 -2px 0 #040506,
+        0 3px 0 #080a0b, 0 6px 10px #0008;
+}
+
+/* Fixed-size corners keep the screws round on wide buttons and tall panels. */
+:is(.atompunk-menu, .atompunk-ui) .ap-panel::before,
+.atompunk-menu .ap-mode-button::before,
+.atompunk-menu .ap-header-actions button::before,
+.atompunk-menu .ap-play-panel button::before,
+.atompunk-menu .ap-painted-plate::before,
+.atompunk-ui .ap-button::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: 1;
+    border: 0 solid transparent;
+    border-image: var(--ap-frame) 100 / 28px / 0 stretch;
+    border-radius: inherit;
+    pointer-events: none;
+    background: none;
+    opacity: 1;
+    -webkit-mask-image: none;
+    mask-image: none;
+    mix-blend-mode: normal;
+}
+:is(.atompunk-menu, .atompunk-ui) .ap-panel::after,
+.atompunk-menu .ap-mode-button::after,
+.atompunk-menu .ap-header-actions button::after,
+.atompunk-menu .ap-play-panel button::after,
+.atompunk-ui .ap-button::after { content: none; }
+
+.atompunk-menu .ap-mode-button[aria-pressed='true'],
+.atompunk-menu .ap-play-panel .ap-play-button,
+.atompunk-menu [data-ap-map] button[aria-pressed='true'],
+.atompunk-menu .ap-painted-plate,
+.atompunk-ui :is(.ap-primary, .ap-button[aria-pressed='true'], .ap-button[aria-selected='true'], .ap-button[aria-checked='true']) {
+    color: #181b1c;
+    border-color: #2d2112;
+    background-color: var(--ap-yellow);
+    background-image: var(--ap-paint);
+    background-size: cover;
+    background-position: var(--ap-paint-position, 50% 50%);
+    box-shadow: inset 0 0 0 1px #ffe49a, inset 0 0 0 3px #8d5917,
+        0 3px 0 #080a0b, 0 5px 9px #0008;
+}
+
+@media (max-height: 500px) {
+    .atompunk-menu .ap-mode-button::before,
+    .atompunk-menu .ap-header-actions button::before,
+    .atompunk-menu .ap-play-panel button::before,
+    .atompunk-ui .ap-button::before { border-image-width: 15px; }
+}

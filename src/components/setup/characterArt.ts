@@ -35,7 +35,7 @@ export const buildCharacter = (look: CharacterLook, textures: Record<string, Tex
     const grip = gripPoints(WeaponType.MACHINE_GUN, weapon ? weapon.height / weapon.width : 0.23);
 
     const update = (t: number) => drawFighter(view, {
-        pose: solvePose({ state: 'idle', aim: PREVIEW_AIM, t, phase: 0, moveDir: 1, recoil: 0, grip }),
+        pose: solvePose({ state: 'idle', aim: PREVIEW_AIM, t, phase: 0, moveDir: 1, recoil: 0, grip, body: look.build.body }),
         look: fighterLook, facing: 1, grip, weapon, weaponType: WeaponType.MACHINE_GUN,
         flame: false, flicker: 0, parts: { ...IDLE_PARTS, tailWave: t }, muzzleFlash: 0,
     });

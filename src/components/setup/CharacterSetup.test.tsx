@@ -4,7 +4,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { AccountProvider } from '../../account/AccountProvider';
 import { UIProvider, useUIStore } from '../../store/uiStore';
 import { NetworkMode } from '../../types';
-import { SKINS } from '../../constants';
+import { BODY_PRESETS } from '../../game/build/characterBases';
 import CharacterSetup from './CharacterSetup';
 
 // Pixi needs WebGL, which jsdom lacks; the preview has its own manual check
@@ -46,23 +46,23 @@ beforeEach(() => {
 describe('CharacterSetup', () => {
     it('cycles presets', () => {
         renderSetup();
-        expect(screen.getByText(SKINS[0].name)).toBeInTheDocument();
+        expect(screen.getByText('Human')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Next preset' }));
-        expect(screen.getByText(SKINS[1].name)).toBeInTheDocument();
-        expect(screen.getByText(`Preset 2 of ${SKINS.length}`)).toBeInTheDocument();
+        expect(screen.getByText('Female human')).toBeInTheDocument();
+        expect(screen.getByText('Preset 2 of 5')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Previous preset' }));
         fireEvent.click(screen.getByRole('button', { name: 'Previous preset' }));
-        expect(screen.getByText(SKINS[SKINS.length - 1].name)).toBeInTheDocument();
+        expect(screen.getByText('Preset 5 of 5')).toBeInTheDocument();
     });
 
     it('counts every click on the preset arrows and applies the new palette', () => {
         renderSetup();
         const next = screen.getByRole('button', { name: 'Next preset' });
         for (let i = 0; i < 3; i++) fireEvent.click(next);
-        expect(screen.getByText(SKINS[3].name)).toBeInTheDocument();
+        expect(screen.getByText('Toxic')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Start match' }));
-        expect(store.state.selectedSkin).toBe(SKINS[3].id);
-        expect(store.state.torsoColor).toBe(SKINS[3].palette.torso);
+        expect(store.state.selectedSkin).toBe('base-toxic');
+        expect(store.state.torsoColor).toBe(BODY_PRESETS[3].palette.torso);
     });
 
     it('shows four tabs and the head slots by default', () => {
@@ -108,18 +108,18 @@ describe('CharacterSetup', () => {
         fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Arms color' })).getByRole('radio', { name: 'Purple' }));
         fireEvent.click(screen.getByRole('button', { name: 'Next preset' }));
 
-        expect(screen.getByText('Red Baron')).toBeInTheDocument();
+        expect(screen.getByText('Female human')).toBeInTheDocument();
         expect(screen.queryByText('(changed)')).not.toBeInTheDocument();
-        expect(within(screen.getByRole('radiogroup', { name: 'Arms color' })).getByRole('radio', { name: 'Red' })).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByLabelText('Arms color: Custom')).toHaveValue('#a56b47');
         fireEvent.click(screen.getByRole('tab', { name: 'Head' }));
-        expect(within(slot('Helmet')).getByRole('button', { name: 'Round' })).toHaveAttribute('aria-pressed', 'true');
+        expect(within(slot('Helmet')).getByRole('button', { name: 'None' })).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('Start saves the build', () => {
         const { onContinue } = renderSetup();
         fireEvent.click(within(slot('Ears & horns')).getByRole('button', { name: 'Antennae' }));
         fireEvent.click(screen.getByRole('button', { name: 'Start match' }));
-        expect(savedBuild()).toMatchObject({ helmet: 'round', ears: 'antennae' });
+        expect(savedBuild()).toMatchObject({ body: 'human', helmet: 'none', ears: 'antennae' });
         expect(onContinue).toHaveBeenCalled();
     });
 
@@ -127,7 +127,7 @@ describe('CharacterSetup', () => {
         getItem.mockImplementation((key: string) => (key === 'fighterBuild'
             ? JSON.stringify({ helmet: 'dome', ears: 'wolf', visor: 'strip' }) : null));
         renderSetup();
-        expect(within(slot('Helmet')).getByRole('button', { name: 'Round' })).toHaveAttribute('aria-pressed', 'true');
+        expect(within(slot('Helmet')).getByRole('button', { name: 'None' })).toHaveAttribute('aria-pressed', 'true');
         expect(within(slot('Ears & horns')).getByRole('button', { name: 'None' })).toHaveAttribute('aria-pressed', 'true');
     });
 

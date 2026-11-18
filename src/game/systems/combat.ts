@@ -23,6 +23,8 @@ import { extinguish } from './burning';
 import { rollTankIgnition } from './fuelTank';
 import { dropLitTank } from './fuelTankBlast';
 import { canFire, startReloadIfEmpty } from './reload';
+import { emitHitEffect } from './robotHits';
+import { hitRect } from './hitZone';
 
 // --- Teams ---
 
@@ -74,7 +76,6 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
     if (amount < 9999 && spawnShieldLeft(target, Date.now()) > 0) return; // just respawned
-    rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // Self-damage multiplier (rocket-jump)
     const isSelf = attackerId === target.id && !isHazardBlast(source); // a barrel or tank blast hurts its author like anyone else
@@ -89,6 +90,9 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         target.vel.x += (knockback.x / len) * force;
         target.vel.y += (knockback.y / len) * force;
     };
+
+    if (target.invulnerable) { push(); return; } // test range: knockback only, no damage, wound or burning tank
+    rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // A railgun beam through armor wounds instead of killing: the target lives (no death, no kill feed line)
     if (shouldWound(target, source)) {
@@ -230,8 +234,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
 
         state.players.forEach(tgt => {
             if (tgt.id === p.id || tgt.dead || isTeammate(p, tgt)) return;
-            const rect = { x: tgt.pos.x - 15, y: tgt.pos.y - tgt.height, w: 30, h: tgt.height };
-            const t = segmentRectEntry(origin, end, rect);
+            const t = segmentRectEntry(origin, end, hitRect(tgt)); // the drawn head counts too
             if (t !== null && t < closestT) { closestT = t; hitPlayer = tgt; }
         });
 
@@ -252,7 +255,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
         }
 
         // Blood where the beam enters a fighter, blue sparks where it stops at a wall
-        if (hitPlayer) emitEffect('blood', hitPos.x, hitPos.y, '#ef4444', 6);
+        if (hitPlayer) emitHitEffect(hitPlayer, hitPos.x, hitPos.y);
         else emitEffect('spark', hitPos.x, hitPos.y, '#38bdf8', 10);
 
         if (!state.beams) state.beams = [];
@@ -276,7 +279,7 @@ export const fireWeapon = (state: GameState, p: Entity, target: Vector2) => {
             if (dist < 60) {
                 applyDamage(state, tgt, p.id, WEAPONS_DATA[WeaponType.CHAINSAW].damage, dir, WEAPONS_DATA[WeaponType.CHAINSAW].knockbackForce,
                     { weapon: WeaponType.CHAINSAW, from: origin });
-                emitEffect('blood', tgt.pos.x, tgt.pos.y - 20, '#ef4444', 6);
+                emitHitEffect(tgt, tgt.pos.x, tgt.pos.y - 20);
             }
         });
         chainsawCover(state, attackPos, p.id, Date.now());

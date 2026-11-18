@@ -41,6 +41,10 @@ describe('unlocks', () => {
     });
 
     it('unlockLevel is 1 for free parts and the item level otherwise', () => {
+        expect(FREE_PARTS.helmet).toContain('none');
+        expect(FREE_PARTS.visor).toContain('none');
+        expect(isUnlocked('helmet', 'none', 1)).toBe(true);
+        expect(isUnlocked('visor', 'none', 1)).toBe(true);
         expect(unlockLevel('helmet', 'box')).toBe(1);
         expect(unlockLevel('ears', 'wolf')).toBe(2);
         expect(unlockLevel('tail', 'lizard')).toBe(4);

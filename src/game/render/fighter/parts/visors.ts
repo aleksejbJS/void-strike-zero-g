@@ -30,6 +30,7 @@ const fullGlass = (): Vector2[] => {
 
 /** Dark-glass visors in design units (head radius 7 around the origin, face towards +x). */
 const GLASS: Record<VisorId, VisorShape> = {
+    none: { glass: [], dots: [], lines: [], lineW: 0 },
     strip: { glass: [roundRectPoints(1, -3, 7.4, 5.4, 2.4)], dots: [], lines: [[P(2.6, -1.8), P(7, -1.8)]], lineW: 1 },
     glass: { glass: [fullGlass()], dots: [], lines: [[P(1.4, -3.1), P(5.4, -3.1)]], lineW: 1 },
     slit: { glass: [roundRectPoints(0.6, -1.5, 7.8, 1.9, 0.9)], dots: [], lines: [[P(1.6, -0.55), P(7.4, -0.55)]], lineW: 0.9 },
@@ -49,6 +50,7 @@ const ANGULAR_INNER = ANGULAR.map(p => P(p.x * 0.85, p.y * 0.85)); // glow lines
 
 /** Glowing panels on the robot box in box units (scaled by ROBOT_HEAD_K); dark sockets go under the smaller ones. */
 const BOX: Record<VisorId, { panels: Vector2[][]; sockets: Vector2[][] }> = {
+    none: { panels: [], sockets: [] },
     strip: { panels: [], sockets: [] }, // drawn as today's panel, see drawBoxVisor
     glass: { panels: [roundRectPoints(-2, -4.2, 9, 8, 1.6)], sockets: [] },
     slit: { panels: [roundRectPoints(-0.4, -1.4, 7.4, 1.6, 0.8)], sockets: [roundRectPoints(-1, -2, 8, 2.8, 1.2)] },
@@ -81,6 +83,7 @@ const drawBoxVisor = (g: Graphics, visor: VisorId, color: number) => {
 
 /** A visor shaped for its helmet, around the head's origin. */
 export const drawVisor = (g: Graphics, visor: VisorId, helmet: HelmetId, color: number) => {
+    if (visor === 'none') return;
     if (helmet === 'box') { drawBoxVisor(g, visor, color); return; }
     if (helmet === 'round' && visor === 'strip') { // today's human visor, unchanged
         drawStripGlass(g, HEAD_R);

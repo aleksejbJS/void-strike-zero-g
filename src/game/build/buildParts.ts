@@ -1,8 +1,10 @@
 // Fighter build model: the part catalogue per slot and the build a player wears.
 // Pure data, no browser or React imports, so the server can import it too.
 
-export const HELMETS = ['round', 'box', 'dome', 'angular'] as const;
-export const VISORS = ['strip', 'glass', 'slit', 't', 'eyes'] as const;
+import { BodyId } from './bodyTypes';
+
+export const HELMETS = ['none', 'round', 'box', 'dome', 'angular'] as const;
+export const VISORS = ['none', 'strip', 'glass', 'slit', 't', 'eyes'] as const;
 export const EARS = ['none', 'cat', 'antennae', 'wolf', 'bunny', 'round', 'horns', 'ram', 'lamp', 'crest'] as const;
 export const TAILS = ['none', 'cat', 'tentacle', 'lizard', 'mech'] as const;
 export const JETPACKS = ['pack', 'tanks', 'rocket', 'wings', 'scrap'] as const;
@@ -36,6 +38,7 @@ export const SLOTS = {
 export type Slot = keyof typeof SLOTS;
 
 export interface FighterBuild {
+    body?: BodyId; // Missing on legacy builds; their procedural appearance remains valid.
     helmet: HelmetId;
     visor: VisorId;
     ears: EarsId;

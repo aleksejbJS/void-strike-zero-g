@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<title>Void Strike — исправление лежачей позы</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11171c;color:#f1e3bd;font:18px Arial,sans-serif;padding:28px}
+h1{font-size:28px;margin:0 0 10px}p{margin:0 0 24px;color:#c5b99e}h2{font-size:21px;margin:20px 0 4px;color:#f8be26}
+.row{display:grid;grid-template-columns:repeat(5,280px);width:1400px;background:#11171c;border:1px solid #766042}
+.cell{position:relative;width:280px;height:230px;overflow:hidden;border-right:1px solid #343a3e}.cell:last-child{border-right:0}
+.cell img{position:absolute;max-width:none}.labels{display:grid;grid-template-columns:repeat(5,280px);width:1400px;text-align:center;margin-top:8px;color:#d7caab}
+a{color:#f8be26}footer{margin-top:22px;color:#c5b99e;font-size:15px}
+</style>
+<h1>Лежачая поза: до и после</h1>
+<p>Одинаковый масштаб персонажей. Сверху — прежние вырезанные детали, снизу — дорисованные суставы и исправленная поза.</p>
+<h2>До</h2><div id="before" class="row"></div>
+<h2>После</h2><div id="after" class="row"></div>
+<div class="labels"><span>Человек</span><span>Девушка</span><span>Робот</span><span>Токсик</span><span>Кот</span></div>
+<footer>Проверить движение: <a href="/character-rig.html">открыть все позы и ragdoll</a>.</footer>
+<script>
+const oldScale=2.6/3.2;
+for(let i=0;i<5;i++){
+ for(const [id,path,scale] of [['before','character-prone-before-v2.png',oldScale],['after','character-prone-v2-final.png',1]]){
+  const cell=document.createElement('div');cell.className='cell';
+  const img=document.createElement('img');img.src='/.playwright-mcp/'+path;img.alt='';
+  img.style.width=(1500*scale)+'px';
+  img.style.left=((280-280*scale)/2-(21+280*i)*scale)+'px';
+  img.style.top=(id==='before'?170-831*scale:170-823)+'px';
+  cell.append(img);document.getElementById(id).append(cell);
+ }
+}
+</script>
+</html>

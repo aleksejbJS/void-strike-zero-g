@@ -40,7 +40,7 @@ const StripMatch: React.FC<{ cell: BracketCell } & Omit<Props, 'columns' | 'size
 
     return (
         <li aria-label={t('tournament.watch.tile', nameA, nameB)}
-            className={`flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-xs ${isWatched ? 'border-bay-hazard bg-bay-steel' : 'border-bay-plate bg-bay-panel'}`}>
+            className={`ap-panel ap-strip-match flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-xs ${isWatched ? 'border-bay-hazard bg-bay-steel' : 'border-bay-plate bg-bay-panel'}`}>
             {live && (
                 <input type="checkbox" checked={isWatched} disabled={!isWatched && !canWatchMore}
                     aria-label={t('tournament.watch.pick', nameA, nameB)} onChange={() => onToggle(match.id)}
@@ -55,7 +55,7 @@ const StripMatch: React.FC<{ cell: BracketCell } & Omit<Props, 'columns' | 'size
 export const WatchStrip: React.FC<Props> = ({ columns, size, ...rest }) => {
     const { t } = useTranslation();
     return (
-        <div className="flex min-w-0 flex-1 gap-3 overflow-x-auto">
+        <div className="ap-watch-strip flex min-w-0 flex-1 gap-3 overflow-x-auto">
             {columns.map((cells, round) => {
                 const heading = t(`tournament.col.${roundName(round, size)}`);
                 return (

@@ -1,0 +1,21 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "reference": "/Users/AleksejB/Downloads/Void Strike atompunk desktop menu.png",
+  "assets": [
+    {
+      "path": "public/assets/menu/materials/steel-fine.png",
+      "transparent": false,
+      "prompt": "Use case: stylized-concept. Asset type: seamless UI material texture, square 1024x1024, full bleed, no border. The attached Void Strike screenshot is a STYLE REFERENCE ONLY. Generate only the dark charcoal painted steel surface seen inside its menu panels. Very fine matte black/charcoal grain, base around #202124, a subtle mottled patina, tiny sparse warm orange rust freckles and hairline scratches. Wear is SMALL SCALE and restrained, 95% dark readable negative space. Entire square must have uniform even neutral brightness. Straight orthographic flat material scan. No panel outline, no rivets, no text, no glyphs, no objects, no lighting gradient, no vignette, no large orange corrosion patches, no blurred glow. Opposite edges must tile seamlessly. Match the fine dark surface of the supplied menu rather than the large rusty patches of a ruined wall."
+    },
+    {
+      "path": "public/assets/menu/materials/yellow-chipped.png",
+      "transparent": false,
+      "prompt": "Use case: stylized-concept. Asset type: seamless painted metal UI material texture, square 1024x1024, full bleed, no border. Attached Void Strike menu is a STYLE REFERENCE ONLY. Generate only the vivid dense yellow paint material of its selected DEATHMATCH and PLAY VS BOTS plates. Flat saturated industrial golden yellow around #ffc20f, uniform colour across the entire image, tiny sharp black/charcoal chips, restrained pinprick scratches and worn paint flecks. Keep at least 94% clean yellow for highly legible black interface text. Details are small and crisp at 256px display scale. Orthographic straight-on material scan. No text, no symbols, no frame, no bolts, no objects, no shadows, no highlights, no lighting gradient, no orange patches, no brown shading, no glow. Opposite edges tile seamlessly. This is solid opaque chipped yellow paint, not glowing gold."
+    },
+    {
+      "path": "public/assets/menu/materials/riveted-frame.png",
+      "transparent": true,
+      "prompt": "Use case: stylized-concept. Asset type: a single isolated square nine-slice UI frame sprite, 1024x1024 RGBA. Use attached Void Strike screenshot as STYLE REFERENCE ONLY, especially its outer preview and menu panel rims. Draw one square frame aligned to canvas edges with softly rounded corners, thin very sharp silver/chrome inner and outer bevels, a narrow warm rusty-orange chipped painted groove between the silver bevels, dark recess and a fine black inner shadow. One dimensional dark bronze slotted screw head at each of the four corners, each about 34px diameter, centered 45px from each edge. Frame material occupies ONLY the outermost 88px of the image; everything inside the central 848x848 square must be genuinely transparent. Outside the rounded outer corners transparent too. All four sides perfectly straight and symmetrically balanced, no perspective. The edge itself is thin: 10px silver/orange bevel near outer edge, corner screws sit just inside. Fine tiny orange nicks rather than large rusty blobs. Intended to be sliced at 88px and rendered around many differently shaped panels. No text, no icons, no extra panels, no opaque centre, no background, no glow, no giant bolts. Highly crisp game interface sprite faithful to supplied reference."
+    }
+  ]
+}

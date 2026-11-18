@@ -8,7 +8,7 @@ import { AchievementCard } from './AchievementCard';
 type Filter = 'all' | AchievementCategory;
 const FILTERS: readonly Filter[] = ['all', 'combat', 'movement', 'modes', 'collecting', 'special'];
 
-const chip = 'h-9 rounded border-2 px-3.5 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard phone:h-7 phone:px-2.5 phone:text-xs';
+const chip = 'ap-button h-9 rounded border-2 px-3.5 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bay-hazard phone:h-7 phone:px-2.5 phone:text-xs';
 
 export const AchievementGrid: React.FC<{ achievements: readonly Achievement[] }> = ({ achievements }) => {
     const { t } = useTranslation();

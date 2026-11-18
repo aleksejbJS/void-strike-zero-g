@@ -1,5 +1,10 @@
 // Main menu ("Hazard Bay" design): pick a mode, see how it plays, start vs bots or with friends.
 
+import { assetUrl } from '../../assetUrl';
+import './atompunk-menu.css';
+import './atompunk-responsive.css';
+import './atompunk-details.css';
+import './atompunk-typography.css';
 import React, { useCallback, useEffect, useState } from 'react';
 import { GameMode, MapId, NetworkMode } from '../../types';
 import { useUIStore } from '../../store/uiStore';
@@ -13,6 +18,7 @@ import { ControlsLegend } from './ControlsLegend';
 import { ProfileButton } from './ProfileButton';
 import { TopButton } from './TopButton';
 import { WhatsNew } from './WhatsNew';
+import { TournamentUnavailable } from './TournamentUnavailable';
 import { ADS_ADMIN_HASH, canSeeAdSettings } from '../ads/adminAccess';
 import { getSupabase } from '../../account/supabaseClient';
 import type { Translate } from './types';
@@ -37,6 +43,8 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
     const [mode, setMode] = useState<GameMode>(state.selectedMode);
     const [newsOpen, setNewsOpen] = useState(false);
     const closeNews = useCallback(() => setNewsOpen(false), []);
+    const [tournamentNotice, setTournamentNotice] = useState(false);
+    const closeTournamentNotice = useCallback(() => setTournamentNotice(false), []);
     const [showAdSettings] = useState(canSeeAdSettings);
     const [tournamentsAvailable] = useState(() => getSupabase() !== null); // tournaments live in Supabase
 
@@ -45,9 +53,11 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
 
     const maps = mapsFor(mode, t);
     const mapAllowed = maps.some(m => m.id === state.selectedMap);
+    // The range (GameMode.RANGE) is not a menu mode: while the menu still shows it (the render after a range ends, before
+    // the stored mode is put back) the map is kept, or a Tunnels pick would be reset to the default map on every exit.
     useEffect(() => {
-        if (!mapAllowed) actions.selectMap(maps[0].id);
-    }, [mapAllowed, maps, actions]);
+        if (!mapAllowed && mode !== GameMode.RANGE) actions.selectMap(maps[0].id);
+    }, [mapAllowed, mode, maps, actions]);
 
     const info = MODE_INFO[language];
     const currentMap = maps.find(m => m.id === state.selectedMap) ?? maps[0];
@@ -59,23 +69,22 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
     };
 
     return (
-        <div className="h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
-            <div className="relative mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-9 pt-8 sm:px-[72px] sm:pt-12 phone:h-full phone:gap-2 phone:px-4 phone:pb-2 phone:pt-2">
-                {/* A phone held sideways (phone: = up to 500 px tall): one screen, three columns, no page scroll */}
-                <div aria-hidden="true" className="hazard-stripes absolute -left-10 top-[150px] h-[22px] w-[700px] max-w-[110vw] -rotate-2 sm:top-[148px] phone:hidden" />
-
-                <header className="relative flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between phone:flex-row phone:items-center phone:justify-between">
-                    <div className="flex flex-col">
-                        <h1 className="m-0 font-display text-[64px] font-black uppercase leading-[0.82] sm:text-[120px] phone:text-[28px] phone:leading-none">Void Strike</h1>
-                        <p className="m-0 mt-11 text-lg font-medium text-bay-dust phone:hidden">{t('hb.tagline')}</p>
+        <div lang={language} className="atompunk-menu h-viewport overflow-y-auto overflow-x-hidden bg-bay-ink font-body text-bay-chalk">
+            <div className="ap-shell relative mx-auto flex min-h-full max-w-[1440px] flex-col gap-7 px-4 pb-9 pt-8 sm:px-[72px] sm:pt-12 phone:h-full phone:gap-2 phone:px-4 phone:pb-2 phone:pt-2">
+                <header className="ap-header relative flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between phone:flex-row phone:items-center phone:justify-between">
+                    <div className="ap-brand flex flex-col">
+                        <h1 className="ap-logo m-0">
+                            <span className="sr-only">Void Strike</span>
+                            <img src={assetUrl('assets/menu/void-strike-logo.webp')} alt="" width="2172" height="724" />
+                        </h1>
                     </div>
                     {/* max-w-full: on a narrow portrait phone the row stays within the screen, the nickname truncates */}
-                    <div className="flex min-w-0 max-w-full shrink-0 gap-2 self-end sm:self-auto phone:self-auto">
+                    <div className="ap-header-actions flex min-w-0 max-w-full shrink-0 gap-2">
                         <TopButton onOpen={onOpenLeaderboard} t={t} />
                         <ProfileButton onOpen={onOpenProfile} t={t} />
                         <button type="button" onClick={() => setNewsOpen(true)}
                             className="flex h-11 items-center gap-2 rounded phone:h-9 border-2 border-bay-edge bg-bay-steel px-4 text-[15px] font-semibold hover:bg-bay-plate focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
-                            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-bay-hazard" />{t('hb.whatsNew')}
+                            {t('hb.whatsNew')}
                         </button>
                         <button type="button" onClick={() => changeLanguage(language === 'en' ? 'ru' : 'en')} aria-label={t('hb.switchLanguage')}
                             className="h-11 min-w-[56px] rounded phone:h-9 border-2 border-bay-edge bg-bay-steel px-3.5 text-[15px] font-semibold hover:bg-bay-plate focus-visible:outline focus-visible:outline-2 focus-visible:outline-bay-hazard">
@@ -84,7 +93,7 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
                     </div>
                 </header>
 
-                <main className="relative grid flex-grow grid-cols-1 gap-7 lg:grid-cols-[300px_minmax(0,1fr)_320px] phone:min-h-0 phone:grid-cols-[minmax(0,170px)_minmax(0,1fr)_minmax(0,210px)] phone:gap-3">
+                <main className="ap-main relative grid flex-grow grid-cols-1 gap-7 lg:grid-cols-[300px_minmax(0,1fr)_320px] phone:min-h-0 phone:grid-cols-[minmax(0,170px)_minmax(0,1fr)_minmax(0,210px)] phone:gap-3">
                     <ModeList title={t('hb.chooseMode')} selected={mode} info={info} onSelect={setMode} />
                     <ModePreview mode={mode} map={currentMap.id} info={info[mode]} t={t} />
                     <PlayPanel
@@ -96,11 +105,11 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
                         onPlay={() => go(NetworkMode.OFFLINE, null)}
                         onCreateGame={() => go(NetworkMode.HOST, null)}
                         onJoin={target => go(NetworkMode.CLIENT, target)}
-                        onTournaments={tournamentsAvailable ? actions.openTournaments : undefined}
+                        onTournaments={tournamentsAvailable ? actions.openTournaments : () => setTournamentNotice(true)}
                     />
                 </main>
 
-                <div className="flex flex-wrap items-center justify-between gap-4 phone:hidden">
+                <div className="ap-footer ap-panel flex flex-wrap items-center justify-between gap-4 phone:hidden">
                     <ControlsLegend t={t} />
                     {showAdSettings && (
                         <a href={ADS_ADMIN_HASH}
@@ -114,6 +123,7 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
                 </div>
             </div>
             {newsOpen && <WhatsNew t={t} notes={PATCH_NOTES[language]} onClose={closeNews} />}
+            {tournamentNotice && <TournamentUnavailable onClose={closeTournamentNotice} />}
         </div>
     );
 };

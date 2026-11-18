@@ -15,7 +15,7 @@ interface Props {
 
 // From lg up, and on a phone held sideways, the screen fits the window and each column scrolls on its own
 // (the padding keeps focus outlines from being clipped at the scroll edge)
-const column = '-m-1 min-w-0 p-1 lg:min-h-0 lg:overflow-y-auto phone:min-h-0 phone:overflow-y-auto';
+const column = 'ap-panel ap-profile-column min-w-0 p-1 lg:min-h-0 lg:overflow-y-auto phone:min-h-0 phone:overflow-y-auto';
 
 export const ProfileBody: React.FC<Props> = ({ nickname, onProtect, onLogOut }) => {
     const [data] = useState(readProfile);

@@ -2,12 +2,14 @@ import { Container, Graphics, Sprite, Text, Texture, BlurFilter, Filter, GlProgr
 // Bloom filter replaced with BlurFilter for glow effect
 import { GameState, Platform, Entity, WeaponType, ItemType, Pickup, Team, MapId } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER } from '../../constants';
-import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual } from '../render/playerVisual';
+import { createPlayerVisual, forgetPlayerVisual, updatePlayerVisual, viewAnimator } from '../render/playerVisual';
+import { FlameFx } from '../render/flame/flameFx';
 import { nextHungerZone } from './gamemodes';
 import { ParticleView } from '../render/effects/particleView';
 import { ProjectileView } from '../render/projectiles/projectileView';
 import { BeamView } from '../render/projectiles/beamView';
 import { SmokeView } from '../render/effects/smokeView';
+import { smokeFrameOf } from '../render/smoke/smokeFrame';
 import { CoverView } from '../render/cover/coverView';
 import { smokeSilhouette } from '../render/smokeVisibility';
 import { firstPelletPerOwner } from '../render/projectiles/projectileMemory';
@@ -475,6 +477,10 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     cache.particleView ??= new ParticleView(gameLayer);
     cache.particleView.sync(state.particles);
 
+    // Flamethrower streams and burning fighters: the orders the fighters gave while animated above
+    cache.flameFx ??= new FlameFx(gameLayer, decalLayer, cache.flameQuality ?? 'high');
+    cache.flameFx.update(now, viewAnimator(cache.animator).flames, state);
+
     // Floating Text
     for (const [id, txt] of cache.floatingTexts.entries()) { if (!state.floatingTexts.find(t => t.id === id)) { gameLayer.removeChild(txt); txt.destroy(); cache.floatingTexts.delete(id); } }
     state.floatingTexts.forEach(t => {
@@ -488,8 +494,10 @@ export const syncVisuals = (view: Viewport, world: Container, gameLayer: Contain
     cache.beamView.sync(state.beams ?? []);
 
     // Smoke clouds, last so they cover everything drawn before; your own fighter in smoke as an outline
+    // (the frame says what the clouds need: the state, the flame streams, the visible world rect, the grid quality)
     cache.smokeView ??= new SmokeView(gameLayer);
-    cache.smokeView.sync(state.smokes ?? [], now, smokeSilhouette(state, state.players.find(pl => pl.id === localPlayerId), now));
+    cache.smokeFrame = smokeFrameOf(cache.smokeFrame ?? null, state, cache.flameFx?.air() ?? null, view, cache.flameQuality ?? 'high');
+    cache.smokeView.sync(state.smokes ?? [], now, smokeSilhouette(state, state.players.find(pl => pl.id === localPlayerId), now), cache.smokeFrame);
 
     // Cursor
     let cursor = uiLayer.getChildByLabel('cursor') as Graphics;

@@ -25,7 +25,7 @@ const LockIcon: React.FC = () => (
 );
 
 const tileClass = (picked: boolean, locked: boolean) => [
-    'relative flex min-h-16 min-w-0 flex-col items-center justify-start gap-1 rounded border-2 bg-bay-steel px-1.5 py-1.5 text-center text-[13px] font-semibold leading-tight phone:min-h-0 phone:gap-0.5 phone:py-1 phone:text-[11px]',
+    'ap-button ap-part relative flex min-h-16 min-w-0 flex-col items-center justify-start gap-1 rounded border-2 bg-bay-steel px-1.5 py-1.5 text-center text-[13px] font-semibold leading-tight phone:min-h-0 phone:gap-0.5 phone:py-1 phone:text-[11px]',
     picked ? 'border-bay-hazard text-bay-chalk' : 'border-transparent text-bay-chalk',
     locked ? 'cursor-not-allowed opacity-45' : 'hover:bg-bay-plate',
     focusRing,
@@ -39,7 +39,7 @@ export const PartTiles: React.FC<Props> = ({ slot, value, level, thumbs, onPick 
             <h3 id={headingId} className="m-0 text-xs font-semibold uppercase tracking-[0.08em] text-bay-dust">
                 {t(`cs.slot.${slot}` as keyof TranslationKeys)}
             </h3>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            <div className={`grid grid-cols-3 gap-2 ${slot === 'visor' ? 'sm:grid-cols-6 phone:grid-cols-3' : 'sm:grid-cols-5'}`}>
                 {SLOTS[slot].map(id => {
                     const locked = !isUnlocked(slot, id, level);
                     const opensAt = unlockLevel(slot, id);

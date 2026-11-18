@@ -1,0 +1,14 @@
+Menu font assets
+Downloaded from the official Google Fonts repository on 2026-11-07.
+
+Oswald variable, normal, weights 200–700:
+https://github.com/google/fonts/tree/main/ofl/oswald
+File: Oswald-Variable.ttf
+Licence: Oswald-OFL.txt
+
+Roboto Condensed variable, normal and italic, weights 100–900:
+https://github.com/google/fonts/tree/main/ofl/robotocondensed
+Files: RobotoCondensed-Variable.ttf, RobotoCondensed-Italic-Variable.ttf
+Licence: RobotoCondensed-OFL.txt
+
+These fonts are scoped to the atompunk menus. Existing HUD families remain intact.

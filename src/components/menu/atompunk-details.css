@@ -1,0 +1,41 @@
+/* Reference-specific ornaments; all visible copy remains live and translatable. */
+.atompunk-menu .ap-heading-icon { width: 36px; height: 36px; flex: 0 0 36px; }
+.atompunk-menu .ap-map-title { display: flex; align-items: center; gap: 14px; }
+.atompunk-menu .ap-map-title .ap-heading-icon { width: 43px; height: 43px; flex-basis: 43px; }
+.atompunk-menu .ap-header {
+    border-radius: 0;
+    background: transparent;
+    border-bottom: 2px solid #bb7540;
+    box-shadow: 0 2px 0 #090b0a;
+}
+.atompunk-menu .ap-section-label { padding: 14px 17px; font-style: italic; }
+.atompunk-menu .ap-description .ap-description-plate { padding: 10px 22px; border-radius: 6px; transform: skewX(-9deg); }
+.atompunk-menu .ap-description li > span[aria-hidden] { width: 10px; height: 10px; border-radius: 50%; background: var(--ap-cream); }
+.atompunk-menu .ap-controls { display: flex; justify-content: space-between; gap: 12px; }
+.atompunk-menu .ap-controls > span { gap: 10px; padding-right: 16px; border-right: 1px solid #a89068; }
+.atompunk-menu .ap-controls > span:last-child { border-right: 0; padding-right: 0; }
+.atompunk-menu .ap-controls > span,
+.atompunk-menu .ap-controls kbd {
+    font-family: var(--ap-font-display);
+    font-size: clamp(15px, 1.2vw, 20px);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.atompunk-menu .ap-controls kbd { min-width: 35px; text-align: center; border-radius: 5px; border-width: 1px 1px 3px; box-shadow: inset 0 1px 0 #e3cda766; }
+.atompunk-menu .ap-footer > a { align-self: center; white-space: nowrap; }
+.atompunk-menu .ap-header-actions > button:last-child { display: flex; align-items: center; gap: 12px; }
+.atompunk-menu .ap-header-actions > button:last-child::after { content: '▾'; position: static; z-index: auto; color: var(--ap-cream); font-size: 18px; background: none; opacity: 1; filter: none; }
+@media (min-width: 1200px) and (min-height: 501px) {
+    .atompunk-menu .ap-mode-icon.ap-stencil-icon { width: 60px; height: 60px; flex-basis: 60px; }
+    .atompunk-menu .ap-title-emblem { width: 44px; height: 44px; flex-basis: 44px; }
+    .atompunk-menu .ap-header-actions button { min-height: 54px; font-size: 23px; }
+    .atompunk-menu .ap-play-panel .ap-play-button { min-height: 125px; }
+    .atompunk-menu .ap-play-panel > button:not(.ap-play-button) { min-height: 58px; font-size: 29px; }
+    .atompunk-menu .ap-play-panel > h2 { text-align: center; }
+}
+@media (max-width: 1399px) {
+    .atompunk-menu .ap-controls { justify-content: flex-start; flex-wrap: wrap; }
+}
+@media (max-height: 500px) {
+    .atompunk-menu .ap-map-title .ap-heading-icon { display: none; }
+}

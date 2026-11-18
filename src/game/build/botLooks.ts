@@ -2,9 +2,10 @@
 // flame, pattern and badge, so fighters can be told apart when there are no teams.
 // Pure data, no browser imports, so the room can use it on the server too.
 
-import { SKINS } from '../../constants';
 import { BADGES, EMBLEMS, FLAMES, FighterBuild, PATTERNS } from './buildParts';
 import { presetBuild } from './buildPresets';
+import { BODY_PRESETS } from './characterBases';
+import { Team } from '../../types';
 
 export interface BotLook {
     skinId: string;
@@ -44,7 +45,7 @@ const withRandomParts = (build: FighterBuild, rng: Rng): FighterBuild => ({
 
 /** One look per bot; skins repeat only after all of them are used. */
 export const ffaBotLooks = (count: number, rng: Rng = Math.random): BotLook[] => {
-    const skins = shuffled(SKINS, rng);
+    const skins = shuffled(BODY_PRESETS, rng);
     return Array.from({ length: count }, (_, i) => {
         const skin = skins[i % skins.length];
         const { head, torso, arms, legs, jetpack } = skin.palette;
@@ -54,4 +55,11 @@ export const ffaBotLooks = (count: number, rng: Rng = Math.random): BotLook[] =>
             build: withRandomParts(presetBuild(skin.id), rng),
         };
     });
+};
+
+/** Team equipment stays recognizable while faces, skin and limbs retain their authored colours. */
+export const withBotTeamColor = (look: BotLook, team: Team): BotLook => {
+    if (team === Team.NONE) return look;
+    const color = team === Team.RED ? '#ef4444' : '#3b82f6';
+    return { ...look, color, torsoColor: color, jetpackColor: color };
 };

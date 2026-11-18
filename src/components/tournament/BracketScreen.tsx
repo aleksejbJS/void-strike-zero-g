@@ -63,7 +63,7 @@ export const BracketScreen: React.FC<{ snapshot: TournamentSnapshot }> = ({ snap
             </div>
 
             {banner && (
-                <p role="status" className={`m-0 rounded px-3 py-2 font-display text-lg font-extrabold uppercase phone:py-1 phone:text-sm ${highlight ? 'bg-bay-hazard text-bay-ink' : 'bg-bay-steel text-bay-chalk'}`}>
+                <p role="status" className={`ap-panel m-0 rounded px-3 py-2 font-display text-lg font-extrabold uppercase phone:py-1 phone:text-sm ${highlight ? 'ap-primary bg-bay-hazard text-bay-ink' : 'bg-bay-steel text-bay-chalk'}`}>
                     {banner}
                 </p>
             )}
@@ -84,7 +84,7 @@ export const BracketScreen: React.FC<{ snapshot: TournamentSnapshot }> = ({ snap
                     <div className="flex flex-col">
                         <h3 className={columnHeading} aria-hidden="true">🏆</h3>
                         <ol aria-label={t('tournament.col.champion')} className={columnList}>
-                            <li className={`rounded border-2 px-2.5 py-2 text-center font-display text-lg font-black uppercase ${champion ? 'border-bay-hazard text-bay-hazard' : 'border-dashed border-bay-edge text-bay-dust'}`}>
+                            <li className={`ap-panel ap-champion rounded border-2 px-2.5 py-2 text-center font-display text-lg font-black uppercase ${champion ? 'border-bay-hazard text-bay-hazard' : 'border-dashed border-bay-edge text-bay-dust'}`}>
                                 {champion ? champion.nickname : '?'}
                             </li>
                         </ol>

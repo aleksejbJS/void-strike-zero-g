@@ -36,7 +36,7 @@ export const WatchTile: React.FC<Props> = ({ cell, peerId, audible, expanded, st
         <div role="button" tabIndex={0} aria-pressed={expanded} aria-label={t('tournament.watch.tile', nameA, nameB)}
             onClick={onToggle}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
-            className={`relative min-h-0 min-w-0 cursor-pointer overflow-hidden rounded border-2 ${audible ? 'border-bay-hazard' : 'border-bay-plate'} ${focusRing}`}>
+            className={`ap-panel ap-watch-tile relative min-h-0 min-w-0 cursor-pointer overflow-hidden rounded border-2 ${audible ? 'border-bay-hazard' : 'border-bay-plate'} ${focusRing}`}>
             <MatchTile peerId={peerId} audible={audible} expanded={expanded} onStatus={onStatus} onScore={onScore} />
             <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-2 rounded bg-bay-ink/85 px-2 py-1 text-sm font-semibold phone:text-xs">
                 <span className="truncate">{nameA}</span>

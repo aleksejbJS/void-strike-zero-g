@@ -5,7 +5,7 @@ import { Container, Graphics, Texture } from 'pixi.js';
 import { WeaponType } from '../../../types';
 import { FighterBuild, Slot } from '../../../game/build/buildParts';
 import { createFighterView, drawFighter } from '../../../game/render/fighter/fighterView';
-import { solvePose } from '../../../game/render/fighter/fighterPose';
+import { RIG_SCALE, solvePose } from '../../../game/render/fighter/fighterPose';
 import { FighterLook, SetupColors, lookFromSetup } from '../../../game/render/fighter/fighterLook';
 import { gripPoints } from '../../../game/render/fighter/weaponGrips';
 import { drawHead } from '../../../game/render/fighter/parts/helmets';
@@ -48,27 +48,35 @@ const headArt = (look: FighterLook): Container => {
     return art;
 };
 
-const fighterArt = (slot: Slot, look: FighterLook, weapon: Texture | undefined): Container => {
+const fighterArt = (slot: Slot, look: FighterLook, weapon: Texture | undefined): { art: Container; headFrame: Frame } => {
     const view = createFighterView();
     const grip = gripPoints(WeaponType.MACHINE_GUN, weapon ? weapon.height / weapon.width : 0.23);
-    const parts: PartMotionFrame = { ...IDLE_PARTS, wingsOpen: slot === 'jetpack' ? 1 : 0 };
+    const pose = solvePose({ state: 'idle', aim: AIM, t: 0, phase: 0, moveDir: 1, recoil: 0, grip, body: look.build.body });
+    const parts: PartMotionFrame = { ...IDLE_PARTS, lampOn: isHeadSlot(slot), wingsOpen: slot === 'jetpack' ? 1 : 0 };
     drawFighter(view, {
-        pose: solvePose({ state: 'idle', aim: AIM, t: 0, phase: 0, moveDir: 1, recoil: 0, grip }),
+        pose,
         look, facing: 1, grip, weapon, weaponType: WeaponType.MACHINE_GUN,
         flame: slot === 'flame', flicker: FLAME_FLICKER, parts, muzzleFlash: 0,
     });
     // The front arm and gun cross the chest; without them the whole torso pattern shows
-    if (slot === 'pattern') view.front.visible = view.weapon.visible = view.light.visible = false;
+    if (slot === 'pattern') {
+        view.front.visible = view.weapon.visible = view.light.visible = false;
+        if (view.illustrated) view.illustrated.front.visible = false;
+    }
     const art = new Container();
     art.addChild(view.root);
-    return art;
+    const headFrame = { cx: pose.head.x * RIG_SCALE, cy: (pose.head.y + HEAD_FRAME.cy) * RIG_SCALE, side: HEAD_FRAME.side * RIG_SCALE };
+    return { art, headFrame };
 };
 
 /** A container to extract with the frame (0, 0, THUMB_SIZE, THUMB_SIZE). Destroy it with `{ children: true, context: true }`. */
 export const thumbnailArt = (slot: Slot, build: FighterBuild, colors: SetupColors, weapon: Texture | undefined): Container => {
     const look = lookFromSetup(colors, build);
-    const art = isHeadSlot(slot) ? headArt(look) : fighterArt(slot, look, weapon);
-    place(art, isHeadSlot(slot) ? HEAD_FRAME : BODY_FRAMES[slot] ?? WHOLE_FIGHTER);
+    const isolatedHead = isHeadSlot(slot) && !build.body;
+    const fighter = isolatedHead ? undefined : fighterArt(slot, look, weapon);
+    const art = fighter?.art ?? headArt(look);
+    const frame = isolatedHead ? HEAD_FRAME : isHeadSlot(slot) ? fighter!.headFrame : BODY_FRAMES[slot] ?? WHOLE_FIGHTER;
+    place(art, frame);
     const holder = new Container(); // stays at identity: extract renders its children only
     holder.addChild(art);
     return holder;

@@ -20,18 +20,21 @@ import { grantSpawnShield } from './spawnShield';
 import { liftOutOfCover } from '../cover/coverSpawn';
 import { tickCover } from '../cover/coverTick';
 import { tickFuelTanks } from './fuelTankBlast';
-import { emitEffect, emitText, projectileTrail } from './effects';
+import { emitEffect, emitText } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
 import { updateCorpses } from './ragdoll/corpses';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement, PlayerControls, NO_KEYS } from './playerControl';
 import { applyStance, clampProneAim } from './stance';
+import { dummyControls } from '../range/dummyControls';
 import { followCamera, pickCameraTarget } from './camera';
 import { updateHungerRound } from './hungerRound';
 import { updateMatch } from './matchRound';
 import { duelLoadout, duelSpawnPoint } from './duelRules';
 import { spawnSmoke, updateSmokes } from './smoke';
 import { isMagazineFed, tickReloads } from './reload';
+import { emitHitEffect } from './robotHits';
+import { hitRect } from './hitZone';
 
 // Projectile flight for one tick (also used by clients to extrapolate between snapshots)
 export const moveProjectile = (proj: Projectile) => {
@@ -194,6 +197,10 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
                 p.hasFlag = Team.NONE;
                 emitFlag('hold', 'lost', p.team);
             }
+        } else if (p.dummy) {
+            // A range dummy has no brain: it only holds the stance set on the range
+            controls = dummyControls(p, state.range);
+            applyStance(p, controls);
         } else {
             // Bots press the same controls a player has
             const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
@@ -322,7 +329,6 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     state.projectiles.forEach(proj => {
         const prevPos = { ...proj.pos };
         moveProjectile(proj);
-        projectileTrail(state, proj);
         proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;
@@ -340,7 +346,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             let nearest = Infinity;
             for (const p of state.players) {
                 if (p.id === proj.ownerId || p.dead || (owner && isTeammate(owner, p))) continue;
-                const entry = segmentRectEntry(prevPos, proj.pos, { x: p.pos.x - 15, y: p.pos.y - p.height, w: 30, h: p.height });
+                const entry = segmentRectEntry(prevPos, proj.pos, hitRect(p)); // the drawn head counts too
                 if (entry !== null && entry < nearest) { nearest = entry; target = p; }
             }
             if (target) {
@@ -368,7 +374,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             }
             // Any weapon hitting a fighter draws blood; a wall hit throws sparks. An explosive keeps its
             // own spark either way (it is part of the blast, not of the hit).
-            if (hitFighter) emitEffect('blood', proj.pos.x, proj.pos.y, '#ef4444', 6);
+            if (hitFighter && target) emitHitEffect(target, proj.pos.x, proj.pos.y);
             if (explosive || (!hitFighter && !smokeRound)) emitEffect('spark', proj.pos.x, proj.pos.y, WEAPONS_DATA[proj.type].color, 8);
         }
     });

@@ -3,11 +3,14 @@
 
 import { SKINS } from '../../constants';
 import { DEFAULT_BUILD, FighterBuild } from './buildParts';
+import { BODY_PRESETS } from './characterBases';
 
 const NEUTRAL_COLOR = '#e5e7eb';
 const HUMAN_VISOR = '#7fd3ff';
 
 export function presetBuild(skinId: string): FighterBuild {
+    const bodyPreset = BODY_PRESETS.find(preset => preset.id === skinId);
+    if (bodyPreset) return { ...DEFAULT_BUILD, body: bodyPreset.body, helmet: 'none', visor: 'none' };
     const skin = SKINS.find(s => s.id === skinId);
     if (!skin) return { ...DEFAULT_BUILD };
 

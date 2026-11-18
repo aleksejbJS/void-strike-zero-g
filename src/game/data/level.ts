@@ -1,5 +1,6 @@
 import { GameMode, ItemType, Platform, Pickup, Team, WeaponType, MapId } from '../../types';
 import { PIT_PICKUPS, PIT_PLATFORMS, PIT_WAYPOINTS } from './pitMap';
+import { RANGE_PLATFORMS } from '../range/rangeMap';
 
 const BLUE_FLAG_POS = { x: -350, y: 470 };
 const RED_FLAG_POS = { x: 2350, y: 470 };
@@ -201,6 +202,8 @@ export const getPlatforms = (mode?: GameMode, mapId?: MapId): Platform[] => {
   // Only Deathmatch can switch maps; other modes stay on legacy layouts.
   if (mode === GameMode.DUEL) {
     plats = PIT_PLATFORMS;
+  } else if (mode === GameMode.RANGE) {
+    plats = RANGE_PLATFORMS;
   } else if (mode === GameMode.DEATHMATCH) {
     if (mapId === MapId.TUNNELS) plats = getTunnelMapPlatforms();
     else plats = getDeathmatchPlatforms();
@@ -315,6 +318,9 @@ export const getWaypoints = (mode?: GameMode): { x: number; y: number }[] => {
 };
 
 export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
+  // The test range has nothing to collect: the dummy loadout is full and the player's is set by the range
+  if (mode === GameMode.RANGE) return [];
+
   // The Pit (duel): health, armor and ammo only; copies, because a match mutates its pickups
   if (mode === GameMode.DUEL) return PIT_PICKUPS.map(p => ({ ...p, pos: { ...p.pos } }));
 

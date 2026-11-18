@@ -1,0 +1,63 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "scope": "Human-only pose/view and injury/death pilot; not a five-base rollout or 3D conversion.",
+  "spec": "docs/plans/2026-11-08-human-pose-views-and-damage-spec.md",
+  "assets": [
+    {
+      "id": "crouch",
+      "path": "public/assets/characters/atompunk/human-v3/crouch.png",
+      "generated_source": "/Users/AleksejB/.codex/generated_images/01a1b6b4-ad42-7e13-a630-8cf3081390e2/exec-73f3b574-85af-469b-82ea-166c9d8ec2cb.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "transparent": true,
+      "transparent_background": true,
+      "referenced_image_paths": [
+        "/Users/AleksejB/Documents/void-strike_-zero-g/art/characters/atompunk/base-samples/human-base-v1.png",
+        "/Users/AleksejB/Documents/void-strike_-zero-g/public/assets/characters/atompunk/articulated-v2/human.png"
+      ],
+      "prompt": "Use case: identity-preserve. Asset type: production 2D HUMAN skeletal sprite-part atlas with pose-specific projected views, square1536x1536 RGBA transparent. Input image1 is exact Human appearance reference. Input image2 is previous generic Human part atlas, ONLY a style/material reference; its single upright-view parts are insufficient.\nCreate EXACTLY FOUR COLUMNS by FOUR ROWS of invisible384x384cells. Draw14 separate complete parts, centred in their cells with transparent margins. The final two cells are EMPTY transparent. No grid, letters, labels, frame, background, glow or shadows.\nCell order left-to-right then top-to-bottom: Row1 TORSO, PELVIS/SHORTS, NEAR UPPER ARM, FAR UPPER ARM. Row2 NEAR FOREARM, FAR FOREARM, NEAR HAND, FAR HAND. Row3 NEAR THIGH, FAR THIGH, NEAR SHIN, FAR SHIN. Row4 NEAR BOOT, FAR BOOT, EMPTY, EMPTY.\nPreserve this adult Human's cream work tank top, dark denim shorts, warm tan athletic/muscular skin and scuffed brown lace-up work boots. Dark painterly contours, broad warm highlights and clear material shading exactly from reference. Head/hair are handled separately: NO HEAD. No weapon or jetpack in any cell. Near and far parts must be DISTINCT VIEWS with natural perspective/foreshortening, not identical duplicated or merely flipped upright shapes. Correct camera-facing vs hidden surfaces, hands/thumbs and boot soles.\nThis atlas is for a side-view game: character faces RIGHT with a slight three-quarter view. Render parts as individually paintable pieces of the SAME body from the SAME camera, appropriate to the target pose below. Reorient each arm/leg segment's projected local long axis to point DOWN within its cell for skeletal binding. Do NOT bake a curved elbow/knee joint into a single segment. Complete rounded overlap surfaces at shoulders/elbows/wrists/hips/knees/ankles. No diagonal/rectangular cut ends, neighbouring limb pixels or clothes in bare skin pieces. Cloth folds and contour foreshortening must reflect the target pose. Torso includes full neck stub through waist; pelvis includes shorts and hip pads but no dangling thighs. Hands are relaxed firm weapon-gripping fists with a short wrist, thumb anatomy readable; no guns. Shins are skin only; boots separate. Every item fully visible inside its cell.\nApproximate part sizes: torso260x300, pelvis260x180, upper arm120x285, forearm100x270, hand130x160, thigh150x285, shin100x280, boot260x190. Keep limb ends rounded and softly shaded so overlaps are natural; no artificial inset rings or amputated cutaway tissue. No blood on this healthy pose atlas.\nGenuine transparent alpha outside every piece; no checkerboard or opaque fill. Do not assemble a character or add extra parts.\nTARGETPOSE: deep combat CROUCH, feet planted forward, knees tightly bent and slightly separated, hips low, torso leans forward, arms hold a level gun. Paint the true projected surfaces for this posture. Shorts compressed with realistic folds at groin/hip and leg openings; near thigh viewed from its outer/front surface and far thigh from its inner/side surface, not the same cylindrical leg. Forearms show the appropriate underside/side grip view. Boots still have TOE pointing RIGHT but show more of the top/instep and different near/far heel and lace surfaces than the standing atlas. Their soles are flat on the ground. Nearboot3quarter, farbootmoreprofile. Preserve identity/style and local-down binding orientation.",
+      "sha256": "8bb0855ca598cd2f54d8174ea0de726027455cec22089309f9bea681c50fc73b"
+    },
+    {
+      "id": "prone",
+      "path": "public/assets/characters/atompunk/human-v3/prone.png",
+      "generated_source": "/Users/AleksejB/.codex/generated_images/01a1b6b4-ad42-7e13-a630-8cf3081390e2/exec-d6eb7ba1-a567-4aa2-ac5d-3d0c16e5948e.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "transparent": true,
+      "transparent_background": true,
+      "referenced_image_paths": [
+        "/Users/AleksejB/Documents/void-strike_-zero-g/art/characters/atompunk/base-samples/human-base-v1.png",
+        "/Users/AleksejB/Documents/void-strike_-zero-g/public/assets/characters/atompunk/articulated-v2/human.png"
+      ],
+      "prompt": "Use case: identity-preserve. Asset type: production 2D HUMAN skeletal sprite-part atlas with pose-specific projected views, square1536x1536 RGBA transparent. Input image1 is exact Human appearance reference. Input image2 is previous generic Human part atlas, ONLY a style/material reference; its single upright-view parts are insufficient.\nCreate EXACTLY FOUR COLUMNS by FOUR ROWS of invisible384x384cells. Draw14 separate complete parts, centred in their cells with transparent margins. The final two cells are EMPTY transparent. No grid, letters, labels, frame, background, glow or shadows.\nCell order left-to-right then top-to-bottom: Row1 TORSO, PELVIS/SHORTS, NEAR UPPER ARM, FAR UPPER ARM. Row2 NEAR FOREARM, FAR FOREARM, NEAR HAND, FAR HAND. Row3 NEAR THIGH, FAR THIGH, NEAR SHIN, FAR SHIN. Row4 NEAR BOOT, FAR BOOT, EMPTY, EMPTY.\nPreserve this adult Human's cream work tank top, dark denim shorts, warm tan athletic/muscular skin and scuffed brown lace-up work boots. Dark painterly contours, broad warm highlights and clear material shading exactly from reference. Head/hair are handled separately: NO HEAD. No weapon or jetpack in any cell. Near and far parts must be DISTINCT VIEWS with natural perspective/foreshortening, not identical duplicated or merely flipped upright shapes. Correct camera-facing vs hidden surfaces, hands/thumbs and boot soles.\nThis atlas is for a side-view game: character faces RIGHT with a slight three-quarter view. Render parts as individually paintable pieces of the SAME body from the SAME camera, appropriate to the target pose below. Reorient each arm/leg segment's projected local long axis to point DOWN within its cell for skeletal binding. Do NOT bake a curved elbow/knee joint into a single segment. Complete rounded overlap surfaces at shoulders/elbows/wrists/hips/knees/ankles. No diagonal/rectangular cut ends, neighbouring limb pixels or clothes in bare skin pieces. Cloth folds and contour foreshortening must reflect the target pose. Torso includes full neck stub through waist; pelvis includes shorts and hip pads but no dangling thighs. Hands are relaxed firm weapon-gripping fists with a short wrist, thumb anatomy readable; no guns. Shins are skin only; boots separate. Every item fully visible inside its cell.\nApproximate part sizes: torso260x300, pelvis260x180, upper arm120x285, forearm100x270, hand130x160, thigh150x285, shin100x280, boot260x190. Keep limb ends rounded and softly shaded so overlaps are natural; no artificial inset rings or amputated cutaway tissue. No blood on this healthy pose atlas.\nGenuine transparent alpha outside every piece; no checkerboard or opaque fill. Do not assemble a character or add extra parts.\nTARGETPOSE: Human lies PRONE facingRIGHT, chest slightly raised on bent elbows, pelvis low, both legs extended BACKWARD to LEFT. The camera stays at the same side-three-quarter game view. Projected limb surfaces must match that actual lying posture. Torso tank folds/compression and shortsseat/hip contours match prone. Near forearm and hand show outer/top surfaces from elbow support; far arm/hand show their opposite side, naturally foreshortened. Thigh/calf pieces show appropriate side/back surfaces and subtler foreshortening. CRITICAL BOOTS: toes point BACKWARD to LEFT, heels/ankle attachment to RIGHT; do NOT draw upright standing boots pointing toward the head. Nearboot rests on its outer/toe edge with heel raised slightly, revealing heel/back and a strip of dark tread. Farboot shows more of its sole/rear angle. Correct left/right anatomy, flattoecontact onfloor and complete rounded ankle connection. These two boots are different projected views, with brown leather, laces only where actually visible and coherent sole depth. Boots can have horizontal long axes; all other limb bones local-down as specified.",
+      "sha256": "30283e3d3b87ef4a4562e028cdc1f658f48d7b99eb15d1854a77932bbe8a78bc"
+    },
+    {
+      "id": "damage",
+      "path": "public/assets/characters/atompunk/human-v3/damage.png",
+      "generated_source": "/Users/AleksejB/.codex/generated_images/01a1b6b4-ad42-7e13-a630-8cf3081390e2/exec-3429e2c3-57b1-4706-b0a1-cb3a1fa8bc1b.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "transparent": true,
+      "transparent_background": true,
+      "referenced_image_paths": [
+        "/Users/AleksejB/Documents/void-strike_-zero-g/art/characters/atompunk/base-samples/human-base-v1.png"
+      ],
+      "prompt": "Use case: identity-preserve. Asset type: transparent painted game character injury/death head and wound atlas, landscape1536x1024, FOUR COLUMNS and TWO ROWS of invisible384x512cells. Adult Human from inputimage1: preserve exact swept brown hair, stubble, angular face, skin palette and bold painterly atompunk style. We need a believable injured/dead face instead of the same living face during ragdoll. Fictional stylized shooter violence, visibly bloody but not photorealistic.\nExactly eight isolated items centred in cells with generous transparent margins. Toprow lefttoright: (1) whole isolated INJURED HEAD, facingright threequarter sameview as reference, brow clenched/eyes narrowed in pain, teeth clenched, fresh darkred blood on eyebrow/temple and mouthcorner; no smile. (2) whole isolated DEAD HEAD, sameidentity/rightthreequarter samehair/scale, eyes fully closed, facial muscles slack, slightly open relaxed mouth, blood at temple/cheek and lowerneck; definitely NO smile/grin or alert expression. (3) same DEAD HEAD in a more side-profile view suitable for a separated rolling head, eyesclosed, slackmouth,blood; same headsize. (4) one small isolated darkcrimson blood splatter and a few painted droplets, no head.\nBottomrow lefttoright: (5) bloody rounded ARM SHOULDER END cap: flattened oval wound surface, tan skin rim outside and darkred bloody interior, width about210px height100px, no attached limb. (6) bloody NECK END cap, width240 height120, skinrim/darkred painted tissue, no head/body. (7) bloody THIGH END cap, width280 height130, samepalette, no fullleg. (8) bloody WAIST cross-section cap, width320 height140, narrow creamtank/darkdenim rim and darkred interior; no torso/legs. Flatoval caps face camera with slighttopview so they can cap articulated severed ends. Redirregularpaintededge and a few drops, no exposed organs, intestines, bones or text. All blood stays darkred/crimson, not green/black. Keep blood readable at smallgame scale; restrained illustrated highlights, no horrorphotograph look.\nHeads have complete hair/ears/muzzle/chin and short neck, about330px wide and300–350px tall perhead; same scale acrossallthree. Do not draw shoulders/clothes/torso/helmet. Reconstruct only expressions/view and injuries, preserving the person's recognizable face. Bottomcaps are healthy-skinrim plus bloody end, not generic red geometric circles. Genuine transparent alpha outside every item. No background, checkerboard, glow, floor, shadow, border, captions, labels, grid, letters, watermark, weapon or gear.",
+      "sha256": "bdc23af02cd1a7088471b86791d391ef98f556d9680e8da203cac2c052a8d806"
+    }
+  ],
+  "notes": [
+    "PNG pixels were not rewritten; measured source polygons, pivots and scales are renderer data.",
+    "Near/far parts have independently painted projected surfaces.",
+    "The third dead-head profile and blood-splash study remain in the source atlas; runtime currently uses the three-quarter injured/dead heads.",
+    "Continuous arbitrary ragdoll views still require further views or the proposed future 3D rig."
+  ]
+}

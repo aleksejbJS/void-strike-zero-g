@@ -8,9 +8,10 @@ import { liftOutOfCover } from '../cover/coverSpawn';
 import { restoreAllCover } from '../cover/coverTick';
 import { createHungerZone, hungerSpawnPoint, HUNGER_ROUND_SIZE } from '../systems/hungerRound';
 import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
-import { ffaBotLooks } from '../build/botLooks';
+import { ffaBotLooks, withBotTeamColor } from '../build/botLooks';
 import { JoinRequest } from './protocol';
 import { newStatsSession } from '../stats/playerStats';
+import { RANGE_SPAWN } from '../range/rangeMap';
 
 export const isTeamMode = (mode: GameMode) =>
     mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -18,12 +19,14 @@ export const isTeamMode = (mode: GameMode) =>
 /**
  * Spawn point for the room's mode (Hunger Games scatters fighters over its arena).
  * A duel starts on the left spawn; later spawns pick the side away from the opponent (duelSpawnPoint).
+ * The test range always spawns on its one fixed spot.
  */
 export const spawnPointFor = (mode: GameMode) => (team: Team) =>
     mode === GameMode.HUNGER_GAMES ? hungerSpawnPoint()
         : mode === GameMode.DUEL ? duelSpawnByIndex(0)
-            : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
-                : getSpawnPoint(team);
+            : mode === GameMode.RANGE ? { ...RANGE_SPAWN }
+                : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
+                    : getSpawnPoint(team);
 
 // CTF: each team respawns on the floor behind its base, ~700 px from its flag. Respawning on
 // the flag itself put defenders on top of a carrier 3 s after they died, so captures almost
@@ -94,18 +97,14 @@ const baseEntity = (mode: GameMode, team: Team) => {
 const defaultBotCount = (mode: GameMode) =>
     mode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE : isTeamMode(mode) ? 6 : mode === GameMode.DUEL ? 0 : 3;
 
-/** Team bots wear their team colour; free-for-all bots each get their own look. */
+/** Every bot wears an illustrated base; team equipment is tinted in its team's colour. */
 export const createBots = (mode: GameMode, count: number = defaultBotCount(mode)): Entity[] => {
-    const ffaLooks = isTeamMode(mode) ? [] : ffaBotLooks(count);
+    const looks = ffaBotLooks(count);
     return Array.from({ length: count }, (_, i) => {
         let team = Team.NONE;
         if (mode === GameMode.INFILTRATION) team = i < 2 ? Team.BLUE : Team.RED;
         else if (isTeamMode(mode)) team = i % 2 === 0 ? Team.RED : Team.BLUE;
-        const color = team === Team.RED ? '#ef4444' : '#3b82f6';
-        const look = ffaLooks[i] ?? {
-            color, headColor: color, torsoColor: color, armColor: color, legColor: '#475569',
-            jetpackColor: '#64748b', skinId: 'classic',
-        };
+        const look = withBotTeamColor(looks[i], team);
         return {
             ...baseEntity(mode, team),
             id: `bot_${i}`, type: 'bot' as const, name: `Bot ${i + 1}`,

@@ -25,6 +25,7 @@ export interface HazardKeys {
     'hb.close': string;
     'hb.switchLanguage': string;
     'hb.previewLabel': string;
+    'hb.previewTitle': string;
     'ctl.move': string;
     'ctl.jetpack': string;
     'ctl.fire': string;
@@ -32,11 +33,13 @@ export interface HazardKeys {
     'ctl.weapons': string;
     'ctl.crouch': string;
     'ctl.prone': string;
+    'ctl.proneShort': string;
     'ctl.leftClick': string;
     'ctl.rightClick': string;
     'ctl.or': string;
     'ctl.wheel': string;
     'pv.you': string;
+    'pv.tuning': string;
     'pv.killLine': string;
     'pv.killsThisWeapon': string;
     'pv.upgrade': string;
@@ -74,6 +77,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.close': 'Close',
         'hb.switchLanguage': 'Switch language to Russian',
         'hb.previewLabel': 'How {0} plays',
+        'hb.previewTitle': 'Gameplay preview',
         'ctl.move': 'Move',
         'ctl.jetpack': 'Jetpack',
         'ctl.fire': 'Fire',
@@ -81,11 +85,13 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.weapons': 'Weapons',
         'ctl.crouch': 'Crouch',
         'ctl.prone': 'Lie down (hold)',
+        'ctl.proneShort': 'Prone',
         'ctl.leftClick': 'Left click',
         'ctl.rightClick': 'Right click',
         'ctl.or': 'or',
         'ctl.wheel': 'Mouse wheel',
         'pv.you': 'You',
+        'pv.tuning': 'Tuning in…',
         'pv.killLine': '{0} fragged {1}',
         'pv.killsThisWeapon': 'Kills this weapon: {0}',
         'pv.upgrade': 'Upgrade',
@@ -121,6 +127,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.close': 'Закрыть',
         'hb.switchLanguage': 'Переключить язык на английский',
         'hb.previewLabel': 'Как играется режим {0}',
+        'hb.previewTitle': 'Как играть',
         'ctl.move': 'Движение',
         'ctl.jetpack': 'Джетпак',
         'ctl.fire': 'Огонь',
@@ -128,11 +135,13 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'ctl.weapons': 'Оружие',
         'ctl.crouch': 'Присесть',
         'ctl.prone': 'Лечь (держать)',
+        'ctl.proneShort': 'Лечь',
         'ctl.leftClick': 'ЛКМ',
         'ctl.rightClick': 'ПКМ',
         'ctl.or': 'или',
         'ctl.wheel': 'Колесо',
         'pv.you': 'Вы',
+        'pv.tuning': 'Настройка сигнала…',
         'pv.killLine': '{0}: фраг — {1}',
         'pv.killsThisWeapon': 'Убийств этим оружием: {0}',
         'pv.upgrade': 'Апгрейд',

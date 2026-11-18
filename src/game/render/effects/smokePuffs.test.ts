@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SmokeCloud } from '../../../types';
 import { SMOKE_FADE_MS } from '../../systems/smoke';
-import { cloudCircles, cloudFade } from './smokePuffs';
+import { cloudAlpha, cloudCircles, cloudFade } from './smokePuffs';
 
 const R = 110;
 const cloud = (id = 'smoke_1'): SmokeCloud => ({ id, pos: { x: 500, y: 300 }, radius: R, bornAt: 0, endsAt: 10_000 });
@@ -20,6 +20,13 @@ describe('cloudFade', () => {
         expect(mid.alpha).toBeGreaterThan(0);
         expect(mid.alpha).toBeLessThan(1);
         expect(cloudFade(cloud(), 10_000)).toEqual({ scale: 0, alpha: 0 });
+    });
+});
+
+describe('cloudAlpha', () => {
+    it('is the opacity of cloudFade, as a plain number', () => {
+        for (const t of [0, 8_000, 8_500, 9_000, 9_999, 10_000, 12_000]) expect(cloudAlpha(cloud(), t)).toBe(cloudFade(cloud(), t).alpha);
+        expect(cloudAlpha({ ...cloud(), radius: 0 }, 0)).toBe(0);
     });
 });
 

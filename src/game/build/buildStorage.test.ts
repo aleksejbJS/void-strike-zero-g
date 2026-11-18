@@ -24,6 +24,12 @@ describe('buildStorage', () => {
         expect(warn).not.toHaveBeenCalled();
     });
 
+    it('round trips illustrated identity and uncovered faces', () => {
+        const illustrated = { ...custom, body: 'human-female', helmet: 'none', visor: 'none' } as FighterBuild;
+        saveBuild(illustrated);
+        expect(loadBuild()).toEqual(illustrated);
+    });
+
     it('migrates a saved skin into its preset build', () => {
         store.selectedSkin = 'wolf';
         expect(loadBuild()).toEqual(presetBuild('wolf'));
