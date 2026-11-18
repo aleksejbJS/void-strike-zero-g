@@ -1,6 +1,6 @@
 # Smoke Sim — Spec
 
-**Date:** 2026-11-18 · **Status:** draft for the owner's approval (open question on soot answered: replace)
+**Date:** 2026-11-18 · **Status:** approved by the owner 2026-11-18
 **Branch:** `feature/smoke-sim` (worktree `~/Documents/void-strike-smokesim`, from `release/0.5.0` c5e435b).
 Ships inside 0.5.0 (owner, 2026-11-18).
 **Reference look:** the spike on branch `spike/smoke-shader` (commit 7059622, worktree
