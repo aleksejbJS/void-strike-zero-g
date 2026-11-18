@@ -1,6 +1,6 @@
 // One quad per smoke cloud: a mesh over the air grid's box, a small RGBA8 texture filled from the grid
 // (r = density, g = heat, b = soot) and the CFD-look shader. Owns its Mesh, Shader, Texture (with source)
-// and geometry; destroy() frees all four. Visual only.
+// and geometry; destroy() frees all four, whether the stage destroyed the mesh before or not. Visual only.
 
 import { BufferImageSource, Mesh, MeshGeometry, Shader, Texture } from 'pixi.js';
 import type { AirGrid } from './airGrid';
@@ -18,6 +18,8 @@ const toByte = (x: number): number => (x > 0 ? (x < 255 ? x + 0.5 : 255) : 0);
 export class SmokeQuad {
     readonly mesh: Mesh<MeshGeometry, Shader>;
     readonly texture: Texture;
+    private readonly shader: Shader;            // kept here: a destroyed mesh forgets its shader and geometry
+    private readonly geometry: MeshGeometry;
     private readonly grid: AirGrid;
     private readonly bytes: Uint8Array;
     private readonly source: BufferImageSource;
@@ -31,7 +33,7 @@ export class SmokeQuad {
         this.bytes = new Uint8Array(n * n * 4);
         this.source = new BufferImageSource({ resource: this.bytes, width: n, height: n, format: 'rgba8unorm', scaleMode: 'linear' });
         this.texture = new Texture({ source: this.source });
-        const shader = Shader.from({
+        const shader = this.shader = Shader.from({
             gl: { vertex: SMOKE_VERTEX, fragment: SMOKE_FRAGMENT, name: 'smoke-cloud-sim' },
             resources: {
                 uField: this.source,
@@ -46,7 +48,7 @@ export class SmokeQuad {
             },
         });
         // Vertices are the grid box in world pixels (the mesh sits at the origin): the shader's noise is anchored to the world
-        const geometry = new MeshGeometry({
+        const geometry = this.geometry = new MeshGeometry({
             positions: new Float32Array([x0, y0, x0 + size, y0, x0 + size, y0 + size, x0, y0 + size]),
             uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
             indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
@@ -72,16 +74,17 @@ export class SmokeQuad {
         this.uniforms.uFade = fade > 0 ? Math.min(1, fade) : 0;
     }
 
-    /** Remove the mesh from its parent and free mesh, shader, texture (with source) and geometry. Safe to call twice. */
+    /** Remove the mesh from its parent and free mesh, shader, texture (with source) and geometry. Safe to call twice, and
+     *  after the mesh was destroyed with the stage (destroyApp does that; Pixi then drops the mesh's shader and geometry
+     *  without freeing them, so they are freed here from the fields). */
     destroy(): void {
         if (this.destroyed) return;
         this.destroyed = true;
-        const { mesh } = this;
-        const shader = mesh.shader, geometry = mesh.geometry;
+        const { mesh, shader, geometry } = this;
         mesh.parent?.removeChild(mesh);
-        mesh.destroy();
-        shader?.destroy();
-        geometry.destroy(true);
+        if (!mesh.destroyed) mesh.destroy();
+        shader.destroy();                                  // does nothing when it is already destroyed
+        if (geometry.attributes !== null) geometry.destroy(true);
         this.texture.destroy(true);
     }
 }

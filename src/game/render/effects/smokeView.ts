@@ -19,6 +19,7 @@ const SILHOUETTE_CORNER = 6;
 
 export class SmokeView {
     private readonly gfx = new Graphics();      // the outline of your fighter; the grey circles too, if the shader failed
+    private readonly context = this.gfx.context; // kept here: a Graphics destroyed with the stage forgets its context
     private readonly feed = new StirFeed();
     private field: CloudField | null = null;    // made when the first cloud appears
     private stack: Container[] = [this.gfx];    // what stays on top of the layer, bottom to top: the cloud layer, then the outline
@@ -53,15 +54,18 @@ export class SmokeView {
         this.drawn = wanted;
     }
 
-    /** Free the clouds and destroy the Graphics; the view is not usable afterwards. */
+    /** Free the clouds and destroy the Graphics; the view is not usable afterwards. Safe to call twice, and after the
+     *  stage was destroyed (the game screen tears the Pixi app down first, then clears its views). */
     clear(): void {
         if (this.destroyed) return;
         this.destroyed = true;
         this.field?.destroy();
         this.field = null;
         this.feed.idle();
-        this.gfx.parent?.removeChild(this.gfx);
-        if (!this.gfx.destroyed) this.gfx.destroy({ children: true, context: true });
+        const { gfx } = this;
+        gfx.parent?.removeChild(gfx);
+        if (!gfx.destroyed) gfx.destroy({ children: true, context: true });
+        else this.context.destroy();                // the stage destroyed the Graphics but left its context
     }
 
     // Run the shader clouds. False when they are not there (failed now or before): the caller draws circles instead.

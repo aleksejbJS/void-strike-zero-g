@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { Container, Graphics, Shader, Text } from 'pixi.js';
+import { Container, Graphics, Shader, Text, type Mesh } from 'pixi.js';
 import { BeamView } from '../projectiles/beamView';
 import { ProjectileView } from '../projectiles/projectileView';
 import { SmokeView } from './smokeView';
@@ -95,6 +95,35 @@ describe('SmokeView', () => {
         expect(layer.children.length).toBe(0);
         expect(() => smoke.sync([cloud], 1017, silhouette)).not.toThrow();
         expect(layer.children.length).toBe(0);
+        expect(() => smoke.clear()).not.toThrow();
+    });
+
+    it('clear works after the stage was destroyed first, as the game screen does, and frees what the stage left', () => {
+        const stage = new Container(), layer = new Container();
+        stage.addChild(layer);
+        const smoke = makeView(layer);
+        smoke.sync([cloud, { ...cloud, id: 'smoke_2' }], 1000, silhouette);
+        const meshes = quadsUnder(layer) as Mesh[];
+        const shaders = meshes.map(m => m.shader!), geometries = meshes.map(m => m.geometry);
+        const context = gfxOf(smoke).context;
+        stage.destroy({ children: true, texture: false });         // destroyApp runs before smokeView.clear()
+        expect(() => smoke.clear()).not.toThrow();
+        for (const shader of shaders) expect(shader._destroyed).toBe(true);
+        for (const geometry of geometries) expect(geometry.attributes).toBeNull();
+        expect(context.instructions).toBeNull();                    // the Graphics context is freed too
+        expect(() => smoke.clear()).not.toThrow();
+        expect(() => smoke.sync([cloud], 1017, silhouette)).not.toThrow();
+    });
+
+    it('clear works after the stage was destroyed while the circles were drawn (shader had failed)', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const from = vi.spyOn(Shader, 'from').mockImplementation(() => { throw new Error('no WebGL'); });
+        spies.push(from);
+        const stage = new Container(), layer = new Container();
+        stage.addChild(layer);
+        const smoke = makeView(layer);
+        smoke.sync([cloud], 1000, silhouette);
+        stage.destroy({ children: true, texture: false });
         expect(() => smoke.clear()).not.toThrow();
     });
 

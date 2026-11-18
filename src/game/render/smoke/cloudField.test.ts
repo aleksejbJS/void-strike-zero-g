@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import type { Mesh } from 'pixi.js';
+import { Container, type Mesh } from 'pixi.js';
 import type { GameState } from '../../../types';
 import { AirGrid } from './airGrid';
 import { CloudField } from './cloudField';
@@ -44,6 +44,20 @@ describe('CloudField', () => {
         expect(field.layer.destroyed).toBe(true);
         expect(() => field.sync([cloud('a', 600, 450)], T0, frameOf())).not.toThrow();
         expect(field.layer.destroyed).toBe(true);
+    });
+
+    it('destroy frees every quad even when the stage destroyed the layer first', () => {
+        const field = makeField(), stage = new Container();
+        stage.addChild(field.layer);
+        field.sync([cloud('a', 600, 450), cloud('b', 900, 450)], T0, frameOf());
+        const meshes = [...field.layer.children] as Mesh[];
+        const shaders = meshes.map(m => m.shader!), textures = meshes.map(m => m.shader!.resources.uField as { destroyed: boolean });
+        stage.destroy({ children: true, texture: false });          // what destroyApp does to the game screen
+        expect(() => field.destroy()).not.toThrow();
+        for (const shader of shaders) expect(shader._destroyed).toBe(true);
+        for (const source of textures) expect(source.destroyed).toBe(true);
+        expect(() => field.destroy()).not.toThrow();
+        expect(() => field.sync([cloud('a', 600, 450)], T0 + FRAME_MS, frameOf())).not.toThrow();
     });
 
     it('builds a 1.5 x radius grid box around the centre, sized by the quality', () => {

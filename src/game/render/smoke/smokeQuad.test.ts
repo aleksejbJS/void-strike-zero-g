@@ -71,6 +71,24 @@ describe('SmokeQuad', () => {
         expect(parent.children).toHaveLength(0);
     });
 
+    it('destroy still frees shader, geometry and texture when the stage destroyed the mesh first, as destroyApp does', () => {
+        const stage = new Container();
+        const quad = new SmokeQuad(makeGrid(), SMOKE_WHITE);
+        stage.addChild(quad.mesh);
+        const { mesh, texture } = quad;
+        const shader = mesh.shader!, geometry = mesh.geometry, source = texture.source;
+        stage.destroy({ children: true, texture: false });
+        expect(mesh.destroyed).toBe(true);
+        expect(mesh.shader).toBeNull();                      // Pixi forgot the shader and geometry without freeing them
+        expect(() => quad.destroy()).not.toThrow();
+        expect(shader._destroyed).toBe(true);
+        expect(geometry.attributes).toBeNull();
+        expect(texture.destroyed).toBe(true);
+        expect(source.destroyed).toBe(true);
+        expect(() => quad.destroy()).not.toThrow();
+        expect(() => quad.upload(1, 1)).not.toThrow();
+    });
+
     it('destroy is safe to call twice and upload after destroy does nothing', () => {
         const quad = new SmokeQuad(makeGrid(), SMOKE_WHITE);
         quad.destroy();
