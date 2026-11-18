@@ -36,6 +36,7 @@ export const FAST_REFILL_S = 0.6;        // the cloud's first seconds refill fas
 export const REFILL_FAST_PER_S = 8;      // density closes on its target at this rate while the cloud is young, 1/s
 export const REFILL_SLOW_PER_S = 1.7;    // ... and at this rate afterwards (holes closed in 1-2 s)
 export const FADE_OUTSIDE_PER_S = 3.5;   // density outside the live radius fades at this rate, 1/s
+export const SOOT_FADE_PER_S = 1.8;      // soot a flame left in a cloud fades at this rate, 1/s: white again ~2 s after the flame (owner, 2026-11-18)
 /** Angular waves of the outline: `waves` lobes around the circle, `amp` of the radius, `drift` rad/s of slow turning. */
 export const OUTLINE_WAVES: readonly { waves: number; amp: number; drift: number }[] = [
     { waves: 3, amp: 0.16, drift: 0.25 }, { waves: 5, amp: 0.1, drift: -0.35 }, { waves: 8, amp: 0.06, drift: 0.5 },

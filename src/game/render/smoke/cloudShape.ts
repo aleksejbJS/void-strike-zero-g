@@ -1,8 +1,8 @@
 // CloudShaper turns an AirGrid into a grenade cloud. The gameplay cloud is a circle (smokeRadiusAt) and
 // the picture follows it like a soft jar: a burst of air pushes outward at birth, the density refills
 // toward a dense middle inside an uneven, slowly turning outline, it fades outside the live radius, and
-// a few seeded stirs keep the air moving. Call apply() once before each grid.step(); it only edits the
-// density and the air velocity. Everything random comes from seededRandom(cloud.id). Visual only.
+// a few seeded stirs keep the air moving; soot a flame left fades out. Call apply() once before each grid.step(); it
+// only edits the density, the soot and the air velocity. Everything random comes from seededRandom(cloud.id). Visual only.
 
 import { SmokeCloud } from '../../../types';
 import { smokeRadiusAt } from '../../systems/smoke';
@@ -11,7 +11,7 @@ import { seededRandom } from './seededRandom';
 import {
     BURST_DECAY_PER_S, BURST_GAIN, BURST_MIN_SPEED, BURST_SPEED, CHURN_REACH_CELLS, CHURN_RATE, CHURN_RISE_BIAS,
     CHURN_SPEED, CHURN_STIRS, FADE_OUTSIDE_PER_S, FAST_REFILL_S, GROW_PER_S, OUTLINE_WAVES, REFILL_FAST_PER_S,
-    REFILL_SLOW_PER_S, TARGET_PEAK,
+    REFILL_SLOW_PER_S, SOOT_FADE_PER_S, TARGET_PEAK,
 } from './smokeTuning';
 
 const TAU = 2 * Math.PI;
@@ -62,21 +62,22 @@ export class CloudShaper {
         }
     }
 
-    /** Burst, refill, fade and churn for a step of `dt` s at time `now` (ms), to run just before grid.step(dt). */
+    /** Burst, refill, fade, soot fade and churn for a step of `dt` s at time `now` (ms), to run just before grid.step(dt). */
     apply(dt: number, now: number): void {
         if (!(dt > 0)) return;
         const age = this.ageAt(now);
         const grow = smokeRadiusAt(this.cloud, now) * (1 - Math.exp(-age * GROW_PER_S));
         const refill = 1 - Math.exp(-(age < FAST_REFILL_S ? REFILL_FAST_PER_S : REFILL_SLOW_PER_S) * dt);
-        const fade = Math.exp(-FADE_OUTSIDE_PER_S * dt);
+        const fade = Math.exp(-FADE_OUTSIDE_PER_S * dt), sootFade = Math.exp(-SOOT_FADE_PER_S * dt);
         const burst = BURST_SPEED * Math.exp(-age * BURST_DECAY_PER_S);
         const push = burst > BURST_MIN_SPEED ? burst * BURST_GAIN * dt : 0;     // px/s gained along the outward direction
         this.shapeOutline(age);
-        const { grid: { n, d, u, v, solid }, dist, dirX, dirY, outline } = this;
+        const { grid: { n, d, s, u, v, solid }, dist, dirX, dirY, outline } = this;
         const growing = grow > MIN_REACH;
         for (let j = 1; j < n - 1; j++) for (let i = 1; i < n - 1; i++) {
             const k = i + j * n;
             if (solid[k]) continue;
+            s[k] *= sootFade;
             const edge = grow * outline[k], q = dist[k] / edge;
             if (growing && q < 1) {
                 const target = TARGET_PEAK * (1 - q * q);

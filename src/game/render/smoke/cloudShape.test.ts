@@ -121,4 +121,15 @@ describe('CloudShaper', () => {
         r.shaper.apply(DT, r.c.endsAt + 100);                                    // past its end: nothing left to hold
         for (const f of [r.grid.d, r.grid.u, r.grid.v]) expect(f.every(Number.isFinite)).toBe(true);
     });
+
+    it('soot a flame left in the cloud fades within about two seconds', () => {
+        const { grid, c, runTo } = rig();
+        runTo(1);
+        grid.stir({ x: c.pos.x, y: c.pos.y, vx: 0, vy: 0, rate: 0, r: 4 * grid.cell, soot: 60 }, 1 / 60);
+        const total = () => grid.s.reduce((a, x) => a + x, 0);
+        const before = total();
+        expect(before).toBeGreaterThan(1);
+        runTo(3);
+        expect(total()).toBeLessThan(before * 0.05);
+    });
 });
