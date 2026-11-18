@@ -54,7 +54,7 @@ export const PLUME_DENS_PER_S = 2.4;     // ... and smoke density, which is what
 export const PLUME_REACH_CELLS = 1;      // reach of one deposit, in cells (its kernel weighs about 1: a particle adds its rate in all)
 export const PLUME_DECAY_PER_S = 0.6;    // plume density fades at this rate, 1/s
 export const PLUME_IDLE_S = 1;           // a plume with no deposit for this long and ...
-export const PLUME_MIN_MASS = 0.5;       // ... less smoke than this (cell units) is destroyed
+export const PLUME_GONE_PEAK = 0.03;     // ... no cell denser than this (the shader draws it at ~3 % alpha: unseen) is destroyed
 
 // Smoke look (SmokeQuad shader). Colours are linear RGB in 0..1.
 export const SMOKE_WHITE: readonly [number, number, number] = [0.86, 0.87, 0.89];   // base aerosol colour of a grenade cloud

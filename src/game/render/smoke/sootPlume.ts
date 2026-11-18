@@ -7,7 +7,7 @@ import { GridDriver } from './gridDriver';
 import { SmokeQuad } from './smokeQuad';
 import { SolidTracker, type SolidSource } from './solidTracker';
 import {
-    PLUME_BOX, PLUME_DECAY_PER_S, PLUME_EDGE, PLUME_DENS_PER_S, PLUME_EMIT_AT, PLUME_HEAT_PER_S, PLUME_IDLE_S, PLUME_MIN_MASS,
+    PLUME_BOX, PLUME_DECAY_PER_S, PLUME_EDGE, PLUME_DENS_PER_S, PLUME_EMIT_AT, PLUME_GONE_PEAK, PLUME_HEAT_PER_S, PLUME_IDLE_S,
     PLUME_REACH_CELLS, PLUME_SOOT_PER_S, SMOKE_SOOT,
 } from './smokeTuning';
 
@@ -47,10 +47,12 @@ export class SootPlume {
         return x >= box.x + edge && x <= box.x + box.w - edge && y >= box.y + edge && y <= box.y + box.h - edge;
     }
 
-    /** One flame smoke particle at (x, y) adds soot, heat and smoke for `dt` seconds (the frame it was seen in). */
+    /** One flame smoke particle at (x, y) adds soot, heat and smoke for `dt` seconds (the frame it was seen in). A point
+     *  outside the part of the box that holds soot (see contains) puts it at the nearest place inside that part. */
     add(x: number, y: number, dt: number, now: number): void {
-        this.deposit.x = x;
-        this.deposit.y = y;
+        const { box } = this, edge = PLUME_EDGE * box.w;
+        this.deposit.x = Math.min(box.x + box.w - edge, Math.max(box.x + edge, x));
+        this.deposit.y = Math.min(box.y + box.h - edge, Math.max(box.y + edge, y));
         this.grid.stir(this.deposit, dt);
         this.lastDeposit = now;
         this.fresh = true;
@@ -93,9 +95,12 @@ export class SootPlume {
         return this.asleepSince === null ? 0 : now - this.asleepSince;
     }
 
-    /** No deposit for PLUME_IDLE_S and hardly any smoke left. */
+    /** No deposit for PLUME_IDLE_S and no cell dense enough to be seen. */
     isSpent(now: number): boolean {
-        return now - this.lastDeposit > PLUME_IDLE_S * 1000 && this.grid.mass() < PLUME_MIN_MASS;
+        if (now - this.lastDeposit <= PLUME_IDLE_S * 1000) return false;
+        const { d } = this.grid;
+        for (let k = 0; k < d.length; k++) if (d[k] >= PLUME_GONE_PEAK) return false;
+        return true;
     }
 
     destroy(): void {

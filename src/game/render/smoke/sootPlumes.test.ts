@@ -56,7 +56,7 @@ describe('SootPlumes', () => {
         expect(sootMeanY(plumes.gridAt(0)!)).toBeLessThan(before - 5);      // y points down: smaller y is higher
     });
 
-    it('a plume dies about 3 s after the fire stops', () => {
+    it('a plume dies a few seconds after the fire stops, once its smoke is too thin to see', () => {
         const plumes = make(), pts: Point[] = [{ x: 800, y: 500 }, { x: 806, y: 496 }];
         let now = runFrames(plumes, sootFrame(pts), 60, T0);
         pts.length = 0;
@@ -69,7 +69,7 @@ describe('SootPlumes', () => {
             if (plumes.count === 0) diedAt = now - stop;
         }
         expect(diedAt).toBeGreaterThan(2000);
-        expect(diedAt).toBeLessThan(4000);                                  // gone by 4 s
+        expect(diedAt).toBeLessThan(5000);                                  // gone by 5 s
         expect(plumes.layer.children.length).toBe(0);
     });
 

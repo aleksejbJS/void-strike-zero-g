@@ -1,8 +1,9 @@
 // The flamethrower's soot plumes of one game view. Each live smoke particle of the flame engine adds soot, heat and
 // smoke to the plume whose box holds it; where none does, a new plume is made (up to PLUME_CAP for the quality, none on
-// `low`, where the flame keeps its sprites). A plume is an air grid with no gameplay circle: the heat makes the soot
-// rise, the same stirs as the clouds push it, its smoke fades by itself and it is freed once the fire is long out.
-// Plumes outside the view and a margin do not step and are hidden. Visual only.
+// `low`, where the flame keeps its sprites), and with the cap full the soot goes to the nearest plume. A plume is an
+// air grid with no gameplay circle: the heat makes the soot rise, the same stirs as the clouds push it, its smoke fades
+// by itself and it is freed as soon as the fire is out and its smoke is too thin to see. Plumes outside the view and a
+// margin do not step and are hidden. Visual only.
 
 import { Container } from 'pixi.js';
 import type { Box, Stir } from './airGrid';
@@ -56,6 +57,7 @@ export class SootPlumes {
             if (this.plumes.length > 0) this.dropAll();
             return;
         }
+        if (this.plumes.length === 0 && !frame.flame?.hasSoot()) return;     // nothing alive, nothing coming
         this.watchView(now, frame.view);
         if (frame.flame?.hasSoot()) this.feed(now, frame, safeFrameDt(dt));
         this.stepAndShow(now, frame, stirs);
@@ -102,8 +104,18 @@ export class SootPlumes {
     private deposit(x: number, y: number, age: number, ttl: number): void {
         const { reach, feedFrame: frame } = this;
         if (!frame || x < reach.x || x > reach.x + reach.w || y < reach.y || y > reach.y + reach.h) return;
-        const plume = this.holding(x, y) ?? this.make(x, y, this.feedNow, frame);
+        const plume = this.holding(x, y) ?? this.make(x, y, this.feedNow, frame) ?? this.nearest(x, y);
         plume?.add(x, y, this.feedDt * lifeLeft(age, ttl), this.feedNow);
+    }
+
+    // With the cap full, the soot of a point no plume holds goes to the plume whose box centre is nearest
+    private nearest(x: number, y: number): SootPlume | undefined {
+        let best: SootPlume | undefined, bestD2 = Infinity;
+        for (const plume of this.plumes) {
+            const { box } = plume, d2 = (box.x + box.w / 2 - x) ** 2 + (box.y + box.h / 2 - y) ** 2;
+            if (d2 < bestD2) { bestD2 = d2; best = plume; }
+        }
+        return best;
     }
 
     private holding(x: number, y: number): SootPlume | undefined {
