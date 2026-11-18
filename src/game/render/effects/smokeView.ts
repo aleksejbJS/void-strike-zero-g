@@ -2,7 +2,8 @@
 // own fighter stands in smoke, a faint outline of its hitbox over the clouds so you do not lose yourself. Under the
 // clouds it draws the flamethrower's soot plumes (see smoke/sootPlumes), which replace the flame's own smoke sprites.
 // Without a working shader (no WebGL, a failed upload) it logs once and draws the old grey circles (see smokePuffs)
-// from then on; a failing plume path logs once and draws no soot. Owns the frame's stir feed: stirs are gathered once
+// from then on (and no soot either: the plumes use the same shader, so they stop at once, without a second error); a
+// failing plume path alone logs once and draws no soot, the clouds stay. Owns the frame's stir feed: stirs are gathered once
 // per frame and shared by the clouds and the plumes. On its first frame it warms the smoke up (see smoke/smokeWarmup),
 // so the first smoke round of the match does not stall a frame compiling the shader and the solver.
 // It is the top effect view: above fighters, projectiles, particles and beams.
@@ -37,7 +38,7 @@ export class SmokeView {
     private warmup: SmokeWarmup | null = null;  // drawn on the first frame only
     private warmed = false;
     private stack: Container[] = [this.gfx];    // what stays on top of the layer, bottom to top: the soot plumes, the clouds, the outline
-    private failed = false;                     // the shader clouds failed: circles from now on, no retry
+    private failed = false;                     // the shader clouds failed: circles from now on, no soot, no retry
     private sootFailed = false;                 // the plumes failed: no soot from now on, no retry
     private destroyed = false;
     private drawn = false;
@@ -102,7 +103,7 @@ export class SmokeView {
     // to react (a cloud, a plume alive, or soot in the flame this frame); otherwise the feed forgets what it followed
     private stirsOf(smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null): readonly Stir[] {
         const clouds = !this.failed && smokes.length > 0;
-        const soot = !this.sootFailed && ((this.plumes?.count ?? 0) > 0 || sootWanted(frame));
+        const soot = !this.failed && !this.sootFailed && ((this.plumes?.count ?? 0) > 0 || sootWanted(frame));
         return frame && (clouds || soot) ? this.feed.collect(frame.state, frame.flame, now) : this.feed.idle();
     }
 
@@ -125,7 +126,7 @@ export class SmokeView {
 
     // Run the soot plumes: made when the flame first leaves soot, kept (empty) after that
     private driveSoot(now: number, frame: SmokeFrame | null, stirs: readonly Stir[]): void {
-        if (this.sootFailed || (!this.plumes && !sootWanted(frame))) return;
+        if (this.failed || this.sootFailed || (!this.plumes && !sootWanted(frame))) return;
         try {
             if (!this.plumes) {
                 this.plumes = new SootPlumes();
@@ -162,6 +163,8 @@ export class SmokeView {
         this.failed = true;
         this.field?.destroy();
         this.field = null;
+        this.plumes?.destroy();                     // the soot goes with the clouds: same shader, and one error is enough
+        this.plumes = null;
         this.stack = this.stackOf();
     }
 

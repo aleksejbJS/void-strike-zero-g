@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { Container, type Mesh } from 'pixi.js';
+import { Container, Shader, type Mesh } from 'pixi.js';
 import { SootPlumes } from '../smoke/sootPlumes';
 import { SmokeStirs } from '../smoke/smokeStirs';
 import { cloud as makeCloud, runner, stateOf, watchGrids } from '../smoke/cloudField.testkit';
@@ -32,10 +32,10 @@ describe('SmokeView soot plumes', () => {
 
     it('collects nothing, and makes nothing, while there is no cloud, no plume and no soot', () => {
         const view = makeView(), collect = spy(vi.spyOn(SmokeStirs.prototype, 'collect'));
-        const soot = vi.fn(() => []), frame = { ...sootFrame([]), flame: { ...airOf([]), soot } };
+        const forEachSoot = vi.fn(), frame = { ...sootFrame([]), flame: { ...airOf([]), forEachSoot } };
         for (let i = 0; i < 10; i++) view.sync([], T0 + i * FRAME, null, frame);
         expect(collect).not.toHaveBeenCalled();
-        expect(soot).not.toHaveBeenCalled();
+        expect(forEachSoot).not.toHaveBeenCalled();
         expect(plumesOf(view)).toBeNull();
     });
 
@@ -125,5 +125,30 @@ describe('SmokeView soot plumes', () => {
         const field = (view as unknown as { field: { layer: Container } | null }).field;
         expect(field?.layer.children.length).toBe(1);                        // the cloud is still a shader quad
         expect(layer.children).toEqual([field!.layer, gfxOf(view)]);
+    });
+
+    it('once the shader clouds have failed, the soot stops too: one console.error, no plume, nothing collected', () => {
+        const error = spy(vi.spyOn(console, 'error').mockImplementation(() => {}));
+        spy(vi.spyOn(Shader, 'from').mockImplementation(() => { throw new Error('no WebGL'); }));
+        const collect = spy(vi.spyOn(SmokeStirs.prototype, 'collect'));
+        const view = makeView(), frame = sootFrame(flame());
+        for (let i = 0; i < 5; i++) view.sync([a], T0 + i * FRAME, null, frame);
+        expect(error).toHaveBeenCalledTimes(1);
+        expect(error.mock.calls[0][0]).toBe('Smoke shader failed, drawing simple clouds:');
+        expect(plumesOf(view)).toBeNull();
+        expect(collect).not.toHaveBeenCalled();
+    });
+
+    it('a cloud failing while plumes are alive frees the plumes with it', () => {
+        const error = spy(vi.spyOn(console, 'error').mockImplementation(() => {}));
+        const view = makeView(), frame = sootFrame(flame());
+        for (let i = 0; i < 3; i++) view.sync([], T0 + i * FRAME, null, frame);
+        const meshes = [...plumesOf(view)!.layer.children] as Mesh[];
+        expect(meshes.length).toBe(1);
+        spy(vi.spyOn(Shader, 'from').mockImplementation(() => { throw new Error('no WebGL'); }));
+        for (let i = 3; i < 8; i++) view.sync([a], T0 + i * FRAME, null, frame);
+        expect(error).toHaveBeenCalledTimes(1);
+        expect(plumesOf(view)).toBeNull();
+        expect(meshes[0].destroyed).toBe(true);
     });
 });
