@@ -33,7 +33,7 @@ const App: React.FC = () => {
   const [showingProfile, setShowingProfile] = useState(false);
   const [showingLeaderboard, setShowingLeaderboard] = useState(false);
   const hash = useHash();
-  useRangeRoute(hash, state.isPlaying, actions); // hidden #range: the offline test range
+  useRangeRoute(hash, state.isPlaying, state.selectedMode, actions); // hidden #range: the offline test range
 
   // A match may have gone full screen on a phone; the menu is shown with the browser bar again
   useEffect(() => {
