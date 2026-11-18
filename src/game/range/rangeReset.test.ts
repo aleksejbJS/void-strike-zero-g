@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import type { Beam, Decal, FloatingText, GameState, Particle, Projectile, SmokeCloud } from '../../types';
+import type { Beam, Decal, FloatingText, GameState, LitTank, Particle, Projectile, SmokeCloud } from '../../types';
 import { COVER_SPECS } from '../cover/coverTypes';
+import { coverRect } from '../cover/coverGeometry';
+import { checkRectOverlap } from '../utils/math';
 import { igniteBurn } from '../systems/burning';
 import { DUMMY_SPOTS } from './rangeMap';
 import { resetRange, reviveDummy } from './rangeReset';
 import { rangeFixture } from './rangeTestKit';
+
+const bodyRect = (p: { pos: { x: number; y: number }; width: number; height: number }) =>
+    ({ x: p.pos.x - p.width / 2, y: p.pos.y - p.height, w: p.width, h: p.height });
 
 const NOW = 1_000_000;
 const coverOf = (state: GameState, kind: string) => state.cover!.find(c => c.kind === kind)!;
@@ -71,6 +76,28 @@ describe('resetRange', () => {
         expect(barrel).toMatchObject({ hp: COVER_SPECS.barrel.hp, returnsAt: undefined, fuseAt: undefined, creditId: undefined });
     });
 
+    it('lifts a fighter standing in a broken piece onto it when the piece comes back', () => {
+        const { state, local } = rangeFixture();
+        const crate = coverOf(state, 'wood');
+        Object.assign(crate, { hp: 0, returnsAt: NOW + 35000 });
+        local.pos = { x: crate.pos.x + 5, y: crate.pos.y }; // standing in the gap of the broken crate
+        const x = local.pos.x;
+
+        resetRange(state, NOW);
+
+        expect(crate.hp).toBe(COVER_SPECS.wood.hp);
+        expect(checkRectOverlap(bodyRect(local), coverRect(crate))).toBe(false);
+        expect(local.pos).toEqual({ x, y: coverRect(crate).y });
+    });
+
+    it('leaves a fighter who stands clear of the cover where they are', () => {
+        const { state, local } = rangeFixture();
+        const pos = { ...local.pos };
+        Object.assign(coverOf(state, 'glass'), { hp: 0, returnsAt: NOW + 35000 });
+        resetRange(state, NOW);
+        expect(local.pos).toEqual(pos);
+    });
+
     it('revives every dummy, dead or alive, and clears a wound', () => {
         const { state, range, dummies } = rangeFixture();
         Object.assign(dummies[0], { dead: true, health: -1, respawnTimer: Number.MAX_SAFE_INTEGER });
@@ -97,10 +124,11 @@ describe('resetRange', () => {
         state.decals.push({ id: 'd' } as Decal);
         state.corpses.push({ id: 'c' } as GameState['corpses'][number]);
         state.floatingTexts.push({ id: 't' } as FloatingText);
+        state.litTanks = [{ id: 'l' } as LitTank];
 
         resetRange(state, NOW);
 
-        for (const pile of [state.projectiles, state.beams, state.smokes, state.particles, state.decals, state.corpses, state.floatingTexts]) {
+        for (const pile of [state.projectiles, state.beams, state.smokes, state.particles, state.decals, state.corpses, state.floatingTexts, state.litTanks]) {
             expect(pile).toHaveLength(0);
         }
     });

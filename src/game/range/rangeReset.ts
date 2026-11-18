@@ -3,6 +3,7 @@
 // the physics engine keeps the bodies it already has for the players and the cover.
 
 import type { Entity, GameState } from '../../types';
+import { liftOutOfCover } from '../cover/coverSpawn';
 import { restoreAllCover } from '../cover/coverTick';
 import { extinguish } from '../systems/burning';
 import { DUMMY_SPOTS } from './rangeMap';
@@ -28,7 +29,8 @@ export const reviveDummy = (state: GameState, d: Entity, _now: number): void => 
 
 /**
  * R: every cover piece whole, every dummy back on its spot (dead or alive), the local fighter out and at full
- * health where they stand, and no shots, beams, smoke, sparks, decals, corpses or damage numbers left.
+ * health (standing on top of a piece that came back under their feet, otherwise where they were), and no shots,
+ * beams, smoke, sparks, decals, corpses, lit tanks or damage numbers left.
  */
 export const resetRange = (state: GameState, now: number): void => {
     restoreAllCover(state);
@@ -38,6 +40,7 @@ export const resetRange = (state: GameState, now: number): void => {
         } else { // the range holds only the local fighter besides the dummies
             extinguish(p);
             p.health = p.maxHealth;
+            liftOutOfCover(state, p); // after restoreAllCover: it must see the pieces that came back
         }
     }
     state.projectiles.length = 0;
@@ -46,5 +49,6 @@ export const resetRange = (state: GameState, now: number): void => {
     state.particles.length = 0;
     state.decals.length = 0;
     state.corpses.length = 0;
+    if (state.litTanks) state.litTanks.length = 0;
     state.floatingTexts.length = 0;
 };

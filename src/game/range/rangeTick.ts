@@ -1,6 +1,7 @@
-// One step of the test range (#range), run every fixed step BEFORE updatePhysics: the reset key, endless ammo
-// and fuel, the delayed return of killed dummies and the armour toggle. It only changes GameState; the physics
-// engine picks positions and dead/alive state up from it after updatePhysics.
+// One step of the test range (#range): the reset key, endless ammo and fuel, the delayed return of killed dummies
+// and the armour toggle. Run once per fixed step AFTER syncGameState and BEFORE updatePhysics: syncGameState
+// overwrites player.pos from the physics body, so a revive written before it would be lost. It only changes
+// GameState; the physics engine picks positions and dead/alive state up after updatePhysics (syncFromGameState).
 
 import type { Entity, GameState } from '../../types';
 import { DUMMY_RETURN_MS } from './rangeState';

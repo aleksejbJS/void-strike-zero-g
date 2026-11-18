@@ -44,7 +44,8 @@ describe('tickRange: the local fighter', () => {
         expect(() => tickRange(fx.state, LOCAL_ID, T)).not.toThrow();
         delete fx.state.range;
         expect(() => tickRange(fx.state, LOCAL_ID, T)).not.toThrow();
-    });});
+    });
+});
 
 describe('tickRange: a killed dummy', () => {
     it('stays dead for 2999 ms and stands on its own spot at 3000 ms', () => {
