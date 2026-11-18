@@ -31,6 +31,7 @@ const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
 const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
 const FLAME = shots('flame'), MENU = shots('menu'), FIGHTERS = shots('fighters'), SMOKE = shots('smoke');
+const BLAST = shots('blast');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
@@ -64,6 +65,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Bullets, rockets, blasts and the flamethrower punch through it, push it and light it up, and the holes close again',
                 'The flamethrower leaves dark soot that rises and fades',
             ], comparisons: [{ caption: 'Smoke launcher', ...SMOKE }] },
+            { title: 'Explosions', points: [
+                'Every explosion got a new look: a bright fireball that rolls up into a thick cloud of dark smoke, lit orange from inside',
+                'Rockets leave a dense smoke trail instead of a dotted line, and flying debris trails thin smoke',
+                'Rockets, grenades, barrels and fuel tanks all blow up the new way',
+            ], comparisons: [{ caption: 'Rocket hit', ...BLAST }] },
         ] },
         { version: '0.4.37', date: 'Nov 13, 2026', points: [
             'No more quarter-second freeze on your first shot in a match: sound now starts while the match loads',
@@ -327,6 +333,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Пули, ракеты, взрывы и огнемёт пробивают дым насквозь, разгоняют его и подсвечивают, а проделанные дыры потом затягиваются',
                 'Огнемёт оставляет тёмную копоть: она поднимается вверх и тает',
             ], comparisons: [{ caption: 'Дымовой гранатомёт', ...SMOKE }] },
+            { title: 'Взрывы', points: [
+                'У всех взрывов новый вид: яркий огненный шар, который превращается в густое облако тёмного дыма, подсвеченного огнём изнутри',
+                'Ракета оставляет плотный дымный след вместо пунктира, а разлетающиеся обломки тянут за собой тонкий дым',
+                'По-новому взрываются ракеты, гранаты, бочки и топливные баки',
+            ], comparisons: [{ caption: 'Попадание ракеты', ...BLAST }] },
         ] },
         { version: '0.4.37', date: '13.11.2026', points: [
             'Больше нет фриза на четверть секунды при первом выстреле в матче: звук запускается, пока матч загружается',
