@@ -1,6 +1,6 @@
 # Smoke Sim — Spec
 
-**Date:** 2026-11-18 · **Status:** draft for the owner's approval
+**Date:** 2026-11-18 · **Status:** draft for the owner's approval (open question on soot answered: replace)
 **Branch:** `feature/smoke-sim` (worktree `~/Documents/void-strike-smokesim`, from `release/0.5.0` c5e435b).
 Ships inside 0.5.0 (owner, 2026-11-18).
 **Reference look:** the spike on branch `spike/smoke-shader` (commit 7059622, worktree
@@ -31,6 +31,7 @@ by how dense the picture is, a hole punched in the visible smoke never reveals a
 | One big cloud? | Asked why not one grid for the whole map. Answer given: one grid costs all the time and the camera moves; per-cloud grids cost only where smoke is, and nearby clouds merge on screen. If merging looks bad, one shared grid around all clouds is the fallback |
 | Where checked | On the hidden test range (`#range`, keys 7 smoke, 1 machine gun, 3 rocket, 9 flamethrower) |
 | Release | Inside 0.5.0, as a group in the 0.5.0 "What's new" with before/after pictures |
+| Flamethrower smoke | **Replace** the 0.5.0 flamethrower's faint brown smoke with dark soot plumes from the new smoke system (option 1 of the open question, 2026-11-18) |
 
 ## Goals
 
@@ -58,9 +59,14 @@ by how dense the picture is, a hole punched in the visible smoke never reveals a
    (lit top, shaded bottom); a brief orange glow where the air is hot (heat cools in well under a
    second); soot darkens the smoke towards near-black; the grid edge fades out so no straight cut
    ever shows. Colour comes from one parameter (white now).
-6. **Flamethrower soot outside smoke clouds** — *proposal, see open question 1*: where the stream
-   splashes or a fighter burns, small soot plumes rise and fade, using the same grid and shader at a
-   smaller size.
+6. **Flamethrower soot plumes** (owner decision): the flame engine's smoke particles (`STREAM.smokeRate`
+   in `flameStream.ts`, the wisps from `firePatches.ts`, drawn by `FlameFx` as `ParticleSprites` with
+   `tex.smoke`) are no longer drawn. The places they rise from (the older flame along the stream, a
+   splash of fire on a wall or floor, a burning fighter) instead feed dark soot into small plume grids
+   of the same system: no gameplay circle, a source that lives while the fire burns, soot that rises
+   with the heat, spreads and fades out within ~3 s after the fire stops. Plumes near each other share
+   one grid; their number is capped (builder's call) and they count against the same budget. A stream
+   that passes through a smoke cloud still heats and blackens that cloud (goal 4).
 7. **Quality tiers**, matching the flame (`FlameFx` quality per view): `high` on the game screen,
    `medium` on touch devices (coarser grid), `low` in tournament match tiles and the menu preview
    (coarsest grid or no reactions). Clouds far outside the camera do not step.
@@ -135,8 +141,8 @@ pressure solves of 18 iterations, closures and `Math.hypot` in the inner loops),
 - **This branch writes** the 0.5.0 "What's new" group (en + ru) with before/after pictures at
   560 × 480 (`public/assets/patch/smoke-{before,after}.jpg`) and the CHANGELOG 0.5.0 section, and
   is merged into `release/0.5.0` locally after the owner's OK, like the test range.
-- **Soot plumes** (goal 6), if the owner keeps them, are the last phase of the plan and can be cut
-  without touching the rest.
+- **Soot plumes** (goal 6) are the last phase of the plan, so the grenade smoke can ship even if the
+  plumes need more tuning.
 
 ## Left to the builder
 
@@ -146,10 +152,3 @@ pressure solves of 18 iterations, closures and `Math.hypot` in the inner loops),
 - Texture format and upload (the spike uploads RGBA8 every frame).
 - Whether clouds that overlap are drawn one over another (spike) or summed in one pass, as long as
   they look like one cloud.
-
-## Open questions for the owner
-
-1. **Soot outside smoke clouds** (goal 6): the 0.5.0 flamethrower already leaves faint brown smoke
-   from its tail. Proposal: replace it with small dark soot plumes from the same smoke system
-   (where the stream hits and from burning fighters). Alternative: keep the current flame smoke and
-   only blacken smoke clouds the flame passes through (as in the spike).
