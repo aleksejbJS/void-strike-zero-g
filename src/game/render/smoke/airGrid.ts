@@ -22,10 +22,14 @@ export type Stir = {
     carve?: number;                       // share of the density removed
 };
 
-/** A stir with a non-finite number or a negative reach or rate would write NaN into the air: skip it. */
+// An optional amount (heat, soot, carve) may be left out, but if it is there it must be a finite number >= 0
+const isAmount = (a: number | undefined): boolean => a === undefined || (Number.isFinite(a) && a >= 0);
+
+/** A stir with a non-finite number or a negative reach, rate or amount would write NaN into the air: skip it. */
 const isUsable = (st: Stir): boolean =>
     Number.isFinite(st.x) && Number.isFinite(st.y) && Number.isFinite(st.vx) && Number.isFinite(st.vy)
-    && Number.isFinite(st.r) && st.r > 0 && Number.isFinite(st.rate) && st.rate >= 0;
+    && Number.isFinite(st.r) && st.r > 0 && Number.isFinite(st.rate) && st.rate >= 0
+    && isAmount(st.heat) && isAmount(st.soot) && isAmount(st.carve);
 
 export class AirGrid {
     readonly cell: number;

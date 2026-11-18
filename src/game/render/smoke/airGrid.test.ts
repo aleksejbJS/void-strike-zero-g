@@ -153,14 +153,17 @@ describe('AirGrid', () => {
         for (const f of [grid.d, grid.t, grid.s, grid.u, grid.v]) expect(isFinite32(f)).toBe(true);
     });
 
-    it('a stir with a non-finite or negative number is ignored', () => {
+    it('a stir with a non-finite or negative number is ignored (heat, soot and carve may be left out)', () => {
         const grid = makeGrid();
         const base = { x: 160, y: 160, r: 60, vx: 300, vy: 100, rate: 60, heat: 5, soot: 5, carve: 1 };
-        const bad = [{ x: NaN }, { y: Infinity }, { r: Infinity }, { r: -60 }, { vx: NaN }, { vy: -Infinity }, { rate: NaN }, { rate: Infinity }, { rate: -5 }];
+        const bad = [{ x: NaN }, { y: Infinity }, { r: Infinity }, { r: -60 }, { vx: NaN }, { vy: -Infinity }, { rate: NaN }, { rate: Infinity }, { rate: -5 },
+            { heat: NaN }, { heat: -1 }, { soot: Infinity }, { soot: -1 }, { carve: NaN }, { carve: Infinity }, { carve: -0.5 }];
         grid.d.fill(1);
         for (const patch of bad) grid.stir({ ...base, ...patch }, DT);
         for (const f of [grid.u, grid.v, grid.t, grid.s]) expect(f.every(x => x === 0)).toBe(true);
         expect(grid.mass()).toBe(grid.d.length);
+        grid.stir({ x: 160, y: 160, r: 60, vx: 300, vy: 0, rate: 60 }, DT);        // no heat, soot or carve: a normal stir
+        expect(grid.u[16 + 16 * grid.n]).toBeGreaterThan(0);
     });
 
     it('step ignores the velocity stored inside solid cells', () => {
