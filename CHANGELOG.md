@@ -1,16 +1,8 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.5.1 (unreleased)
-
-### 🎯 Test range (internal)
-- Spec: `docs/plans/2026-11-18-test-range-spec.md`. A hidden offline mode for checking weapons and damage: open the game with `#range` in the address (it is in no menu, never online, desktop only, English only). One closed room with a cover row (wood, metal, glass, barrel) and five dummies, one per body base, on a rising staircase; the camera stays fixed on the room, low enough that the floor clears the weapon bar at 1512×700, and the health/armour/fuel panel is hidden (it always reads 100 / 0 / 100% there)
-- The player cannot be hurt, has all nine weapons (1–9) with endless ammo and fuel. Keys: C dummy stance (stand → crouch → prone), K dummy armour (0 ↔ 100), H hit-zone outlines, R reset (cover, dummies, fire, decals), Esc back to the menu. Killed dummies stand up again after 3 s
-- Over each target: a health bar (plus armour on dummies) and the damage of the last 3 s, burning and bleeding included; cover hits show damage numbers too (range only)
-- Dummy kills show in the kill feed and the scoreboard as usual. Nothing counts: no XP, achievements, lifetime stats, leaderboards, cloud saves, result screen or ads. Code: `src/game/range/`, `src/game/render/range/`, `src/components/range/`; GameCanvas only calls `RangeLoop` (`rangeLoop.ts`), a `RangeOverlay` and the `RangeLegend`
-
 ## Version 0.5.0 (unreleased)
 
-One big release (owner's decision, 2026-11-12) instead of separate 0.4.x versions: the atompunk redesign, the 3D robot kit, two physics/combat fixes and the volumetric flame.
+One big release (owner's decision, 2026-11-12) instead of separate 0.4.x versions: the atompunk redesign, the 3D robot kit, two physics/combat fixes, the volumetric flame and an internal test range.
 
 ### 🛠️ Atompunk look
 - Specs: `docs/plans/2026-11-07-menu-style-rollout-spec.md`, `...-menu-material-fidelity-spec.md` and the rollout plan. The main menu, its header (logo, Top / Profile / What's new / language plates) and every menu screen share one atompunk style: rust texture, riveted metal rims, cream type and yellow painted plates for the picked or main action (`public/assets/menu/*`, new fonts in `public/assets/fonts`)
@@ -42,6 +34,12 @@ One big release (owner's decision, 2026-11-12) instead of separate 0.4.x version
 - Burning fighters carry a moving fire of tongue flames sized to the body (`FighterFire` now gives orders to `FighterAnimator.flames`, drawn by the view's `FlameFx` in `syncVisuals`). `flameJet.ts` and the body-fire particles (`addFlame`) are gone; the lit fuel tank's jet and fireball keep their particles
 - Sound (`src/game/systems/flameRoar.ts`): one looping brown-noise rumble and hiss, raised by every `flame/spray` tick and dropping 150 ms after the last, a whoomp when a stream starts, crackle on ticks and from fire burning in place (`playFlameCrackle`, game screen). The tank's ignite sound is unchanged
 - Measured on the owner's MacBook (Chrome, 120 Hz): four fighters spraying at once keep 120 fps (frame avg 8.35 ms, p99 9.4 ms). Tests: `flameSim.test.ts`, `flameSurfaces.test.ts`, updated `fighterFire.test.ts` and `flameAudio.test.ts`
+
+### 🎯 Test range (internal)
+- Spec: `docs/plans/2026-11-18-test-range-spec.md`. A hidden offline mode for checking weapons and damage: open the game with `#range` in the address (it is in no menu, never online, desktop only, English only). One closed room with a cover row (wood, metal, glass, barrel) and five dummies, one per body base, on a rising staircase; the camera stays fixed on the room, low enough that the floor clears the weapon bar at 1512×700, and the health/armour/fuel panel is hidden (it always reads 100 / 0 / 100% there)
+- The player cannot be hurt, has all nine weapons (1–9) with endless ammo and fuel. Keys: C dummy stance (stand → crouch → prone), K dummy armour (0 ↔ 100), H hit-zone outlines, R reset (cover, dummies, fire, decals), Esc back to the menu. Killed dummies stand up again after 3 s
+- Over each target: a health bar (plus armour on dummies) and the damage of the last 3 s, burning and bleeding included; cover hits show damage numbers too (range only)
+- Dummy kills show in the kill feed and the scoreboard as usual. Nothing counts: no XP, achievements, lifetime stats, leaderboards, cloud saves, result screen or ads. Code: `src/game/range/`, `src/game/render/range/`, `src/components/range/`; GameCanvas only calls `RangeLoop` (`rangeLoop.ts`), a `RangeOverlay` and the `RangeLegend`
 
 ## Version 0.4.37 (2026-11-13)
 
