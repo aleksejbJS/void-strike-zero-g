@@ -14,6 +14,7 @@ import { ParticleSprites } from './particleSprites';
 import { PatchSprites } from './patchSprites';
 import { FlameGlows } from './flameGlows';
 import { nearbySurfaces } from './flameSurfaces';
+import { FlameAir, flameAirOf } from '../smoke/flameAir';
 
 export class FlameFx {
     private readonly sim: FlameSim;
@@ -26,12 +27,14 @@ export class FlameFx {
     private readonly patches: PatchSprites;
     private readonly glows: FlameGlows;
     private readonly surfaces: Surface[] = [];
+    private readonly airView: FlameAir;
     private last = Number.NaN;
     private destroyed = false;
 
     /** Flame goes on top of `gameLayer`; soot marks into `decalLayer`, under the fighters. */
     constructor(private readonly gameLayer: Container, private readonly decalLayer: Container, quality: FlameQuality) {
         this.sim = new FlameSim(quality);
+        this.airView = flameAirOf(this.sim.streams, this.sim.pools.smoke);
         const tex = flameTextures();
         const { pools } = this.sim;
         this.smoke = new ParticleSprites(pools.smoke, tex.smoke, false);
@@ -47,6 +50,11 @@ export class FlameFx {
     /** Fires burning in place (splash fire and burning fighters), for the crackle sound. */
     get burning(): number {
         return this.sim.burning;
+    }
+
+    /** A read-only view of the nozzles and the flame's soot, for the smoke simulation (looks only). */
+    air(): FlameAir {
+        return this.airView;
     }
 
     /** Step to `now` (ms) with this frame's `orders` (cleared here) and redraw. */
