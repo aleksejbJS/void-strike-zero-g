@@ -61,6 +61,6 @@ export const DEBRIS_RAMP: readonly number[] = [0x6a625c, 0x4a4541];
 export const JUMP = 400;                 // px: a trail point that moved farther in one frame jumped (no puffs across it)
 
 // Sprite pools
-export const SMOKE_CAP = 1000;
+export const SMOKE_CAP = 1600;             // about three rockets in view (~520 live trail puffs each) plus debris
 export const FIRE_CAP = 260;
 export const FLASH_CAP = 12;
