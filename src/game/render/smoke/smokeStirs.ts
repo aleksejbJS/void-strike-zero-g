@@ -26,19 +26,22 @@ const BULLET: Spec = { r: 10, rate: 40, carve: 15 };
 const BEAM: Spec = { r: 13, rate: 45, heat: 12, carve: 33 };
 const FLAME: Spec = { r: FLAME_R0, rate: 27, heat: 30, soot: 7, carve: 9 };
 
-/** Stirs every STEP px from (ax, ay) towards (bx, by), each driving the air along that line at `speed` for `dt` seconds.
- *  `grow` widens the reach and lifts the air from the first stir (0) to the last (1). */
-function chain(out: Stir[], ax: number, ay: number, bx: number, by: number, speed: number, dt: number, spec: Spec, grow?: (f: number, st: Stir) => void): void {
+/** Stirs every STEP px from (ax, ay) towards (bx, by), the first `start` px along, each driving the air along that line
+ *  at `speed` for `dt` seconds. `grow` widens the reach and lifts the air from the start (0) to the end (1). Returns how
+ *  far past (bx, by) the next stir would be: where a chain that goes on next frame starts (0 after a bad or capped one). */
+function chain(out: Stir[], ax: number, ay: number, bx: number, by: number, speed: number, dt: number, spec: Spec, grow?: (f: number, st: Stir) => void, start = 0): number {
     const len = Math.hypot(bx - ax, by - ay);
-    if (!Number.isFinite(len) || len < 0.01) return;
+    if (!Number.isFinite(len)) return 0;
+    if (len < 0.01) return start;
     const dx = (bx - ax) / len, dy = (by - ay) / len;
-    const count = Math.min(MAX_CHAIN, Math.ceil(len / STEP));
-    for (let k = 0; k < count; k++) {
-        const l = k * STEP;
+    let k = 0, l = start;
+    for (; l < len; l = start + ++k * STEP) {
+        if (k >= MAX_CHAIN) return 0;
         const st: Stir = { ...spec, x: ax + dx * l, y: ay + dy * l, vx: dx * speed, vy: dy * speed, dt };
         if (grow) grow(l / len, st);
         out.push(st);
     }
+    return l - len;
 }
 
 const flareUp = (f: number, st: Stir): void => {
@@ -47,7 +50,9 @@ const flareUp = (f: number, st: Stir): void => {
 };
 
 export class SmokeStirs {
-    private readonly lastPos = new Map<string, { x: number; y: number }>();
+    // Where each projectile was last frame, and how far along its flight the next stir of its chain falls (so the chain
+    // keeps its STEP spacing across frames and a shot leaves the same stirs per length at any frame rate)
+    private readonly lastPos = new Map<string, { x: number; y: number; carry: number }>();
     private readonly alive = new Set<string>();
     private seen = new Set<string>();             // ring and beam ids of the previous collect
     private next = new Set<string>();
@@ -85,9 +90,9 @@ export class SmokeStirs {
         for (const pr of state.projectiles) {
             alive.add(pr.id);
             // Seen for the first time: the physics tick before this frame is a good guess for where it was
-            const prev = lastPos.get(pr.id) ?? { x: pr.pos.x - pr.vel.x, y: pr.pos.y - pr.vel.y };
+            const prev = lastPos.get(pr.id) ?? { x: pr.pos.x - pr.vel.x, y: pr.pos.y - pr.vel.y, carry: 0 };
             const rocket = pr.type === WeaponType.ROCKET_LAUNCHER || pr.type === WeaponType.GRENADE_LAUNCHER;
-            chain(out, prev.x, prev.y, pr.pos.x, pr.pos.y, rocket ? 650 : 480, IMPULSE_DT, rocket ? ROCKET : BULLET);
+            prev.carry = chain(out, prev.x, prev.y, pr.pos.x, pr.pos.y, rocket ? 650 : 480, IMPULSE_DT, rocket ? ROCKET : BULLET, undefined, prev.carry);
             prev.x = pr.pos.x; prev.y = pr.pos.y;
             lastPos.set(pr.id, prev);
         }

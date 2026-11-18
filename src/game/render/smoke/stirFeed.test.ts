@@ -14,7 +14,7 @@ describe('StirFeed', () => {
         expect(a.length).toBe(2);                                          // a rocket's one tick (10 px) as two points
         const b = feed.collect(shot(110), null, 1017);
         expect(b).toBe(a);
-        expect(b.length).toBe(2);
+        expect(b.length).toBe(1);                                          // 7 px apart across frames: 104 only
     });
 
     it('measures the frame time between calls, and assumes 60 Hz for the first', () => {
@@ -40,7 +40,7 @@ describe('StirFeed', () => {
     it('follows a projectile from frame to frame', () => {
         const feed = new StirFeed();
         feed.collect(shot(100), null, 1000);
-        expect(feed.collect(shot(150), null, 1017).length).toBe(8);        // 100 -> 150, one stir every 7 px
+        expect(feed.collect(shot(150), null, 1017).length).toBe(7);        // 100 -> 150, one stir every 7 px from 104 (90, 97 came before)
     });
 
     it('forgets what it followed after an idle frame, so old positions do not make a long chain', () => {

@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { SmokeStirs } from './smokeStirs';
 import type { Stir } from './airGrid';
 import { IMPULSE_DT } from './smokeTuning';
-import { beam, fighter, flameWith, frame, projectile, ring } from './smokeStirs.testkit';
+import { beam, fighter, flameWith, frame, gaps, projectile, ring } from './smokeStirs.testkit';
+import { WeaponType } from '../../../types';
 
 type Group = 'rocket' | 'blast' | 'beam' | 'flame' | 'fighter';
 
@@ -49,5 +50,21 @@ describe('SmokeStirs dt', () => {
             const all = everything(frameDt);
             for (const s of [...all.fighter, ...all.flame]) expect(s.dt).toBeCloseTo(IMPULSE_DT, 12);
         }
+    });
+
+    it('a bullet leaves the same stirs per length at 60 and 120 frames a second, 7 px apart across frames', () => {
+        // A machine-gun bullet flies 18 px per 60 Hz tick: 540 px in 0.5 s, seen at 60 or at 120 frames a second
+        const flight = (frames: number, perFrame: number) => {
+            const stirs = new SmokeStirs(), out: Stir[] = [], all: Stir[] = [];
+            for (let i = 0; i <= frames; i++) {
+                stirs.collect(frame({ projectiles: [projectile('b', 100 + i * perFrame, 300, 18, 0, WeaponType.MACHINE_GUN)] }), null, out);
+                all.push(...out);
+            }
+            return all;
+        };
+        const at60 = flight(30, 18), at120 = flight(60, 9);
+        expect(Math.abs(at60.length - at120.length)).toBeLessThanOrEqual(1);
+        expect(at120.length).toBe(Math.ceil((540 + 18) / 7));               // the first frame chains from one tick back
+        for (const all of [at60, at120]) for (const g of gaps(all)) expect(g).toBeCloseTo(7, 6);
     });
 });

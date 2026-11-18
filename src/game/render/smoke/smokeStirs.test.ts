@@ -10,8 +10,8 @@ describe('SmokeStirs projectiles', () => {
         stirs.collect(frame({ projectiles: [projectile('r1', 100, 200, 10, 0)] }), null, out);
         out.length = 0;
         stirs.collect(frame({ projectiles: [projectile('r1', 140, 200, 10, 0)] }), null, out);
-        expect(out.length).toBe(6);                          // 100 -> 140 in 7 px steps: 0, 7, ..., 35
-        expect(out[0].x).toBeCloseTo(100, 6);
+        expect(out.length).toBe(6);                          // 100 -> 140 in 7 px steps, going on from the first frame's 90, 97: 104, ..., 139
+        expect(out[0].x).toBeCloseTo(104, 6);
         for (const g of gaps(out)) expect(g).toBeCloseTo(7, 6);
         for (const s of out) { expect(s.y).toBeCloseTo(200, 6); expect(s.vx).toBeCloseTo(650, 6); expect(s.vy).toBeCloseTo(0, 6); }
     });
