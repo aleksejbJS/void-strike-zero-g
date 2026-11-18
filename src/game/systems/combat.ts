@@ -76,7 +76,6 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
     // Falling out of the map still kills; everything else waits for the round-start shield
     if (amount < 9999 && hungerShieldLeft(state, Date.now()) > 0) return;
     if (amount < 9999 && spawnShieldLeft(target, Date.now()) > 0) return; // just respawned
-    rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // Self-damage multiplier (rocket-jump)
     const isSelf = attackerId === target.id && !isHazardBlast(source); // a barrel or tank blast hurts its author like anyone else
@@ -91,6 +90,9 @@ export const applyDamage = (state: GameState, target: Entity, attackerId: string
         target.vel.x += (knockback.x / len) * force;
         target.vel.y += (knockback.y / len) * force;
     };
+
+    if (target.invulnerable) { push(); return; } // test range: knockback only, no damage, wound or burning tank
+    rollTankIgnition(target, attackerId, source, Date.now()); // before the wound and the death check: any hit can light the tank
 
     // A railgun beam through armor wounds instead of killing: the target lives (no death, no kill feed line)
     if (shouldWound(target, source)) {

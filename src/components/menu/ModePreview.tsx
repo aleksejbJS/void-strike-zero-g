@@ -20,6 +20,7 @@ const SCENES: Record<GameMode, React.FC<{ t: Translate }>> = {
     [GameMode.INFILTRATION]: InfiltrationScene,
     [GameMode.HUNGER_GAMES]: HungerScene,
     [GameMode.DUEL]: DeathmatchScene, // tournament-only: never previewed in the menu
+    [GameMode.RANGE]: DeathmatchScene, // hidden test range: never previewed in the menu
 };
 
 export const ModePreview: React.FC<{ mode: GameMode; map: MapId; info: ModeInfo; t: Translate }> = ({ mode, map, info, t }) => {

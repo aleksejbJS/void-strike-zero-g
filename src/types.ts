@@ -3,6 +3,7 @@ import type { FighterBuild } from './game/build/buildParts';
 import type { Corpse } from './game/systems/ragdoll/corpseBody';
 import type { Cover } from './game/cover/coverTypes';
 import type { Stats } from './game/stats/statKeys';
+import type { RangeState } from './game/range/rangeState';
 
 export type Vector2 = { x: number; y: number };
 
@@ -16,6 +17,7 @@ export enum GameMode {
   INFILTRATION = 'INFILTRATION',
   HUNGER_GAMES = 'HUNGER_GAMES',
   DUEL = 'DUEL', // tournament-only 1v1 on The Pit; not offered in the mode menu
+  RANGE = 'RANGE', // offline test range opened by #range; never offered in the menu, never online
 }
 
 export enum Team {
@@ -128,6 +130,8 @@ export interface Entity {
   burnBy?: string; // id of the fighter who set the fire: gets the kill if it burns them to death
   tankFuseAt?: number; // flamethrower fuel tank on fire: it blasts at this timestamp (fuelTank.ts)
   tankBy?: string; // id of the fighter who lit the tank: gets the kills of the blast
+  dummy?: boolean; // test range target: a fighter without a bot brain
+  invulnerable?: boolean; // takes knockback only, never damage
 }
 
 export interface Projectile {
@@ -257,6 +261,7 @@ export interface GameState {
   playerStats?: Record<string, Stats>; // per-player counters of this room/game, by player id (stats/playerStats.ts)
   statsSession?: string; // id of this room/game, so counters of one session are added to totals once
   litTanks?: LitTank[]; // host-only: lit tanks of dead carriers (fuelTankBlast.ts); readers use `state.litTanks ?? []`
+  range?: RangeState; // client-only: settings of the offline test range (range/rangeState.ts)
 }
 
 export enum MapId {

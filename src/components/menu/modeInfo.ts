@@ -10,7 +10,7 @@ export interface ModeInfo {
     rules: [string, string, string];
 }
 
-// The modes the menu offers. GameMode.DUEL is deliberately absent: it is tournament-only.
+// The modes the menu offers. GameMode.DUEL (tournament-only) and GameMode.RANGE (hidden test range) are deliberately absent.
 export const MODE_ORDER: GameMode[] = [
     GameMode.DEATHMATCH,
     GameMode.GUN_GAME,
@@ -36,6 +36,9 @@ export const MODE_INFO: Record<Language, Record<GameMode, ModeInfo>> = {
             rules: ['No respawns until the next round', 'The zone shrinks after every death and every 30 seconds', 'Last survivor wins, or the best one after 5 minutes'] },
         [GameMode.DUEL]: { name: 'Duel', meta: 'One on one', desc: 'Tournament match on The Pit. First to 10 kills wins.',
             rules: ['Everyone has the full weapon loadout', 'Only health, armor and ammo lie around', 'Tied after 10 minutes: next kill wins'] },
+        // Internal note: the test range is opened by #range and never offered in the menu, so this text is not shown.
+        [GameMode.RANGE]: { name: 'Range', meta: 'Test range', desc: 'Hidden offline range for testing weapons on a dummy.',
+            rules: ['Offline only, opened by #range', 'Nothing here counts toward progress', 'Never offered in the menu'] },
     },
     ru: {
         [GameMode.DEATHMATCH]: { name: 'Бой насмерть', meta: 'Каждый за себя', desc: 'Каждый сам за себя. Больше всех убийств — первое место.',
@@ -52,5 +55,8 @@ export const MODE_INFO: Record<Language, Record<GameMode, ModeInfo>> = {
             rules: ['Без возрождений до следующего раунда', 'Зона сужается после каждой смерти и каждые 30 секунд', 'Побеждает последний — или лучший выживший через 5 минут'] },
         [GameMode.DUEL]: { name: 'Дуэль', meta: 'Один на один', desc: 'Матч турнира на арене «Яма». До 10 убийств.',
             rules: ['У всех полный набор оружия', 'Лежат только аптечки, броня и патроны', 'Ничья через 10 минут: побеждает следующее убийство'] },
+        // Internal note: the test range is opened by #range and never offered in the menu, so this text is not shown.
+        [GameMode.RANGE]: { name: 'Range', meta: 'Test range', desc: 'Hidden offline range for testing weapons on a dummy.',
+            rules: ['Offline only, opened by #range', 'Nothing here counts toward progress', 'Never offered in the menu'] },
     },
 };

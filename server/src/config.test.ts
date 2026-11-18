@@ -18,4 +18,12 @@ describe('loadConfig SERVER_MODE', () => {
         expect(warn).toHaveBeenCalledOnce();
         warn.mockRestore();
     });
+
+    it('refuses RANGE, the offline test range, and falls back to Deathmatch', () => {
+        vi.stubEnv('SERVER_MODE', 'RANGE');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        expect(loadConfig().mode).toBe(GameMode.DEATHMATCH);
+        expect(warn).toHaveBeenCalledOnce();
+        warn.mockRestore();
+    });
 });

@@ -20,7 +20,9 @@ export interface ServerConfig {
   };
 }
 
-const ONLINE_MODES = Object.values(GameMode).filter(m => m !== GameMode.DUEL); // DUEL is tournament-only
+// DUEL is tournament-only and RANGE is the offline test range: neither is ever hosted
+const HIDDEN_MODES: readonly GameMode[] = [GameMode.DUEL, GameMode.RANGE];
+const ONLINE_MODES = Object.values(GameMode).filter(m => !HIDDEN_MODES.includes(m));
 
 const parseEnum = <T extends string>(value: string | undefined, allowed: readonly T[], fallback: T, name: string): T => {
   if (!value) return fallback;

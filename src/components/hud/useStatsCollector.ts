@@ -2,7 +2,7 @@
 // counters. Polls the game state like useMatchRewards, so it works the same offline and online.
 
 import { MutableRefObject, useEffect, useRef } from 'react';
-import { GameState } from '../../types';
+import { GameMode, GameState } from '../../types';
 import { detectMatchEnd } from '../../game/build/matchOutcome';
 import { CollectorMemory, collectDeltas, playTimeDelta } from '../../game/stats/statsCollector';
 import { addStats } from '../../game/stats/lifetimeStats';
@@ -33,6 +33,7 @@ export function useStatsCollector(state: MutableRefObject<GameState>, localId: M
             const elapsed = now - last;
             last = now;
             const gs = state.current;
+            if (gs.mode === GameMode.RANGE) return; // the test range counts nowhere
             const id = localId.current;
             const session = gs.statsSession === undefined ? undefined : `${id}|${gs.statsSession}`;
             const delta: Stats = collectDeltas(memory.current, session, gs.playerStats?.[id]);

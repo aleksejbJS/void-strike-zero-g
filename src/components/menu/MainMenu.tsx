@@ -53,9 +53,11 @@ const MainMenu: React.FC<Props> = ({ onCustomize, onOpenProfile, onOpenLeaderboa
 
     const maps = mapsFor(mode, t);
     const mapAllowed = maps.some(m => m.id === state.selectedMap);
+    // The range (GameMode.RANGE) is not a menu mode: while the menu still shows it (the render after a range ends, before
+    // the stored mode is put back) the map is kept, or a Tunnels pick would be reset to the default map on every exit.
     useEffect(() => {
-        if (!mapAllowed) actions.selectMap(maps[0].id);
-    }, [mapAllowed, maps, actions]);
+        if (!mapAllowed && mode !== GameMode.RANGE) actions.selectMap(maps[0].id);
+    }, [mapAllowed, mode, maps, actions]);
 
     const info = MODE_INFO[language];
     const currentMap = maps.find(m => m.id === state.selectedMap) ?? maps[0];

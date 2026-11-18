@@ -10,6 +10,7 @@ import { useUIStore } from './store/uiStore';
 import { PEER_PREFIX } from './game/net/serverAddress';
 import { ADS_ADMIN_HASH, rememberAdminFlag } from './components/ads/adminAccess';
 import { exitFullscreen } from './components/fullscreen';
+import { useRangeRoute } from './components/range/useRangeRoute';
 
 const TOURNAMENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -32,6 +33,7 @@ const App: React.FC = () => {
   const [showingProfile, setShowingProfile] = useState(false);
   const [showingLeaderboard, setShowingLeaderboard] = useState(false);
   const hash = useHash();
+  useRangeRoute(hash, state.isPlaying, state.selectedMode, state.selectedMap, actions); // hidden #range: the offline test range
 
   // A match may have gone full screen on a phone; the menu is shown with the browser bar again
   useEffect(() => {

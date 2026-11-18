@@ -22,6 +22,14 @@ describe('GameHud', () => {
         expect(screen.getByText('994')).toBeInTheDocument();
     });
 
+    it('hides the vitals in the test range, where they always read 100 / 0 / 100%, and keeps weapons and ammo', () => {
+        render(<GameHud {...base({ mode: GameMode.RANGE })} />);
+        expect(screen.queryByText('82')).not.toBeInTheDocument();
+        expect(screen.queryByText('50%')).not.toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'Shotgun' })).toBeInTheDocument();
+        expect(screen.getByText('994')).toBeInTheDocument();
+    });
+
     it('marks only the local player on the scoreboard', () => {
         render(<GameHud {...base()} />);
         expect(screen.getByText('Alex (you)')).toBeInTheDocument();

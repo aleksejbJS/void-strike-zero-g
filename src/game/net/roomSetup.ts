@@ -11,6 +11,7 @@ import { duelLoadout, duelSpawnByIndex } from '../systems/duelRules';
 import { ffaBotLooks, withBotTeamColor } from '../build/botLooks';
 import { JoinRequest } from './protocol';
 import { newStatsSession } from '../stats/playerStats';
+import { RANGE_SPAWN } from '../range/rangeMap';
 
 export const isTeamMode = (mode: GameMode) =>
     mode === GameMode.CTF || mode === GameMode.HOLD_THE_FLAG || mode === GameMode.INFILTRATION;
@@ -18,12 +19,14 @@ export const isTeamMode = (mode: GameMode) =>
 /**
  * Spawn point for the room's mode (Hunger Games scatters fighters over its arena).
  * A duel starts on the left spawn; later spawns pick the side away from the opponent (duelSpawnPoint).
+ * The test range always spawns on its one fixed spot.
  */
 export const spawnPointFor = (mode: GameMode) => (team: Team) =>
     mode === GameMode.HUNGER_GAMES ? hungerSpawnPoint()
         : mode === GameMode.DUEL ? duelSpawnByIndex(0)
-            : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
-                : getSpawnPoint(team);
+            : mode === GameMode.RANGE ? { ...RANGE_SPAWN }
+                : mode === GameMode.CTF && team !== Team.NONE ? ctfSpawnPoint(team)
+                    : getSpawnPoint(team);
 
 // CTF: each team respawns on the floor behind its base, ~700 px from its flag. Respawning on
 // the flag itself put defenders on top of a carrier 3 s after they died, so captures almost

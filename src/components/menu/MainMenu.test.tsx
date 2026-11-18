@@ -1,8 +1,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { UIProvider, useUIStore } from '../../store/uiStore';
-import { NetworkMode, MapId } from '../../types';
+import { NetworkMode, MapId, GameMode } from '../../types';
 import { AccountContext } from '../../account/useAccount';
 import { stubAccount } from '../../test/accountStub';
 import MainMenu from './MainMenu';
@@ -48,6 +48,13 @@ describe('MainMenu', () => {
         fireEvent.click(screen.getByRole('button', { name: /Infiltration/ }));
         expect(mapGroup().getAllByRole('button').map(b => b.textContent)).toEqual(['Default']);
         expect(store.state.selectedMap).toBe(MapId.DEFAULT);
+    });
+
+    it('keeps the picked map while it shows the hidden range mode, which allows only the standard map', () => {
+        renderMenu();
+        act(() => { store.actions.selectMode(GameMode.DEATHMATCH); store.actions.selectMap(MapId.TUNNELS); });
+        act(() => store.actions.selectMode(GameMode.RANGE)); // the range ended and the mode is not put back yet
+        expect(store.state.selectedMap).toBe(MapId.TUNNELS);
     });
 
     it('Play vs bots starts an offline game in the chosen mode', () => {
