@@ -3,7 +3,6 @@
 
 import { GameState, Particle, ParticleKind } from '../../types';
 import { GRAVITY } from '../../constants';
-import { debrisTrail } from './explosionFx';
 
 // Kinds that never move: the renderer animates them by life alone
 const FADE_ONLY: ReadonlySet<ParticleKind | undefined> = new Set(['flash', 'fireball', 'ring', 'puff']);
@@ -63,11 +62,10 @@ const stepParticle = (state: GameState, p: Particle) => {
             landOnPlatform(state, p, prevY);
             break;
         case 'debris':
-            // Heavy chunks: fall, slow down a little, leave soot behind
+            // Heavy chunks: fall and slow down a little (the renderer draws their smoke trail)
             p.vel.y += GRAVITY * 0.45;
             p.vel.x *= 0.985;
             p.vel.y *= 0.985;
-            debrisTrail(state, p.pos.x, p.pos.y, p.life, p.size);
             break;
         case 'soot':
             p.vel.x *= 0.97;

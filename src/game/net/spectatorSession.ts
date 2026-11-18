@@ -5,7 +5,7 @@
 
 import { Entity, GameState } from '../../types';
 import { GameEvent } from '../systems/events';
-import { applyEffectEvent, jetpackTrail, projectileTrail } from '../systems/effects';
+import { applyEffectEvent, jetpackTrail } from '../systems/effects';
 import { followCamera } from '../systems/camera';
 import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/particles';
 import { updateCorpses } from '../systems/ragdoll/corpses';
@@ -104,7 +104,6 @@ export class SpectatorSession {
             if (p.jetpackOn && !p.dead) jetpackTrail(state, p);
         }
         this.projectiles.advance(state.projectiles, state.players); // after interpolation: guns are where they're drawn
-        for (const proj of state.projectiles) projectileTrail(state, proj);
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, Date.now());

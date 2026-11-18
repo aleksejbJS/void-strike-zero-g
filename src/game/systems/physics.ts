@@ -20,7 +20,7 @@ import { grantSpawnShield } from './spawnShield';
 import { liftOutOfCover } from '../cover/coverSpawn';
 import { tickCover } from '../cover/coverTick';
 import { tickFuelTanks } from './fuelTankBlast';
-import { emitEffect, emitText, projectileTrail } from './effects';
+import { emitEffect, emitText } from './effects';
 import { emitFlag } from './flagEvents';
 import { updateParticles, updateFloatingTexts, updateDecals } from './particles';
 import { updateCorpses } from './ragdoll/corpses';
@@ -329,7 +329,6 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
     state.projectiles.forEach(proj => {
         const prevPos = { ...proj.pos };
         moveProjectile(proj);
-        projectileTrail(state, proj);
         proj.life = (proj.life ?? PROJECTILE_MAX_LIFE) - 1;
 
         let hit = false;

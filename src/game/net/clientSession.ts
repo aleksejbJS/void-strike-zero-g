@@ -8,7 +8,7 @@ import { FIXED_STEP_MS } from '../systems/fixedStep';
 import { readControls, updateAim, updateGrapple, applyPlayerMovement } from '../systems/playerControl';
 import { applyStance, clampProneAim } from '../systems/stance';
 import { followCamera, pickCameraTarget } from '../systems/camera';
-import { jetpackTrail, projectileTrail } from '../systems/effects';
+import { jetpackTrail } from '../systems/effects';
 import { updateParticles, updateFloatingTexts, updateDecals } from '../systems/particles';
 import { updateCorpses } from '../systems/ragdoll/corpses';
 import { MSG, JoinRequest, JoinAccepted, JoinRejected, Snapshot } from './protocol';
@@ -103,7 +103,6 @@ export class ClientSession {
             if (p.id !== this.localId && p.jetpackOn && !p.dead) jetpackTrail(state, p);
         }
         this.projectiles.advance(state.projectiles, state.players); // after interpolation: guns are where they're drawn
-        for (const proj of state.projectiles) projectileTrail(state, proj);
         updateParticles(state);
         updateFloatingTexts(state);
         updateDecals(state, Date.now());
