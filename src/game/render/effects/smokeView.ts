@@ -5,7 +5,8 @@
 // from then on (and no soot either: the plumes use the same shader, so they stop at once, without a second error); a
 // failing plume path alone logs once and draws no soot, the clouds stay. Owns the frame's stir feed: stirs are gathered once
 // per frame and shared by the clouds and the plumes. On its first frame it warms the smoke up (see smoke/smokeWarmup),
-// so the first smoke round of the match does not stall a frame compiling the shader and the solver.
+// so the first smoke round of the match does not stall a frame compiling the shader and the solver. Explosions and
+// rocket trails (see blast/blastView) are drawn here too, at the bottom of the stack: their smoke is a grid like these.
 // It is the top effect view: above fighters, projectiles, particles and beams.
 
 import { Container, Graphics } from 'pixi.js';
@@ -21,6 +22,7 @@ import { StepBudget } from '../smoke/stepBudget';
 import { FRAME_STEP_CELLS } from '../smoke/smokeTuning';
 import { cloudCircles } from './smokePuffs';
 import { keepOnTop } from './keepOnTop';
+import { BlastView } from '../blast/blastView';
 
 const SILHOUETTE_COLOR = 0xffffff;
 const SILHOUETTE_ALPHA = 0.45;
@@ -35,9 +37,10 @@ export class SmokeView {
     private readonly meter = smokeMeterForView(); // dev builds: the CPU time of each sync, as window.__smokeMs
     private field: CloudField | null = null;    // made when the first cloud appears
     private plumes: SootPlumes | null = null;   // made when the flame first leaves soot
+    private readonly blasts = new BlastView();
     private warmup: SmokeWarmup | null = null;  // drawn on the first frame only
     private warmed = false;
-    private stack: Container[] = [this.gfx];    // what stays on top of the layer, bottom to top: the soot plumes, the clouds, the outline
+    private stack: Container[] = [this.gfx];    // what stays on top of the layer, bottom to top: blasts, soot, clouds, outline
     private failed = false;                     // the shader clouds failed: circles from now on, no soot, no retry
     private sootFailed = false;                 // the plumes failed: no soot from now on, no retry
     private destroyed = false;
@@ -63,6 +66,7 @@ export class SmokeView {
         const stirs = this.stirsOf(smokes, now, frame);
         const circles = !this.drive(smokes, now, frame, stirs);
         this.driveSoot(now, frame, stirs);
+        if (this.blasts.sync(now, frame, stirs, !this.failed, this.budget)) this.stack = this.stackOf();
         this.raise();
         const wanted = silhouette !== null || (circles && smokes.length > 0);
         if (!wanted && !this.drawn) return;
@@ -90,6 +94,7 @@ export class SmokeView {
         this.field = null;
         this.plumes?.destroy();
         this.plumes = null;
+        this.blasts.destroy();
         this.feed.idle();
         this.warmup?.destroy();
         this.warmup = null;
@@ -99,12 +104,12 @@ export class SmokeView {
         else this.context.destroy();                // the stage destroyed the Graphics but left its context
     }
 
-    // This frame's stirs: one collect, shared by the clouds and the plumes, and only while one of them has something
-    // to react (a cloud, a plume alive, or soot in the flame this frame); otherwise the feed forgets what it followed
+    // This frame's stirs: one collect, shared by the clouds, the plumes and the blast grids, and only while one of them
+    // has something to react (a cloud, a plume or a blast grid alive, or soot in the flame this frame); otherwise the feed forgets what it followed
     private stirsOf(smokes: readonly SmokeCloud[], now: number, frame: SmokeFrame | null): readonly Stir[] {
         const clouds = !this.failed && smokes.length > 0;
         const soot = !this.failed && !this.sootFailed && ((this.plumes?.count ?? 0) > 0 || sootWanted(frame));
-        return frame && (clouds || soot) ? this.feed.collect(frame.state, frame.flame, now) : this.feed.idle();
+        return frame && (clouds || soot || this.blasts.hasGrids) ? this.feed.collect(frame.state, frame.flame, now) : this.feed.idle();
     }
 
     // Run the shader clouds. False when they are not there (failed now or before): the caller draws circles instead.
@@ -171,6 +176,7 @@ export class SmokeView {
     // What stays on top, bottom to top
     private stackOf(): Container[] {
         const stack: Container[] = [];
+        if (this.blasts.layer) stack.push(this.blasts.layer);
         if (this.plumes) stack.push(this.plumes.layer);
         if (this.field) stack.push(this.field.layer);
         stack.push(this.gfx);
