@@ -2,6 +2,7 @@
 // (dummy: health + armour, cover: hp) and logs the drops, so the "last 3 s" total also holds damage the game never
 // shows as a number (burning, bleeding after a railgun wound) and needs no change in the shared damage code.
 // Run once per fixed step right AFTER updatePhysics. The memory lives as long as one range session.
+// What the range loop itself changes (revive, armour toggle, reset) is no damage: rebaseReadout runs right after it.
 
 import type { GameState } from '../../types';
 import { COVER_SPECS } from '../cover/coverTypes';
@@ -20,6 +21,10 @@ export interface ReadoutMemory {
     hits: Record<string, { at: number; amount: number }[]>;
 }
 
+/**
+ * An empty memory, one per range session. R is expected to start a new one (the caller replaces the old memory when
+ * it consumes a reset): the totals of the last 3 s then vanish with the old targets' state.
+ */
 export const createReadoutMemory = (): ReadoutMemory => ({ last: {}, hits: {} });
 
 /** Stores `value` as the latest for `id`; a drop since the previous step is logged and returned, anything else is 0. */
@@ -58,6 +63,19 @@ export const trackRangeDamage = (memory: ReadoutMemory, state: GameState, now: n
         }
     }
     dropOldHits(memory, now);
+};
+
+/**
+ * Takes the current value of every dummy and piece of cover as the new baseline, without logging anything, and forgets
+ * ids that are gone. Called after tickRange (before updatePhysics): its revives, armour toggle and reset are not damage.
+ */
+export const rebaseReadout = (memory: ReadoutMemory, state: GameState): void => {
+    const last: Record<string, number> = {};
+    for (const p of state.players) {
+        if (p.dummy) last[p.id] = p.health + p.armor;
+    }
+    for (const cover of state.cover ?? []) last[cover.id] = cover.hp;
+    memory.last = last;
 };
 
 /** What the target `id` lost in the last 3 s, rounded. Reads only: the log is trimmed by trackRangeDamage. */

@@ -1,19 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WeaponType } from '../../types';
-import type { Entity } from '../../types';
-import { applyDamage } from '../systems/combat';
 import { damageCover } from '../cover/coverDamage';
 import { COVER_SPECS } from '../cover/coverTypes';
 import { gameEvents } from '../systems/events';
 import type { GameEvent } from '../systems/events';
-import { LOCAL_ID, physicsTick, rangeFixture } from './rangeTestKit';
-import type { RangeFixture } from './rangeTestKit';
+import { LOCAL_ID, physicsTick } from './rangeTestKit';
+import { T, hitDummy, readoutSession } from './rangeReadoutTestKit';
+import type { ReadoutSession } from './rangeReadoutTestKit';
 import { reviveDummy } from './rangeReset';
-import { createReadoutMemory, recentDamage, trackRangeDamage } from './rangeReadout';
-import type { ReadoutMemory } from './rangeReadout';
-
-const T = 1_000_000;
-const NO_PUSH = { x: 0, y: 0 };
+import { recentDamage, trackRangeDamage } from './rangeReadout';
 
 let events: GameEvent[] = [];
 let unsubscribe: () => void;
@@ -27,74 +22,59 @@ afterEach(() => { unsubscribe(); vi.useRealTimers(); });
 
 const floatTexts = () => events.filter(e => e.type === 'FLOAT_TEXT');
 
-/** A started range with a memory that has already seen it whole (the baseline of a fresh session). */
-const session = (): RangeFixture & { memory: ReadoutMemory; dummy: Entity } => {
-    const fx = rangeFixture();
-    const memory = createReadoutMemory();
-    trackRangeDamage(memory, fx.state, T);
-    return { ...fx, memory, dummy: fx.dummies[0] };
-};
-
-/** A hit on `dummy` at `at`, then the tracker's step. */
-const hit = (s: ReturnType<typeof session>, amount: number, at: number, source = {}) => {
-    vi.setSystemTime(at);
-    applyDamage(s.state, s.dummy, LOCAL_ID, amount, NO_PUSH, 0, source);
-    trackRangeDamage(s.memory, s.state, at);
-};
-
 describe('trackRangeDamage: dummies', () => {
     it('adds up two hits one second apart', () => {
-        const s = session();
-        hit(s, 20, T);
-        hit(s, 30, T + 1000);
+        const s = readoutSession();
+        hitDummy(s, 20, T);
+        hitDummy(s, 30, T + 1000);
         expect(recentDamage(s.memory, s.dummy.id, T + 1000)).toBe(50);
     });
 
     it('forgets a hit after 3 s: at +3.5 s only the second is left, at +4.5 s none', () => {
-        const s = session();
-        hit(s, 20, T);
-        hit(s, 30, T + 1000);
+        const s = readoutSession();
+        hitDummy(s, 20, T);
+        hitDummy(s, 30, T + 1000);
         expect(recentDamage(s.memory, s.dummy.id, T + 3500)).toBe(30);
         expect(recentDamage(s.memory, s.dummy.id, T + 4500)).toBe(0);
     });
 
     it('keeps a hit exactly 3000 ms old and drops it one ms later', () => {
-        const s = session();
-        hit(s, 25, T);
+        const s = readoutSession();
+        hitDummy(s, 25, T);
         expect(recentDamage(s.memory, s.dummy.id, T + 3000)).toBe(25);
         expect(recentDamage(s.memory, s.dummy.id, T + 3001)).toBe(0);
     });
 
     it('drops old entries from the memory on the next step', () => {
-        const s = session();
-        hit(s, 25, T);
+        const s = readoutSession();
+        hitDummy(s, 25, T);
         trackRangeDamage(s.memory, s.state, T + 3500);
         expect(s.memory.hits[s.dummy.id] ?? []).toEqual([]);
     });
 
     it('counts armour: a hit the armour soaks is damage too', () => {
-        const s = session();
+        const s = readoutSession();
         s.dummy.armor = 100;
         trackRangeDamage(s.memory, s.state, T); // the K toggle gave the armour: a rise, not a hit
-        hit(s, 40, T + 100);
+        hitDummy(s, 40, T + 100);
         expect(s.dummy.health).toBeGreaterThan(80); // the armour took most of it
         expect(recentDamage(s.memory, s.dummy.id, T + 100)).toBe(40);
     });
 
     it('counts burning, which the game shows no number for', () => {
-        const s = session();
-        hit(s, 5, T, { burn: true });
-        hit(s, 5, T + 500, { burn: true });
+        const s = readoutSession();
+        hitDummy(s, 5, T, { burn: true });
+        hitDummy(s, 5, T + 500, { burn: true });
         expect(s.dummy.health).toBe(90);
         expect(recentDamage(s.memory, s.dummy.id, T + 500)).toBe(10);
         expect(floatTexts()).toEqual([]); // nothing from the range for a fighter either
     });
 
     it('counts an armoured railgun wound and the bleeding that follows', () => {
-        const s = session();
+        const s = readoutSession();
         s.dummy.armor = 100;
         trackRangeDamage(s.memory, s.state, T);
-        hit(s, 80, T + 10, { weapon: WeaponType.RAILGUN });
+        hitDummy(s, 80, T + 10, { weapon: WeaponType.RAILGUN });
         expect(s.dummy.wound).toBeDefined();
         expect(s.dummy.armor).toBe(0);
         expect(s.dummy.health).toBe(10);
@@ -112,8 +92,8 @@ describe('trackRangeDamage: dummies', () => {
     });
 
     it('logs the whole hit of a kill, then a revive is a rise: no negative damage', () => {
-        const s = session();
-        hit(s, 9999, T + 100);
+        const s = readoutSession();
+        hitDummy(s, 9999, T + 100);
         expect(s.dummy.dead).toBe(true);
         expect(recentDamage(s.memory, s.dummy.id, T + 100)).toBe(9999);
 
@@ -127,14 +107,14 @@ describe('trackRangeDamage: dummies', () => {
     });
 
     it('keeps a separate log for each dummy', () => {
-        const s = session();
-        hit(s, 20, T);
+        const s = readoutSession();
+        hitDummy(s, 20, T);
         expect(recentDamage(s.memory, s.dummies[1].id, T)).toBe(0);
         expect(recentDamage(s.memory, 'nobody', T)).toBe(0);
     });
 
     it('ignores the local fighter', () => {
-        const s = session();
+        const s = readoutSession();
         s.local.health = 10;
         trackRangeDamage(s.memory, s.state, T + 10);
         expect(recentDamage(s.memory, s.local.id, T + 10)).toBe(0);
@@ -142,14 +122,14 @@ describe('trackRangeDamage: dummies', () => {
 });
 
 describe('trackRangeDamage: cover', () => {
-    const hitCover = (s: ReturnType<typeof session>, index: number, amount: number, at: number) => {
+    const hitCover = (s: ReadoutSession, index: number, amount: number, at: number) => {
         vi.setSystemTime(at);
         damageCover(s.state, s.state.cover![index], amount, LOCAL_ID, at);
         trackRangeDamage(s.memory, s.state, at);
     };
 
     it('shows one yellow number with the drop, just above the top of the piece', () => {
-        const s = session();
+        const s = readoutSession();
         const piece = s.state.cover![0];
         events.length = 0;
         hitCover(s, 0, 35, T + 50);
@@ -160,7 +140,7 @@ describe('trackRangeDamage: cover', () => {
     });
 
     it('says nothing when the piece is not hit', () => {
-        const s = session();
+        const s = readoutSession();
         events.length = 0;
         trackRangeDamage(s.memory, s.state, T + 16);
         trackRangeDamage(s.memory, s.state, T + 32);
@@ -168,15 +148,15 @@ describe('trackRangeDamage: cover', () => {
     });
 
     it('shows no number for a hit on a dummy: the game draws its own', () => {
-        const s = session();
+        const s = readoutSession();
         events.length = 0;
-        hit(s, 20, T + 50);
+        hitDummy(s, 20, T + 50);
         expect(events.filter(e => e.type === 'FLOAT_TEXT')).toEqual([]);
         expect(events.filter(e => e.type === 'DAMAGE')).toHaveLength(1); // the game's, from applyDamage
     });
 
     it('logs what a break took (hp clamps at 0) and not the restore that follows', () => {
-        const s = session();
+        const s = readoutSession();
         const piece = s.state.cover![0];
         const full = piece.hp;
         events.length = 0;
