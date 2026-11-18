@@ -13,6 +13,7 @@ import type { Stir } from '../smoke/airGrid';
 import { CloudField, type SmokeFrame } from '../smoke/cloudField';
 import { SootPlumes, sootWanted } from '../smoke/sootPlumes';
 import { StirFeed } from '../smoke/stirFeed';
+import { smokeMeterForView } from '../smoke/smokeMeter';
 import { cloudCircles } from './smokePuffs';
 import { keepOnTop } from './keepOnTop';
 
@@ -25,6 +26,7 @@ export class SmokeView {
     private readonly gfx = new Graphics();      // the outline of your fighter; the grey circles too, if the shader failed
     private readonly context = this.gfx.context; // kept here: a Graphics destroyed with the stage forgets its context
     private readonly feed = new StirFeed();
+    private readonly meter = smokeMeterForView(); // dev builds: the CPU time of each sync, as window.__smokeMs
     private field: CloudField | null = null;    // made when the first cloud appears
     private plumes: SootPlumes | null = null;   // made when the flame first leaves soot
     private stack: Container[] = [this.gfx];    // what stays on top of the layer, bottom to top: the soot plumes, the clouds, the outline
@@ -41,6 +43,13 @@ export class SmokeView {
      *  preview) the clouds do not react to anything and none is skipped; the renderer passes the frame every time. */
     sync(smokes: readonly SmokeCloud[], now: number, silhouette: SmokeSilhouette | null, frame: SmokeFrame | null = null): void {
         if (this.destroyed) return;
+        if (!this.meter.enabled) return this.syncNow(smokes, now, silhouette, frame);
+        const t0 = performance.now();
+        this.syncNow(smokes, now, silhouette, frame);
+        this.meter.record(performance.now() - t0);
+    }
+
+    private syncNow(smokes: readonly SmokeCloud[], now: number, silhouette: SmokeSilhouette | null, frame: SmokeFrame | null): void {
         const stirs = this.stirsOf(smokes, now, frame);
         const circles = !this.drive(smokes, now, frame, stirs);
         this.driveSoot(now, frame, stirs);
