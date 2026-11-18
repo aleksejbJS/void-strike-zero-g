@@ -1,6 +1,7 @@
 // The flamethrower's soot plumes of one game view. Each live smoke particle of the flame engine adds soot, heat and
 // smoke to the plume whose box holds it; where none does, a new plume is made (up to PLUME_CAP for the quality, none on
-// `low`, where the flame keeps its sprites), and with the cap full the soot goes to the nearest plume. A plume is an
+// `low`, where the flame keeps its sprites), and with the cap full the soot goes to the nearest awake plume within one
+// box of it (a point farther from every plume is dropped: it would smear soot far from its fire). A plume is an
 // air grid with no gameplay circle: the heat makes the soot rise, the same stirs as the clouds push it, its smoke fades
 // by itself and it is freed as soon as the fire is out and its smoke is too thin to see. Plumes outside the view and a
 // margin do not step and are hidden. Visual only.
@@ -12,9 +13,10 @@ import type { SootVisitor } from './flameAir';
 import { SootPlume } from './sootPlume';
 import { safeFrameDt } from './smokeStirs';
 import type { StepBudget } from './stepBudget';
-import { GRID_N, IMPULSE_DT, PLUME_CAP, PLUME_FULL_RATE, VIEW_MARGIN } from './smokeTuning';
+import { GRID_N, IMPULSE_DT, PLUME_BOX, PLUME_CAP, PLUME_FULL_RATE, VIEW_MARGIN } from './smokeTuning';
 
 const DROP_AFTER_MS = 1000;                     // out of view this long: freed (it would be stale on its return; soot is short-lived)
+const NEAREST_REACH = PLUME_BOX;                // cap full: soot goes to a plume whose centre is within this of the point, else it is dropped
 const NO_STIRS: readonly Stir[] = [];
 
 /** True when this frame has soot to turn into plumes: the quality allows plumes and the flame has smoke particles alive. */
@@ -109,10 +111,12 @@ export class SootPlumes {
         plume?.add(x, y, this.feedDt * lifeLeft(age, ttl), this.feedNow);
     }
 
-    // With the cap full, the soot of a point no plume holds goes to the plume whose box centre is nearest
+    // With the cap full, the soot of a point no plume holds goes to the awake plume whose box centre is nearest, if that is
+    // within NEAREST_REACH of the point. A sleeping plume is not fed (it does not step, nor show), and a point farther from
+    // every plume is dropped, so soot never lands far from its fire.
     private nearest(x: number, y: number): SootPlume | undefined {
-        let best: SootPlume | undefined, bestD2 = Infinity;
-        for (const plume of this.plumes) {
+        let best: SootPlume | undefined, bestD2 = NEAREST_REACH * NEAREST_REACH;
+        for (const plume of this.awake) {
             const { box } = plume, d2 = (box.x + box.w / 2 - x) ** 2 + (box.y + box.h / 2 - y) ** 2;
             if (d2 < bestD2) { bestD2 = d2; best = plume; }
         }
