@@ -21,7 +21,7 @@ describe('smokeFrameOf', () => {
 
     it('reuses the frame it is given and carries the state and the flame view', () => {
         const first = at(0, 0), second = at(10, 10);
-        const flame = { streams: () => [], soot: () => [], hasSoot: () => false };
+        const flame = { streams: () => [], forEachSoot: () => {}, hasSoot: () => false };
         const frame = smokeFrameOf(null, first, null, { w: 100, h: 100 }, 'high');
         const view = frame.view;
         const again = smokeFrameOf(frame, second, flame, { w: 100, h: 100 }, 'high');
