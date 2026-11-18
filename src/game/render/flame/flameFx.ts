@@ -14,7 +14,8 @@ import { ParticleSprites } from './particleSprites';
 import { PatchSprites } from './patchSprites';
 import { FlameGlows } from './flameGlows';
 import { nearbySurfaces } from './flameSurfaces';
-import { FlameAir, flameAirOf } from '../smoke/flameAir';
+import { flameAirOf } from '../smoke/flameAir';
+import type { FlameAir } from '../smoke/flameAir';
 
 export class FlameFx {
     private readonly sim: FlameSim;

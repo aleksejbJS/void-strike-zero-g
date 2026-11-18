@@ -8,6 +8,7 @@ import type { Stir } from './airGrid';
 import type { FlameAir } from './flameAir';
 
 const STEP = 7;                                   // px between the stirs of a chain
+const MAX_CHAIN = 400;                            // most stirs one chain makes (a hitch or a bad position must not flood the frame)
 const BLAST_R = 70, BLAST_MIN_SCALE = 0.6, RING_SIZE = 12;
 const FLAME_REACH = 260, FLAME_R0 = 12, FLAME_R1 = 38, FLAME_LIFT = 90;
 const FIGHTER_MIN_SPEED = 40;                     // px/s
@@ -23,9 +24,11 @@ const FLAME: Spec = { r: FLAME_R0, rate: 27, heat: 30, soot: 7, carve: 9 };
  *  `grow` widens the reach and lifts the air from the first stir (0) to the last (1). */
 function chain(out: Stir[], ax: number, ay: number, bx: number, by: number, speed: number, spec: Spec, grow?: (f: number, st: Stir) => void): void {
     const len = Math.hypot(bx - ax, by - ay);
-    if (len < 0.01) return;
+    if (!Number.isFinite(len) || len < 0.01) return;
     const dx = (bx - ax) / len, dy = (by - ay) / len;
-    for (let l = 0; l < len; l += STEP) {
+    const count = Math.min(MAX_CHAIN, Math.ceil(len / STEP));
+    for (let k = 0; k < count; k++) {
+        const l = k * STEP;
         const st: Stir = { ...spec, x: ax + dx * l, y: ay + dy * l, vx: dx * speed, vy: dy * speed };
         if (grow) grow(l / len, st);
         out.push(st);
@@ -47,6 +50,14 @@ export class SmokeStirs {
     get trackedProjectiles(): number { return this.lastPos.size; }
     /** How many ring and beam ids are remembered (for tests). */
     get trackedIds(): number { return this.seen.size; }
+
+    /** Forget every projectile, ring and beam: for when nobody has been collecting, so old positions do not make long chains. */
+    reset(): void {
+        this.lastPos.clear();
+        this.alive.clear();
+        this.seen.clear();
+        this.next.clear();
+    }
 
     /** Clear `out` and fill it with this frame's stirs. `flame` is the flame engine's read-only view, if any. */
     collect(state: GameState, flame: FlameAir | null, out: Stir[]): void {
