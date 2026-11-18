@@ -153,6 +153,42 @@ describe('AirGrid', () => {
         for (const f of [grid.d, grid.t, grid.s, grid.u, grid.v]) expect(isFinite32(f)).toBe(true);
     });
 
+    it('a stir with a non-finite or negative number is ignored', () => {
+        const grid = makeGrid();
+        const base = { x: 160, y: 160, r: 60, vx: 300, vy: 100, rate: 60, heat: 5, soot: 5, carve: 1 };
+        const bad = [{ x: NaN }, { y: Infinity }, { r: Infinity }, { r: -60 }, { vx: NaN }, { vy: -Infinity }, { rate: NaN }, { rate: Infinity }, { rate: -5 }];
+        grid.d.fill(1);
+        for (const patch of bad) grid.stir({ ...base, ...patch }, DT);
+        for (const f of [grid.u, grid.v, grid.t, grid.s]) expect(f.every(x => x === 0)).toBe(true);
+        expect(grid.mass()).toBe(grid.d.length);
+    });
+
+    it('step ignores the velocity stored inside solid cells', () => {
+        const grid = makeGrid();
+        grid.markSolids([{ x: 100, y: 100, w: 60, h: 60 }]);
+        const k = grid.solid.indexOf(1);
+        grid.u[k] = 800; grid.v[k] = -800;     // an outside write: no air may come out of a wall
+        grid.step(DT);
+        expect(grid.u[k]).toBe(0); expect(grid.v[k]).toBe(0);
+        expect(Math.max(...grid.u.map(Math.abs), ...grid.v.map(Math.abs))).toBeLessThan(1e-3);
+    });
+
+    it('pressure: a push onto a solid floor keeps the smoke, the same push toward the open edge loses it', () => {
+        const run = (floor: boolean) => {
+            const grid = makeGrid();
+            if (floor) grid.markSolids([{ x: 0, y: 280, w: 320, h: 40 }]);
+            for (let j = 20; j <= 22; j++) for (let i = 10; i <= 21; i++) grid.d[i + j * grid.n] = 1;
+            const before = grid.mass();
+            for (let n = 0; n < 60; n++) {
+                if (n < 10) grid.stir({ x: 160, y: 205, r: 200, vx: 0, vy: 300, rate: 60 }, DT);
+                grid.step(DT);
+            }
+            return grid.mass() / before;
+        };
+        expect(run(true)).toBeGreaterThan(0.55);     // the air turns sideways along the floor
+        expect(run(false)).toBeLessThan(0.3);        // the air leaves through the open box edge
+    });
+
     it('mass() sums the density', () => {
         const grid = makeGrid();
         fillCentreBlock(grid, grid.d, 2);

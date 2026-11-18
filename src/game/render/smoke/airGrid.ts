@@ -22,6 +22,11 @@ export type Stir = {
     carve?: number;                       // share of the density removed
 };
 
+/** A stir with a non-finite number or a negative reach or rate would write NaN into the air: skip it. */
+const isUsable = (st: Stir): boolean =>
+    Number.isFinite(st.x) && Number.isFinite(st.y) && Number.isFinite(st.vx) && Number.isFinite(st.vy)
+    && Number.isFinite(st.r) && st.r > 0 && Number.isFinite(st.rate) && st.rate >= 0;
+
 export class AirGrid {
     readonly cell: number;
     readonly d: Float32Array;
@@ -65,7 +70,7 @@ export class AirGrid {
 
     /** Push the air, heat it, add soot or carve density around (st.x, st.y) for `dt` seconds. */
     stir(st: Stir, dt: number): void {
-        if (!(st.r > 0) || !(dt > 0)) return;
+        if (!(dt > 0) || !isUsable(st)) return;
         const { n, cell, x0, y0, u, v, d, t, s, solid } = this;
         const blend = 1 - Math.exp(-st.rate * dt);
         const heat = (st.heat ?? 0) * dt, soot = (st.soot ?? 0) * dt, carve = (st.carve ?? 0) * dt;
@@ -100,6 +105,7 @@ export class AirGrid {
     step(dt: number): void {
         if (!(dt > 0)) return;
         const { u, v, d, t, s, scratch, solver } = this;
+        this.emptySolids(u); this.emptySolids(v);        // the solver reads the cells next to a wall: no air may come out of one
         this.applyForces(dt);
         solver.confine(dt);
         solver.project();
