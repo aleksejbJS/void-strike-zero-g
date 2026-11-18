@@ -25,11 +25,16 @@ const DRIFT_PX = 5;                       // how far a puff wanders from its spo
 const DRIFT_RAD_PER_MS = (2 * Math.PI) / 4000; // one slow wander every ~4 s
 const BREATHE = 0.04;                     // puff radius swells and shrinks by this share
 
+const scaleAt = (cloud: SmokeCloud, now: number): number => (cloud.radius > 0 ? smokeRadiusAt(cloud, now) / cloud.radius : 0);
+
 /** Live size share (1 → 0 over the fade) and opacity of a cloud. */
 export const cloudFade = (cloud: SmokeCloud, now: number): { scale: number; alpha: number } => {
-    const scale = cloud.radius > 0 ? smokeRadiusAt(cloud, now) / cloud.radius : 0;
+    const scale = scaleAt(cloud, now);
     return { scale, alpha: Math.sqrt(scale) }; // thins slower than it shrinks, so it does not just blink out
 };
+
+/** The opacity of cloudFade alone: no object, for code that runs every frame. */
+export const cloudAlpha = (cloud: SmokeCloud, now: number): number => Math.sqrt(scaleAt(cloud, now));
 
 /** Circles to draw for `cloud` at `now`, in world coordinates; empty once it has faded away. */
 export const cloudCircles = (cloud: SmokeCloud, now: number): SmokeCircle[] => {

@@ -4,7 +4,7 @@
 
 import type { SmokeCloud } from '../../../types';
 import { SMOKE_RADIUS } from '../../systems/smoke';
-import { cloudFade } from '../effects/smokePuffs';
+import { cloudAlpha } from '../effects/smokePuffs';
 import { AirGrid, type Box, type Stir } from './airGrid';
 import { CloudShaper } from './cloudShape';
 import { GridDriver } from './gridDriver';
@@ -67,7 +67,7 @@ export class CloudEntry {
 
     /** Upload the grid and show the quad, unless the cloud has faded away. */
     show(now: number): void {
-        const { alpha } = cloudFade(this.cloud, now);
+        const alpha = cloudAlpha(this.cloud, now);
         this.quad.mesh.visible = alpha > 0;
         if (alpha > 0) this.quad.upload((now % 1e6) / 1000, Math.min(1, alpha * FADE_GAIN));
     }
