@@ -1,6 +1,6 @@
 // The test range (#range): a small closed room with a cover row on the floor and five dummies on rising ledges.
-// Interior is x 0..1500 and y 0..800 with the floor top at y 800, so the 1600 x 900 view centred on
-// RANGE_CAMERA shows all of it. Platforms are top-left rectangles; spawns, cover and dummy spots use
+// Interior is x 0..1500 and y 0..800 with the floor top at y 800; the 1600 x 900 view centred on RANGE_CAMERA shows
+// every wall-to-wall target, the floor above the HUD's weapon bar. Platforms are top-left rectangles; spawns, cover and dummy spots use
 // pos = (centre x, bottom y).
 
 import type { Platform, Vector2 } from '../../types';
@@ -26,8 +26,13 @@ const RANGE_WALLS: PlatformDef[] = [
 /** Where the player stands when the range opens (feet position). */
 export const RANGE_SPAWN: Vector2 = { x: 150, y: FLOOR_Y };
 
-/** The room centre: the range camera stays here (the view is 1600 x 900, the room 1500 x 800). */
-export const RANGE_CAMERA: Vector2 = { x: WIDTH / 2, y: FLOOR_Y / 2 };
+/**
+ * Where the fixed range camera looks: the room's horizontal centre, and lower than its middle (400) so the floor is drawn
+ * above the weapon bar at the bottom of the page. At 1512 x 700 (zoom 0.78) the floor lands at screen y 576, 20 px above
+ * the bar's top (596), and the Cat dummy's readout top at about 31; only the empty strip under the ceiling is cut off.
+ * rangeMap.test.ts checks both edges at 1512 x 700 and 1920 x 1080.
+ */
+export const RANGE_CAMERA: Vector2 = { x: WIDTH / 2, y: 510 };
 
 /** One piece of each cover kind in a row on the floor, nearer than the dummies; y is the floor top. */
 export const RANGE_COVER: CoverEntry[] = [

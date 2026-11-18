@@ -7,7 +7,9 @@ import { COVER_SPECS, CoverKind } from '../cover/coverTypes';
 import { getCoverLayout, layoutKeyFor } from '../cover/coverLayout';
 import { spawnPointFor } from '../net/roomSetup';
 import { hitRect } from '../systems/hitZone';
-import { VIEW_HEIGHT, VIEW_WIDTH } from '../render/viewport';
+import { viewportOf } from '../render/viewport';
+import type { Viewport } from '../render/viewport';
+import { dummyReadoutTop } from '../render/range/readoutLayout';
 import { checkRectOverlap, segmentIntersectsRect } from '../utils/math';
 import { DUMMY_SPOTS, RANGE_CAMERA, RANGE_COVER, RANGE_PLATFORMS, RANGE_SPAWN } from './rangeMap';
 
@@ -50,18 +52,43 @@ describe('range room', () => {
         expect([leftWall.w, rightWall.w, ceiling.h]).toEqual([200, 200, 200]); // as thick as PIT_WALLS
     });
 
-    it('fits the view: with the camera at RANGE_CAMERA the whole interior is on screen', () => {
-        expect(INTERIOR.w).toBeLessThanOrEqual(1500);
-        expect(INTERIOR.h).toBeLessThanOrEqual(800);
-        const view: Rect = { x: RANGE_CAMERA.x - VIEW_WIDTH / 2, y: RANGE_CAMERA.y - VIEW_HEIGHT / 2, w: VIEW_WIDTH, h: VIEW_HEIGHT };
-        expect(inside(INTERIOR, view)).toBe(true);
-    });
-
-    it('puts the camera at the room centre and the spawn on the floor inside the room', () => {
-        expect(RANGE_CAMERA).toEqual({ x: INTERIOR.x + INTERIOR.w / 2, y: INTERIOR.y + INTERIOR.h / 2 });
+    it('puts the camera at the room\'s horizontal centre and the spawn on the floor inside the room', () => {
+        expect(RANGE_CAMERA.x).toBe(INTERIOR.x + INTERIOR.w / 2);
         expect(RANGE_SPAWN.y).toBe(floor.y);
         expect(inside(dummyRect(RANGE_SPAWN), INTERIOR)).toBe(true);
     });
+
+    // The fixed camera vs the desktop HUD's bottom band: the weapon bar is `bottom-8` (32 px) with `h-[72px]` slots
+    // (WeaponBar.tsx), its top 104 CSS px above the page bottom. The vitals panel is hidden in the range.
+    const HUD_BOTTOM_BAND_PX = 32 + 72;
+    const screenX = (x: number, view: Viewport) => (x - RANGE_CAMERA.x + view.w / 2) * view.zoom;
+    const screenY = (y: number, view: Viewport) => (y - RANGE_CAMERA.y + view.h / 2) * view.zoom;
+
+    for (const [w, h] of [[1512, 700], [1920, 1080]]) {
+        describe(`fits a ${w}x${h} page with the camera at RANGE_CAMERA`, () => {
+            const view = viewportOf(w, h);
+            const bandTop = h - HUD_BOTTOM_BAND_PX;
+
+            it('shows the room from wall to wall', () => {
+                expect([screenX(INTERIOR.x, view) >= 0, screenX(INTERIOR.x + INTERIOR.w, view) <= w]).toEqual([true, true]);
+            });
+
+            it('keeps the floor, every cover piece and the spawn fighter above the weapon bar', () => {
+                expect(screenY(floor.y, view)).toBeLessThan(bandTop);
+                for (const entry of RANGE_COVER) {
+                    const r = coverRect(entry);
+                    expect(screenY(r.y + r.h, view), `${entry[0]} is under the HUD`).toBeLessThan(bandTop);
+                }
+                expect(screenY(RANGE_SPAWN.y, view)).toBeLessThan(bandTop);
+            });
+
+            it('keeps every standing dummy\'s readout below the top of the page', () => {
+                for (const spot of DUMMY_SPOTS) {
+                    expect(screenY(dummyReadoutTop(standingHitRect(spot).y), view), `${spot.skinId} readout is cut off`).toBeGreaterThan(0);
+                }
+            });
+        });
+    }
 });
 
 describe('range cover row', () => {

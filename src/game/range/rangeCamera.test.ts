@@ -13,9 +13,10 @@ describe('pinRangeCamera', () => {
     });
 
     it('never shares RANGE_CAMERA: moving the camera later leaves the constant alone', () => {
+        const before = { ...RANGE_CAMERA };
         const state = createMockState(GameMode.RANGE);
         pinRangeCamera(state);
         state.camera.x += 500;
-        expect(RANGE_CAMERA).toEqual({ x: 750, y: 400 });
+        expect(RANGE_CAMERA).toEqual(before);
     });
 });

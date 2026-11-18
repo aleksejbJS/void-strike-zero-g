@@ -8,6 +8,7 @@ import { recentDamage } from '../../range/rangeReadout';
 import type { ReadoutMemory } from '../../range/rangeReadout';
 import { hitRect } from '../../systems/hitZone';
 import type { GameState } from '../../../types';
+import { BAR_GAP, BAR_H, BAR_W, COVER_LIFT, TOTAL_FONT_SIZE, dummyReadoutRows } from './readoutLayout';
 
 const HEALTH_COLOR = 0x4ade80;
 const ARMOUR_COLOR = 0x38bdf8;
@@ -16,11 +17,6 @@ const BAR_TRACK_ALPHA = 0.7;
 const OUTLINE_COLOR = 0xf1f5f9;
 const TOTAL_TEXT_COLOR = '#facc15'; // the same yellow as the cover damage numbers
 
-const BAR_W = 40;
-const BAR_H = 4;
-const BAR_GAP = 2;        // between the armour bar and the health bar, and between the top bar and the total
-const DUMMY_LIFT = 12;    // the health bar ends this far above the top of the hit zone
-const COVER_LIFT = 4;     // the cover bar ends this far above the top of the piece
 const OUTLINE_WIDTH = 1;
 
 const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
@@ -35,7 +31,7 @@ const drawBar = (g: Graphics, x: number, y: number, fraction: number, color: num
 const createTotalText = (id: string): Text => {
     const text = new Text({
         text: '',
-        style: { fontFamily: 'Arial', fontSize: 14, fontWeight: 'bold', fill: TOTAL_TEXT_COLOR, stroke: { color: 0x000000, width: 3 } },
+        style: { fontFamily: 'Arial', fontSize: TOTAL_FONT_SIZE, fontWeight: 'bold', fill: TOTAL_TEXT_COLOR, stroke: { color: 0x000000, width: 3 } },
     });
     text.label = id;
     text.anchor.set(0.5, 1); // centred over its target, resting on the given line
@@ -61,12 +57,11 @@ export class RangeOverlay {
             if (!d.dummy || d.dead) continue;
             const r = hitRect(d);
             const x = d.pos.x - BAR_W / 2;
-            const healthY = r.y - DUMMY_LIFT - BAR_H;
-            const armourY = healthY - BAR_GAP - BAR_H;
+            const { healthY, armourY, totalBottom } = dummyReadoutRows(r.y);
             drawBar(g, x, healthY, d.health / d.maxHealth, HEALTH_COLOR);
             if (d.armor > 0) drawBar(g, x, armourY, d.armor / d.maxArmor, ARMOUR_COLOR);
             // The total rests above the armour bar's place whether or not it is drawn, so it never jumps
-            this.showTotal(d.id, d.pos.x, armourY - BAR_GAP, recentDamage(memory, d.id, now), seen);
+            this.showTotal(d.id, d.pos.x, totalBottom, recentDamage(memory, d.id, now), seen);
             if (outlines) g.rect(r.x, r.y, r.w, r.h).stroke({ width: OUTLINE_WIDTH, color: OUTLINE_COLOR });
         }
         for (const c of state.cover ?? []) {
