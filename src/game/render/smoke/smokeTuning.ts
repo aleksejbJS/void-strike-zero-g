@@ -1,5 +1,8 @@
 // Tuning numbers of the smoke air simulation. Starting values are the ones from the owner-approved
 // spike; the later tasks retune them on the test range (#range, key 7).
+// Budget check 2026-11-18 (#range at 1512 x 700, 120 Hz, four clouds on `high`, 5 s of flame and machine gun
+// through them; window.__smokeMs in a dev build): smoke 0.6-0.86 ms a frame on average, at most 1.5-2.5 ms,
+// page frame median 8.3 ms. No cut was needed: the grid sizes, pressure sweeps and 60 Hz stepping stay.
 
 export type SmokeQuality = 'high' | 'medium' | 'low';
 
