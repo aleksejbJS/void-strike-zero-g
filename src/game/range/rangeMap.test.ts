@@ -1,49 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { GameMode, MapId, Platform, Team, Vector2 } from '../../types';
+import { GameMode, MapId, Team } from '../../types';
 import { getInitialPickups, getPlatforms } from '../data/level';
 import { BODY_PRESETS } from '../build/characterBases';
-import { presetBuild } from '../build/buildPresets';
 import { COVER_SPECS, CoverKind } from '../cover/coverTypes';
 import { getCoverLayout, layoutKeyFor } from '../cover/coverLayout';
 import { spawnPointFor } from '../net/roomSetup';
-import { hitRect } from '../systems/hitZone';
 import { viewportOf } from '../render/viewport';
 import type { Viewport } from '../render/viewport';
 import { dummyReadoutTop } from '../render/range/readoutLayout';
 import { checkRectOverlap, segmentIntersectsRect } from '../utils/math';
 import { DUMMY_SPOTS, RANGE_CAMERA, RANGE_COVER, RANGE_PLATFORMS, RANGE_SPAWN } from './rangeMap';
+import {
+    LEDGES, SHOOTER, WALLS, ceiling, coverRect, dummyHitRect, dummyRect, floor, grown, inside, leftWall, rightWall,
+} from './rangeMapTestKit';
+import type { DummySpot, Rect } from './rangeMapTestKit';
 
-type Rect = { x: number; y: number; w: number; h: number };
-type PlatformDef = Omit<Platform, 'id'>;
-
-const FIGHTER = { w: 30, h: 72 };
 const CHEST = 40;            // chest height above the feet, where a shot at a dummy is aimed
 const AIM_SLACK = 15;       // every line must clear what it passes by this much, so a slightly off aim still lands
-const SHOOTER: Vector2 = { x: RANGE_SPAWN.x, y: RANGE_SPAWN.y - 50 }; // the spawn's standing chest
 
-const floor = RANGE_PLATFORMS.find(p => p.y === 800 && p.x <= 0 && p.x + p.w >= 1500) as PlatformDef;
-const ceiling = RANGE_PLATFORMS.find(p => p.y + p.h === 0 && p.x <= 0 && p.x + p.w >= 1500) as PlatformDef;
-const leftWall = RANGE_PLATFORMS.find(p => p.x + p.w === 0 && p.y <= 0 && p.y + p.h >= 800) as PlatformDef;
-const rightWall = RANGE_PLATFORMS.find(p => p.x === 1500 && p.y <= 0 && p.y + p.h >= 800) as PlatformDef;
-const WALLS = [floor, ceiling, leftWall, rightWall];
-const LEDGES = RANGE_PLATFORMS.filter(p => !WALLS.includes(p));
 const INTERIOR: Rect = {
     x: leftWall.x + leftWall.w, y: ceiling.y + ceiling.h,
     w: rightWall.x - (leftWall.x + leftWall.w), h: floor.y - (ceiling.y + ceiling.h),
 };
-
-const grown = (r: Rect, by: number): Rect => ({ x: r.x - by, y: r.y - by, w: r.w + 2 * by, h: r.h + 2 * by });
-const inside = (r: Rect, box: Rect) => r.x >= box.x && r.y >= box.y && r.x + r.w <= box.x + box.w && r.y + r.h <= box.y + box.h;
-const coverRect = ([kind, x, y]: (typeof RANGE_COVER)[number]): Rect => {
-    const { w, h } = COVER_SPECS[kind];
-    return { x: x - w / 2, y: y - h, w, h };
-};
-const dummyRect = (pos: Vector2): Rect => ({ x: pos.x - FIGHTER.w / 2, y: pos.y - FIGHTER.h, w: FIGHTER.w, h: FIGHTER.h });
-// The damage box of a standing dummy of this base (taller than the movement box for the drawn heads, the Cat's most)
-const standingHitRect = (spot: (typeof DUMMY_SPOTS)[number]): Rect => hitRect({
-    pos: spot.pos, width: FIGHTER.w, height: FIGHTER.h, isCrouching: false, isProne: false,
-    skinId: spot.skinId, build: presetBuild(spot.skinId),
-});
+const standingHitRect = (spot: DummySpot): Rect => dummyHitRect(spot, 'stand');
 
 describe('range room', () => {
     it('is a closed box: floor, ceiling and both walls', () => {

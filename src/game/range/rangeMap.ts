@@ -1,7 +1,8 @@
 // The test range (#range): a small closed room with a cover row on the floor and five dummies on rising ledges.
-// Interior is x 0..1500 and y 0..800 with the floor top at y 800; the 1600 x 900 view centred on RANGE_CAMERA shows
-// every wall-to-wall target, the floor above the HUD's weapon bar. Platforms are top-left rectangles; spawns, cover and dummy spots use
-// pos = (centre x, bottom y).
+// Interior is x 0..1500 and y 0..800 with the floor top at y 800. The camera is fixed at RANGE_CAMERA (below) and
+// the room is laid out for it: at 1512 x 700 and 1920 x 1080 the room shows wall to wall and every target (floor,
+// cover, dummies, spawn) stays above the HUD's bottom band, the weapon bar. Platforms are top-left rectangles;
+// spawns, cover and dummy spots use pos = (centre x, bottom y).
 
 import type { Platform, Vector2 } from '../../types';
 import type { CoverEntry } from '../cover/coverLayouts';

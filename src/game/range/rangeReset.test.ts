@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import type { Beam, Decal, FloatingText, GameState, LitTank, Particle, Projectile, SmokeCloud } from '../../types';
 import { COVER_SPECS } from '../cover/coverTypes';
 import { coverRect } from '../cover/coverGeometry';
 import { checkRectOverlap } from '../utils/math';
 import { igniteBurn } from '../systems/burning';
+import { addMark, clearMarks, liveMarks } from '../systems/marks';
 import { DUMMY_SPOTS } from './rangeMap';
 import { resetRange, reviveDummy } from './rangeReset';
 import { rangeFixture } from './rangeTestKit';
@@ -131,6 +132,21 @@ describe('resetRange', () => {
         for (const pile of [state.projectiles, state.beams, state.smokes, state.particles, state.decals, state.corpses, state.floatingTexts, state.litTanks]) {
             expect(pile).toHaveLength(0);
         }
+    });
+
+    describe('scorch marks', () => {
+        afterEach(clearMarks); // the mark list is module-level state: leave it empty for the other tests
+
+        it('wipes the marks shots left on the walls and the floor', () => {
+            const { state } = rangeFixture();
+            addMark(state.platforms, 300, 800, NOW); // a shot into the floor
+            addMark(state.platforms, 0, 400, NOW);   // and one into the left wall
+            expect(liveMarks(NOW)).toHaveLength(2);
+
+            resetRange(state, NOW);
+
+            expect(liveMarks(NOW)).toHaveLength(0);
+        });
     });
 
     it('puts the local fighter out and back to full health, where they stand', () => {

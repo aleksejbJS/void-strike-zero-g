@@ -6,6 +6,7 @@ import type { Entity, GameState } from '../../types';
 import { liftOutOfCover } from '../cover/coverSpawn';
 import { restoreAllCover } from '../cover/coverTick';
 import { extinguish } from '../systems/burning';
+import { clearMarks } from '../systems/marks';
 import { DUMMY_SPOTS } from './rangeMap';
 import type { RangeState } from './rangeState';
 
@@ -30,7 +31,7 @@ export const reviveDummy = (state: GameState, d: Entity, _now: number): void => 
 /**
  * R: every cover piece whole, every dummy back on its spot (dead or alive), the local fighter out and at full
  * health (standing on top of a piece that came back under their feet, otherwise where they were), and no shots,
- * beams, smoke, sparks, decals, corpses, lit tanks or damage numbers left.
+ * beams, smoke, sparks, decals, scorch marks, corpses, lit tanks or damage numbers left.
  */
 export const resetRange = (state: GameState, now: number): void => {
     restoreAllCover(state);
@@ -48,6 +49,7 @@ export const resetRange = (state: GameState, now: number): void => {
     if (state.smokes) state.smokes.length = 0;
     state.particles.length = 0;
     state.decals.length = 0;
+    clearMarks(); // scorch marks live in a module-level list, not in the state
     state.corpses.length = 0;
     if (state.litTanks) state.litTanks.length = 0;
     state.floatingTexts.length = 0;
