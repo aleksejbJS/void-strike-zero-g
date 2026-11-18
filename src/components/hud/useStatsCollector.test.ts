@@ -158,6 +158,29 @@ describe('useStatsCollector', () => {
         expect(exportStats().playMs).toBe(1000);
     });
 
+    it('credits nothing in the test range, neither counters nor play time, and signals no change', () => {
+        const changed = vi.fn();
+        const stop = onProgressChanged(changed);
+        const state = makeState({ mode: GameMode.RANGE });
+        const { unmount } = mount(state);
+        run(1000);
+        state.current.playerStats!.me = { kills: 3, botKills: 2, hookUses: 4 };
+        run(1000);
+        unmount();
+        expect(exportStats()).toEqual({});
+        expect(changed).not.toHaveBeenCalled();
+        stop();
+    });
+
+    it('credits the very same counters and play time in an ordinary mode', () => {
+        const state = makeState({ mode: GameMode.DEATHMATCH });
+        mount(state);
+        run(1000);
+        state.current.playerStats!.me = { kills: 3, botKills: 2, hookUses: 4 };
+        run(1000);
+        expect(exportStats()).toMatchObject({ kills: 3, botKills: 2, hookUses: 4, playMs: 2000 });
+    });
+
     it('starts counting from zero again for a new session (offline game after offline game)', () => {
         const state = makeState();
         mount(state);

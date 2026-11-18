@@ -1,7 +1,7 @@
 // Pays out XP when a match ends. Polls the game state, so it works the same offline and online.
 
 import { MutableRefObject, useEffect, useRef, useState } from 'react';
-import { GameState } from '../../types';
+import { GameMode, GameState } from '../../types';
 import { detectMatchEnd } from '../../game/build/matchOutcome';
 import { addMatchXp, Reward } from '../../game/build/progress';
 import { addStats } from '../../game/stats/lifetimeStats';
@@ -24,6 +24,7 @@ export function useMatchRewards(state: MutableRefObject<GameState>, localId: Mut
 
     useEffect(() => {
         const poll = () => {
+            if (state.current.mode === GameMode.RANGE) return; // the test range pays nothing
             const end = detectMatchEnd(state.current, localId.current);
             if (!end) {
                 if (state.current.players.some(p => p.id === localId.current)) seenPlay.current = true;
