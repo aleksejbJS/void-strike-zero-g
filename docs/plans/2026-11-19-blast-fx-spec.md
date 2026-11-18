@@ -32,7 +32,9 @@ the debris and a blob of seven grey circles. These were older effects, not a reg
 
 ## Limits and fallbacks (builder's calls)
 
-- At most 6 blast grids; grids out of view (+200 px) do not step; grid size 0.85 × the smoke cloud grid of the quality.
+- At most 6 blast grids (one out of view gives its slot to a blast in view); grids out of view (+200 px) do not step;
+  grid size 0.85 × the smoke cloud grid of the quality. Trails and the nozzle glow (one sprite per rocket) are made only
+  in the view plus that margin.
 - `low` quality (tournament tiles, menu preview), no smoke shader, or past the cap: the blast's smoke is a few soft dark
   puffs instead of a grid. The fireball, flash and trails are sprites and work everywhere.
 - A failing grid logs one console error, frees the grids, later blasts use the puffs. Any other failure logs once and

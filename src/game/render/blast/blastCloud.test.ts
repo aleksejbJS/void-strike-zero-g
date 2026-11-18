@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import type { GameState } from '../../../types';
 import { stateOf } from '../smoke/cloudField.testkit';
 import { BlastCloud, blastFade } from './blastCloud';
@@ -25,6 +25,10 @@ const heightOf = (c: BlastCloud) => {
 };
 
 describe('BlastCloud', () => {
+    // Pixi probes a 2D canvas when it builds a shader; jsdom has none
+    beforeAll(() => { vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null); });
+    afterAll(() => { vi.restoreAllMocks(); });
+
     it('shows smoke on its first frame, around the blast point', () => {
         const c = blastRun(0);
         const { n, cell, x0, y0 } = c.grid;

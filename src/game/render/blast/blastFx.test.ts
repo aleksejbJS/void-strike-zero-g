@@ -1,12 +1,8 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import type { Container } from 'pixi.js';
-import { WeaponType, type GameState, type Particle, type Projectile } from '../../../types';
-import { frameOf, stateOf, VIEW } from '../smoke/cloudField.testkit';
-import type { SmokeFrame } from '../smoke/cloudField';
-import type { SmokeQuality } from '../smoke/smokeTuning';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { stateOf } from '../smoke/cloudField.testkit';
+import { debris, frame, layers, ring, rocket } from './blast.testkit';
 import { BlastFx } from './blastFx';
 import { BlastCloud } from './blastCloud';
-import { BlastView } from './blastView';
 import { BLAST_LIFE_S, DEBRIS_UNTIL_LIFE, FIRE_PUFFS, MAX_BLAST_GRIDS, SIMPLE_SMOKE_PUFFS, TRAIL_STEP } from './blastTuning';
 
 // The flame textures are drawn on canvases, which jsdom does not have: stand-ins (or a failure, when asked)
@@ -21,22 +17,9 @@ vi.mock('../flame/flameTextures', async () => {
     };
 });
 
+// Pixi probes a 2D canvas when it builds a shader; jsdom has none
+beforeEach(() => { vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null); });
 afterEach(() => { tex.fail = false; vi.restoreAllMocks(); });
-
-const ring = (id: string, x = 400, y = 400, size = 12): Particle =>
-    ({ id, pos: { x, y }, vel: { x: 0, y: 0 }, life: 1, decay: 0.017, color: '#fff', size, type: 'ring' });
-const debris = (id: string, x: number, life = 1): Particle =>
-    ({ id, pos: { x, y: 300 }, vel: { x: 5, y: 0 }, life, decay: 0.01, color: '#333', size: 3, type: 'debris' });
-const rocket = (x: number): Projectile =>
-    ({ id: 'rk', pos: { x, y: 200 }, vel: { x: 12, y: 0 }, type: WeaponType.ROCKET_LAUNCHER }) as unknown as Projectile;
-
-const frame = (over: Partial<GameState>, quality: SmokeQuality = 'high'): SmokeFrame => frameOf(stateOf(over), VIEW, quality);
-/** Live puffs per layer: trail and simple smoke, fireball, flash. */
-const shown = (c: Container) => c.children.filter(k => k.visible).length;
-const layers = (fx: BlastFx) => {
-    const [smoke, , fire, flash] = fx.layer.children as Container[];
-    return { smoke: shown(smoke), fire: shown(fire), flash: shown(flash) };
-};
 
 describe('BlastFx', () => {
     it('a fresh blast makes a flash, a fireball and one smoke grid, once', () => {
@@ -70,7 +53,47 @@ describe('BlastFx', () => {
         fx.sync(1000, frame({ projectiles: [rocket(100)] }), [], true);
         fx.sync(1016, frame({ projectiles: [rocket(100 + 10 * TRAIL_STEP)] }), [], true);
         expect(layers(fx).smoke).toBe(11);
-        expect(layers(fx).fire).toBeGreaterThanOrEqual(1);
+        expect(layers(fx).nozzle).toBe(1);
+        fx.destroy();
+    });
+
+    it('the nozzle glow is one sprite per rocket at any frame rate, and goes with the rocket', () => {
+        for (const ms of [1000 / 60, 1000 / 144]) {
+            const fx = new BlastFx();
+            for (let i = 0; i < 20; i++) fx.sync(1000 + i * ms, frame({ projectiles: [rocket(100 + i * 10)] }), [], true);
+            expect(layers(fx).nozzle).toBe(1);
+            fx.sync(1000 + 21 * ms, frame({}), [], true);
+            expect(layers(fx).nozzle).toBe(0);
+            fx.destroy();
+        }
+    });
+
+    it('a rocket out of view leaves no trail and no glow', () => {
+        const fx = new BlastFx(), far = (x: number) => ({ ...rocket(x), pos: { x, y: 5000 } });
+        fx.sync(1000, frame({ projectiles: [far(100)] }), [], true);
+        fx.sync(1016, frame({ projectiles: [far(160)] }), [], true);
+        expect(layers(fx)).toMatchObject({ smoke: 0, nozzle: 0 });
+        fx.destroy();
+    });
+
+    it('grids switched off (shader lost, low quality) free the live grids', () => {
+        const fx = new BlastFx();
+        fx.sync(1000, frame({ particles: [ring('a')] }), [], true);
+        expect(fx.grids).toBe(1);
+        fx.sync(1016, frame({ particles: [ring('a')] }), [], false);
+        expect(fx.grids).toBe(0);
+        fx.destroy();
+    });
+
+    it('with every slot taken, a grid out of view gives way to a blast in view', () => {
+        const fx = new BlastFx();
+        const away = Array.from({ length: MAX_BLAST_GRIDS }, (_, i) => ring(`f${i}`, 400 + i * 100, 400));
+        fx.sync(1000, frame({ particles: away }), [], true);
+        const moved = { ...frame({}), view: { x: 3000, y: 0, w: 1600, h: 900 } };
+        fx.sync(1016, moved, [], true);                                 // the first grids are now out of view, asleep
+        fx.sync(1032, { ...moved, state: stateOf({ particles: [ring('near', 3500, 400)] }) }, [], true);
+        expect(fx.grids).toBe(MAX_BLAST_GRIDS);
+        expect(layers(fx).smoke).toBe(0);                               // the new blast got a grid, not the puffs
         fx.destroy();
     });
 
@@ -92,44 +115,5 @@ describe('BlastFx', () => {
         expect(fx.grids).toBe(0);
         fx.destroy();
         fx.destroy();
-    });
-});
-
-describe('BlastView', () => {
-    it('is made only once there is something to draw', () => {
-        const view = new BlastView();
-        expect(view.sync(1000, frame({}), [], true)).toBe(false);
-        expect(view.layer).toBeNull();
-        expect(view.sync(1016, frame({ particles: [ring('a')] }), [], true)).toBe(true);
-        expect(view.layer).not.toBeNull();
-        expect(view.hasGrids).toBe(true);
-        expect(view.sync(1032, frame({ particles: [ring('a')] }), [], true)).toBe(false);
-        view.destroy();
-    });
-
-    it('a failing grid logs once, frees the grids, and later blasts get simple puffs', () => {
-        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-        vi.spyOn(BlastCloud.prototype, 'advance').mockImplementation(() => { throw new Error('gpu'); });
-        const view = new BlastView();
-        view.sync(1000, frame({ particles: [ring('a')] }), [], true);
-        view.sync(1016, frame({ particles: [ring('a')] }), [], true);
-        expect(error).toHaveBeenCalledTimes(1);
-        expect(view.hasGrids).toBe(false);
-        view.sync(1032, frame({ particles: [ring('b')] }), [], true);
-        expect(view.hasGrids).toBe(false);
-        expect(error).toHaveBeenCalledTimes(1);
-        expect(view.layer).not.toBeNull();
-        view.destroy();
-    });
-
-    it('a failure of the blasts themselves logs once and draws no blasts from then on', () => {
-        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-        tex.fail = true;
-        const view = new BlastView();
-        expect(view.sync(1000, frame({ particles: [ring('a')] }), [], true)).toBe(false);
-        tex.fail = false;
-        view.sync(1016, frame({ particles: [ring('b')] }), [], true);
-        expect(error).toHaveBeenCalledTimes(1);
-        expect(view.layer).toBeNull();
     });
 });

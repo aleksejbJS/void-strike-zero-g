@@ -37,20 +37,20 @@ export const BLAST_FADE_S = 0.8;         // ... after fading out over this long,
 export const BLAST_GONE_PEAK = 0.03;     // ... or once no cell is denser than this (after BLAST_MIN_S)
 export const BLAST_MIN_S = 0.5;
 export const BLAST_SMOKE: readonly [number, number, number] = [0.46, 0.44, 0.42];   // warm mid grey (linear RGB 0..1)
-export const MAX_BLAST_GRIDS = 6;        // more blasts at once get the simple smoke puffs instead
+export const MAX_BLAST_GRIDS = 6;        // more blasts at once get the simple smoke puffs instead (a grid out of view gives way)
 
 // Simple blast smoke (soft sprites), where there is no grid: `low` quality, no shader, or too many blasts at once
 export const SIMPLE_SMOKE_PUFFS = 9;
 export const SIMPLE_SMOKE = { ttl: [1.2, 2], size0: [30, 50], size1: [80, 120], alpha: 0.5, spread: 30, drag: 2, rise: 30 } as const;
 export const SIMPLE_SMOKE_RAMP: readonly number[] = [0x8a6a50, 0x4c4743, 0x3a3734];
 
-// Rocket trail: a ribbon of soft smoke puffs from the tail, a hot glow at the nozzle
+// Rocket trail: a ribbon of soft smoke puffs from the tail, a hot glow at the nozzle. Only rockets and debris in view
+// (plus VIEW_MARGIN) leave puffs, so the pool is spent on what can be seen.
 export const ROCKET_TAIL = 10;           // px behind the rocket's centre where the smoke comes out
 export const TRAIL_STEP = 5;             // px between two trail puffs
-export const TRAIL = { ttl: [1.4, 2.2], size0: [9, 13], size1: [44, 64], alpha: 0.36, jitter: 1.5, drift: 8, drag: 1.4, rise: 12, back: 0.002 } as const;
+export const TRAIL = { ttl: [1.4, 2.2], size0: [9, 13], size1: [44, 64], alpha: 0.36, jitter: 1.5, drift: 8, drag: 1.4, rise: 12 } as const;
 export const TRAIL_RAMP: readonly number[] = [0xe6ded2, 0xb0aca6, 0x8c8984];
-export const NOZZLE = { ttl: 0.07, size0: 16, size1: 8, alpha: 0.9 };
-export const NOZZLE_RAMP: readonly number[] = [0xfff0c0, 0xff9030];
+export const NOZZLE = { size: 18, flicker: 0.15, alpha: 0.9, tint: 0xffc070 };   // one glow sprite per rocket, size +-flicker
 
 // Debris flung by a blast trails thin dark smoke while it still flies fast
 export const DEBRIS_STEP = 7;

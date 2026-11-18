@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { blastScale, debrisPuff, fireballPuffs, flashPuff, nozzlePuff, simpleSmokePuffs, trailPuff } from './blastLooks';
+import { blastScale, debrisPuff, fireballPuffs, flashPuff, simpleSmokePuffs, trailPuff } from './blastLooks';
 import { FIRE, FIRE_PUFFS, MAX_FIRE_SCALE, MIN_SCALE, SIMPLE_SMOKE_PUFFS } from './blastTuning';
 import type { PuffSpec } from './puffSprites';
 
@@ -41,11 +41,10 @@ describe('blast looks', () => {
         }
     });
 
-    it('trail, nozzle and debris puffs are sane and sit where they are asked', () => {
-        const t = trailPuff(10, 20, 1500), n = nozzlePuff(10, 20), d = debrisPuff(10, 20);
-        for (const p of [t, n, d]) expect(finite(p)).toBe(true);
+    it('trail and debris puffs are sane and sit where they are asked', () => {
+        const t = trailPuff(10, 20), d = debrisPuff(10, 20);
+        for (const p of [t, d]) expect(finite(p)).toBe(true);
         expect(Math.abs(t.x - 10)).toBeLessThan(2);
-        expect(n).toMatchObject({ x: 10, y: 20 });
         expect(d).toMatchObject({ x: 10, y: 20 });
         expect(t.size1).toBeGreaterThan(t.size0);
     });

@@ -26,6 +26,7 @@ export class BlastCloud {
     readonly quad: SmokeQuad;
     readonly box: Box;
     gone = false;
+    asleep = false;                     // out of view on the last frame
     private readonly driver: GridDriver;
     private readonly solids: SolidTracker;
     private readonly born: number;      // ms; the shader's time counts from here
@@ -63,11 +64,13 @@ export class BlastCloud {
 
     /** Out of view: time passes with no steps, nothing drawn. */
     sleep(now: number): void {
+        this.asleep = true;
         this.driver.skip(now);
         this.quad.mesh.visible = false;
     }
 
     show(now: number): void {
+        this.asleep = false;
         this.quad.mesh.visible = true;
         const age = (now - this.born) / 1000;
         this.quad.upload(age, blastFade(age), true);

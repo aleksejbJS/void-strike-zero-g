@@ -36,6 +36,7 @@ export class BlastView {
     sync(now: number, frame: SmokeFrame | null, stirs: readonly Stir[], shader: boolean, budget?: StepBudget): boolean {
         if (this.failed || !frame) return false;
         const grids = shader && !this.gridsFailed && frame.quality !== 'low';
+        const hadGrids = this.hasGrids;
         let made = false;
         try {
             if (!this.fx) {
@@ -46,7 +47,7 @@ export class BlastView {
             this.fx.sync(now, frame, stirs, grids, budget);
             return made;
         } catch (err) {
-            return this.fail(err, grids) || made;
+            return this.fail(err, grids || hadGrids) || made;
         }
     }
 
@@ -55,8 +56,8 @@ export class BlastView {
         this.fx = null;
     }
 
-    // A failure with grids on is taken for a grid failure (they are the only GPU-heavy part): no grids from now on.
-    // A failure without grids ends the blasts. True when a layer was dropped.
+    // A failure while grids were allowed or alive is taken for a grid failure (they are the only GPU-heavy part): no
+    // grids from now on. A failure with no grid in play ends the blasts. True when a layer was dropped.
     private fail(err: unknown, grids: boolean): boolean {
         if (grids && this.fx) {
             console.error('Blast smoke failed, drawing simple puffs:', err);
