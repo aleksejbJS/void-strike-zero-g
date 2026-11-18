@@ -16,6 +16,7 @@ import { SMOKE_WHITE } from './smokeTuning';
 export const BOX_REACH = 1.5 * SMOKE_RADIUS;
 const FADE_GAIN = 1.2;                         // the spike's look: the quad thins out a little slower than the circle
 const RESETTLE_AFTER_MS = 1000;                // out of view this long: fill the cloud as a settled one when it comes back
+const EMPTY_MEAN = 0.01;                       // ... or back with less smoke than this per cell (a settled cloud has ~0.2): never filled
 
 export class CloudEntry {
     readonly grid: AirGrid;
@@ -81,11 +82,12 @@ export class CloudEntry {
         this.quad.destroy();
     }
 
-    // True when the cloud was out of view for long enough that its grid is stale
+    // True when the cloud comes back in view with a stale grid: out of view for long, or (born out of view) never filled.
+    // The prefill leaves a cloud still in its burst alone, so a young one grows on screen as usual.
     private wake(now: number): boolean {
         const since = this.asleepSince;
         if (since === null) return false;
         this.asleepSince = null;
-        return now - since > RESETTLE_AFTER_MS;
+        return now - since > RESETTLE_AFTER_MS || this.grid.mass() < EMPTY_MEAN * this.grid.d.length;
     }
 }

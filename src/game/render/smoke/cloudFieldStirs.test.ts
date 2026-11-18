@@ -111,9 +111,9 @@ describe('CloudField stirs, drawing and waking', () => {
         const field = makeField(), smokes = [cloud('a', 800, 450)], away = { ...VIEW, x: 10_000 };
         syncFed(field, smokes, T0, frameOf());
         const g = field.gridOf('a')!, settled = g.mass();
-        g.d.fill(0);
+        for (let k = 0; k < g.d.length; k++) g.d[k] *= 0.2;                  // thinned (an empty grid would be filled: see cloudFieldWake)
         const t = runFrames(field, smokes, 10, frameOf(stateOf(), away), T0);
         runFrames(field, smokes, 1, frameOf(), t);
-        expect(g.mass()).toBeLessThan(settled * 0.2);
+        expect(g.mass()).toBeLessThan(settled * 0.3);
     });
 });
