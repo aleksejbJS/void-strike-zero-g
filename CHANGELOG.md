@@ -1,6 +1,6 @@
 # Void Strike: Zero-G - Changelog
 
-## Version 0.5.0 (unreleased)
+## Version 0.5.0 (2026-11-19)
 
 One big release (owner's decision, 2026-11-12) instead of separate 0.4.x versions: the atompunk redesign, the 3D robot kit, two physics/combat fixes, the volumetric flame, the new smoke, new explosions and rocket trails, and an internal test range.
 

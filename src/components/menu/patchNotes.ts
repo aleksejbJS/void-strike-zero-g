@@ -35,7 +35,7 @@ const BLAST = shots('blast');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
-        { version: '0.5.0', date: null, groups: [
+        { version: '0.5.0', date: 'Nov 19, 2026', groups: [
             { title: 'New look', points: [
                 'The menu and all its screens got a new atompunk look: rusty metal panels, rivets and yellow painted plates',
                 'Top, Profile, Character setup, Tournaments and What\'s new all match the new style',
@@ -303,7 +303,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
-        { version: '0.5.0', date: null, groups: [
+        { version: '0.5.0', date: '19.11.2026', groups: [
             { title: 'Новый облик', points: [
                 'Меню и все его экраны в новом атомпанк-стиле: ржавые металлические панели, заклёпки и жёлтые крашеные таблички',
                 'Топ, Профиль, Настройка персонажа, Турниры и «Что нового» выполнены в том же стиле',
