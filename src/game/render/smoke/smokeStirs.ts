@@ -1,0 +1,138 @@
+// What moves the air around smoke this frame, read from the game state the screen already has (so it works
+// the same offline and online): projectiles in flight, fresh explosions (their 'ring' particle), fresh
+// railgun beams, flamethrower streams and fast fighters. Each source becomes Stirs for AirGrid.stir.
+// Rates are per second; heat, soot and carve are amounts per second at the centre. Start values, retuned on the range.
+
+import { GameState, WeaponType } from '../../../types';
+import type { Stir } from './airGrid';
+import type { FlameAir } from './flameAir';
+import { IMPULSE_DT, MAX_STIR_FRAME_DT } from './smokeTuning';
+
+const STEP = 7;                                   // px between the stirs of a chain
+const MAX_CHAIN = 400;                            // most stirs one chain makes (a hitch or a bad position must not flood the frame)
+const BLAST_R = 70, BLAST_MIN_SCALE = 0.6, RING_SIZE = 12;
+const FLAME_REACH = 260, FLAME_R0 = 12, FLAME_R1 = 38, FLAME_LIFT = 90;
+const FIGHTER_MIN_SPEED = 40;                     // px/s
+const FRAME_HZ = 60;                              // Entity.vel is per 60 Hz frame
+
+/** The time a continuous stir (or a deposit that lasts a frame) carries: the real frame time, at most MAX_STIR_FRAME_DT,
+ *  and IMPULSE_DT when it is not a positive number. */
+export const safeFrameDt = (frameDt: number): number =>
+    Number.isFinite(frameDt) && frameDt > 0 ? Math.min(frameDt, MAX_STIR_FRAME_DT) : IMPULSE_DT;
+
+type Spec = Pick<Stir, 'r' | 'rate' | 'heat' | 'soot' | 'carve'>;
+const ROCKET: Spec = { r: 16, rate: 40, heat: 15, carve: 21 };
+const BULLET: Spec = { r: 10, rate: 40, carve: 15 };
+const BEAM: Spec = { r: 13, rate: 45, heat: 12, carve: 33 };
+const FLAME: Spec = { r: FLAME_R0, rate: 27, heat: 30, soot: 7, carve: 9 };
+
+/** Stirs every STEP px from (ax, ay) towards (bx, by), the first `start` px along, each driving the air along that line
+ *  at `speed` for `dt` seconds. `grow` widens the reach and lifts the air from the start (0) to the end (1). Returns how
+ *  far past (bx, by) the next stir would be: where a chain that goes on next frame starts (0 after a bad or capped one). */
+function chain(out: Stir[], ax: number, ay: number, bx: number, by: number, speed: number, dt: number, spec: Spec, grow?: (f: number, st: Stir) => void, start = 0): number {
+    const len = Math.hypot(bx - ax, by - ay);
+    if (!Number.isFinite(len)) return 0;
+    if (len < 0.01) return start;
+    const dx = (bx - ax) / len, dy = (by - ay) / len;
+    let k = 0, l = start;
+    for (; l < len; l = start + ++k * STEP) {
+        if (k >= MAX_CHAIN) return 0;
+        const st: Stir = { ...spec, x: ax + dx * l, y: ay + dy * l, vx: dx * speed, vy: dy * speed, dt };
+        if (grow) grow(l / len, st);
+        out.push(st);
+    }
+    return l - len;
+}
+
+const flareUp = (f: number, st: Stir): void => {
+    st.r = FLAME_R0 + f * (FLAME_R1 - FLAME_R0);
+    st.vy -= FLAME_LIFT * f;
+};
+
+export class SmokeStirs {
+    // Where each projectile was last frame, and how far along its flight the next stir of its chain falls (so the chain
+    // keeps its STEP spacing across frames and a shot leaves the same stirs per length at any frame rate)
+    private readonly lastPos = new Map<string, { x: number; y: number; carry: number }>();
+    private readonly alive = new Set<string>();
+    private seen = new Set<string>();             // ring and beam ids of the previous collect
+    private next = new Set<string>();
+
+    /** How many projectiles are being followed (for tests). */
+    get trackedProjectiles(): number { return this.lastPos.size; }
+    /** How many ring and beam ids are remembered (for tests). */
+    get trackedIds(): number { return this.seen.size; }
+
+    /** Forget every projectile, ring and beam: for when nobody has been collecting, so old positions do not make long chains. */
+    reset(): void {
+        this.lastPos.clear();
+        this.alive.clear();
+        this.seen.clear();
+        this.next.clear();
+    }
+
+    /** Clear `out` and fill it with this frame's stirs. `flame` is the flame engine's read-only view, if any.
+     *  Every stir carries the time it acts for (`dt`): a shot chain point, a blast and a beam point carry IMPULSE_DT,
+     *  so their dose is per length and per event; a fighter and a flame stream act all the time and carry the frame's
+     *  real time `frameDt` (at most MAX_STIR_FRAME_DT; IMPULSE_DT if it is not a positive number). Whoever applies a stir
+     *  applies it once, with its own `dt`, however many frames it waited and however long the step is. */
+    collect(state: GameState, flame: FlameAir | null, out: Stir[], frameDt: number = IMPULSE_DT): void {
+        const dt = safeFrameDt(frameDt);
+        out.length = 0;
+        this.projectiles(state, out);
+        this.blastsAndBeams(state, out);
+        if (flame) this.flames(flame, out, dt);
+        this.fighters(state, out, dt);
+    }
+
+    private projectiles(state: GameState, out: Stir[]): void {
+        const { lastPos, alive } = this;
+        alive.clear();
+        for (const pr of state.projectiles) {
+            alive.add(pr.id);
+            // Seen for the first time: the physics tick before this frame is a good guess for where it was
+            const prev = lastPos.get(pr.id) ?? { x: pr.pos.x - pr.vel.x, y: pr.pos.y - pr.vel.y, carry: 0 };
+            const rocket = pr.type === WeaponType.ROCKET_LAUNCHER || pr.type === WeaponType.GRENADE_LAUNCHER;
+            prev.carry = chain(out, prev.x, prev.y, pr.pos.x, pr.pos.y, rocket ? 650 : 480, IMPULSE_DT, rocket ? ROCKET : BULLET, undefined, prev.carry);
+            prev.x = pr.pos.x; prev.y = pr.pos.y;
+            lastPos.set(pr.id, prev);
+        }
+        for (const id of lastPos.keys()) if (!alive.has(id)) lastPos.delete(id);
+    }
+
+    // A ring or a beam stirs the first frame it is on screen only
+    private blastsAndBeams(state: GameState, out: Stir[]): void {
+        const { seen, next } = this;
+        next.clear();
+        for (const pt of state.particles) {
+            if (pt.type !== 'ring') continue;
+            next.add(pt.id);
+            if (seen.has(pt.id)) continue;
+            const r = BLAST_R * Math.max(BLAST_MIN_SCALE, pt.size / RING_SIZE);
+            out.push({ x: pt.pos.x, y: pt.pos.y, r, vx: 950, vy: 0, radial: true, rate: 60, heat: 55, carve: 40, dt: IMPULSE_DT });
+        }
+        for (const b of state.beams ?? []) {
+            next.add(b.id);
+            if (seen.has(b.id)) continue;
+            chain(out, b.start.x, b.start.y, b.end.x, b.end.y, 700, IMPULSE_DT, BEAM);
+        }
+        this.seen = next;
+        this.next = seen;
+    }
+
+    private flames(flame: FlameAir, out: Stir[], dt: number): void {
+        for (const f of flame.streams()) {
+            if (!f.firing) continue;
+            const dx = Math.cos(f.angle), dy = Math.sin(f.angle);
+            chain(out, f.x, f.y, f.x + dx * FLAME_REACH, f.y + dy * FLAME_REACH, 520, dt, FLAME, flareUp);
+        }
+    }
+
+    private fighters(state: GameState, out: Stir[], dt: number): void {
+        for (const p of state.players) {
+            if (p.dead) continue;
+            const vx = p.vel.x * FRAME_HZ, vy = p.vel.y * FRAME_HZ;
+            if (Math.hypot(vx, vy) < FIGHTER_MIN_SPEED) continue;
+            out.push({ x: p.pos.x, y: p.pos.y - p.height / 2, r: 26, vx, vy, rate: 24, dt });
+        }
+    }
+}

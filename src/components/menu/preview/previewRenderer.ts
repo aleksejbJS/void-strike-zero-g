@@ -11,6 +11,7 @@ import { ProjectileView } from '../../../game/render/projectiles/projectileView'
 import { ParticleView } from '../../../game/render/effects/particleView';
 import { BeamView } from '../../../game/render/projectiles/beamView';
 import { SmokeView } from '../../../game/render/effects/smokeView';
+import { FlameFx } from '../../../game/render/flame/flameFx';
 import { CoverView } from '../../../game/render/cover/coverView';
 import { STAGE_H, STAGE_W, toStage, VIEW_CENTER, VIEW_SCALE } from './previewWorld';
 
@@ -39,6 +40,7 @@ export const createPreviewRenderer = (app: Application, state: GameState, textur
         players: new Map(),
         projectileView: null as ProjectileView | null,
         particleView: null as ParticleView | null,
+        flameFx: null as FlameFx | null,     // syncVisuals makes one; its shaders and textures outlive the stage, so destroy() frees it
         pickups: new Map(),
         decals: new Map(),
         floatingTexts: new Map(),
@@ -73,6 +75,10 @@ export const createPreviewRenderer = (app: Application, state: GameState, textur
             }
         },
         destroy() {
+            // The smoke quads (shader, geometry, textures) and the flame engine hold GPU objects the stage destroy does not free;
+            // a preview torn down after one frame (reduced motion) or switched away quickly would leak them
+            cache.smokeView?.clear();
+            cache.flameFx?.clear();
             look.destroy();
             cache.coverView?.clear();
             state.players.forEach(p => forgetPlayerVisual(p.id));

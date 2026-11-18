@@ -14,10 +14,12 @@ import { ParticleSprites } from './particleSprites';
 import { PatchSprites } from './patchSprites';
 import { FlameGlows } from './flameGlows';
 import { nearbySurfaces } from './flameSurfaces';
+import { flameAirOf } from '../smoke/flameAir';
+import type { FlameAir } from '../smoke/flameAir';
 
 export class FlameFx {
     private readonly sim: FlameSim;
-    /** Everything but the soot, bottom to top: smoke, fire beds, tongues, light, flame cores, nozzle jets, sparks. */
+    /** Everything but the soot, bottom to top: smoke (low only), fire beds, tongues, light, flame cores, nozzle jets, sparks. */
     private readonly root = new Container();
     private readonly smoke: ParticleSprites;
     private readonly fire: ParticleSprites;
@@ -26,12 +28,18 @@ export class FlameFx {
     private readonly patches: PatchSprites;
     private readonly glows: FlameGlows;
     private readonly surfaces: Surface[] = [];
+    private readonly airView: FlameAir;
+    /** The flame's own smoke sprites are drawn on `low` only (match tiles); elsewhere the soot plumes of the smoke system
+     *  draw its smoke. The smoke pool keeps simulating either way: it is where the soot comes from. */
+    private readonly drawSmoke: boolean;
     private last = Number.NaN;
     private destroyed = false;
 
     /** Flame goes on top of `gameLayer`; soot marks into `decalLayer`, under the fighters. */
     constructor(private readonly gameLayer: Container, private readonly decalLayer: Container, quality: FlameQuality) {
         this.sim = new FlameSim(quality);
+        this.drawSmoke = quality === 'low';
+        this.airView = flameAirOf(this.sim.streams, this.sim.pools.smoke);
         const tex = flameTextures();
         const { pools } = this.sim;
         this.smoke = new ParticleSprites(pools.smoke, tex.smoke, false);
@@ -40,13 +48,19 @@ export class FlameFx {
         this.sparks = new ParticleSprites(pools.spark, tex.ember, true);
         this.patches = new PatchSprites(this.sim.patches, this.sim.marks, tex);
         this.glows = new FlameGlows(tex.glow);
-        this.root.addChild(this.smoke.layer, this.patches.patchLayer, this.patches.tongueLayer, this.glows.layer,
+        if (this.drawSmoke) this.root.addChild(this.smoke.layer);
+        this.root.addChild(this.patches.patchLayer, this.patches.tongueLayer, this.glows.layer,
             this.fire.layer, this.jet.layer, this.sparks.layer);
     }
 
     /** Fires burning in place (splash fire and burning fighters), for the crackle sound. */
     get burning(): number {
         return this.sim.burning;
+    }
+
+    /** A read-only view of the nozzles and the flame's soot, for the smoke simulation (looks only). */
+    air(): FlameAir {
+        return this.airView;
     }
 
     /** Step to `now` (ms) with this frame's `orders` (cleared here) and redraw. */
@@ -58,7 +72,7 @@ export class FlameFx {
         orders.clear();
 
         const { time, colors } = this.sim;
-        this.smoke.sync();
+        if (this.drawSmoke) this.smoke.sync();
         this.patches.sync(time, colors);
         this.glows.sync(this.sim.streams.values(), time, colors);
         this.fire.sync();

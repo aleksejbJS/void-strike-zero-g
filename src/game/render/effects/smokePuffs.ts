@@ -9,6 +9,7 @@
 
 import { SmokeCloud } from '../../../types';
 import { smokeRadiusAt } from '../../systems/smoke';
+import { seededRandom } from '../smoke/seededRandom';
 
 export type SmokeCircle = { x: number; y: number; r: number; color: number; alpha: number };
 
@@ -24,23 +25,16 @@ const DRIFT_PX = 5;                       // how far a puff wanders from its spo
 const DRIFT_RAD_PER_MS = (2 * Math.PI) / 4000; // one slow wander every ~4 s
 const BREATHE = 0.04;                     // puff radius swells and shrinks by this share
 
+const scaleAt = (cloud: SmokeCloud, now: number): number => (cloud.radius > 0 ? smokeRadiusAt(cloud, now) / cloud.radius : 0);
+
 /** Live size share (1 → 0 over the fade) and opacity of a cloud. */
 export const cloudFade = (cloud: SmokeCloud, now: number): { scale: number; alpha: number } => {
-    const scale = cloud.radius > 0 ? smokeRadiusAt(cloud, now) / cloud.radius : 0;
+    const scale = scaleAt(cloud, now);
     return { scale, alpha: Math.sqrt(scale) }; // thins slower than it shrinks, so it does not just blink out
 };
 
-// FNV-1a hash of the id seeds a small PRNG (mulberry32): the same id always gives the same layout
-const seededRandom = (id: string): (() => number) => {
-    let h = 2166136261;
-    for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
-    return () => {
-        h = (h + 0x6d2b79f5) | 0;
-        let t = Math.imul(h ^ (h >>> 15), 1 | h);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-};
+/** The opacity of cloudFade alone: no object, for code that runs every frame. */
+export const cloudAlpha = (cloud: SmokeCloud, now: number): number => Math.sqrt(scaleAt(cloud, now));
 
 /** Circles to draw for `cloud` at `now`, in world coordinates; empty once it has faded away. */
 export const cloudCircles = (cloud: SmokeCloud, now: number): SmokeCircle[] => {

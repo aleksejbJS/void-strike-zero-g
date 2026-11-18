@@ -30,7 +30,7 @@ const shots = (name: string, ext = 'jpg') => ({ before: assetUrl(`assets/patch/$
 const SHOTS = shots('shots'), STATION = shots('map-station'), MINE = shots('map-mine'), ARENA = shots('map-arena');
 const FLAG = shots('flag'), CAMERA = shots('camera'), EXPLOSION = shots('explosion');
 const PREVIEWS = shots('previews'), DEATH = shots('death'), MOBILE_HUD = shots('mobile-hud');
-const FLAME = shots('flame'), MENU = shots('menu'), FIGHTERS = shots('fighters');
+const FLAME = shots('flame'), MENU = shots('menu'), FIGHTERS = shots('fighters'), SMOKE = shots('smoke');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
@@ -59,6 +59,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Burning fighters are wrapped in flickering tongues of flame',
                 'The stream roars and the fire crackles',
             ], comparisons: [{ caption: 'Flamethrower', ...FLAME }] },
+            { title: 'Smoke', points: [
+                'The smoke launcher now makes real rolling smoke: it lies on the floor and flows around crates',
+                'Bullets, rockets, blasts and the flamethrower punch through it, push it and light it up, and the holes close again',
+                'The flamethrower leaves dark soot that rises and fades',
+            ], comparisons: [{ caption: 'Smoke launcher', ...SMOKE }] },
         ] },
         { version: '0.4.37', date: 'Nov 13, 2026', points: [
             'No more quarter-second freeze on your first shot in a match: sound now starts while the match loads',
@@ -317,6 +322,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
                 'Горящих бойцов охватывают пляшущие языки пламени',
                 'Струя ревёт, огонь потрескивает',
             ], comparisons: [{ caption: 'Огнемёт', ...FLAME }] },
+            { title: 'Дым', points: [
+                'Дымовой гранатомёт теперь делает настоящий клубящийся дым: он стелется по полу и обтекает ящики',
+                'Пули, ракеты, взрывы и огнемёт пробивают дым насквозь, разгоняют его и подсвечивают, а проделанные дыры потом затягиваются',
+                'Огнемёт оставляет тёмную копоть: она поднимается вверх и тает',
+            ], comparisons: [{ caption: 'Дымовой гранатомёт', ...SMOKE }] },
         ] },
         { version: '0.4.37', date: '13.11.2026', points: [
             'Больше нет фриза на четверть секунды при первом выстреле в матче: звук запускается, пока матч загружается',
