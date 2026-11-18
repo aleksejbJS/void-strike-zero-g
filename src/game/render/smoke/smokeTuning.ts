@@ -37,3 +37,9 @@ export const CHURN_REACH_CELLS = 5;      // reach of one churn stir, in cells
 export const CHURN_SPEED = 100;          // a churn stir drives the air at up to +-this, px/s (both axes)
 export const CHURN_RISE_BIAS = 0.1;      // share of the speed range that tilts the vertical push upward (up to -120 / +80)
 export const CHURN_RATE = 21;            // how fast the air follows a churn stir, 1/s (the spike's 0.3 per 60 Hz step)
+
+// Smoke look (SmokeQuad shader). Colours are linear RGB in 0..1.
+export const SMOKE_WHITE: readonly [number, number, number] = [0.86, 0.87, 0.89];   // base aerosol colour of a grenade cloud
+export const SMOKE_SOOT: readonly [number, number, number] = [0.13, 0.12, 0.11];    // the aerosol darkens toward this as soot piles up
+export const FIELD_RANGE = 1.5;          // density and heat that fill the texture byte (255); the shader multiplies back by this
+export const NOISE_SCALE_PX = 34;        // world pixels per unit of the billow noise: sets the size of the billows
