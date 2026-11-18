@@ -16,7 +16,7 @@
 - Gameplay cloud: radius `SMOKE_RADIUS` 110, `SMOKE_DURATION_MS` 10000, shrink over the last `SMOKE_FADE_MS` 2000 via `smokeRadiusAt`; cloud `pos` is the circle centre.
 - Fighters and cover use `pos = (centerX, bottomY)`; platforms are top-left `{ x, y, w, h }`; `coverRect(c)` gives a cover rect, `isIntact(c)` says it is solid.
 - Camera `state.camera` is the view centre; the visible world rect is `camera ± view.w/2, view.h/2` (`Viewport` in `render/viewport.ts`).
-- Smoke colour is one parameter, white `[0.86, 0.87, 0.89]` now; soot colour `[0.13, 0.12, 0.11]`.
+- Smoke colour is one parameter, white `[0.86, 0.87, 0.89]` now; soot colour `[0.05, 0.045, 0.04]` (near-black, owner ruling 2026-11-18).
 - Budget: smoke ≤ 1.5 ms CPU per frame on average with four clouds on `high`, no frame > 3 ms on smoke; 120 fps on the owner's MacBook is the binding rule.
 - Cuts when over budget, in this order: fast flat loops → one pressure solve and fewer iterations → 30 Hz stepping → smaller grid on `high`.
 - At most four clouds step at full rate per frame (nearest the camera centre), others at half rate, clouds outside the view + 200 px margin do not step.

@@ -58,6 +58,6 @@ export const PLUME_MIN_MASS = 0.5;       // ... less smoke than this (cell units
 
 // Smoke look (SmokeQuad shader). Colours are linear RGB in 0..1.
 export const SMOKE_WHITE: readonly [number, number, number] = [0.86, 0.87, 0.89];   // base aerosol colour of a grenade cloud
-export const SMOKE_SOOT: readonly [number, number, number] = [0.13, 0.12, 0.11];    // the aerosol darkens toward this as soot piles up
+export const SMOKE_SOOT: readonly [number, number, number] = [0.05, 0.045, 0.04];    // near-black: the aerosol darkens toward this as soot piles up (the range wall is about 0.13)
 export const FIELD_RANGE = 1.5;          // density and heat that fill the texture byte (255); the shader multiplies back by this
 export const NOISE_SCALE_PX = 34;        // world pixels per unit of the billow noise: sets the size of the billows
