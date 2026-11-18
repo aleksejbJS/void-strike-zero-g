@@ -58,8 +58,8 @@ export class SmokeQuad {
     }
 
     /** Set the frame's uniforms and, when `grid` (the grid changed since the last upload), copy the grid into the
-     *  texture. `time` is seconds (keep it small, e.g. modulo a million ms, for float precision); `fade` 0..1 multiplies
-     *  the cloud's alpha. */
+     *  texture. `time` is seconds, counted from the cloud's or plume's own start (small, so float precision holds, and
+     *  it never wraps under a visible cloud); `fade` 0..1 multiplies the cloud's alpha. */
     upload(time: number, fade: number, grid = true): void {
         if (this.destroyed) return;
         this.uniforms.uTime = time;

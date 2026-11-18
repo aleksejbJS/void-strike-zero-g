@@ -22,6 +22,7 @@ export class SootPlume {
     private readonly solids: SolidTracker;
     private readonly fade = (dt: number): void => this.thin(dt);
     private readonly deposit: Stir;             // the one deposit, moved to each smoke particle in turn
+    private readonly born: number;              // ms, when the plume was made: the shader's time counts from here
     private lastDeposit: number;                // ms
     private asleepSince: number | null = null;
     private fresh = true;                       // the grid changed since the quad last uploaded it
@@ -33,6 +34,7 @@ export class SootPlume {
         this.driver = new GridDriver(this.grid, this.box, now);
         this.solids = new SolidTracker(this.grid, this.box);
         if (state) this.solids.refresh(state);
+        this.born = now;
         this.lastDeposit = now;
         this.deposit = {
             x, y, r: PLUME_REACH_CELLS * this.grid.cell, vx: 0, vy: 0, rate: 0,    // rate 0: it adds, it does not push
@@ -77,7 +79,7 @@ export class SootPlume {
     /** Show the quad, with the grid uploaded if it changed since the last show. */
     show(now: number): void {
         this.quad.mesh.visible = true;
-        this.quad.upload((now % 1e6) / 1000, 1, this.fresh);
+        this.quad.upload((now - this.born) / 1000, 1, this.fresh);      // the plume's age, so the billows never jump with the clock
         this.fresh = false;
     }
 

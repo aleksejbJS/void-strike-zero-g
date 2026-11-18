@@ -75,7 +75,8 @@ export class CloudEntry {
         const alpha = cloudAlpha(this.cloud, now);
         this.quad.mesh.visible = alpha > 0;
         if (alpha <= 0) return;
-        this.quad.upload((now % 1e6) / 1000, Math.min(1, alpha * FADE_GAIN), this.fresh);
+        // The billows' time is the cloud's own age in seconds: a wall-clock time that wraps would make them jump
+        this.quad.upload((now - this.cloud.bornAt) / 1000, Math.min(1, alpha * FADE_GAIN), this.fresh);
         this.fresh = false;
     }
 

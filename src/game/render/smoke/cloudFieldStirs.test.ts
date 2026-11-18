@@ -80,7 +80,7 @@ describe('CloudField stirs, drawing and waking', () => {
         runFrames(field, smokes, 4, frameOf(), now);
         const calls = upload.mock.calls as [number, number][];
         expect(calls.length).toBe(8);                                              // two visible clouds, four frames
-        for (const [time] of calls) { expect(time).toBeGreaterThanOrEqual(500); expect(time).toBeLessThan(501); }   // (now % 1e6) / 1000
+        for (const [time] of calls) { expect(time).toBeGreaterThan(1); expect(time).toBeLessThan(1.1); }   // the cloud's age in s: born 1 s before the first of the four frames
         const fades = calls.map(c => c[1]).sort((x, y) => x - y);
         expect(fades.slice(4)).toEqual([1, 1, 1, 1]);                              // `a` is full size: min(1, 1 x 1.2)
         for (const f of fades.slice(0, 4)) expect(f).toBeCloseTo(0.84, 1);        // `b` is about half size: sqrt(0.5) x 1.2
