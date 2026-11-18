@@ -1,28 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SmokeStirs } from './smokeStirs';
-import type { FlameAir } from './flameAir';
 import type { Stir } from './airGrid';
-import { Beam, Entity, GameState, Particle, Projectile, WeaponType } from '../../../types';
-
-const projectile = (id: string, x: number, y: number, vx: number, vy: number, type = WeaponType.ROCKET_LAUNCHER): Projectile =>
-    ({ id, ownerId: 'a', pos: { x, y }, vel: { x: vx, y: vy }, type, radius: 4, active: true });
-const ring = (id: string, x: number, y: number, size = 12): Particle =>
-    ({ id, pos: { x, y }, vel: { x: 0, y: 0 }, life: 1, decay: 0.05, color: '#fff', size, type: 'ring' });
-const beam = (id: string, sx: number, sy: number, ex: number, ey: number): Beam =>
-    ({ id, start: { x: sx, y: sy }, end: { x: ex, y: ey }, color: '#0ff', life: 1, width: 4 });
-const fighter = (vx: number, vy: number, dead = false): Entity =>
-    ({ id: 'p1', pos: { x: 100, y: 400 }, vel: { x: vx, y: vy }, width: 20, height: 60, dead } as Entity);
-
-/** The parts of a game state the collector reads. */
-const frame = (f: Partial<Pick<GameState, 'projectiles' | 'particles' | 'beams' | 'players'>> = {}): GameState =>
-    ({ projectiles: [], particles: [], beams: [], players: [], ...f }) as unknown as GameState;
-
-const flameWith = (streams: { x: number; y: number; angle: number; firing: boolean; power: number }[]): FlameAir => ({
-    streams: () => streams,
-    soot: () => [],
-});
-
-const gaps = (out: Stir[]) => out.slice(1).map((s, i) => Math.hypot(s.x - out[i].x, s.y - out[i].y));
+import { WeaponType } from '../../../types';
+import { beam, fighter, flameWith, frame, gaps, projectile, ring } from './smokeStirs.testkit';
 
 describe('SmokeStirs projectiles', () => {
     it('chains stirs from where the shot was to where it is, along its flight and 7 px apart', () => {
@@ -54,28 +34,6 @@ describe('SmokeStirs projectiles', () => {
         expect(out[0].x).toBeCloseTo(130, 6); expect(out[0].y).toBeCloseTo(240, 6);
         for (let i = 1; i < out.length; i++) { expect(out[i].x).toBeLessThan(out[i - 1].x); expect(out[i].y).toBeLessThan(out[i - 1].y); }
         for (const s of out) { expect(s.vx).toBeCloseTo(-0.6 * 650, 6); expect(s.vy).toBeCloseTo(-0.8 * 650, 6); }
-    });
-
-    it('makes no chain for a position that is not a finite number, and recovers on the next frame', () => {
-        const stirs = new SmokeStirs(), out: Stir[] = [];
-        stirs.collect(frame({ projectiles: [projectile('r1', 100, 200, 10, 0)] }), null, out);
-        stirs.collect(frame({ projectiles: [projectile('r1', Number.NaN, 200, 10, 0)] }), null, out);
-        expect(out.length).toBe(0);
-        stirs.collect(frame({ projectiles: [projectile('r1', Infinity, 200, 10, 0)] }), null, out);
-        expect(out.length).toBe(0);
-        stirs.collect(frame({ projectiles: [projectile('r1', 150, 200, 10, 0)] }), null, out);
-        expect(out.length).toBe(0);                          // the last good point was lost with the bad ones: nothing to chain from
-        stirs.collect(frame({ projectiles: [projectile('r1', 170, 200, 10, 0)] }), null, out);
-        expect(out.length).toBe(3);                          // 150 -> 170: 0, 7, 14
-    });
-
-    it('caps a chain at 400 points, whatever the distance', () => {
-        const stirs = new SmokeStirs(), out: Stir[] = [];
-        stirs.collect(frame({ projectiles: [projectile('r1', 0, 0, 0, 0)] }), null, out);
-        stirs.collect(frame({ projectiles: [projectile('r1', 1e9, 0, 0, 0)] }), null, out);
-        expect(out.length).toBe(400);
-        stirs.collect(frame({ beams: [beam('b1', 0, 0, 1e7, 0)] }), null, out);
-        expect(out.length).toBe(400);
     });
 
     it('uses pos - vel as the previous point the first frame a projectile is seen', () => {
@@ -216,21 +174,6 @@ describe('SmokeStirs fighters', () => {
         const stirs = new SmokeStirs(), out: Stir[] = [];
         stirs.collect(frame({ players: [fighter(9, 0, true)] }), null, out);
         expect(out.length).toBe(0);
-    });
-});
-
-describe('SmokeStirs reset', () => {
-    it('forgets projectiles and remembered ring and beam ids, so old ones stir again as new', () => {
-        const stirs = new SmokeStirs(), out: Stir[] = [];
-        const state = frame({ projectiles: [projectile('r1', 100, 200, 10, 0)], particles: [ring('ring_1', 0, 0)], beams: [beam('b1', 0, 0, 0, 20)] });
-        stirs.collect(state, null, out);
-        stirs.reset();
-        expect(stirs.trackedProjectiles).toBe(0);
-        expect(stirs.trackedIds).toBe(0);
-        // Moved far while nothing was watching: without the memory the chain starts one tick back, not at the old point
-        stirs.collect(frame({ projectiles: [projectile('r1', 5000, 200, 10, 0)] }), null, out);
-        expect(out.length).toBe(2);                          // 4990 -> 5000: 0, 7
-        expect(out[0].x).toBeCloseTo(4990, 6);
     });
 });
 

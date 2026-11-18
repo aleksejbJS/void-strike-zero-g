@@ -12,7 +12,8 @@ export type Box = { x: number; y: number; w: number; h: number };
 
 /** A push on the air around (x, y). Everything falls off linearly from the centre to the reach `r`.
  *  `rate` is how fast the air follows (vx, vy); `heat`, `soot` and `carve` are amounts per second at the
- *  centre and do not depend on `rate`. */
+ *  centre and do not depend on `rate`. `stir(st, dt)` takes its time as an argument; `st.dt` is what a caller that
+ *  keeps stirs for later passes there. */
 export type Stir = {
     x: number; y: number; r: number;      // world centre and reach, px
     vx: number; vy: number;               // air velocity it drives, px/s (radial: the outward speed is vx)
@@ -20,6 +21,7 @@ export type Stir = {
     rate: number;                         // how fast the air follows that velocity, 1/s (0: no push)
     heat?: number; soot?: number;         // added to the cell, capped at HEAT_MAX / SOOT_MAX
     carve?: number;                       // share of the density removed
+    dt?: number;                          // s of effect the stir carries, when it is queued and applied once (SmokeStirs sets it)
 };
 
 // An optional amount (heat, soot, carve) may be left out, but if it is there it must be a finite number >= 0

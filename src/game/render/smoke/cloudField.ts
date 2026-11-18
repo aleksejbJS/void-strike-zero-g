@@ -9,7 +9,7 @@ import type { AirGrid, Box, Stir } from './airGrid';
 import { CloudEntry } from './cloudEntry';
 import type { FlameAir } from './flameAir';
 import { SmokeStirs } from './smokeStirs';
-import { GRID_N, type SmokeQuality } from './smokeTuning';
+import { GRID_N, IMPULSE_DT, type SmokeQuality } from './smokeTuning';
 
 /** What a frame of drawing knows: the game state, the flame engine's view of its streams, the visible world rect, the grid quality. */
 export type SmokeFrame = { state: GameState; flame: FlameAir | null; view: Box; quality: SmokeQuality };
@@ -27,6 +27,7 @@ export class CloudField {
     private readonly frameStirs: Stir[] = [];   // this frame's stirs, rebuilt by SmokeStirs.collect
     private readonly inView: CloudEntry[] = []; // reused each frame
     private stamp = 0;
+    private lastNow = 0;                       // time (ms) of the last sync that collected stirs
     private watching = false;                   // did the last sync collect stirs (so the stir memory is current)
     private destroyed = false;
 
@@ -50,9 +51,13 @@ export class CloudField {
             return;
         }
         // The stirs follow what changes from frame to frame: after a frame that did not collect, their memory is stale
-        if (!this.watching) this.stirs.reset();
+        // and there is no frame time to measure (a 60 Hz frame is assumed)
+        let frameDt = IMPULSE_DT;
+        if (this.watching) frameDt = (now - this.lastNow) / 1000;
+        else this.stirs.reset();
         this.watching = true;
-        this.stirs.collect(frame.state, frame.flame, this.frameStirs);
+        this.lastNow = now;
+        this.stirs.collect(frame.state, frame.flame, this.frameStirs, frameDt);
         this.stepInView(now, frame);
     }
 

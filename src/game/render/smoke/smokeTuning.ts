@@ -16,6 +16,8 @@ export const COOL_PER_S = 3.2;           // heat decay rate, 1/s (a flame glow f
 export const HEAT_MAX = 1.5;             // heat a stir can pile up in one cell
 export const SOOT_MAX = 1;               // soot a stir can pile up in one cell (1 = near black)
 export const MAX_STIR_SPEED = 1200;      // px/s: a stir never drives the air faster than this
+export const IMPULSE_DT = 1 / 60;        // s of effect one point of a travelling or one-shot stir (shot chain, blast, beam) carries
+export const MAX_STIR_FRAME_DT = 0.1;    // s: a continuous stir (fighter, flame stream) carries the frame's real time, but never more than this
 
 // Cloud shaping (CloudShaper): how a grid is made to behave like a grenade cloud
 export const GROW_PER_S = 5;             // the cloud's reach closes on the live radius as 1 - exp(-age * this)

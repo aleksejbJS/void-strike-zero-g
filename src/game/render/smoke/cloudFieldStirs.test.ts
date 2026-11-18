@@ -39,18 +39,23 @@ describe('CloudField stirs, drawing and waking', () => {
         expect(collect).toHaveBeenCalledTimes(13);
     });
 
-    it('applies a frame\'s stirs once, at the cloud\'s next step with that step\'s length; half rate gets two frames\' worth', () => {
+    it('applies each queued stir once, with the time it carries and not the step\'s: a half-rate cloud gets two frames\' worth', () => {
         const w = watch(), field = makeField();
         const smokes = [0, 1, 2, 3, 4].map(i => cloud(`c${i}`, 800, 450));      // the same spot: the fifth is the half-rate one
         field.sync(smokes, T0, frameOf());
         runFrames(field, smokes, 10, frameOf(stateOf({ players: [runner(800, 476)] })), T0);
         const full = reach26(w.stirs.get(field.gridOf('c0')!)), half = reach26(w.stirs.get(field.gridOf('c4')!));
         expect(full.length).toBe(10);
-        for (const c of full) expect(c.dt).toBeCloseTo(1 / 60, 9);
         expect(half.length).toBe(10);
-        for (const c of half) expect(c.dt).toBeCloseTo(2 / 60, 9);
-        // Each stir object went to a grid once only
-        expect(new Set(full.map(c => c.st)).size).toBe(10);
+        for (const c of [...full, ...half]) expect(c.dt).toBeCloseTo(1 / 60, 9);       // the frame's time, though the half-rate step lasts 2/60
+        expect(new Set(full.map(c => c.st)).size).toBe(10);                             // each stir object went to a grid once only
+    });
+
+    it('a stir carries at most 0.1 s of a long frame', () => {
+        const w = watch(), field = makeField(), smokes = [cloud('a', 800, 450)];
+        field.sync(smokes, T0, frameOf());
+        field.sync(smokes, T0 + 2000, frameOf(stateOf({ players: [runner(800, 476)] })));
+        expect(reach26(w.stirs.get(field.gridOf('a')!)).map(c => c.dt)).toEqual([0.1]);
     });
 
     it('applies the queue on the first catch-up step only', () => {

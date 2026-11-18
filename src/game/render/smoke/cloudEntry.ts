@@ -49,7 +49,7 @@ export class CloudEntry {
         this.quad = new SmokeQuad(this.grid, SMOKE_WHITE);
     }
 
-    /** Keep the stirs of this frame that reach the grid; they are applied once, at the next step. */
+    /** Keep the stirs of this frame that reach the grid; each is applied once, at the next step, for the time it carries. */
     queueStirs(stirs: readonly Stir[]): void {
         const { x, y, w, h } = this.box;
         for (const st of stirs) {
@@ -103,8 +103,10 @@ export class CloudEntry {
         return now - since > RESETTLE_AFTER_MS;
     }
 
+    // A stir acts for the time it carries (the frame it came from), not for the step: a cloud that steps every second
+    // frame or every fourth gets the same push per second of play as one that steps every frame. `dt` is only for a stir with none.
     private applyQueue(dt: number): void {
-        for (const st of this.queue) this.grid.stir(st, dt);
+        for (const st of this.queue) this.grid.stir(st, st.dt ?? dt);
         this.queue.length = 0;
     }
 
