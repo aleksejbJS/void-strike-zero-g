@@ -23,6 +23,7 @@ export class SootPlume {
     private readonly deposit: Stir;             // the one deposit, moved to each smoke particle in turn
     private lastDeposit: number;                // ms
     private asleepSince: number | null = null;
+    private fresh = true;                       // the grid changed since the quad last uploaded it
 
     /** The plume's box is PLUME_BOX square, centred on `x`, with `y` PLUME_EMIT_AT of the way down it. */
     constructor(x: number, y: number, n: number, now: number, state: SolidSource | null) {
@@ -52,6 +53,7 @@ export class SootPlume {
         this.deposit.y = y;
         this.grid.stir(this.deposit, dt);
         this.lastDeposit = now;
+        this.fresh = true;
     }
 
     /** Keep the stirs of this frame that reach the grid; each is applied once, at the next step, for the time it carries. */
@@ -65,12 +67,14 @@ export class SootPlume {
         if (steps === 0) return;
         this.solids.refresh(state);
         this.driver.run(now, steps, this.fade);
+        this.fresh = true;
     }
 
-    /** Upload the grid and show the quad. */
+    /** Show the quad, with the grid uploaded if it changed since the last show. */
     show(now: number): void {
         this.quad.mesh.visible = true;
-        this.quad.upload((now % 1e6) / 1000, 1);
+        this.quad.upload((now % 1e6) / 1000, 1, this.fresh);
+        this.fresh = false;
     }
 
     /** Out of view: no stepping, no queue, nothing drawn. */

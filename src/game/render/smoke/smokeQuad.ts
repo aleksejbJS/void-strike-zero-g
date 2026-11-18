@@ -57,10 +57,18 @@ export class SmokeQuad {
         this.uniforms = shader.resources.smokeUniforms.uniforms as Uniforms;
     }
 
-    /** Copy the grid into the texture and set the frame's uniforms. `time` is seconds (keep it small, e.g. modulo
-     *  a million ms, for float precision); `fade` 0..1 multiplies the cloud's alpha. */
-    upload(time: number, fade: number): void {
+    /** Set the frame's uniforms and, when `grid` (the grid changed since the last upload), copy the grid into the
+     *  texture. `time` is seconds (keep it small, e.g. modulo a million ms, for float precision); `fade` 0..1 multiplies
+     *  the cloud's alpha. */
+    upload(time: number, fade: number, grid = true): void {
         if (this.destroyed) return;
+        this.uniforms.uTime = time;
+        this.uniforms.uFade = fade > 0 ? Math.min(1, fade) : 0;
+        if (grid) this.copyGrid();
+    }
+
+    // The grid into the texture bytes, and the texture to the GPU
+    private copyGrid(): void {
         const { d, t, s } = this.grid;
         const b = this.bytes;
         for (let k = 0, o = 0; k < d.length; k++, o += 4) {
@@ -70,8 +78,6 @@ export class SmokeQuad {
             b[o + 3] = 255;
         }
         this.source.update();
-        this.uniforms.uTime = time;
-        this.uniforms.uFade = fade > 0 ? Math.min(1, fade) : 0;
     }
 
     /** Remove the mesh from its parent and free mesh, shader, texture (with source) and geometry. Safe to call twice, and

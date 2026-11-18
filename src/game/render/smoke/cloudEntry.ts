@@ -29,6 +29,7 @@ export class CloudEntry {
     private readonly solids: SolidTracker;
     private readonly shape = (dt: number, at: number): void => this.shaper.apply(dt, at);
     private asleepSince: number | null = null;
+    private fresh = true;                      // the grid changed since the quad last uploaded it
 
     /** `state` gives the solids, or null for a cloud with none; a cloud first seen after its burst starts out settled. */
     constructor(readonly cloud: SmokeCloud, n: number, now: number, state: SolidSource | null) {
@@ -56,6 +57,7 @@ export class CloudEntry {
         if (state) this.solids.refresh(state);
         if (woke) this.shaper.prefill(now);
         this.driver.run(now, steps, this.shape);
+        this.fresh = true;
     }
 
     /** Out of view: no stepping, no queue, nothing drawn. */
@@ -65,11 +67,13 @@ export class CloudEntry {
         this.quad.mesh.visible = false;
     }
 
-    /** Upload the grid and show the quad, unless the cloud has faded away. */
+    /** Show the quad, unless the cloud has faded away, with the grid uploaded if it changed since the last show. */
     show(now: number): void {
         const alpha = cloudAlpha(this.cloud, now);
         this.quad.mesh.visible = alpha > 0;
-        if (alpha > 0) this.quad.upload((now % 1e6) / 1000, Math.min(1, alpha * FADE_GAIN));
+        if (alpha <= 0) return;
+        this.quad.upload((now % 1e6) / 1000, Math.min(1, alpha * FADE_GAIN), this.fresh);
+        this.fresh = false;
     }
 
     destroy(): void {
