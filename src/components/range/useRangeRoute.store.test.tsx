@@ -8,7 +8,7 @@ import { useRangeRoute } from './useRangeRoute';
 // The hook wired to the real UI store, the way App uses it.
 const useRoute = ({ hash }: { hash: string }) => {
     const { state, actions } = useUIStore();
-    useRangeRoute(hash, state.isPlaying, state.selectedMode, actions);
+    useRangeRoute(hash, state.isPlaying, state.selectedMode, state.selectedMap, actions);
     return { state, actions };
 };
 const wrapper = ({ children }: { children: React.ReactNode }) => <UIProvider>{children}</UIProvider>;

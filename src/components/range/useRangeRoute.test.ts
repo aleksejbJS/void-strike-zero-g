@@ -1,26 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { GameMode, NetworkMode } from '../../types';
+import { GameMode, MapId, NetworkMode } from '../../types';
 import { RANGE_HASH, useRangeRoute } from './useRangeRoute';
-
-const makeActions = () => ({ startGame: vi.fn(), setNetworkState: vi.fn(), selectMode: vi.fn() });
-
-interface Props { hash: string; isPlaying: boolean; selectedMode: GameMode }
+import { afterEsc, inRange, makeActions, mountRoute } from './useRangeRouteTestKit';
 
 describe('useRangeRoute', () => {
     beforeEach(() => { window.history.replaceState(null, '', '/play?lang=en#range'); });
     afterEach(() => { window.history.replaceState(null, '', '/'); });
 
-    const mount = (hash: string, isPlaying = false, selectedMode = GameMode.GUN_GAME) => {
-        const actions = makeActions();
-        const view = renderHook((p: Props) => useRangeRoute(p.hash, p.isPlaying, p.selectedMode, actions), {
-            initialProps: { hash, isPlaying, selectedMode },
-        });
-        return { actions, ...view };
-    };
-    // What the store does once the range starts: the match is up and the selected mode is RANGE
-    const inRange: Props = { hash: '#range', isPlaying: true, selectedMode: GameMode.RANGE };
-    const afterEsc: Props = { hash: '#range', isPlaying: false, selectedMode: GameMode.RANGE };
+    const mount = mountRoute;
+    const standing = { isPlaying: false, selectedMap: MapId.DEFAULT };
 
     it('uses the #range hash', () => {
         expect(RANGE_HASH).toBe('#range');
@@ -31,7 +20,7 @@ describe('useRangeRoute', () => {
         expect(actions.startGame).toHaveBeenCalledTimes(1);
         expect(actions.startGame).toHaveBeenCalledWith(GameMode.RANGE);
 
-        rerender({ hash: '#range', isPlaying: false, selectedMode: GameMode.GUN_GAME }); // the same hash on a re-render
+        rerender({ hash: '#range', ...standing, selectedMode: GameMode.GUN_GAME }); // the same hash on a re-render
         rerender(inRange); // the game is up
         expect(actions.startGame).toHaveBeenCalledTimes(1);
     });
@@ -57,7 +46,7 @@ describe('useRangeRoute', () => {
 
     it('survives the double effect run of StrictMode: one start, the hash stays until the game ends', () => {
         const actions = makeActions();
-        renderHook(() => useRangeRoute('#range', false, GameMode.GUN_GAME, actions), { reactStrictMode: true });
+        renderHook(() => useRangeRoute('#range', false, GameMode.GUN_GAME, MapId.DEFAULT, actions), { reactStrictMode: true });
         expect(actions.startGame).toHaveBeenCalledTimes(1);
         expect(window.location.hash).toBe('#range');
     });
@@ -90,13 +79,13 @@ describe('useRangeRoute', () => {
         rerender(inRange);
         rerender(afterEsc);
         rerender({ ...afterEsc, hash: '' }); // the listener reported the dropped hash
-        rerender({ hash: '#range', isPlaying: false, selectedMode: GameMode.GUN_GAME });
+        rerender({ hash: '#range', ...standing, selectedMode: GameMode.GUN_GAME });
         expect(actions.startGame).toHaveBeenCalledTimes(2);
     });
 
     it('also drops #range when a match that was already running ends, rather than starting the range', () => {
         const { actions, rerender } = mount('#range', true);
-        rerender({ hash: '#range', isPlaying: false, selectedMode: GameMode.GUN_GAME });
+        rerender({ hash: '#range', ...standing, selectedMode: GameMode.GUN_GAME });
         expect(actions.startGame).not.toHaveBeenCalled();
         expect(window.location.hash).toBe('');
     });
@@ -123,7 +112,7 @@ describe('useRangeRoute', () => {
 
         it('remembers the mode from the start of the range, not from when it ends', () => {
             const { actions, rerender } = mount('#range', false, GameMode.CTF);
-            rerender({ hash: '#range', isPlaying: false, selectedMode: GameMode.RANGE });
+            rerender({ hash: '#range', ...standing, selectedMode: GameMode.RANGE });
             rerender(inRange);
             rerender(afterEsc);
             expect(actions.selectMode).toHaveBeenCalledWith(GameMode.CTF);
@@ -134,21 +123,23 @@ describe('useRangeRoute', () => {
             rerender(inRange);
             rerender(afterEsc);
             rerender({ ...afterEsc, hash: '' });
-            rerender({ hash: '', isPlaying: false, selectedMode: GameMode.CTF });
+            rerender({ hash: '', ...standing, selectedMode: GameMode.CTF });
             expect(actions.selectMode).toHaveBeenCalledTimes(1);
         });
 
-        it('restores it even if the hash was edited away while the range was running', () => {
+        it('restores it when the range ends because the hash was edited away', () => {
             const { actions, rerender } = mount('#range', false, GameMode.HOLD_THE_FLAG);
             rerender(inRange);
             rerender({ ...inRange, hash: '' });
-            rerender({ hash: '', isPlaying: false, selectedMode: GameMode.RANGE });
+            expect(actions.finishGame).toHaveBeenCalledTimes(1); // the hash ends the range...
+            rerender({ hash: '', ...standing, selectedMode: GameMode.RANGE }); // ...and the store reports the match over
+            expect(actions.selectMode).toHaveBeenCalledTimes(1);
             expect(actions.selectMode).toHaveBeenCalledWith(GameMode.HOLD_THE_FLAG);
         });
 
         it('leaves the mode alone when the range was not started by the hash (a match was already running)', () => {
             const { actions, rerender } = mount('#range', true, GameMode.GUN_GAME);
-            rerender({ hash: '#range', isPlaying: false, selectedMode: GameMode.GUN_GAME });
+            rerender({ hash: '#range', ...standing, selectedMode: GameMode.GUN_GAME });
             expect(actions.selectMode).not.toHaveBeenCalled();
         });
     });
