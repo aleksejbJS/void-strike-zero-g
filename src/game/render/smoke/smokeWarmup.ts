@@ -14,7 +14,7 @@ import type { SolidSource } from './solidTracker';
 import { GRID_N, IMPULSE_DT, PLUME_CAP, STEP_HZ, type SmokeQuality } from './smokeTuning';
 
 const FAR = -100_000;                           // world px: the warm quads sit far outside any map, so nothing shows
-const WARM_STEPS = 8;                           // steps the first warm-up of the page runs: enough for the engine to optimise the solver
+const WARM_STEPS = 3;                           // steps the first warm-up of the page runs (8 cost 3 ms more at load and saved nothing later)
 const STEP_MS = 1000 / STEP_HZ;
 const NO_SOLIDS: SolidSource = { platforms: [], cover: [] };
 
