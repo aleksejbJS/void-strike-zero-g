@@ -15,6 +15,11 @@ const FLAME_REACH = 260, FLAME_R0 = 12, FLAME_R1 = 38, FLAME_LIFT = 90;
 const FIGHTER_MIN_SPEED = 40;                     // px/s
 const FRAME_HZ = 60;                              // Entity.vel is per 60 Hz frame
 
+/** The time a continuous stir (or a deposit that lasts a frame) carries: the real frame time, at most MAX_STIR_FRAME_DT,
+ *  and IMPULSE_DT when it is not a positive number. */
+export const safeFrameDt = (frameDt: number): number =>
+    Number.isFinite(frameDt) && frameDt > 0 ? Math.min(frameDt, MAX_STIR_FRAME_DT) : IMPULSE_DT;
+
 type Spec = Pick<Stir, 'r' | 'rate' | 'heat' | 'soot' | 'carve'>;
 const ROCKET: Spec = { r: 16, rate: 40, heat: 15, carve: 21 };
 const BULLET: Spec = { r: 10, rate: 40, carve: 15 };
@@ -66,7 +71,7 @@ export class SmokeStirs {
      *  real time `frameDt` (at most MAX_STIR_FRAME_DT; IMPULSE_DT if it is not a positive number). Whoever applies a stir
      *  applies it once, with its own `dt`, however many frames it waited and however long the step is. */
     collect(state: GameState, flame: FlameAir | null, out: Stir[], frameDt: number = IMPULSE_DT): void {
-        const dt = Number.isFinite(frameDt) && frameDt > 0 ? Math.min(frameDt, MAX_STIR_FRAME_DT) : IMPULSE_DT;
+        const dt = safeFrameDt(frameDt);
         out.length = 0;
         this.projectiles(state, out);
         this.blastsAndBeams(state, out);

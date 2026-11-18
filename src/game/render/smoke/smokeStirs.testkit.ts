@@ -20,6 +20,7 @@ export const frame = (f: Partial<Pick<GameState, 'projectiles' | 'particles' | '
 export const flameWith = (streams: { x: number; y: number; angle: number; firing: boolean; power: number }[]): FlameAir => ({
     streams: () => streams,
     soot: () => [],
+    hasSoot: () => false,
 });
 
 export const gaps = (out: Stir[]) => out.slice(1).map((s, i) => Math.hypot(s.x - out[i].x, s.y - out[i].y));

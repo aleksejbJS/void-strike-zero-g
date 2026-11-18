@@ -34,6 +34,18 @@ describe('flameAirOf', () => {
         expect([...air.soot()].map(s => [s.x, s.y])).toEqual([[7, 8]]);
     });
 
+    it('says whether any smoke particle is alive, and gives each one its age and life span', () => {
+        const sim = new FlameSim();
+        const air = flameAirOf(sim.streams, sim.pools.smoke);
+        expect(air.hasSoot()).toBe(false);
+        const p = sim.pools.smoke.get()!;
+        p.age = 0.5; p.ttl = 2;
+        expect(air.hasSoot()).toBe(true);
+        expect([...air.soot()].map(s => [s.age, s.ttl])).toEqual([[0.5, 2]]);
+        sim.pools.smoke.kill(p);
+        expect(air.hasSoot()).toBe(false);
+    });
+
     it('sees a stream spray soot into the smoke pool', () => {
         const sim = new FlameSim();
         const orders = new FlameOrders();

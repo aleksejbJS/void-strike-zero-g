@@ -6,12 +6,12 @@
 // stirs push it. Pixi's y points down, so "rises" means y decreases. Visual only.
 
 import { AirSolver } from './airSolver';
-import { BUOYANCY, COOL_PER_S, DAMP_PER_S, HEAT_MAX, MAX_STIR_SPEED, SOOT_MAX } from './smokeTuning';
+import { BUOYANCY, COOL_PER_S, DAMP_PER_S, DENS_MAX, HEAT_MAX, MAX_STIR_SPEED, SOOT_MAX } from './smokeTuning';
 
 export type Box = { x: number; y: number; w: number; h: number };
 
 /** A push on the air around (x, y). Everything falls off linearly from the centre to the reach `r`.
- *  `rate` is how fast the air follows (vx, vy); `heat`, `soot` and `carve` are amounts per second at the
+ *  `rate` is how fast the air follows (vx, vy); `heat`, `soot`, `dens` and `carve` are amounts per second at the
  *  centre and do not depend on `rate`. `stir(st, dt)` takes its time as an argument; `st.dt` is what a caller that
  *  keeps stirs for later passes there. */
 export type Stir = {
@@ -20,6 +20,7 @@ export type Stir = {
     radial?: boolean;
     rate: number;                         // how fast the air follows that velocity, 1/s (0: no push)
     heat?: number; soot?: number;         // added to the cell, capped at HEAT_MAX / SOOT_MAX
+    dens?: number;                        // smoke density added to the cell, capped at DENS_MAX (the soot plumes' source)
     carve?: number;                       // share of the density removed
     dt?: number;                          // s of effect the stir carries, when it is queued and applied once (SmokeStirs sets it)
 };
@@ -31,7 +32,7 @@ const isAmount = (a: number | undefined): boolean => a === undefined || (Number.
 const isUsable = (st: Stir): boolean =>
     Number.isFinite(st.x) && Number.isFinite(st.y) && Number.isFinite(st.vx) && Number.isFinite(st.vy)
     && Number.isFinite(st.r) && st.r > 0 && Number.isFinite(st.rate) && st.rate >= 0
-    && isAmount(st.heat) && isAmount(st.soot) && isAmount(st.carve);
+    && isAmount(st.heat) && isAmount(st.soot) && isAmount(st.dens) && isAmount(st.carve);
 
 export class AirGrid {
     readonly cell: number;
@@ -79,7 +80,7 @@ export class AirGrid {
         if (!(dt > 0) || !isUsable(st)) return;
         const { n, cell, x0, y0, u, v, d, t, s, solid } = this;
         const blend = 1 - Math.exp(-st.rate * dt);
-        const heat = (st.heat ?? 0) * dt, soot = (st.soot ?? 0) * dt, carve = (st.carve ?? 0) * dt;
+        const heat = (st.heat ?? 0) * dt, soot = (st.soot ?? 0) * dt, dens = (st.dens ?? 0) * dt, carve = (st.carve ?? 0) * dt;
         const radial = st.radial === true;
         const vx = Math.max(-MAX_STIR_SPEED, Math.min(MAX_STIR_SPEED, st.vx));
         const vy = Math.max(-MAX_STIR_SPEED, Math.min(MAX_STIR_SPEED, st.vy));
@@ -102,6 +103,7 @@ export class AirGrid {
                 v[k] += (ty - v[k]) * w;
                 if (heat) t[k] = Math.min(HEAT_MAX, t[k] + heat * falloff);
                 if (soot) s[k] = Math.min(SOOT_MAX, s[k] + soot * falloff);
+                if (dens) d[k] = Math.min(DENS_MAX, d[k] + dens * falloff);
                 if (carve) d[k] *= Math.max(0, 1 - carve * falloff);
             }
         }

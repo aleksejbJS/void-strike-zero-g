@@ -7,6 +7,7 @@ export type SmokeQuality = 'high' | 'medium' | 'low';
 export const GRID_N: Record<SmokeQuality, number> = { high: 48, medium: 32, low: 24 };
 
 export const STEP_HZ = 60;               // fixed simulation steps per second, whatever the frame rate
+export const VIEW_MARGIN = 200;          // px: a grid this far outside the view still steps, so it is ready when it comes in
 export const MAX_CATCHUP_STEPS = 3;      // most steps one frame may run to catch up after a hitch
 export const PRESSURE_ITERS = 18;        // Gauss-Seidel sweeps per pressure solve
 export const VORTICITY = 3.5;            // vorticity confinement strength: keeps small swirls alive
@@ -15,6 +16,7 @@ export const DAMP_PER_S = 0.9;           // air velocity drag, 1/s
 export const COOL_PER_S = 3.2;           // heat decay rate, 1/s (a flame glow fades in well under a second)
 export const HEAT_MAX = 1.5;             // heat a stir can pile up in one cell
 export const SOOT_MAX = 1;               // soot a stir can pile up in one cell (1 = near black)
+export const DENS_MAX = 1.2;             // smoke density a stir can pile up in one cell (a settled cloud peaks at TARGET_PEAK)
 export const MAX_STIR_SPEED = 1200;      // px/s: a stir never drives the air faster than this
 export const IMPULSE_DT = 1 / 60;        // s of effect one point of a travelling or one-shot stir (shot chain, blast, beam) carries
 export const MAX_STIR_FRAME_DT = 0.1;    // s: a continuous stir (fighter, flame stream) carries the frame's real time, but never more than this
@@ -39,6 +41,20 @@ export const CHURN_REACH_CELLS = 5;      // reach of one churn stir, in cells
 export const CHURN_SPEED = 100;          // a churn stir drives the air at up to +-this, px/s (both axes)
 export const CHURN_RISE_BIAS = 0.1;      // share of the speed range that tilts the vertical push upward (up to -120 / +80)
 export const CHURN_RATE = 21;            // how fast the air follows a churn stir, 1/s (the spike's 0.3 per 60 Hz step)
+
+// Soot plumes (SootPlumes): the flamethrower's smoke, drawn as small air grids with no gameplay circle
+export const PLUME_BOX = 180;            // px, side of a plume's box
+export const PLUME_EMIT_AT = 0.7;        // the soot point that makes a plume sits this far down the box (0 top, 1 bottom): soot rises inside it
+export const PLUME_EDGE = 0.14;          // the shader fades a quad out over this share of its side at every edge: a plume holds no soot there
+export const PLUME_CAP: Record<SmokeQuality, number> = { high: 6, medium: 3, low: 0 };   // most plumes alive at once (low keeps the sprites)
+export const PLUME_FULL_RATE = 3;        // plumes nearest the view centre that step every frame, the others at half rate
+export const PLUME_SOOT_PER_S = 2.5;     // soot one live flame smoke particle deposits per second at its centre
+export const PLUME_HEAT_PER_S = 1;       // ... and heat, which makes the soot rise
+export const PLUME_DENS_PER_S = 2.4;     // ... and smoke density, which is what the shader draws
+export const PLUME_REACH_CELLS = 1;      // reach of one deposit, in cells (its kernel weighs about 1: a particle adds its rate in all)
+export const PLUME_DECAY_PER_S = 0.6;    // plume density fades at this rate, 1/s
+export const PLUME_IDLE_S = 1;           // a plume with no deposit for this long and ...
+export const PLUME_MIN_MASS = 0.5;       // ... less smoke than this (cell units) is destroyed
 
 // Smoke look (SmokeQuad shader). Colours are linear RGB in 0..1.
 export const SMOKE_WHITE: readonly [number, number, number] = [0.86, 0.87, 0.89];   // base aerosol colour of a grenade cloud

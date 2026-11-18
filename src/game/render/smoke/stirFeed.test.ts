@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { StirFeed } from './stirFeed';
 import { SmokeStirs } from './smokeStirs';
-import { IMPULSE_DT } from './smokeTuning';
+import { IMPULSE_DT, MAX_STIR_FRAME_DT } from './smokeTuning';
 import { fighter, frame, projectile } from './smokeStirs.testkit';
 
 const shot = (x: number) => frame({ projectiles: [projectile('r1', x, 450, 10, 0)] });
@@ -22,6 +22,19 @@ describe('StirFeed', () => {
         expect(feed.collect(runner, null, 1000)[0].dt).toBeCloseTo(IMPULSE_DT, 12);
         expect(feed.collect(runner, null, 1008)[0].dt).toBeCloseTo(0.008, 12);
         expect(feed.collect(runner, null, 1025)[0].dt).toBeCloseTo(0.017, 12);
+    });
+
+    it('tells the frame time of the last collect, as the stirs carry it', () => {
+        const feed = new StirFeed();
+        expect(feed.frameDt).toBeCloseTo(IMPULSE_DT, 12);
+        feed.collect(runner, null, 1000);
+        expect(feed.frameDt).toBeCloseTo(IMPULSE_DT, 12);                  // the first frame has none to measure
+        feed.collect(runner, null, 1008);
+        expect(feed.frameDt).toBeCloseTo(0.008, 12);
+        feed.collect(runner, null, 1008 + 5000);
+        expect(feed.frameDt).toBe(MAX_STIR_FRAME_DT);                      // a pause counts as no more than this
+        feed.idle();
+        expect(feed.frameDt).toBeCloseTo(IMPULSE_DT, 12);
     });
 
     it('follows a projectile from frame to frame', () => {

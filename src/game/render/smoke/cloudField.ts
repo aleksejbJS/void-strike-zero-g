@@ -8,13 +8,12 @@ import type { GameState, SmokeCloud } from '../../../types';
 import type { AirGrid, Box, Stir } from './airGrid';
 import { CloudEntry } from './cloudEntry';
 import type { FlameAir } from './flameAir';
-import { GRID_N, type SmokeQuality } from './smokeTuning';
+import { GRID_N, VIEW_MARGIN, type SmokeQuality } from './smokeTuning';
 
 /** What a frame of drawing knows: the game state, the flame engine's view of its streams, the visible world rect, the grid quality. */
 export type SmokeFrame = { state: GameState; flame: FlameAir | null; view: Box; quality: SmokeQuality };
 
 const FULL_RATE_CLOUDS = 4;                     // clouds nearest the view centre that step every frame
-const VIEW_MARGIN = 200;                        // px: a cloud this far outside the view still steps, so it is ready when it comes in
 const FALLBACK_QUALITY: SmokeQuality = 'low';   // grid size when there is no frame to say (previews, tests)
 
 const NO_STIRS: readonly Stir[] = [];
