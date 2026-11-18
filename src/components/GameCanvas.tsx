@@ -62,7 +62,12 @@ import { useStatsCollector } from './hud/useStatsCollector';
 import { useTournamentMatch } from './hud/useTournamentMatch';
 import { openTournamentNet } from './hud/tournamentNet';
 import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
-import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft, HUNGER_ROUND_SIZE } from '../game/systems/hungerRound';
+import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft } from '../game/systems/hungerRound';
+import { offlineBotCount } from '../game/data/offlineBots';
+import { RangeLoop } from '../game/range/rangeLoop';
+import type { RangeState } from '../game/range/rangeState';
+import { RangeOverlay } from '../game/render/range/rangeOverlay';
+import { RangeLegend } from './range/RangeLegend';
 import { FixedStepper, FIXED_STEP_MS } from '../game/systems/fixedStep';
 import { newStatsSession } from '../game/stats/playerStats';
 import { nextId } from '../game/utils/id';
@@ -122,6 +127,8 @@ export default function GameCanvas() {
     useStatsCollector(gameState, localIdRef); // lifetime counters and play time for leaderboards
     const tournamentRun = state.tournamentMatch; // a tournament duel: always online, see useTournamentMatch
     const tourney = useTournamentMatch(gameState, localIdRef, tournamentRun);
+    const [rangeLoop] = React.useState(() => new RangeLoop()); // the #range test range's hooks, no-ops in other modes
+    const [rangeLegend, setRangeLegend] = React.useState<RangeState | null>(null); // the legend's copy of its settings
 
     const visualCache = useRef({
         players: new Map(),
@@ -301,8 +308,10 @@ export default function GameCanvas() {
                 grapple: { active: false, pos: { x: 0, y: 0 }, length: 0 }, lastDash: 0, hasFlag: Team.NONE
             });
 
+            if (gameMode === GameMode.RANGE) setRangeLegend(rangeLoop.setup(gameState.current, 'player')); // dummies, no bots
+
             // Create Bots
-            const botCount = gameMode === GameMode.HUNGER_GAMES ? HUNGER_ROUND_SIZE - 1 : (isTeamMode ? 6 : 3);
+            const botCount = offlineBotCount(gameMode);
             // All bots use illustrated bases; team equipment carries the team's colour.
             const botLooks = ffaBotLooks(botCount);
             for (let i = 0; i < botCount; i++) {
@@ -383,6 +392,7 @@ export default function GameCanvas() {
         let redrawMap: (() => void) | null = null;
         let mapLook: MapLook | null = null;
         let ads: AdsController | null = null;
+        let rangeOverlay: RangeOverlay | null = null;
         const isOnline = state.networkMode !== NetworkMode.OFFLINE || tournamentRun !== null;
         if (isOnline) {
             setNetError(null);
@@ -502,6 +512,7 @@ export default function GameCanvas() {
             worldContainer.addChild(platformLayer);
             worldContainer.addChild(gameLayer);
             worldContainer.addChild(botPathLayer);
+            if (gameMode === GameMode.RANGE) rangeOverlay = new RangeOverlay(worldContainer.addChild(new Container()));
             app.stage.addChild(uiLayer);
             const aimLine = new Graphics();
             uiLayer.addChild(aimLine);
@@ -684,6 +695,7 @@ export default function GameCanvas() {
 
                         // 2. Read latest pos/vel/isGrounded from this step
                         physicsEngine.current.syncGameState(gameState.current);
+                        rangeLoop.beforePhysics(gameState.current, 'player', Date.now()); // test range only
 
                         // 3. Force Pipeline (gravity, inputs, jetpack, grapple, friction, caps)
                         updatePhysics(
@@ -697,6 +709,7 @@ export default function GameCanvas() {
                             getSpawnPoint,
                             'player'
                         );
+                        rangeLoop.afterPhysics(gameState.current, Date.now()); // test range: fixed camera, damage log
 
                         // 4. Push updated velocities to Matter for next step
                         physicsEngine.current.syncFromGameState(gameState.current);
@@ -741,6 +754,7 @@ export default function GameCanvas() {
                 }
 
                 drawBotPaths(botPathLayer, gameState.current, debugVisibleRef.current);
+                rangeOverlay?.sync(gameState.current, rangeLoop.readout, now);
                 drawMarks(marksLayer, now);
 
                 // Zone overlay
@@ -861,6 +875,8 @@ export default function GameCanvas() {
             onKeyDown = (e: KeyboardEvent) => {
                 // Browsers unlock audio on a gesture: a key counts too, so sound starts before the first shot
                 initAudio().catch(err => console.error('Audio init failed:', err));
+                const rangeKeys = rangeLoop.key(e.code, e.repeat, gameState.current); // C, K, H, R in the test range
+                if (rangeKeys) setRangeLegend(rangeKeys);
                 keys.current[e.code] = true;
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const slot = weaponSlotOfKey(e.key);
@@ -940,6 +956,7 @@ export default function GameCanvas() {
             gameEvents.clear();
             mapLook?.destroy(); // frees the baked map textures before the app goes away
             ads?.destroy();
+            rangeOverlay?.destroy();
             if (onKeyDown) window.removeEventListener('keydown', onKeyDown);
             if (onKeyUp) window.removeEventListener('keyup', onKeyUp);
             if (onMouseMove) window.removeEventListener('mousemove', onMouseMove);
@@ -1066,6 +1083,7 @@ export default function GameCanvas() {
                     onSelectWeapon: selectWeapon,
                 } : null}
             />
+            {gameMode === GameMode.RANGE && rangeLegend && <RangeLegend range={rangeLegend} />}
         </div>
     );
 }

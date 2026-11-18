@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.5.1 (unreleased)
+
+### 🎯 Test range (internal)
+- Spec: `docs/plans/2026-11-18-test-range-spec.md`. A hidden offline mode for checking weapons and damage: open the game with `#range` in the address (it is in no menu, never online, desktop only, English only). One closed room with a cover row (wood, metal, glass, barrel) and five dummies, one per body base, on a rising staircase; the camera stays fixed on the room
+- The player cannot be hurt, has all nine weapons (1–9) with endless ammo and fuel. Keys: C dummy stance (stand → crouch → prone), K dummy armour (0 ↔ 100), H hit-zone outlines, R reset (cover, dummies, fire, decals), Esc back to the menu. Killed dummies stand up again after 3 s
+- Over each target: a health bar (plus armour on dummies) and the damage of the last 3 s, burning and bleeding included; cover hits show damage numbers too (range only)
+- Nothing counts: no XP, achievements, lifetime stats, leaderboards, cloud saves, result screen or ads. Code: `src/game/range/`, `src/game/render/range/`, `src/components/range/`; GameCanvas only calls `RangeLoop` (`rangeLoop.ts`), a `RangeOverlay` and the `RangeLegend`
+
 ## Version 0.5.0 (unreleased)
 
 One big release (owner's decision, 2026-11-12) instead of separate 0.4.x versions: the atompunk redesign, the 3D robot kit, two physics/combat fixes and the volumetric flame.
