@@ -3,7 +3,7 @@
 // jump the same way. The flip of the double jump is drawn by each client from `airJump`.
 
 import { Entity } from '../../types';
-import { AIR_JUMP_SPEED, HARD_SPEED_CAP, JUMP_SPEED } from '../../constants';
+import { AIR_JUMP_SPEED, GRAVITY, HARD_SPEED_CAP, JUMP_SPEED } from '../../constants';
 
 export interface JumpInput {
     jumpPress: boolean; // the Jump key went down this tick
@@ -16,17 +16,19 @@ const canJump = (p: Entity) => !p.grapple.active && !p.wound;
 
 export function applyJump(p: Entity, input: JumpInput): void {
     if (p.isGrounded && !p.jumpRise) p.airJump = 0;
-    if (p.jumpRise && p.vel.y >= -HARD_SPEED_CAP) p.jumpRise = false;
+    // The allowance falls like the jump itself: W, a rocket or the hook can never rise faster than a pure jump
+    // would at this moment, and it ends by itself once below the normal cap
+    if (p.jumpRise) p.jumpRise = p.jumpRise - GRAVITY > HARD_SPEED_CAP ? p.jumpRise - GRAVITY : 0;
     if (!input.jumpPress || !canJump(p)) return;
     if (p.isGrounded && !p.jumpRise) {
         p.vel.y = -JUMP_SPEED;
-        p.jumpRise = true;
+        p.jumpRise = JUMP_SPEED;
     } else if (!p.airJump) {
         p.vel.y = -AIR_JUMP_SPEED;
-        p.jumpRise = true;
+        p.jumpRise = AIR_JUMP_SPEED;
         p.airJump = (Math.sign(input.inputX) || input.facing) as -1 | 1;
     }
 }
 
 /** How fast the fighter may rise: a jump starts faster than the cap the jetpack and rocket jumps keep. */
-export const upwardCap = (p: Entity): number => (p.jumpRise ? Math.max(JUMP_SPEED, AIR_JUMP_SPEED) : HARD_SPEED_CAP);
+export const upwardCap = (p: Entity): number => Math.max(HARD_SPEED_CAP, p.jumpRise ?? 0);

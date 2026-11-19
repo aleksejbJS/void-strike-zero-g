@@ -124,7 +124,7 @@ export interface Entity {
   jetpackOn?: boolean; // Jetpack thrusting this tick (lets other clients draw the flame)
   hungerOutTimer?: number;
   airJump?: -1 | 0 | 1; // double jump of this airtime: 0/missing = still available, ±1 = used (and the flip direction)
-  jumpRise?: boolean;  // rising from a jump: the upward speed cap is relaxed until it slows below the cap
+  jumpRise?: number;   // rising from a jump: the upward speed it may still have (falls with gravity; 0/missing = normal cap)
   jumpHeld?: boolean;  // the Jump key was held last tick (a jump needs a fresh press)
   wound?: Wound; // lost a leg to a railgun through armor (missing from older hosts: whole)
   spawnShieldUntil?: number; // can't be hurt before this timestamp, right after a respawn (spawnShield.ts)

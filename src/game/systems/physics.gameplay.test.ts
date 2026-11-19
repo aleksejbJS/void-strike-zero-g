@@ -101,3 +101,17 @@ describe('Weapon pickup', () => {
         expect(p.inventory[0].ammo).toBeLessThanOrEqual(p.inventory[0].maxAmmo);
     });
 });
+
+describe('Hold the flag: crouch + Space', () => {
+    it('a crouching carrier throws the flag and does not jump', () => {
+        const state = createMockState(GameMode.HOLD_THE_FLAG);
+        const p = createMockPlayer('p1', Team.RED);
+        p.hasFlag = Team.RED;
+        p.isGrounded = true;
+        state.players.push(p);
+        tick(state, { KeyS: true, Space: true });
+        expect(state.pickups.some(k => k.type === ItemType.FLAG)).toBe(true);
+        expect(p.vel.y).toBeGreaterThan(-1);
+        expect(p.jumpRise ?? 0).toBeFalsy();
+    });
+});

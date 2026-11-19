@@ -53,12 +53,12 @@ describe('applyPlayerMovement: a jump needs a fresh press', () => {
         step(state, p, { Space: true });
         expect(p.vel.y).toBeLessThan(-JUMP_SPEED + 1);
         for (let i = 0; i < 2; i++) {
-            p.isGrounded = true; p.jumpRise = false; p.vel.y = 0;
+            p.isGrounded = true; p.jumpRise = 0; p.vel.y = 0;
             step(state, p, { Space: true });
             expect(p.vel.y).toBeGreaterThan(-1);
         }
         step(state, p, {});
-        p.isGrounded = true; p.jumpRise = false; p.vel.y = 0;
+        p.isGrounded = true; p.jumpRise = 0; p.vel.y = 0;
         step(state, p, { Space: true });
         expect(p.vel.y).toBeLessThan(-JUMP_SPEED + 1);
     });

@@ -35,6 +35,7 @@ export interface FighterView {
     gunLayer: Container; // holds weapon + light; counter-turned during a flip so the gun stays at the shot point
     weapon: Sprite;
     light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
+    gunFront: Graphics; // fallback gun and muzzle flash: in the gun layer, so a flip keeps them on the gun
     front: Graphics;   // hands and the front arm, over the weapon
     headKey: string;   // look the head was drawn for
     illustrated?: ArtRig;
@@ -85,9 +86,10 @@ export const createFighterView = (): FighterView => {
     const front = new Graphics(); front.label = 'fighterFront';
     const light = createMuzzleLight();
     const gunLayer = new Container(); gunLayer.label = 'fighterGunLayer';
-    gunLayer.addChild(weapon, light);
+    const gunFront = new Graphics(); gunFront.label = 'fighterGunFront';
+    gunLayer.addChild(weapon, light, gunFront);
     root.addChild(flameGlow, body, ears, head, gunLayer, front);
-    return { root, flameGlow, body, ears, head, gunLayer, weapon, light, front, headKey: '' };
+    return { root, flameGlow, body, ears, head, gunLayer, weapon, light, gunFront, front, headKey: '' };
 };
 
 /** Place, size and tint the glow at the middle of the flames (their average with two nozzles); it follows the flicker. */
@@ -146,10 +148,11 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     w.position.set(pose.gunTopLeft.x, pose.gunTopLeft.y);
     w.rotation = pose.gunAngle;
 
-    const fr = view.front.clear();
-    if (!f.weapon && !f.weaponless) drawFallbackGun(fr, f);
-    if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
+    const gf = view.gunFront.clear();
+    if (!f.weapon && !f.weaponless) drawFallbackGun(gf, f);
+    if (f.muzzleFlash > 0) drawMuzzle(gf, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     else view.light.visible = false;
+    const fr = view.front.clear();
     if (!illustrated) {
         hand(fr, pose.backArm.end);
         jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });

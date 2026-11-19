@@ -185,6 +185,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             updateGrapple(state, p, pHookPressed, aim ?? p.pos);
 
             if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && (controls.wantsJump || controls.jumpKey) && p.isCrouching) {
+                p.jumpHeld = true; // this Space press throws the flag: it must not jump as well (the prediction never throws)
                 state.pickups.push({
                     id: nextId('htf_throw_'),
                     type: ItemType.FLAG,

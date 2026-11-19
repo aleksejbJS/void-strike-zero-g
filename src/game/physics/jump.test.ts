@@ -130,6 +130,24 @@ describe('speed cap', () => {
         }
     });
 
+    it('a jump followed by the jetpack is back under the jetpack\'s cap once the jump has slowed down', () => {
+        const engine = new MatterPhysicsEngine();
+        floor.forEach(f => engine.addPlatform(f));
+        const p = createMockPlayer('p', Team.NONE);
+        p.pos = { x: 0, y: FLOOR_Y };
+        p.jetpackFuel = p.maxFuel = 1e9;
+        engine.addPlayer(p);
+        for (let t = 0; t < 200; t++) {
+            engine.step(FIXED_STEP_MS);
+            engine.syncGameState({ platforms: floor, players: [p] });
+            const w = t >= 1;
+            applyMovement(p, input({ jumpPress: t === 0, isFlying: w, wantsJump: w }));
+            engine.syncFromGameState({ players: [p] });
+            // A jump starts at 12.3 and gravity slows it below 8 within ~12 ticks: the jetpack may not keep it faster
+            if (t >= 15) expect(p.vel.y).toBeGreaterThanOrEqual(-HARD_SPEED_CAP);
+        }
+    });
+
     it('upward knock-back outside a jump stays capped', () => {
         const p = createMockPlayer('p', Team.NONE);
         p.isGrounded = false;
