@@ -35,6 +35,10 @@ const BLAST = shots('blast');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.5.1', date: null, points: [
+            'Change your controls: Profile → Controls lets you put any action on the key or mouse button you like',
+            'The key hints under the main menu show your own keys',
+        ] },
         { version: '0.5.0', date: 'Nov 19, 2026', groups: [
             { title: 'New look', points: [
                 'The menu and all its screens got a new atompunk look: rusty metal panels, rivets and yellow painted plates',
@@ -303,6 +307,10 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.5.1', date: null, points: [
+            'Своё управление: в Профиле → Управление любое действие можно поставить на удобную клавишу или кнопку мыши',
+            'Подсказки с клавишами под главным меню показывают ваши клавиши',
+        ] },
         { version: '0.5.0', date: '19.11.2026', groups: [
             { title: 'Новый облик', points: [
                 'Меню и все его экраны в новом атомпанк-стиле: ржавые металлические панели, заклёпки и жёлтые крашеные таблички',
