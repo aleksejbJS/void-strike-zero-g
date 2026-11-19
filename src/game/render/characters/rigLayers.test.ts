@@ -97,7 +97,7 @@ describe('3D-kit hands', () => {
                 flame: false, flicker: 0, parts: IDLE_PARTS, muzzleFlash: 0 };
             expect(syncFighterArt(view, frame)).toBe(true);
             const rig = view.illustrated!;
-            expect(view.root.getChildIndex(rig.under)).toBe(view.root.getChildIndex(view.weapon) - 1);
+            expect(view.root.getChildIndex(rig.under)).toBe(view.root.getChildIndex(view.gunLayer) - 1); // the weapon picture lives in the gun layer
             expect(rig.meshes.handFrontGrip!.visible).toBe(true);
         }
     });

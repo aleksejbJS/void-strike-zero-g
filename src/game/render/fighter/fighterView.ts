@@ -32,6 +32,7 @@ export interface FighterView {
     body: Graphics;    // jetpack, legs, back arm, torso
     ears: Graphics;    // ears, horns and antennae behind the head, redrawn every frame
     head: Graphics;
+    gunLayer: Container; // holds weapon + light; counter-turned during a flip so the gun stays at the shot point
     weapon: Sprite;
     light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
     front: Graphics;   // hands and the front arm, over the weapon
@@ -56,6 +57,7 @@ export interface FighterFrame {
     parts: PartMotionFrame; // tail, ears, lamp and wings as the springs hold them
     muzzleFlash: number; // 0..1, strength of the flash (0 = none)
     squash?: number;   // 0..1, landing squash (default 0)
+    flipAngle?: number; // radians the double-jump flip turns the fighter (default 0). Not drawn here: see applyFlip
     oneLeg?: boolean;  // the back leg is gone: a bloody stump instead (a wounded fighter)
     hop?: number;      // px a one-legged hop lifts the fighter (default 0). Not drawn here: the owner of the root lifts it, shadow stays down
     headBob?: number;  // radians added to the head tilt (default 0)
@@ -82,8 +84,10 @@ export const createFighterView = (): FighterView => {
     const weapon = new Sprite(); weapon.label = 'fighterWeapon';
     const front = new Graphics(); front.label = 'fighterFront';
     const light = createMuzzleLight();
-    root.addChild(flameGlow, body, ears, head, weapon, light, front);
-    return { root, flameGlow, body, ears, head, weapon, light, front, headKey: '' };
+    const gunLayer = new Container(); gunLayer.label = 'fighterGunLayer';
+    gunLayer.addChild(weapon, light);
+    root.addChild(flameGlow, body, ears, head, gunLayer, front);
+    return { root, flameGlow, body, ears, head, gunLayer, weapon, light, front, headKey: '' };
 };
 
 /** Place, size and tint the glow at the middle of the flames (their average with two nozzles); it follows the flicker. */
