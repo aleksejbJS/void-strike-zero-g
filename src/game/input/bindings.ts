@@ -2,10 +2,10 @@
 // The match turns a bound input into the *standard* input the game always used (KeyA, KeyW, fire, hook…),
 // so prediction, the network message and the server never see a player's own layout.
 
-export type BindAction = 'left' | 'right' | 'jetpack' | 'down' | 'prone' | 'fire' | 'grapple';
+export type BindAction = 'left' | 'right' | 'jetpack' | 'jump' | 'down' | 'prone' | 'fire' | 'grapple';
 
 /** Display order in the profile. */
-export const BIND_ACTIONS: readonly BindAction[] = ['left', 'right', 'jetpack', 'down', 'prone', 'fire', 'grapple'];
+export const BIND_ACTIONS: readonly BindAction[] = ['left', 'right', 'jetpack', 'jump', 'down', 'prone', 'fire', 'grapple'];
 
 /** A normalized `KeyboardEvent.code` ('KeyE', 'Space', 'Shift') or a mouse button 'Mouse0'…'Mouse4'. */
 export type InputCode = string;
@@ -17,12 +17,13 @@ export type BindingSlots = readonly [InputCode | null, InputCode | null];
 export type Bindings = Readonly<Record<BindAction, BindingSlots>>;
 
 /** The standard input an action produces: a key the simulation reads, or the fire / hook buttons. */
-export type ActionTarget = 'KeyA' | 'KeyD' | 'KeyW' | 'KeyS' | 'KeyZ' | 'fire' | 'hook';
+export type ActionTarget = 'KeyA' | 'KeyD' | 'KeyW' | 'Space' | 'KeyS' | 'KeyZ' | 'fire' | 'hook';
 
 export const ACTION_TARGET: Readonly<Record<BindAction, ActionTarget>> = {
     left: 'KeyA',
     right: 'KeyD',
     jetpack: 'KeyW',
+    jump: 'Space',
     down: 'KeyS',
     prone: 'KeyZ',
     fire: 'fire',
@@ -32,7 +33,8 @@ export const ACTION_TARGET: Readonly<Record<BindAction, ActionTarget>> = {
 export const DEFAULT_BINDINGS: Bindings = {
     left: ['KeyA', null],
     right: ['KeyD', null],
-    jetpack: ['KeyW', 'Space'],
+    jetpack: ['KeyW', null],
+    jump: ['Space', null],
     down: ['KeyS', null],
     prone: ['KeyZ', null],
     fire: ['Mouse0', null],

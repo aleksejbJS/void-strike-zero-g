@@ -61,9 +61,9 @@ describe('sanitizeBindings', () => {
     });
 
     it('ignores actions this build does not know', () => {
-        const b = sanitizeBindings({ ...DEFAULT_BINDINGS, jump: ['Space', null] });
+        const b = sanitizeBindings({ ...DEFAULT_BINDINGS, slide: ['KeyC', null] });
         expect(b).toEqual(DEFAULT_BINDINGS);
-        expect('jump' in b).toBe(false);
+        expect('slide' in b).toBe(false);
     });
 
     it('gives a missing action its defaults, minus inputs the player already uses', () => {

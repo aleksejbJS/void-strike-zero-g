@@ -13,6 +13,7 @@ describe('ControlsLegend', () => {
         render(<ControlsLegend t={t} />);
         expect(screen.getByText('WASD')).toBeInTheDocument();
         expect(screen.getByText('Space')).toBeInTheDocument();
+        expect(screen.getByText('Jump')).toBeInTheDocument();
     });
 
     it('follows a change made in the profile while the menu stays mounted underneath', () => {

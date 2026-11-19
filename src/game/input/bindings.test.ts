@@ -44,7 +44,8 @@ describe('DEFAULT_BINDINGS', () => {
     it('match the controls the game always had', () => {
         expect(DEFAULT_BINDINGS.left).toEqual(['KeyA', null]);
         expect(DEFAULT_BINDINGS.right).toEqual(['KeyD', null]);
-        expect(DEFAULT_BINDINGS.jetpack).toEqual(['KeyW', 'Space']);
+        expect(DEFAULT_BINDINGS.jetpack).toEqual(['KeyW', null]);
+        expect(DEFAULT_BINDINGS.jump).toEqual(['Space', null]);
         expect(DEFAULT_BINDINGS.down).toEqual(['KeyS', null]);
         expect(DEFAULT_BINDINGS.prone).toEqual(['KeyZ', null]);
         expect(DEFAULT_BINDINGS.fire).toEqual(['Mouse0', null]);
@@ -58,6 +59,6 @@ describe('DEFAULT_BINDINGS', () => {
     });
 
     it('list the actions in the order the profile shows them', () => {
-        expect(BIND_ACTIONS).toEqual(['left', 'right', 'jetpack', 'down', 'prone', 'fire', 'grapple']);
+        expect(BIND_ACTIONS).toEqual(['left', 'right', 'jetpack', 'jump', 'down', 'prone', 'fire', 'grapple']);
     });
 });

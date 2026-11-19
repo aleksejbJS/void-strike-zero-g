@@ -18,11 +18,15 @@ describe('createBindingInput', () => {
     });
 
     it('keeps an action on while any of its inputs is still held', () => {
-        const input = createBindingInput(DEFAULT_BINDINGS);
+        const input = createBindingInput({ ...DEFAULT_BINDINGS, jetpack: ['KeyW', 'KeyE'] });
         expect(input.press('KeyW')).toEqual({ target: 'KeyW', active: true });
-        expect(input.press('Space')).toBeNull();
+        expect(input.press('KeyE')).toBeNull();
         expect(input.release('KeyW')).toBeNull();
-        expect(input.release('Space')).toEqual({ target: 'KeyW', active: false });
+        expect(input.release('KeyE')).toEqual({ target: 'KeyW', active: false });
+    });
+
+    it('Space is the jump, sent as the standard Space key', () => {
+        expect(createBindingInput(DEFAULT_BINDINGS).press('Space')).toEqual({ target: 'Space', active: true });
     });
 
     it('maps mouse buttons and either Shift to fire and hook', () => {

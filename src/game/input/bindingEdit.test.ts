@@ -6,7 +6,7 @@ describe('assignBinding', () => {
     it('puts a free key into the slot and leaves the input untouched', () => {
         const before = JSON.stringify(DEFAULT_BINDINGS);
         const { bindings, freed } = assignBinding(DEFAULT_BINDINGS, 'jetpack', 0, 'KeyE');
-        expect(bindings.jetpack).toEqual(['KeyE', 'Space']);
+        expect(bindings.jetpack).toEqual(['KeyE', null]);
         expect(freed).toBeNull();
         expect(JSON.stringify(DEFAULT_BINDINGS)).toBe(before);
     });
@@ -22,6 +22,7 @@ describe('assignBinding', () => {
     it('moves a key between the two slots of one action without reporting a conflict', () => {
         const { bindings, freed } = assignBinding(DEFAULT_BINDINGS, 'jetpack', 1, 'KeyW');
         expect(bindings.jetpack).toEqual([null, 'KeyW']);
+        expect(bindings.jump).toEqual(['Space', null]);
         expect(freed).toBeNull();
     });
 

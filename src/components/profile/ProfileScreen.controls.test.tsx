@@ -20,7 +20,8 @@ describe('ProfileScreen controls tab', () => {
         expect(screen.getByRole('tab', { name: 'Achievements' })).toHaveAttribute('aria-selected', 'true');
         fireEvent.click(screen.getByRole('tab', { name: 'Controls' }));
         expect(slot('Jetpack (up)', 1)).toHaveTextContent('W');
-        expect(slot('Jetpack (up)', 2)).toHaveTextContent('Space');
+        expect(slot('Jetpack (up)', 2)).toHaveTextContent('—');
+        expect(slot('Jump', 1)).toHaveTextContent('Space');
         expect(screen.queryByRole('list', { name: 'Achievements' })).not.toBeInTheDocument();
     });
 
@@ -30,7 +31,7 @@ describe('ProfileScreen controls tab', () => {
         expect(slot('Jetpack (up)', 1)).toHaveTextContent('Press a key…');
         fireEvent.keyDown(window, { code: 'KeyE', key: 'e' });
         expect(slot('Jetpack (up)', 1)).toHaveTextContent('E');
-        expect(stored().jetpack).toEqual(['KeyE', 'Space']);
+        expect(stored().jetpack).toEqual(['KeyE', null]);
     });
 
     it('moves a key taken by another action, marks the emptied slot and warns', async () => {

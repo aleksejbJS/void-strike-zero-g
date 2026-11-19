@@ -1,13 +1,13 @@
 // The key hints of the main menu, built from the player's bindings. One key per action is shown (a keyboard
 // key before a mouse button), the rest go to the tooltip. With the default layout they read exactly like the
-// old fixed legend ("WASD Move, Space Jetpack, Left click Fire, Shift Grapple, …").
+// old fixed legend plus the jump ("WASD Move, W Jetpack, Space Jump, Left click Fire, Shift Grapple, …").
 
 import type { BindAction, Bindings, InputCode } from '../../game/input/bindings';
 import type { Translate } from '../menu/types';
 import { inputLabel } from './inputLabel';
 
 export interface LegendItem {
-    label: 'ctl.move' | 'ctl.jetpack' | 'ctl.fire' | 'ctl.grapple' | 'ctl.crouch' | 'ctl.proneShort';
+    label: 'ctl.move' | 'ctl.jetpack' | 'kb.action.jump' | 'ctl.fire' | 'ctl.grapple' | 'ctl.crouch' | 'ctl.proneShort';
     /** What the key cap shows. */
     shown: string;
     /** Tooltip: every input of the action, or the long name of the action. */
@@ -46,6 +46,7 @@ export function legendItems(b: Bindings, t: Translate): LegendItem[] {
     return [
         move,
         item('ctl.jetpack', wasd && jetpackRest.length > 0 ? jetpackRest : codes('jetpack')),
+        item('kb.action.jump', codes('jump')),
         item('ctl.fire', codes('fire')),
         item('ctl.grapple', codes('grapple')),
         item('ctl.crouch', codes('down')),
