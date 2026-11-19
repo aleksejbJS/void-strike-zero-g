@@ -2,6 +2,14 @@
 
 ## Version 0.5.1 (unreleased)
 
+### 🦘 Jump
+- Spec and plan: `docs/plans/2026-11-19-jump-spec.md`, `...-jump-plan.md`. Space jumps (~1.5 fighter heights, measured 108 px in the Matter loop); one more press in the air is the double jump (~+1 height, 180 px at the top), once per airtime, also after walking off a ledge or using the jetpack. Neither burns fuel. The jetpack is W only (Space used to fire it too); W still reels in on the hook, where Space does nothing. No jump on one leg. Space while lying stands up and jumps; a crouching flag carrier's S + Space throws the flag like S + W
+- `src/game/systems/jump.ts` in the Force Pipeline: a fresh press (`jumpHeld` edge) sets `JUMP_SPEED` 12.3 / `AIR_JUMP_SPEED` 10.0; `jumpRise` relaxes the upward clamp only while a jump rises faster than `HARD_SPEED_CAP`, so the jetpack and rocket jumps keep their cap. `jumpHeld`, `airJump` and `jumpRise` are predicted fields of the local player
+- The flip is cosmetic (`fighterFlip.ts`): each client turns the fighter once in 0.4 s when it sees `airJump` turn ±1 (the direction of A/D or the facing), never for a fighter first seen mid-air, and stands it up at once on landing. `applyFlip` turns the root about the body centre and counter-places the new gun layer so the gun stays at the real shot point, aimed at the cursor; shooting stays allowed
+- A quick Space tap that starts and ends between two ticks is kept until a tick reads it (`pressLatch.ts`), so a fast press at a low frame rate is not lost
+- Key bindings: a "Jump" row (Space); the jetpack default is W alone; the menu legend shows "W Jetpack, Space Jump". Touch controls have no jump yet; bots do not jump
+- The online Node server runs this code: redeploy it with the release (until then an old server reads Space as jetpack and pulls an online player back)
+
 ### ⌨️ Key bindings
 - Spec and plan: `docs/plans/2026-11-19-key-bindings-spec.md`, `...-key-bindings-plan.md`. Profile has tabs Achievements | Controls; Controls lists Left, Right, Jetpack (up), Down / crouch, Lie down, Fire and Grapple with a primary and a secondary slot each. Click a slot, then press a key or a mouse button (5 buttons); Esc cancels; Esc, F3, 1–9 (and numpad 1–9), Cmd and Ctrl cannot be bound (Ctrl+W would close the tab). A key already used by another action moves to the new one, the emptied slot turns red and a warning names any action left with no key; Reset all restores the defaults. Keys are matched by position (`KeyboardEvent.code`), left and right Shift / Ctrl / Alt count as one key. The tab is hidden on devices without a mouse or trackpad
 - Bindings are kept in this browser only (`controls.v1` in localStorage, `src/game/input/bindingStorage.ts`), sanitized on every load: junk, reserved or duplicate inputs are dropped, and an action missing from the stored data (a future "Jump") gets its defaults minus inputs the player already uses

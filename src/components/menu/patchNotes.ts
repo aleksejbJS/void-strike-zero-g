@@ -36,6 +36,7 @@ const BLAST = shots('blast');
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
         { version: '0.5.1', date: null, points: [
+            'Space jumps; a second Space in the air does a double jump with a forward flip — the jetpack is on W',
             'Change your controls: Profile → Controls lets you put any action on the key or mouse button you like',
             'The key hints under the main menu show your own keys',
         ] },
@@ -308,6 +309,7 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     ],
     ru: [
         { version: '0.5.1', date: null, points: [
+            'Пробел — прыжок, второй пробел в воздухе — двойной прыжок с сальто вперёд; джетпак — на W',
             'Своё управление: в Профиле → Управление любое действие можно поставить на удобную клавишу или кнопку мыши',
             'Подсказки с клавишами под главным меню показывают ваши клавиши',
         ] },
