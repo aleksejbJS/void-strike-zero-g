@@ -18,6 +18,8 @@ const makePlayer = (overrides: Partial<Entity> = {}): Entity => ({
 });
 
 const noInput: MovementInput = {
+    jumpPress: false,
+    facing: 1,
     inputX: 0,
     isFlying: false,
     wantsJump: false,

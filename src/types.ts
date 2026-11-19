@@ -123,6 +123,9 @@ export interface Entity {
   aim?: number; // Aim angle in radians (lets other clients render where this player points)
   jetpackOn?: boolean; // Jetpack thrusting this tick (lets other clients draw the flame)
   hungerOutTimer?: number;
+  airJump?: -1 | 0 | 1; // double jump of this airtime: 0/missing = still available, ±1 = used (and the flip direction)
+  jumpRise?: boolean;  // rising from a jump: the upward speed cap is relaxed until it slows below the cap
+  jumpHeld?: boolean;  // the Jump key was held last tick (a jump needs a fresh press)
   wound?: Wound; // lost a leg to a railgun through armor (missing from older hosts: whole)
   spawnShieldUntil?: number; // can't be hurt before this timestamp, right after a respawn (spawnShield.ts)
   burnUntil?: number; // on fire until this timestamp, set by the flame stream (burning.ts)

@@ -74,6 +74,8 @@ export const applyPlayerMovement = (state: GameState, p: Entity, controls: Playe
         wantsDown: controls.wantsDown,
         wantsReel: controls.wantsJump && p.grapple.active,
         wantsExtend: controls.wantsDown && p.grapple.active,
+        jumpPress: false, // wired to the Jump key in the next step of the jump plan
+        facing: 1,
     };
     applyMovement(p, movInput, particleState);
 
