@@ -19,6 +19,7 @@ import { attachWheelWeapon } from '../game/input/wheelWeapon';
 import { mouseCode, normalizeCode } from '../game/input/bindings';
 import { applyActionChange, createBindingInput, InputSink } from '../game/input/bindingInput';
 import { loadBindings } from '../game/input/bindingStorage';
+import { createPressLatch, PressLatch } from '../game/input/pressLatch';
 import { isTouchDevice } from './fullscreen';
 import { clampProneAim } from '../game/systems/stance';
 import { clearMarks } from '../game/systems/marks';
@@ -154,6 +155,7 @@ export default function GameCanvas() {
     const mouse = useRef({ x: 0, y: 0 });
     const mousePressed = useRef(false);
     const hookPressed = useRef(false);
+    const jumpLatchRef = useRef<PressLatch | null>(null);
     const isMutedRef = useRef(state.isMuted);
     // Online, the server decides the mode; the HUD follows it once we've joined
     const gameMode = onlineMode ?? state.selectedMode;
@@ -726,6 +728,9 @@ export default function GameCanvas() {
                             }
                         });
                     }
+                    // This tick has read a quick Space tap: from now on Space is whatever the key really is
+                    const tap = jumpLatchRef.current;
+                    if (tap) { tap.ticked(); keys.current.Space = tap.held(); }
                 });
                 updateDebugStats(now, ticksRun);
 
@@ -876,8 +881,15 @@ export default function GameCanvas() {
 
             // Inputs go through the player's key bindings (profile → Controls): only the standard keys reach `keys`
             const bound = createBindingInput(loadBindings());
+            // The jump fires on a press: a tap that ends between two ticks is kept until a tick has read it
+            const jumpTap = createPressLatch();
+            jumpLatchRef.current = jumpTap;
             const sink: InputSink = {
-                setKey: (code, down) => { keys.current[code] = down; },
+                setKey: (code, down) => {
+                    if (code !== 'Space') { keys.current[code] = down; return; }
+                    if (down) jumpTap.down(); else jumpTap.up();
+                    keys.current.Space = jumpTap.held();
+                },
                 setFire: down => { mousePressed.current = down; },
                 setHook: down => { hookPressed.current = down; },
             };
@@ -929,6 +941,7 @@ export default function GameCanvas() {
             // Release all inputs when the window loses focus, otherwise keys stay "held"
             onBlur = () => {
                 bound.reset();
+                jumpTap.reset();
                 keys.current = {};
                 mousePressed.current = false;
                 hookPressed.current = false;
