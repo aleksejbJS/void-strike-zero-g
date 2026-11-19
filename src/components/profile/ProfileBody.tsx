@@ -2,9 +2,9 @@
 // again (new key) after a login or logout, which is when that progress changes.
 
 import React, { useState } from 'react';
-import { AchievementGrid } from './AchievementGrid';
 import { ProfileAccountActions } from './ProfileAccountActions';
 import { ProfileSummary } from './ProfileSummary';
+import { ProfileTabs } from './ProfileTabs';
 import { readProfile } from './profileData';
 
 interface Props {
@@ -27,7 +27,7 @@ export const ProfileBody: React.FC<Props> = ({ nickname, onProtect, onLogOut }) 
                 </ProfileSummary>
             </div>
             <div className={column}>
-                <AchievementGrid achievements={data.achievements} />
+                <ProfileTabs achievements={data.achievements} />
             </div>
         </main>
     );

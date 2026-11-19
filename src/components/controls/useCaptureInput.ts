@@ -10,21 +10,29 @@ const swallow = (e: Event) => {
     e.stopImmediatePropagation();
 };
 
-const AFTER_CLICK = ['mouseup', 'click', 'auxclick', 'contextmenu'] as const;
+const AFTER_CLICK = ['mousedown', 'mouseup', 'click', 'auxclick', 'contextmenu'] as const;
+let stopSwallowing: (() => void) | null = null;
 
 /**
  * A captured button still sends its mouseup / click / context menu after the capture closed (it closes on the
- * mousedown): they would land on the slot under the cursor and open it again. Swallow them until the button is up.
+ * mousedown): they would land on the slot under the cursor and open it again. Swallow them until the button is
+ * up. A new press ends it too, so a release lost outside the window never leaves the page deaf to clicks.
  */
 function swallowRestOfClick(): void {
+    stopSwallowing?.();
     const options = { capture: true };
-    const stop = () => AFTER_CLICK.forEach(type => window.removeEventListener(type, onEvent, options));
+    const stop = () => {
+        AFTER_CLICK.forEach(type => window.removeEventListener(type, onEvent, options));
+        if (stopSwallowing === stop) stopSwallowing = null;
+    };
     function onEvent(e: Event) {
+        if (e.type === 'mousedown') { stop(); return; }
         swallow(e);
         // The click follows its mouseup in the same task: stop listening right after it
         if (e.type === 'mouseup') setTimeout(stop, 0);
     }
     AFTER_CLICK.forEach(type => window.addEventListener(type, onEvent, options));
+    stopSwallowing = stop;
 }
 
 export function useCaptureInput(active: boolean, onCapture: (code: InputCode) => void, onCancel: () => void): void {

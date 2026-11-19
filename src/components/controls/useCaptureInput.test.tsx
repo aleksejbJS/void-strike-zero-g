@@ -54,6 +54,36 @@ describe('useCaptureInput', () => {
         expect(clicked).not.toHaveBeenCalled();
     });
 
+    it('lets clicks through again once the captured button is up', () => {
+        vi.useFakeTimers();
+        try {
+            const { hook } = setup(true);
+            fireEvent.mouseDown(window, { button: 0 });
+            hook.rerender({ on: false });
+            fireEvent.mouseUp(window, { button: 0 });
+            vi.runOnlyPendingTimers();
+            const clicked = vi.fn();
+            window.addEventListener('click', clicked);
+            fireEvent.click(window);
+            window.removeEventListener('click', clicked);
+            expect(clicked).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('lets clicks through on the next press when the release never arrived (button let go outside the window)', () => {
+        const { hook } = setup(true);
+        fireEvent.mouseDown(window, { button: 0 });
+        hook.rerender({ on: false });
+        const clicked = vi.fn();
+        window.addEventListener('click', clicked);
+        fireEvent.mouseDown(window, { button: 0 });
+        fireEvent.click(window);
+        window.removeEventListener('click', clicked);
+        expect(clicked).toHaveBeenCalledTimes(1);
+    });
+
     it('keeps the back / forward buttons from navigating', () => {
         setup(true);
         const up = new MouseEvent('mouseup', { button: 3, cancelable: true });
