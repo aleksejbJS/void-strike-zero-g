@@ -50,8 +50,9 @@ const MOUSE_BUTTONS = 5;
 export const mouseCode = (button: number): InputCode | null =>
     Number.isInteger(button) && button >= 0 && button < MOUSE_BUTTONS ? `Mouse${button}` : null;
 
-// Esc pauses, F3 is the debug panel, digits pick weapons (by `e.key`, so the numpad too), Cmd starts browser shortcuts
-const RESERVED = new Set(['Escape', 'F3', 'Meta']);
+// Esc pauses, F3 is the debug panel, digits pick weapons (by `e.key`, so the numpad too). Cmd and Ctrl start
+// browser shortcuts a page cannot cancel: Ctrl + the jetpack's W would close the tab mid-match
+const RESERVED = new Set(['Escape', 'F3', 'Meta', 'Control']);
 const WEAPON_DIGIT = /^(Digit|Numpad)[1-9]$/;
 
 export const isReserved = (code: InputCode): boolean => RESERVED.has(code) || WEAPON_DIGIT.test(code);

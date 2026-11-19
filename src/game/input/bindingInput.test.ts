@@ -45,6 +45,16 @@ describe('createBindingInput', () => {
     });
 });
 
+describe('isBound', () => {
+    it('tells which inputs drive an action, so the match can keep the browser from acting on them', () => {
+        const input = createBindingInput({ ...DEFAULT_BINDINGS, jetpack: ['Tab', null] });
+        expect(input.isBound('Tab')).toBe(true);
+        expect(input.isBound('Mouse2')).toBe(true);
+        expect(input.isBound('KeyW')).toBe(false);
+        expect(input.isBound('F5')).toBe(false);
+    });
+});
+
 describe('applyActionChange', () => {
     const sink = (): InputSink & { [k: string]: ReturnType<typeof vi.fn> } => ({ setKey: vi.fn(), setFire: vi.fn(), setHook: vi.fn() });
 

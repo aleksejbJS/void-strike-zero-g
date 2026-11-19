@@ -48,9 +48,10 @@ describe('bindingStorage', () => {
 
 describe('sanitizeBindings', () => {
     it('drops reserved keys and junk, normalizes modifier sides', () => {
-        const b = sanitizeBindings({ ...DEFAULT_BINDINGS, jetpack: ['Digit1', 'Escape'], down: ['<script>', 'ShiftRight'], grapple: ['Mouse2', null] });
+        const b = sanitizeBindings({ ...DEFAULT_BINDINGS, jetpack: ['Digit1', 'Escape'], down: ['<script>', 'ShiftRight'], prone: ['ControlLeft', null], grapple: ['Mouse2', null] });
         expect(b.jetpack).toEqual([null, null]);
         expect(b.down).toEqual([null, 'Shift']);
+        expect(b.prone).toEqual([null, null]);
     });
 
     it('keeps a duplicated input only on the earlier action', () => {

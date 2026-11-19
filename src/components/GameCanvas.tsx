@@ -888,7 +888,10 @@ export default function GameCanvas() {
                 initAudio().catch(err => console.error('Audio init failed:', err));
                 const rangeKeys = rangeLoop.key(e.code, e.repeat, gameState.current); // C, K, H, R in the test range
                 if (rangeKeys) setRangeLegend(rangeKeys);
-                applyActionChange(bound.press(normalizeCode(e.code)), sink);
+                const code = normalizeCode(e.code);
+                // A bound key only plays: Tab must not move focus onto the HUD, F5 must not reload the match
+                if (bound.isBound(code)) e.preventDefault();
+                applyActionChange(bound.press(code), sink);
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const slot = weaponSlotOfKey(e.key);
                 if (slot !== null) selectWeapon(slot);
@@ -903,12 +906,17 @@ export default function GameCanvas() {
                     else actions.finishGame(local?.score ?? 0);
                 }
             };
-            onKeyUp = (e: KeyboardEvent) => applyActionChange(bound.release(normalizeCode(e.code)), sink);
+            onKeyUp = (e: KeyboardEvent) => {
+                const code = normalizeCode(e.code);
+                if (bound.isBound(code)) e.preventDefault(); // e.g. Alt up would open the browser menu on Windows
+                applyActionChange(bound.release(code), sink);
+            };
             onMouseMove = (e: MouseEvent) => { mouse.current.x = e.clientX; mouse.current.y = e.clientY; };
             onMouseDown = (e: MouseEvent) => {
                 initAudio().catch(err => console.error('Audio init failed:', err));
-                if (isNavButton(e.button)) e.preventDefault();
                 const code = mouseCode(e.button);
+                // Back / forward never navigate; a bound middle button must not start autoscroll
+                if (isNavButton(e.button) || (code && e.button !== 0 && bound.isBound(code))) e.preventDefault();
                 if (code) applyActionChange(bound.press(code), sink);
             };
             onMouseUp = (e: MouseEvent) => {

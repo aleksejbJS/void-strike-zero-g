@@ -27,8 +27,8 @@ describe('mouseCode', () => {
 });
 
 describe('isReserved', () => {
-    it('keeps the game keys out of reach: Esc, F3, weapon digits, Cmd', () => {
-        for (const code of ['Escape', 'F3', 'Digit1', 'Digit9', 'Numpad1', 'Numpad5', 'Numpad9', 'Meta']) {
+    it('keeps the game keys out of reach: Esc, F3, weapon digits, Cmd and Ctrl (Ctrl+W closes the tab)', () => {
+        for (const code of ['Escape', 'F3', 'Digit1', 'Digit9', 'Numpad1', 'Numpad5', 'Numpad9', 'Meta', 'Control']) {
             expect(isReserved(code)).toBe(true);
         }
     });

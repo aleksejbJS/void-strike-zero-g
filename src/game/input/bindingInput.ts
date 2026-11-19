@@ -12,6 +12,8 @@ export interface BindingInput {
     release(code: InputCode): ActionChange | null;
     /** Forget everything held (the window lost focus). */
     reset(): void;
+    /** Whether an action uses this input: the match then keeps the browser from acting on it (Tab, F5, Space…). */
+    isBound(code: InputCode): boolean;
 }
 
 type KeyTarget = Exclude<ActionTarget, 'fire' | 'hook'>;
@@ -44,6 +46,7 @@ export function createBindingInput(bindings: Bindings): BindingInput {
         press: code => update(code, true),
         release: code => update(code, false),
         reset: () => held.clear(),
+        isBound: code => actionOf.has(code),
     };
 }
 
