@@ -16,6 +16,9 @@ import { drawAimLine } from '../game/render/aimLine';
 import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim } from '../game/input/sticks';
 import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
 import { attachWheelWeapon } from '../game/input/wheelWeapon';
+import { mouseCode, normalizeCode } from '../game/input/bindings';
+import { applyActionChange, createBindingInput, InputSink } from '../game/input/bindingInput';
+import { loadBindings } from '../game/input/bindingStorage';
 import { isTouchDevice } from './fullscreen';
 import { clampProneAim } from '../game/systems/stance';
 import { clearMarks } from '../game/systems/marks';
@@ -871,13 +874,21 @@ export default function GameCanvas() {
                 }
             });
 
-            // Inputs
+            // Inputs go through the player's key bindings (profile → Controls): only the standard keys reach `keys`
+            const bound = createBindingInput(loadBindings());
+            const sink: InputSink = {
+                setKey: (code, down) => { keys.current[code] = down; },
+                setFire: down => { mousePressed.current = down; },
+                setHook: down => { hookPressed.current = down; },
+            };
+            // Mouse back / forward must not navigate away from a running match
+            const isNavButton = (button: number) => button === 3 || button === 4;
             onKeyDown = (e: KeyboardEvent) => {
                 // Browsers unlock audio on a gesture: a key counts too, so sound starts before the first shot
                 initAudio().catch(err => console.error('Audio init failed:', err));
                 const rangeKeys = rangeLoop.key(e.code, e.repeat, gameState.current); // C, K, H, R in the test range
                 if (rangeKeys) setRangeLegend(rangeKeys);
-                keys.current[e.code] = true;
+                applyActionChange(bound.press(normalizeCode(e.code)), sink);
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const slot = weaponSlotOfKey(e.key);
                 if (slot !== null) selectWeapon(slot);
@@ -891,25 +902,25 @@ export default function GameCanvas() {
                     if (tournamentRun) tourney.signals.escape();
                     else actions.finishGame(local?.score ?? 0);
                 }
-                // Shift key can also activate grappling hook (convenient for trackpad users)
-                if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = true;
             };
-            onKeyUp = (e: KeyboardEvent) => {
-                keys.current[e.code] = false;
-                // Release grappling hook when Shift is released
-                if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = false;
-            };
+            onKeyUp = (e: KeyboardEvent) => applyActionChange(bound.release(normalizeCode(e.code)), sink);
             onMouseMove = (e: MouseEvent) => { mouse.current.x = e.clientX; mouse.current.y = e.clientY; };
             onMouseDown = (e: MouseEvent) => {
                 initAudio().catch(err => console.error('Audio init failed:', err));
-                if (e.button === 0) mousePressed.current = true;
-                if (e.button === 2) hookPressed.current = true;
+                if (isNavButton(e.button)) e.preventDefault();
+                const code = mouseCode(e.button);
+                if (code) applyActionChange(bound.press(code), sink);
             };
-            onMouseUp = (e: MouseEvent) => { if (e.button === 0) mousePressed.current = false; if (e.button === 2) hookPressed.current = false; };
+            onMouseUp = (e: MouseEvent) => {
+                if (isNavButton(e.button)) e.preventDefault();
+                const code = mouseCode(e.button);
+                if (code) applyActionChange(bound.release(code), sink);
+            };
             onContextMenu = (e: Event) => e.preventDefault();
 
             // Release all inputs when the window loses focus, otherwise keys stay "held"
             onBlur = () => {
+                bound.reset();
                 keys.current = {};
                 mousePressed.current = false;
                 hookPressed.current = false;
