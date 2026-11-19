@@ -16,6 +16,10 @@ import { drawAimLine } from '../game/render/aimLine';
 import { AIM_STICK_RADIUS, aimDirection, aimPoint, deflection, isFiring, moveKeys, smoothAim } from '../game/input/sticks';
 import { attachTouchSticks, TouchSticksState } from '../game/input/touchSticks';
 import { attachWheelWeapon } from '../game/input/wheelWeapon';
+import { mouseCode, normalizeCode } from '../game/input/bindings';
+import { applyActionChange, createBindingInput, InputSink } from '../game/input/bindingInput';
+import { loadBindings } from '../game/input/bindingStorage';
+import { createPressLatch, PressLatch } from '../game/input/pressLatch';
 import { isTouchDevice } from './fullscreen';
 import { clampProneAim } from '../game/systems/stance';
 import { clearMarks } from '../game/systems/marks';
@@ -151,6 +155,7 @@ export default function GameCanvas() {
     const mouse = useRef({ x: 0, y: 0 });
     const mousePressed = useRef(false);
     const hookPressed = useRef(false);
+    const jumpLatchRef = useRef<PressLatch | null>(null);
     const isMutedRef = useRef(state.isMuted);
     // Online, the server decides the mode; the HUD follows it once we've joined
     const gameMode = onlineMode ?? state.selectedMode;
@@ -723,6 +728,9 @@ export default function GameCanvas() {
                             }
                         });
                     }
+                    // This tick has read a quick Space tap: from now on Space is whatever the key really is
+                    const tap = jumpLatchRef.current;
+                    if (tap) { tap.ticked(); keys.current.Space = tap.held(); }
                 });
                 updateDebugStats(now, ticksRun);
 
@@ -871,13 +879,31 @@ export default function GameCanvas() {
                 }
             });
 
-            // Inputs
+            // Inputs go through the player's key bindings (profile → Controls): only the standard keys reach `keys`
+            const bound = createBindingInput(loadBindings());
+            // The jump fires on a press: a tap that ends between two ticks is kept until a tick has read it
+            const jumpTap = createPressLatch();
+            jumpLatchRef.current = jumpTap;
+            const sink: InputSink = {
+                setKey: (code, down) => {
+                    if (code !== 'Space') { keys.current[code] = down; return; }
+                    if (down) jumpTap.down(); else jumpTap.up();
+                    keys.current.Space = jumpTap.held();
+                },
+                setFire: down => { mousePressed.current = down; },
+                setHook: down => { hookPressed.current = down; },
+            };
+            // Mouse back / forward must not navigate away from a running match
+            const isNavButton = (button: number) => button === 3 || button === 4;
             onKeyDown = (e: KeyboardEvent) => {
                 // Browsers unlock audio on a gesture: a key counts too, so sound starts before the first shot
                 initAudio().catch(err => console.error('Audio init failed:', err));
                 const rangeKeys = rangeLoop.key(e.code, e.repeat, gameState.current); // C, K, H, R in the test range
                 if (rangeKeys) setRangeLegend(rangeKeys);
-                keys.current[e.code] = true;
+                const code = normalizeCode(e.code);
+                // A bound key only plays: Tab must not move focus onto the HUD, F5 must not reload the match
+                if (bound.isBound(code)) e.preventDefault();
+                applyActionChange(bound.press(code), sink);
                 const local = gameState.current.players.find(p => p.id === localIdRef.current);
                 const slot = weaponSlotOfKey(e.key);
                 if (slot !== null) selectWeapon(slot);
@@ -891,25 +917,31 @@ export default function GameCanvas() {
                     if (tournamentRun) tourney.signals.escape();
                     else actions.finishGame(local?.score ?? 0);
                 }
-                // Shift key can also activate grappling hook (convenient for trackpad users)
-                if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = true;
             };
             onKeyUp = (e: KeyboardEvent) => {
-                keys.current[e.code] = false;
-                // Release grappling hook when Shift is released
-                if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') hookPressed.current = false;
+                const code = normalizeCode(e.code);
+                if (bound.isBound(code)) e.preventDefault(); // e.g. Alt up would open the browser menu on Windows
+                applyActionChange(bound.release(code), sink);
             };
             onMouseMove = (e: MouseEvent) => { mouse.current.x = e.clientX; mouse.current.y = e.clientY; };
             onMouseDown = (e: MouseEvent) => {
                 initAudio().catch(err => console.error('Audio init failed:', err));
-                if (e.button === 0) mousePressed.current = true;
-                if (e.button === 2) hookPressed.current = true;
+                const code = mouseCode(e.button);
+                // Back / forward never navigate; a bound middle button must not start autoscroll
+                if (isNavButton(e.button) || (code && e.button !== 0 && bound.isBound(code))) e.preventDefault();
+                if (code) applyActionChange(bound.press(code), sink);
             };
-            onMouseUp = (e: MouseEvent) => { if (e.button === 0) mousePressed.current = false; if (e.button === 2) hookPressed.current = false; };
+            onMouseUp = (e: MouseEvent) => {
+                if (isNavButton(e.button)) e.preventDefault();
+                const code = mouseCode(e.button);
+                if (code) applyActionChange(bound.release(code), sink);
+            };
             onContextMenu = (e: Event) => e.preventDefault();
 
             // Release all inputs when the window loses focus, otherwise keys stay "held"
             onBlur = () => {
+                bound.reset();
+                jumpTap.reset();
                 keys.current = {};
                 mousePressed.current = false;
                 hookPressed.current = false;

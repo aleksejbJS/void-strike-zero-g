@@ -9,7 +9,7 @@ import { MatterPhysicsEngine } from './MatterEngine';
 const block = (id: string, x: number, y: number, w: number, h: number): Platform => ({ id, x, y, w, h, color: '' });
 
 const input = (over: Partial<MovementInput>): MovementInput => ({
-    inputX: 0, isFlying: false, wantsJump: false, wantsDown: false, wantsReel: false, wantsExtend: false, ...over,
+    inputX: 0, isFlying: false, wantsJump: false, wantsDown: false, wantsReel: false, wantsExtend: false, jumpPress: false, facing: 1, ...over,
 });
 
 /** Run the real tick order (Matter step → read → Force Pipeline → write) and return the player after each tick. */

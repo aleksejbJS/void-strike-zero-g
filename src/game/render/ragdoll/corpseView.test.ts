@@ -37,7 +37,7 @@ const frontWithoutPicture = (weaponless: boolean) => {
         look, facing: 1, grip, weaponType: WeaponType.MACHINE_GUN, flame: false, flicker: 0, parts: IDLE_PARTS,
         muzzleFlash: 0, weaponless,
     });
-    const count = view.front.context.instructions.length;
+    const count = view.front.context.instructions.length + view.gunFront.context.instructions.length; // the fallback gun lives in the gun layer
     return { view, count };
 };
 

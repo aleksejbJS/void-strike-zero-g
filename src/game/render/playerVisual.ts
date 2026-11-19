@@ -4,6 +4,7 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { Entity, GameState, Vector2 } from '../../types';
 import { createFighterView, drawFighter, FighterView } from './fighter/fighterView';
+import { applyFlip } from './fighter/fighterFlipPlacement';
 import { FighterAnimator } from './fighter/fighterAnimator';
 import { RIG_SCALE, upperPoint } from './fighter/fighterPose';
 import { drawGrappleRope } from './grappleRope';
@@ -76,7 +77,8 @@ export const updatePlayerVisual = (
 
     const frame = animator.frame(p, aimOf(p, camera, mouse, screenW, screenH, isLocal), now, textures, game);
     drawFighter(view, frame);
-    view.root.position.y = -(frame.hop ?? 0); // a one-legged hop lifts the fighter; the contact shadow stays on the deck
+    // A one-legged hop lifts the fighter (the contact shadow stays on the deck); a double jump turns it once
+    applyFlip(view, frame.flipAngle ?? 0, frame.hop ?? 0);
     const shadow = c.getChildByLabel('contactShadow');
     if (shadow) shadow.visible = p.isGrounded;
 

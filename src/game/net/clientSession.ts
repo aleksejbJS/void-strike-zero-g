@@ -39,7 +39,8 @@ export interface TickControls {
 }
 
 // Fields the client owns for its own player between snapshots (predicted locally)
-const PREDICTED_FIELDS = ['pos', 'vel', 'isGrounded', 'isCrouching', 'isProne', 'height', 'grapple', 'jetpackFuel', 'aim'] as const;
+// Our own player's fields come from local prediction, not from the (older) server snapshot
+export const PREDICTED_FIELDS = ['pos', 'vel', 'isGrounded', 'isCrouching', 'isProne', 'height', 'grapple', 'jetpackFuel', 'aim', 'jumpHeld', 'airJump', 'jumpRise'] as const;
 
 export class ClientSession {
     localId: string | null = null;

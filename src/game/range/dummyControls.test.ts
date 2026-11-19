@@ -17,7 +17,7 @@ const DUMMY = createDummies()[0];
 describe('dummyControls', () => {
     it('stands still: no run, no jump, no jetpack', () => {
         const controls = dummyControls(DUMMY, createRangeState());
-        expect(controls).toEqual({ inputX: 0, wantsJump: false, wantsDown: false, wantsProne: false, isFlying: false });
+        expect(controls).toEqual({ inputX: 0, wantsJump: false, jumpKey: false, wantsDown: false, wantsProne: false, isFlying: false });
     });
 
     it('crouches and lies down by the range stance', () => {

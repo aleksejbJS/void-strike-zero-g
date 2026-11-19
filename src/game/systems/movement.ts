@@ -24,14 +24,17 @@ import {
 } from '../../constants';
 import { applyGrapplePhysics, GrappleInput } from './grapple';
 import { jetpackTrail } from './effects';
+import { applyJump, upwardCap } from './jump';
 
 export interface MovementInput {
     inputX: number;       // -1, 0, or 1
     isFlying: boolean;    // wants to use jetpack (ignored while the hook is attached)
-    wantsJump: boolean;   // W or Space held
+    wantsJump: boolean;   // W held (jetpack boost; reels in on the hook)
     wantsDown: boolean;   // S held while flying
     wantsReel: boolean;   // W held while grapple active
     wantsExtend: boolean; // S held while grapple active
+    jumpPress: boolean;   // the Jump key (Space) went down this tick
+    facing: -1 | 1;       // where the fighter faces: the double jump flips that way when A/D are not held
 }
 
 /**
@@ -45,7 +48,8 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
     // Thrusting up off a floor is flight already. Otherwise the floor contact reset the climb to a
     // creep every tick and ground friction held a diagonal (W + D) takeoff for ~0.1 s.
     const liftingOff = flying && p.jetpackFuel > 0 && !input.wantsDown;
-    const grounded = p.isGrounded && !liftingOff;
+    // A jump just started may still touch the grounding band: it must not be reset to standing
+    const grounded = p.isGrounded && !liftingOff && !p.jumpRise;
 
     // --- 1. Gravity ---
     if (!grounded) {
@@ -109,6 +113,9 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
         applyGrapplePhysics(p, grappleInput);
     }
 
+    // --- 4b. Jump / double jump (after the jetpack, so a press always wins this tick's vertical speed) ---
+    applyJump(p, input);
+
     // --- 5. Friction ---
     if (grounded) {
         p.vel.x *= GROUND_FRICTION;
@@ -124,5 +131,5 @@ export const applyMovement = (p: Entity, input: MovementInput, state?: GameState
     p.vel.x = Math.max(-HARD_SPEED_CAP, Math.min(HARD_SPEED_CAP, p.vel.x));
 
     // Vertical limits
-    p.vel.y = Math.max(-HARD_SPEED_CAP, Math.min(HARD_SPEED_CAP, p.vel.y));
+    p.vel.y = Math.max(-upwardCap(p), Math.min(HARD_SPEED_CAP, p.vel.y));
 };

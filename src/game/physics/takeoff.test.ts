@@ -10,7 +10,7 @@ const FLOOR_Y = 500;
 const floor: Platform[] = [{ id: 'floor', x: -2000, y: FLOOR_Y, w: 4000, h: 30, color: '' }];
 
 const input = (over: Partial<MovementInput>): MovementInput => ({
-    inputX: 0, isFlying: false, wantsJump: false, wantsDown: false, wantsReel: false, wantsExtend: false, ...over,
+    inputX: 0, isFlying: false, wantsJump: false, wantsDown: false, wantsReel: false, wantsExtend: false, jumpPress: false, facing: 1, ...over,
 });
 
 /** Height above the floor and horizontal speed after each tick of holding `move`, starting `lift` units up. */

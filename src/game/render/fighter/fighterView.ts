@@ -32,8 +32,10 @@ export interface FighterView {
     body: Graphics;    // jetpack, legs, back arm, torso
     ears: Graphics;    // ears, horns and antennae behind the head, redrawn every frame
     head: Graphics;
+    gunLayer: Container; // holds weapon + light; counter-turned during a flip so the gun stays at the shot point
     weapon: Sprite;
     light: Sprite;     // warm muzzle light, over the body and weapon, under the front arm
+    gunFront: Graphics; // fallback gun and muzzle flash: in the gun layer, so a flip keeps them on the gun
     front: Graphics;   // hands and the front arm, over the weapon
     headKey: string;   // look the head was drawn for
     illustrated?: ArtRig;
@@ -56,6 +58,7 @@ export interface FighterFrame {
     parts: PartMotionFrame; // tail, ears, lamp and wings as the springs hold them
     muzzleFlash: number; // 0..1, strength of the flash (0 = none)
     squash?: number;   // 0..1, landing squash (default 0)
+    flipAngle?: number; // radians the double-jump flip turns the fighter (default 0). Not drawn here: see applyFlip
     oneLeg?: boolean;  // the back leg is gone: a bloody stump instead (a wounded fighter)
     hop?: number;      // px a one-legged hop lifts the fighter (default 0). Not drawn here: the owner of the root lifts it, shadow stays down
     headBob?: number;  // radians added to the head tilt (default 0)
@@ -82,8 +85,11 @@ export const createFighterView = (): FighterView => {
     const weapon = new Sprite(); weapon.label = 'fighterWeapon';
     const front = new Graphics(); front.label = 'fighterFront';
     const light = createMuzzleLight();
-    root.addChild(flameGlow, body, ears, head, weapon, light, front);
-    return { root, flameGlow, body, ears, head, weapon, light, front, headKey: '' };
+    const gunLayer = new Container(); gunLayer.label = 'fighterGunLayer';
+    const gunFront = new Graphics(); gunFront.label = 'fighterGunFront';
+    gunLayer.addChild(weapon, light, gunFront);
+    root.addChild(flameGlow, body, ears, head, gunLayer, front);
+    return { root, flameGlow, body, ears, head, gunLayer, weapon, light, gunFront, front, headKey: '' };
 };
 
 /** Place, size and tint the glow at the middle of the flames (their average with two nozzles); it follows the flicker. */
@@ -142,10 +148,11 @@ export const drawFighter = (view: FighterView, f: FighterFrame) => {
     w.position.set(pose.gunTopLeft.x, pose.gunTopLeft.y);
     w.rotation = pose.gunAngle;
 
-    const fr = view.front.clear();
-    if (!f.weapon && !f.weaponless) drawFallbackGun(fr, f);
-    if (f.muzzleFlash > 0) drawMuzzle(fr, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
+    const gf = view.gunFront.clear();
+    if (!f.weapon && !f.weaponless) drawFallbackGun(gf, f);
+    if (f.muzzleFlash > 0) drawMuzzle(gf, view.light, muzzlePoint(pose, grip), pose.gunAngle, f.muzzleFlash, f.weaponType);
     else view.light.visible = false;
+    const fr = view.front.clear();
     if (!illustrated) {
         hand(fr, pose.backArm.end);
         jointedLimb(fr, pose.shoulderFront, pose.frontArm.joint, pose.frontArm.end, { widths: [4.8 * LIMB_W, 4.4 * LIMB_W], colors: [look.arm, shade(look.arm, 0.92)] });

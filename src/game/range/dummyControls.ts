@@ -7,6 +7,7 @@ import type { RangeState } from './rangeState';
 export interface DummyControls {
     inputX: 0;
     wantsJump: false;
+    jumpKey: false;
     wantsDown: boolean;
     wantsProne: boolean;
     isFlying: false;
@@ -16,6 +17,7 @@ export interface DummyControls {
 export const dummyControls = (_p: Entity, range: RangeState | undefined): DummyControls => ({
     inputX: 0,
     wantsJump: false,
+    jumpKey: false,
     wantsDown: range?.stance === 'crouch',
     wantsProne: range?.stance === 'prone',
     isFlying: false,

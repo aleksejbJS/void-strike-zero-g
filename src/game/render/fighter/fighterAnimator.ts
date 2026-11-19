@@ -8,6 +8,7 @@ import { lookFromEntity } from './fighterLook';
 import { gripPoints } from './weaponGrips';
 import { FighterFrame } from './fighterView';
 import { FighterMotion, headBob, hopLift } from './fighterMotion';
+import { FighterFlip } from './fighterFlip';
 import { DustBudget } from './fighterDust';
 import { BleedDrips, StumpSparks } from './fighterBleed';
 import { FighterFire } from './fighterFire';
@@ -38,6 +39,7 @@ interface AnimMemory {
     recoilStart: number;
     lastCos: number;          // cos(phase) on the previous frame, to catch the foot plant
     motion: FighterMotion;    // landing squash and hit flash
+    flip: FighterFlip;        // the double jump's forward flip
     dust: DustBudget;
     bleed: BleedDrips;        // blood from the stump of a wounded fighter
     sparks: StumpSparks;      // a robot stump's shorting cables
@@ -132,6 +134,7 @@ export class FighterAnimator {
             parts,
             muzzleFlash: hasMuzzleFlash(p.weapon.type) ? flashStrength(since) : 0,
             squash: motion.squash,
+            flipAngle: m.flip.observe(p.airJump, now),
             headBob: headBob(state, m.phase),
             hitFlash: motion.hitFlash,
             expression: p.health <= 40 || p.wound || motion.hitFlash > 0 ? 'hurt' : 'normal',
@@ -150,7 +153,7 @@ export class FighterAnimator {
         if (!m) {
             m = {
                 phase: 0, lastTime: now, lastFiredSeen: null, recoilStart: -Infinity,
-                lastCos: 1, motion: new FighterMotion(), dust: new DustBudget(), bleed: new BleedDrips(), sparks: new StumpSparks(), fire: new FighterFire(),
+                lastCos: 1, motion: new FighterMotion(), flip: new FighterFlip(), dust: new DustBudget(), bleed: new BleedDrips(), sparks: new StumpSparks(), fire: new FighterFire(),
                 parts: new PartMotion(),
                 magazine: new MagazineDrop(),
             };
