@@ -184,7 +184,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             }
             updateGrapple(state, p, pHookPressed, aim ?? p.pos);
 
-            if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && controls.wantsJump && p.isCrouching) {
+            if (state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && (controls.wantsJump || controls.jumpKey) && p.isCrouching) {
                 state.pickups.push({
                     id: nextId('htf_throw_'),
                     type: ItemType.FLAG,
@@ -205,7 +205,7 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             // Bots press the same controls a player has
             const bot = updateBotAI(p, state, now, (b, target) => fireWeapon(state, b, target), state.mode);
             updateGrapple(state, p, bot.hook, bot.hookAim ?? p.pos);
-            controls = { inputX: bot.inputX, wantsJump: bot.reel, wantsDown: !!bot.wantsDown, wantsProne: false, isFlying: bot.isFlying };
+            controls = { inputX: bot.inputX, wantsJump: bot.reel, jumpKey: false, wantsDown: !!bot.wantsDown, wantsProne: false, isFlying: bot.isFlying };
             applyStance(p, controls); // crouching behind cover
         }
 

@@ -16,7 +16,8 @@ const HTF_CARRIER_SLOWDOWN = 0.85;
 
 export interface PlayerControls {
     inputX: number;     // -1..1: ±1 runs, ±WALK_INPUT walks
-    wantsJump: boolean; // W or Space
+    wantsJump: boolean; // W: jetpack (reels in on the hook)
+    jumpKey: boolean;   // Space held: a fresh press jumps (spec 2026-11-19-jump)
     wantsDown: boolean; // S
     wantsProne: boolean; // Z held on the ground (touch: move stick down to the edge); a jump stands up
     isFlying: boolean;  // jetpack thrust this tick
@@ -25,15 +26,17 @@ export interface PlayerControls {
 export const NO_KEYS: Record<string, boolean> = Object.freeze({}) as Record<string, boolean>;
 
 export const readControls = (p: Entity, keys: Record<string, boolean>): PlayerControls => {
-    const wantsJump = !!(keys['Space'] || keys['KeyW']);
+    const wantsJump = !!keys['KeyW'];
+    const jumpKey = !!keys['Space'];
     const wantsDown = !!keys['KeyS'];
-    const wantsProne = !!keys['KeyZ'] && !wantsJump && p.isGrounded;
+    // Taking off (jetpack or jump) stands the fighter up
+    const wantsProne = !!keys['KeyZ'] && !wantsJump && !jumpKey && p.isGrounded;
     let inputX = 0;
     if (keys['KeyA']) inputX -= 1;
     if (keys['KeyD']) inputX += 1;
     // Touch play: a half-pushed move stick walks. Only on the ground: flying and air strafe stay full
     if (keys['Walk'] && p.isGrounded) inputX *= WALK_INPUT;
-    return { inputX, wantsJump, wantsDown, wantsProne, isFlying: wantsJump && p.jetpackFuel > 0 };
+    return { inputX, wantsJump, jumpKey, wantsDown, wantsProne, isFlying: wantsJump && p.jetpackFuel > 0 };
 };
 
 /** Shoulder-to-aim angle, stored on the entity so other clients can render where it points. */
@@ -67,6 +70,11 @@ export const updateGrapple = (state: GameState, p: Entity, hookPressed: boolean,
 export const applyPlayerMovement = (state: GameState, p: Entity, controls: PlayerControls, particleState?: GameState) => {
     if (p.type === 'player') applyStance(p, controls);
 
+    // A crouching flag carrier's Space throws the flag (physics.ts), it does not jump
+    const carrierThrowing = state.mode === GameMode.HOLD_THE_FLAG && p.hasFlag === p.team && !!p.isCrouching;
+    const jumpPress = controls.jumpKey && !p.jumpHeld && !carrierThrowing;
+    p.jumpHeld = controls.jumpKey;
+
     const movInput: MovementInput = {
         inputX: controls.inputX,
         isFlying: controls.isFlying,
@@ -74,8 +82,8 @@ export const applyPlayerMovement = (state: GameState, p: Entity, controls: Playe
         wantsDown: controls.wantsDown,
         wantsReel: controls.wantsJump && p.grapple.active,
         wantsExtend: controls.wantsDown && p.grapple.active,
-        jumpPress: false, // wired to the Jump key in the next step of the jump plan
-        facing: 1,
+        jumpPress,
+        facing: Math.cos(p.aim ?? 0) < 0 ? -1 : 1,
     };
     applyMovement(p, movInput, particleState);
 
