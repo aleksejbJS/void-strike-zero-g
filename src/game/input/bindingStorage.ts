@@ -56,6 +56,15 @@ export function loadBindings(): Bindings {
     return sanitizeBindings(parsed.bindings);
 }
 
+const listeners = new Set<() => void>();
+
+/** Called after every save: the menu under the profile shows the new keys at once. Returns the unsubscribe. */
+export function onBindingsChange(listener: () => void): () => void {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+}
+
 export function saveBindings(b: Bindings): void {
     writeStored(BINDINGS_STORAGE_KEY, JSON.stringify({ v: FORMAT_VERSION, bindings: b }));
+    listeners.forEach(listener => listener());
 }

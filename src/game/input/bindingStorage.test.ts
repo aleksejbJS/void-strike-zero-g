@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DEFAULT_BINDINGS } from './bindings';
-import { BINDINGS_STORAGE_KEY, loadBindings, sanitizeBindings, saveBindings } from './bindingStorage';
+import { BINDINGS_STORAGE_KEY, loadBindings, onBindingsChange, sanitizeBindings, saveBindings } from './bindingStorage';
 import { installMemoryStorage } from '../../test/memoryStorage';
 
 describe('bindingStorage', () => {
@@ -21,6 +21,16 @@ describe('bindingStorage', () => {
         saveBindings(custom);
         expect(JSON.parse(localStorage.getItem(BINDINGS_STORAGE_KEY) as string)).toEqual({ v: 1, bindings: custom });
         expect(loadBindings()).toEqual(custom);
+    });
+
+    it('tells listeners about every save until they unsubscribe', () => {
+        const listener = vi.fn();
+        const off = onBindingsChange(listener);
+        saveBindings(DEFAULT_BINDINGS);
+        expect(listener).toHaveBeenCalledTimes(1);
+        off();
+        saveBindings(DEFAULT_BINDINGS);
+        expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('falls back to the defaults with a warning when the stored text is broken', () => {

@@ -9,8 +9,9 @@ import { RewardKeys, rewardStrings } from './rewardStrings';
 import { AccountKeys, accountStrings } from './accountStrings';
 import { TournamentKeys, tournamentStrings } from './tournamentStrings';
 import { LeaderboardKeys, leaderboardStrings } from './leaderboardStrings';
+import { BindingKeys, bindingStrings } from './bindingStrings';
 
-export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys, AccountKeys, TournamentKeys, LeaderboardKeys {
+export interface TranslationKeys extends HazardKeys, SetupKeys, HudKeys, ObjectiveKeys, MatchKeys, BuilderKeys, RewardKeys, AccountKeys, TournamentKeys, LeaderboardKeys, BindingKeys {
   // Menu
   'menu.title': string;
   'menu.deploy': string;
@@ -110,6 +111,7 @@ export const translations: Record<Language, TranslationKeys> = {
     ...accountStrings.en,
     ...tournamentStrings.en,
     ...leaderboardStrings.en,
+    ...bindingStrings.en,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'DEPLOY',
@@ -207,6 +209,7 @@ export const translations: Record<Language, TranslationKeys> = {
     ...accountStrings.ru,
     ...tournamentStrings.ru,
     ...leaderboardStrings.ru,
+    ...bindingStrings.ru,
     // Menu
     'menu.title': 'VOID STRIKE',
     'menu.deploy': 'СТАРТ',
