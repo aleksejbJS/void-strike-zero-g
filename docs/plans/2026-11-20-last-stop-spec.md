@@ -10,6 +10,7 @@ The concept guides the art direction and layout. The match and map preview draw 
 
 - Use 92-unit fuel pumps, roughly 108-unit doors, and roughly 76-unit cabinets. Keep close cover readable and align every solid prop with its collision footprint.
 - Draw walkable terrain and structural cover from the same rectangles used by simulation. Apply small repeating textures and weathered bands at native world scale. Build storefronts, windows, beams and utility details as separate background elements with quiet lighting.
+- Shape the visible fascia and underside of canopies with rounded ends, add arched surrounds to entrances and tunnel bays, and round the reinforced lips at the shafts. Keep straight standing surfaces visually distinct from the curved trim.
 - Keep the four combat areas, three basement connections, outer bounds, pickups and spawns. Scale down the two pumps and underground cabinet. Hand-painted detail textures and individual props supply the rural atompunk styling.
 - The material and prop atlases and distant dusk panorama were made with built-in ImageGen and are stored in `public/assets/maps/last-stop/`. The renderer fits each prop uniformly and uses the panorama only behind the architecture.
 - Check the scene at match camera scale on desktop and touch-sized viewports. Confirm the revised prop sizes and preserve basement and street navigation.

@@ -1,6 +1,7 @@
 import type { Platform } from '../../../../types';
 import { LAST_STOP_MATERIALS as MATERIAL, mapPoint } from '../../../data/lastStop/layout';
 import { LastStopArt, paintMaterial, paintProp, paintWear } from './artAssets';
+import { paintCanopy, paintShaftRim } from './roundedDetails';
 
 // Draw a cap on exposed ground edges. A taller neighboring slab can cover part of the surface.
 const topRuns = (p: Platform, platforms: Platform[]): [number, number][] => {
@@ -77,15 +78,15 @@ const body = (ctx: CanvasRenderingContext2D, art: LastStopArt, p: Platform) => {
         paintProp(ctx, prop, x + w / 2, y + h, h, w);
         return;
     }
+    if (color === MATERIAL.roof) {
+        paintCanopy(ctx, art, p, x === 0);
+        return;
+    }
     if (color === MATERIAL.earth) {
         paintMaterial(ctx, art.materials.earth, x, y, w, h, 'rgba(31,24,29,0.27)');
     } else if (color === MATERIAL.masonry) {
         paintMaterial(ctx, art.materials.brick, x, y, w, h, 'rgba(65,36,37,0.2)');
         brickDetails(ctx, p);
-    } else if (color === MATERIAL.roof) {
-        paintMaterial(ctx, art.materials.steel, x, y, w, h, 'rgba(111,50,40,0.41)');
-        ctx.fillStyle = 'rgba(47,32,37,0.42)';
-        for (let rib = x + 15; rib < x + w - 4; rib += 27) ctx.fillRect(rib, y + 6, 2, h - 9);
     } else {
         paintMaterial(ctx, art.materials.steel, x, y, w, h, 'rgba(48,42,36,0.23)');
         panels(ctx, p);
@@ -100,16 +101,7 @@ const shaftFrames = (ctx: CanvasRenderingContext2D, platforms: Platform[]) => {
             const slab = platforms.find(p => p.color === MATERIAL.earth && p.y < 1250
                 && (p.x === edge || p.x + p.w === edge));
             if (!slab) continue;
-            const isRightSide = slab.x === edge;
-            const x = isRightSide ? edge : edge - 12;
-            const h = Math.min(slab.h, 140);
-            ctx.fillStyle = '#54483f';
-            ctx.fillRect(x, slab.y, 12, h);
-            ctx.fillStyle = '#c19353';
-            ctx.fillRect(x, slab.y, 12, 7);
-            for (let i = 26; i < h; i += 28) {
-                ctx.fillStyle = '#2f292c'; ctx.fillRect(x + 4, slab.y + i, 4, 3);
-            }
+            paintShaftRim(ctx, edge, slab.y, Math.min(slab.h, 128), slab.x === edge ? 1 : -1);
         }
     }
 };

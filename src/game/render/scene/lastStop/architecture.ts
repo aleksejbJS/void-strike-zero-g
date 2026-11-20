@@ -1,5 +1,6 @@
 import { glow } from '../canvasKit';
 import { LastStopArt, paintMaterial, paintProp, paintWear } from './artAssets';
+import { paintArch, paintCanopy, paintWorkshopEave } from './roundedDetails';
 
 const fill = (ctx: CanvasRenderingContext2D, color: string, x: number, y: number, w: number, h: number) => {
     ctx.fillStyle = color;
@@ -64,9 +65,8 @@ const storefront = (ctx: CanvasRenderingContext2D, art: LastStopArt) => {
     }
     paintMaterial(ctx, art.materials.wood, 64, 890, 515, floor - 890, 'rgba(43,34,41,0.32)');
     frame(ctx, 64, 890, 515, floor, '#423136');
-    fill(ctx, '#b59876', 64, 895, 515, 10);
-    fill(ctx, '#6d3935', 60, 906, 530, 23);
-    fill(ctx, '#443235', 60, 929, 530, 4);
+    paintCanopy(ctx, art, { x: 54, y: 883, w: 540, h: 59 }, true);
+    paintArch(ctx, art, { x: 83, y: 997, w: 98, h: floor - 997 }, 'warm');
     sign(ctx, 115, 850, 211, 44, 'LAST STOP');
     sign(ctx, 340, 864, 100, 29, 'FUEL');
     paintProp(ctx, art.props.door, 132, floor - 8, 108, 63);
@@ -90,6 +90,7 @@ const pumpHouse = (ctx: CanvasRenderingContext2D, art: LastStopArt) => {
         paintProp(ctx, art.props.window, x, 879, 60, 128);
         lamp(ctx, x + 34, 965, 115);
     }
+    paintArch(ctx, art, { x: 2111, y: 960, w: 470, h: y - 960 }, 'warm');
     paintProp(ctx, art.props.door, 1999, y - 10, 108);
     paintProp(ctx, art.props.generator, 2220, y - 10, 63, 109);
     paintProp(ctx, art.props.door, 2708, y - 10, 108);
@@ -111,6 +112,8 @@ const workshop = (ctx: CanvasRenderingContext2D, art: LastStopArt) => {
         beam(ctx, x, 400, x, 1150, 15);
         beam(ctx, x, 853, x + 54, 785, 10);
     }
+    paintArch(ctx, art, { x: 3738, y: 950, w: 328, h: 192 }, 'warm');
+    paintArch(ctx, art, { x: 4390, y: 939, w: 324, h: 191 }, 'warm');
     sign(ctx, 3812, 600, 174, 42, 'SERVICE');
     for (const x of [3840, 4240, 4630]) {
         paintProp(ctx, art.props.window, x, 860, 65, 130);
@@ -120,6 +123,7 @@ const workshop = (ctx: CanvasRenderingContext2D, art: LastStopArt) => {
     paintProp(ctx, art.props.cabinet, 3972, 1146, 76, 86);
     paintProp(ctx, art.props.generator, 4679, 1126, 66, 104);
     ctx.restore();
+    paintWorkshopEave(ctx);
 };
 
 const basement = (ctx: CanvasRenderingContext2D, art: LastStopArt) => {
@@ -128,6 +132,7 @@ const basement = (ctx: CanvasRenderingContext2D, art: LastStopArt) => {
     for (let y = 1358; y < 1810; y += 94) fill(ctx, 'rgba(20,17,27,0.36)', 294, y, 4202, 2);
     for (const x of [446, 819, 1325, 1859, 2421, 2898, 3491, 4012, 4350]) lamp(ctx, x, 1515, 138);
     for (const [x, y] of [[795, 1765], [1820, 1800], [2890, 1800], [3978, 1742]]) {
+        paintArch(ctx, art, { x: x - 118, y: y - 260, w: 236, h: 260 }, 'dim');
         paintProp(ctx, art.props.door, x, y - 6, 108, 61);
     }
     paintProp(ctx, art.props.generator, 3254, 1800, 64, 110);
