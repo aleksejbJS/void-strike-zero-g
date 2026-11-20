@@ -15,6 +15,16 @@ The concept guides the art direction and layout. The match and map preview draw 
 - The material and prop atlases and distant dusk panorama were made with built-in ImageGen and are stored in `public/assets/maps/last-stop/`. The renderer fits each prop uniformly and uses the panorama only behind the architecture.
 - Check the scene at match camera scale on desktop and touch-sized viewports. Confirm the revised prop sizes and preserve basement and street navigation.
 
+## Explosive fuel pumps
+
+Status for this section: approved by the owner.
+
+- Both red pumps become destructible cover, using their current 48 × 92 size and positions. Render each existing pump sprite through the live cover view so its damage, collision, and display follow the same state.
+- Start at 72 HP. Direct weapon damage and splash follow existing cover rules. A dozen machine-gun hits or one direct rocket can break a pump. A visibly damaged pump vents and sparks before it breaks.
+- At zero HP the pump loses collision and explodes once. Use the existing barrel blast, damage falloff, obstruction, audio, and effects. A pump can set off the adjacent pump if the latter has taken enough damage. Retain the original attacker's credit and use the localized Fuel Pump kill label.
+- Return through the existing 35-second cover timer and occupied-space retry. Bots treat an intact pump as an explosive object.
+- Verify projectile impacts, covered and exposed fighters in the blast, chain attribution, and restoration. Use the same shared model offline and online.
+
 ## Goals
 
 - Turn the selected rural atompunk gas station into a larger playable Deathmatch map for eight independent fighters.

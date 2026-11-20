@@ -23,7 +23,6 @@ export const LAST_STOP_MATERIALS = {
     steel: '#62522d',
     roof: '#794430',
     boundary: '#281f1c',
-    pump: '#a6503d',
     cabinet: '#b08340',
 };
 
@@ -94,8 +93,6 @@ export const LAST_STOP_PLATFORMS: Omit<Platform, 'id'>[] = [
     { x: -100, y: -100, w: LAST_STOP_WIDTH + 200, h: 100, color: LAST_STOP_MATERIALS.boundary },
     { x: -100, y: 0, w: 100, h: LAST_STOP_HEIGHT + 120, color: LAST_STOP_MATERIALS.boundary },
     { x: LAST_STOP_WIDTH, y: 0, w: 100, h: LAST_STOP_HEIGHT + 120, color: LAST_STOP_MATERIALS.boundary },
-    { x: 878, y: 1041, w: 48, h: 92, color: LAST_STOP_MATERIALS.pump },
-    { x: 1009, y: 1041, w: 48, h: 92, color: LAST_STOP_MATERIALS.pump },
     { x: 1154, y: 1689, w: 90, h: 76, color: LAST_STOP_MATERIALS.cabinet },
     ...slabs.map(([left, top, right, bottom, material]) => {
         const start = mapPoint(left, top);

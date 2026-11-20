@@ -42,7 +42,10 @@ const coverSpots: ReadonlyArray<[CoverEntry[0], number, number]> = [
     ['wood', 1006, 515], ['metal', 1225, 329], ['glass', 1464, 501],
     ['wood', 1525, 501], ['barrel', 1298, 738], ['metal', 293, 765],
 ];
-export const LAST_STOP_COVER: CoverEntry[] = coverSpots.map(([kind, x, y]) => {
-    const pos = mapPoint(x, y);
-    return [kind, pos.x, pos.y];
-});
+export const LAST_STOP_COVER: CoverEntry[] = [
+    ...coverSpots.map(([kind, x, y]): CoverEntry => {
+        const pos = mapPoint(x, y);
+        return [kind, pos.x, pos.y];
+    }),
+    ['fuel-pump', 902, 1133], ['fuel-pump', 1033, 1133],
+];

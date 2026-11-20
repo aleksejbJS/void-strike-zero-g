@@ -92,6 +92,10 @@ const LOOKS: Record<CoverKind, { hit: Recipe; break: Recipe }> = {
         hit: (s, x, y) => sparks(s, 'barrel', x, y, 5),
         break: () => { /* the blast has its own effect */ },
     },
+    'fuel-pump': {
+        hit: (s, x, y) => sparks(s, 'fuel-pump', x, y, 5),
+        break: () => { /* the blast has its own effect */ },
+    },
 };
 
 /** Turn one COVER event into particles. A piece coming back flashes in the hologram's yellow. */

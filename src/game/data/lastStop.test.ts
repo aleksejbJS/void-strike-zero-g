@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { GameMode, ItemType, MapId, Team, WeaponType } from '../../types';
 import { createRoomState } from '../net/roomSetup';
 import { GameRoom } from '../net/room';
-import { coverRect } from '../cover/coverGeometry';
+import { coverRect, sightBlocks } from '../cover/coverGeometry';
 import { LAST_STOP_SPAWNS } from './lastStop/spawns';
-import { mapPoint, LAST_STOP_MATERIALS } from './lastStop/layout';
+import { mapPoint } from './lastStop/layout';
 import { validateJoin } from '../net/validation';
 import { offlineBotCount } from './offlineBots';
 import { buildNavGraph, solidAt, surfaceBelow } from '../systems/botNavGraph';
@@ -47,12 +47,14 @@ describe('Last Stop Deathmatch', () => {
 
     it('keeps fuel pumps at fighter scale and makes them solid cover', () => {
         const state = setup();
-        const pumps = state.platforms.filter(p => p.color === LAST_STOP_MATERIALS.pump);
+        const pumps = (state.cover ?? []).filter(p => p.kind === 'fuel-pump');
         expect(pumps).toHaveLength(2);
         for (const pump of pumps) {
-            expect(pump.h).toBe(92);
-            expect(pump.w).toBeLessThan(60);
-            expect(solidAt(state.platforms, pump.x + pump.w / 2, pump.y + 40)).toBe(true);
+            expect(coverRect(pump)).toMatchObject({ w: 48, h: 92 });
+            const a = { x: pump.pos.x - 32, y: pump.pos.y - 48 };
+            const b = { x: pump.pos.x + 32, y: a.y };
+            expect(sightBlocks(state, a, b)).toBe(true);
+            expect(solidAt(state.platforms, pump.pos.x, a.y)).toBe(false);
         }
     });
 

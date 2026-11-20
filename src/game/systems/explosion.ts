@@ -5,6 +5,7 @@ import { WEAPONS_DATA } from '../../constants';
 import { gameEvents } from './events';
 import { distance } from '../utils/math';
 import { applyDamage, isTeammate } from './combat';
+import type { ExplosiveCoverKind } from '../cover/coverTypes';
 import { blastBlocks } from '../cover/coverGeometry';
 import { blastCover } from '../cover/coverHits';
 
@@ -13,6 +14,7 @@ export interface ExplosionOpts {
     directCoverId?: string;
     /** A barrel blast: hurts everyone in reach (teammates and `ownerId` too), at full damage and knockback. */
     barrel?: boolean;
+    explosiveCover?: ExplosiveCoverKind;
     /** A fuel tank blast: hurts everyone in reach like a barrel. */
     tank?: boolean;
     /** Base damage instead of the weapon's. */
@@ -50,7 +52,7 @@ export const createExplosion = (
         if (dist < radius) {
             const dmg = baseDamage * (1 - dist / radius);
             const kbDir = { x: p.pos.x - pos.x, y: p.pos.y - pos.y };
-            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId, barrel: opts.barrel, tank: opts.tank });
+            applyDamage(state, p, ownerId, dmg, kbDir, wepData?.knockbackForce, { weapon: weaponType, from: pos, direct: p.id === directId, barrel: opts.barrel, explosiveCover: opts.explosiveCover, tank: opts.tank });
         }
     });
 

@@ -5,11 +5,11 @@
 // projectiles and effects all draw over it, while platforms (their own layer) stay behind.
 
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { COVER_SPECS, COVER_WARN_MS, Cover, CoverKind, CoverStage } from '../../cover/coverTypes';
+import { COVER_SPECS, COVER_WARN_MS, Cover, CoverKind, CoverStage, isExplosiveCover } from '../../cover/coverTypes';
 import { coverStage } from '../../cover/coverGeometry';
 import { barrelVent } from './barrelArt';
 import { HAZARD } from './coverArtKit';
-import { coverResolution, coverTexture, releaseCoverTextures, retainCoverTextures } from './coverTextures';
+import { coverResolution, coverTexture, coverTextureKey, releaseCoverTextures, retainCoverTextures } from './coverTextures';
 
 interface Slot {
     root: Container;   // at the piece's feet; everything below is in the piece's own coordinates
@@ -68,7 +68,7 @@ const drawHologram = (g: Graphics, kind: CoverKind, progress: number, now: numbe
     const { w, h } = COVER_SPECS[kind], x = -w / 2, y = -h;
     g.clear();
     g.alpha = 0.6 + 0.4 * Math.abs(Math.sin((now / 1000) * 9)); // blinks
-    const shape = outline(x, y, w, h, kind === 'barrel' ? ROUND_RADIUS : 0);
+    const shape = outline(x, y, w, h, isExplosiveCover(kind) ? ROUND_RADIUS : 0);
     g.poly(shape.flat()).fill({ color: HOLO_COLOR, alpha: 0.08 });
     for (let yy = y + 3; yy < y + h - 3; yy += 2.5) g.rect(x + 1, yy, w - 2, 0.8);
     g.fill({ color: HOLO_COLOR, alpha: 0.22 });
@@ -149,17 +149,17 @@ export class CoverView {
         return slot;
     }
 
-    // The first time a kind shows at this resolution (the map loads), bake all its stages: a piece
-    // breaking mid-fight then only swaps pictures and never stalls a frame on a bake
+    // Bake every stage when a kind first appears so damage only swaps pictures.
     private prepare(kind: CoverKind, res: number): void {
-        if (this.prepared.has(`${kind}:${res}`)) return;
-        this.prepared.add(`${kind}:${res}`);
+        const key = coverTextureKey(kind, 0, res);
+        if (this.prepared.has(key)) return;
+        this.prepared.add(key);
         for (const stage of STAGES) coverTexture(kind, stage, res);
     }
 
     // A new stage or resolution gets its picture; so does a sprite whose picture was freed under it
     private showBody(slot: Slot, piece: Cover, res: number): void {
-        const stage = coverStage(piece), key = `${piece.kind}:${stage}:${res}`;
+        const stage = coverStage(piece), key = coverTextureKey(piece.kind, stage, res);
         if (slot.key === key && !slot.body.texture.destroyed) return;
         const baked = coverTexture(piece.kind, stage, res);
         slot.body.texture = baked.texture;
@@ -184,7 +184,7 @@ export class CoverView {
     }
 
     private showVent(slot: Slot, piece: Cover, now: number): void {
-        if (piece.kind !== 'barrel' || coverStage(piece) !== 2) {
+        if (!isExplosiveCover(piece.kind) || coverStage(piece) !== 2) {
             if (slot.vent) { dispose(slot.vent); slot.vent = undefined; }
             return;
         }
@@ -195,6 +195,6 @@ export class CoverView {
             slot.root.addChild(slot.vent);
         }
         slot.vent.clear();
-        barrelVent(slot.vent, 0, 0, now / 1000);
+        barrelVent(slot.vent, 0, 0, now / 1000, COVER_SPECS[piece.kind]);
     }
 }

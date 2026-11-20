@@ -55,6 +55,9 @@ const propTile = (atlas: HTMLImageElement, col: number, row: number) => {
 };
 
 let cachedArt: Promise<LastStopArt> | undefined;
+let loadedPump: HTMLCanvasElement | undefined;
+
+export const lastStopPumpArt = () => loadedPump;
 
 export const loadLastStopArt = (): Promise<LastStopArt> => {
     cachedArt ??= Promise.all([
@@ -71,7 +74,7 @@ export const loadLastStopArt = (): Promise<LastStopArt> => {
             wood: materialTile(tiles, 1, 1, 336),
         },
         props: {
-            pump: propTile(props, 0, 0),
+            pump: (loadedPump = propTile(props, 0, 0)),
             door: propTile(props, 1, 0),
             window: propTile(props, 2, 0),
             generator: propTile(props, 0, 1),

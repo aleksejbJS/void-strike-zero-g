@@ -56,6 +56,6 @@ describe('flame tuning constants', () => {
     });
 
     it('scales flame damage to each kind of cover', () => {
-        expect(FLAME_COVER_MULT).toEqual({ wood: 2, glass: 1, barrel: 1, metal: 0.25 });
+        expect(FLAME_COVER_MULT).toEqual({ wood: 2, glass: 1, barrel: 1, 'fuel-pump': 1, metal: 0.25 });
     });
 });

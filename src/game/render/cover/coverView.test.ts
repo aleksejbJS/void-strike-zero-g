@@ -8,7 +8,8 @@ const bakes = vi.fn();
 const misses = vi.fn();
 const retained = vi.fn();
 const released = vi.fn();
-vi.mock('./coverTextures', () => ({
+vi.mock('./coverTextures', async importOriginal => ({
+    ...await importOriginal<typeof import('./coverTextures')>(),
     coverResolution: () => 1,
     retainCoverTextures: () => retained(),
     releaseCoverTextures: () => released(),
@@ -123,18 +124,18 @@ describe('CoverView', () => {
         expect(holos()).toHaveLength(0);
     });
 
-    it('draws the vent only on a barrel that is badly damaged', () => {
+    it.each(['barrel', 'fuel-pump'] as const)('draws the vent only on a badly damaged %s', kind => {
         const { view, layer } = setup();
         const vents = () => all(layer, Graphics).filter(g => g.label === 'vent');
-        const barrel = piece('a', 'barrel', 100);
-        view.sync([barrel], 0);
+        const cover = piece('a', kind, 100);
+        view.sync([cover], 0);
         expect(vents()).toHaveLength(0);
-        barrel.hp = 20; // stage 2
-        view.sync([barrel], 16);
+        cover.hp = 20; // stage 2
+        view.sync([cover], 16);
         expect(vents()).toHaveLength(1);
         expect(vents()[0].context.instructions.length).toBeGreaterThan(0);
-        barrel.hp = 0;
-        view.sync([barrel], 32);
+        cover.hp = 0;
+        view.sync([cover], 32);
         expect(vents()).toHaveLength(0);
     });
 

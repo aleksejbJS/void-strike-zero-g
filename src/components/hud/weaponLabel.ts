@@ -4,7 +4,7 @@ import { WEAPONS_DATA } from '../../constants';
 import { WeaponType } from '../../types';
 import type { Translate } from '../menu/types';
 import type { TranslationKeys } from '../../i18n/locales';
-import { BARREL_KILL_NAME } from '../../game/cover/coverTypes';
+import { BARREL_KILL_NAME, FUEL_PUMP_KILL_NAME } from '../../game/cover/coverTypes';
 import { TANK_KILL_NAME } from '../../game/systems/flameConstants';
 
 const KEYS: Record<WeaponType, keyof TranslationKeys> = {
@@ -22,6 +22,7 @@ const KEYS: Record<WeaponType, keyof TranslationKeys> = {
 const BY_NAME = new Map<string, keyof TranslationKeys>([
     ...Object.values(WEAPONS_DATA).map(w => [w.name, KEYS[w.type]] as const),
     [BARREL_KILL_NAME, 'weapon.barrel'], // a barrel kill in the feed: the barrel is no weapon, so no WeaponType
+    [FUEL_PUMP_KILL_NAME, 'weapon.fuelPump'],
     [TANK_KILL_NAME, 'weapon.fuelTank'], // a fuel tank blast in the feed: no WeaponType either
 ]);
 

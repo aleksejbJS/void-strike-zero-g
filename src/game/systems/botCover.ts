@@ -3,7 +3,7 @@
 
 import { Entity, GameState, Vector2, WeaponType } from '../../types';
 import { distance } from '../utils/math';
-import { BARREL_RADIUS, COVER_SPECS, Cover } from '../cover/coverTypes';
+import { BARREL_RADIUS, COVER_SPECS, Cover, isExplosiveCover } from '../cover/coverTypes';
 import { coverRect, firstCoverOnSegment, intactCover } from '../cover/coverGeometry';
 import { isTeammate } from './combat';
 import { aimPointOf, muzzleOf, platformsClear } from './botSenses';
@@ -29,7 +29,7 @@ const onFloor = (state: GameState, spot: Vector2) =>
  *  the bot and the threat, on its side away from the threat. Never a barrel, never next to one. */
 export const findCoverSpot = (state: GameState, bot: Entity, threat: Entity): Vector2 | null => {
     const pieces = intactCover(state);
-    const barrels = pieces.filter(c => c.kind === 'barrel');
+    const barrels = pieces.filter(c => isExplosiveCover(c.kind));
     const lo = Math.min(bot.pos.x, threat.pos.x), hi = Math.max(bot.pos.x, threat.pos.x);
     const side = Math.sign(threat.pos.x - bot.pos.x) || 1;
     let best: Vector2 | null = null, bestDist = Infinity;
@@ -65,7 +65,7 @@ export const barrelToShoot = (state: GameState, bot: Entity, now = Date.now()): 
     if (melee(bot)) return null;
     const muzzle = muzzleOf(bot);
     for (const barrel of intactCover(state)) {
-        if (barrel.kind !== 'barrel') continue;
+        if (!isExplosiveCover(barrel.kind)) continue;
         const centre = pieceCentre(barrel);
         if (bot.weapon.type === WeaponType.FLAMETHROWER && distance(muzzle, centre) > FLAME_RANGE) continue;
         const near = (p: Entity, reach: number) => !p.dead && distance(centre, p.pos) < reach;

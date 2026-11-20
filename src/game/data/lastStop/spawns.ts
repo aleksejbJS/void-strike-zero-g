@@ -1,4 +1,5 @@
 import type { Entity, GameState, Vector2 } from '../../../types';
+import { sightBlocks } from '../../cover/coverGeometry';
 import { segmentRectEntry } from '../../utils/math';
 import { mapPoint } from './layout';
 
@@ -12,7 +13,7 @@ export const LAST_STOP_SPAWNS: readonly Vector2[] = [
 const MIN_SEPARATION = 130;
 
 export const lastStopSpawn = (
-    state: Pick<GameState, 'platforms' | 'players'>,
+    state: Pick<GameState, 'platforms' | 'players' | 'cover'>,
     occupants: readonly Entity[] = state.players,
 ): Vector2 => {
     const opponents = occupants.filter(p => !p.dead);
@@ -27,7 +28,9 @@ export const lastStopSpawn = (
             nearest = Math.min(nearest, distance);
             if (distance > 2200) continue;
             const eye = { x: enemy.pos.x, y: enemy.pos.y - enemy.height * 0.7 };
-            if (!state.platforms.some(p => segmentRectEntry(eye, chest, p) !== null)) exposed++;
+            const blocked = state.platforms.some(p => segmentRectEntry(eye, chest, p) !== null)
+                || sightBlocks(state, eye, chest);
+            if (!blocked) exposed++;
         }
         const score = (nearest < MIN_SEPARATION ? -100_000 : 0) - exposed * 3000 + Math.min(nearest, 3000);
         if (score > bestScore) {

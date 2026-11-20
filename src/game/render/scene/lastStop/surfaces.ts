@@ -71,11 +71,10 @@ const brickDetails = (ctx: CanvasRenderingContext2D, p: Platform) => {
 
 const body = (ctx: CanvasRenderingContext2D, art: LastStopArt, p: Platform) => {
     const { x, y, w, h, color } = p;
-    if (color === MATERIAL.pump || color === MATERIAL.cabinet) {
-        const prop = color === MATERIAL.pump ? art.props.pump : art.props.cabinet;
+    if (color === MATERIAL.cabinet) {
         ctx.fillStyle = '#4d3431';
         ctx.fillRect(x, y + h - 4, w, 4);
-        paintProp(ctx, prop, x + w / 2, y + h, h, w);
+        paintProp(ctx, art.props.cabinet, x + w / 2, y + h, h, w);
         return;
     }
     if (color === MATERIAL.roof) {
@@ -110,7 +109,7 @@ export const paintSurfaces = (ctx: CanvasRenderingContext2D, art: LastStopArt, p
     const visible = platforms.filter(p => p.color !== MATERIAL.boundary);
     for (const p of visible) body(ctx, art, p);
     for (const p of visible) {
-        if (p.color === MATERIAL.pump || p.color === MATERIAL.cabinet) continue;
+        if (p.color === MATERIAL.cabinet) continue;
         const isLedge = p.color === MATERIAL.steel && p.h < 43;
         for (const [left, end] of topRuns(p, visible)) {
             const color = isLedge ? '#c0904d' : p.color === MATERIAL.earth ? '#8e7460' : '#9f7360';
