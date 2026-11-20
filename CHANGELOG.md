@@ -1,5 +1,13 @@
 # Void Strike: Zero-G - Changelog
 
+## Version 0.5.2 (2026-11-20)
+
+### Last Stop
+
+- Choose Last Stop in the Deathmatch map picker. The retro gas station supports eight fighters, with one player and seven bots offline or up to eight players on a dedicated server.
+- Fight across the forecourt, rooftops, workshop, and basement. Three shafts connect the street to the lower level, and a steel shield breaks the firing lane beside the workshop shaft.
+- Destroy the fuel pumps to make them explode. A damaged pump can be set off by the other pump.
+
 ## Version 0.5.1 (2026-11-19)
 
 ### 🦘 Jump

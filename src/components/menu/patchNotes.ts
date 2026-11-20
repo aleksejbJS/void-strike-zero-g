@@ -35,6 +35,11 @@ const BLAST = shots('blast');
 
 export const PATCH_NOTES: Record<Language, PatchNote[]> = {
     en: [
+        { version: '0.5.2', date: 'Nov 20, 2026', points: [
+            'New Deathmatch map for up to eight fighters. Choose Last Stop in the map picker to fight around a retro gas station.',
+            'Cross the rooftops, take cover by the workshop, or use one of three shafts to reach the basement.',
+            'Fuel pumps explode when destroyed.',
+        ] },
         { version: '0.5.1', date: 'Nov 19, 2026', points: [
             'Space jumps; a second Space in the air does a double jump with a forward flip — the jetpack is on W',
             'Change your controls: Profile → Controls lets you put any action on the key or mouse button you like',
@@ -308,6 +313,11 @@ export const PATCH_NOTES: Record<Language, PatchNote[]> = {
         ] },
     ],
     ru: [
+        { version: '0.5.2', date: '20.11.2026', points: [
+            'Новая арена на восемь бойцов в стиле 70-х. Выберите карту «Заправка» в меню Deathmatch.',
+            'Обходите соперников по крышам, укрывайтесь у мастерской или спускайтесь в подвал через одну из трёх шахт.',
+            'Топливные колонки взрываются при разрушении.',
+        ] },
         { version: '0.5.1', date: '19.11.2026', points: [
             'Пробел — прыжок, второй пробел в воздухе — двойной прыжок с сальто вперёд; джетпак — на W',
             'Своё управление: в Профиле → Управление любое действие можно поставить на удобную клавишу или кнопку мыши',
