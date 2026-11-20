@@ -1,20 +1,49 @@
-Load image
-Void Strike: Zero-G
-A fast 2D arena shooter with jetpacks, grappling hooks, ragdoll physics and destructible cover.
-Play offline against bots, online with friends, or climb the leaderboards.
-Current version: 0.4.37. What changed in each release is in CHANGELOG.md.
-Features
-Seven game modes: Deathmatch, Gun Game, Capture the Flag, Hold the Flag, Infiltration, Hunger Games and 1v1 tournament duels.
-Nine weapons: machine gun (50-round magazine with reload), shotgun, plasma gun, rocket launcher, grenade launcher, railgun, smoke launcher, chainsaw and flamethrower. The flamethrower sets targets on fire, and a hit can light the fuel tank on its carrier's back, which then explodes.
-Movement: jetpack, a swinging grappling hook, crouching and lying prone.
-Physics and damage: ragdolls with dismemberment, hit zones, wounds, bleeding and burning.
-Destructible cover: wooden and metal crates, glass panels and explosive barrels on every map. Broken cover comes back after 35 s.
-Fighter builder: assemble your fighter from body parts, colours, patterns and visor glow, starting from presets.
-Bots that take cover, look for weapons, shoot barrels and play each mode's objectives.
-Online play: peer-to-peer rooms hosted in the browser (PeerJS) with invite links, or a dedicated Node server.
-Accounts (nickname and password) that sync progress, achievements and lifetime stats across devices.
-Leaderboards (the Top screen): XP, kills, bot kills, wins, wins vs bots and tournaments, for this week, this month and all time.
-Tournaments: 1v1 brackets on The Pit, with live match tiles to watch.
-Achievements and XP with progress tracking.
-Mobile support: twin-stick touch controls, a touch-friendly HUD and full screen.
-English and Russian interface.
+<h1 align="center">
+  <img src="public/assets/menu/void-strike-logo.webp" alt="Void Strike: Zero-G" width="440">
+</h1>
+
+<p align="center">A fast 2D arena shooter with jetpacks, grappling hooks, and destructible cover.</p>
+
+<p align="center">
+  <a href="https://aleksejbjs.github.io/void-strike-zero-g/"><strong>Play in your browser</strong></a>
+  · <a href="CHANGELOG.md">Changelog</a>
+  · <a href="server/README.md">Dedicated server</a>
+</p>
+
+[![A Deathmatch fighter shoots an explosive fuel pump on Last Stop.](docs/media/last-stop-gameplay.webp)](https://aleksejbjs.github.io/void-strike-zero-g/)
+
+## New in 0.5.2 · Last Stop
+
+Fight across a retro gas station, from the rooftops to the service basement. Three shafts let you switch levels, the workshop shield breaks a long firing lane, and fuel pumps explode when destroyed.
+
+Select **Deathmatch → Last Stop → Play vs bots** to try it with seven bots. A dedicated server can host up to eight human players. See the [release history](CHANGELOG.md#version-052-2026-11-20) for details.
+
+## Ways to play
+
+| Play style | In-game options |
+| --- | --- |
+| **Solo** | Play offline against bots that look for weapons, take cover, and pursue mode objectives. |
+| **With friends** | Host a browser room and share its invite link, or join a dedicated server. |
+| **Competitive** | Enter 1v1 tournaments on The Pit, watch live matches, and track XP, wins, and other stats on the leaderboards. |
+
+Choose from Deathmatch, Gun Game, Capture the Flag, Hold the Flag, Infiltration, Hunger Games, and 1v1 tournament duels.
+
+## Combat and controls
+
+- Jump, double-jump, fly with a jetpack, swing on a grappling hook, crouch, or go prone. Default keys include **WASD** for movement, **Space** for jump, and **right click** to grapple. Rebind actions in **Profile → Controls**.
+- Use nine weapons, from the starting machine gun to the railgun, chainsaw, and flamethrower. Hit zones, wounds, ragdolls, and burning fuel tanks shape how fights play out.
+- Fight around wooden and metal crates, glass, explosive barrels, and the fuel pumps on Last Stop. Destructible cover returns after 35 seconds.
+- Build a fighter from illustrated parts, colours, patterns, and visor effects. Use an account to sync XP, achievements, and lifetime stats across devices.
+
+Mobile play supports twin-stick touch controls and a touch-friendly HUD. The interface is available in English and Russian.
+
+## Run locally
+
+Use Node.js 20 or later.
+
+```sh
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite. Run `npm test` for the test suite or `npm run build` for a production build. See the [dedicated server guide](server/README.md) for hosting and the [Supabase setup guide](docs/supabase-setup.md) for accounts and leaderboards.
