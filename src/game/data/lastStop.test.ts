@@ -4,7 +4,7 @@ import { createRoomState } from '../net/roomSetup';
 import { GameRoom } from '../net/room';
 import { coverRect } from '../cover/coverGeometry';
 import { LAST_STOP_SPAWNS } from './lastStop/spawns';
-import { mapPoint } from './lastStop/layout';
+import { mapPoint, LAST_STOP_MATERIALS } from './lastStop/layout';
 import { validateJoin } from '../net/validation';
 import { offlineBotCount } from './offlineBots';
 import { buildNavGraph, solidAt, surfaceBelow } from '../systems/botNavGraph';
@@ -45,11 +45,14 @@ describe('Last Stop Deathmatch', () => {
         }
     });
 
-    it('lets fighters use the visible pumps as permanent cover', () => {
+    it('keeps fuel pumps at fighter scale and makes them solid cover', () => {
         const state = setup();
-        for (const x of [336, 394]) {
-            const pos = mapPoint(x, 450);
-            expect(solidAt(state.platforms, pos.x, pos.y)).toBe(true);
+        const pumps = state.platforms.filter(p => p.color === LAST_STOP_MATERIALS.pump);
+        expect(pumps).toHaveLength(2);
+        for (const pump of pumps) {
+            expect(pump.h).toBe(92);
+            expect(pump.w).toBeLessThan(60);
+            expect(solidAt(state.platforms, pump.x + pump.w / 2, pump.y + 40)).toBe(true);
         }
     });
 

@@ -10,7 +10,7 @@ import { ModeInfo } from './modeInfo';
 import type { Translate } from './types';
 import { LIVE_SCENES } from './preview/liveScenes';
 import { LiveStage } from './preview/LiveStage';
-import { lastStopArtUrl } from '../../game/render/scene/lastStopScene';
+import { LastStopPreview } from './preview/LastStopPreview';
 import { MenuModeIcon } from './MenuModeIcon';
 
 const SCENES: Record<GameMode, React.FC<{ t: Translate }>> = {
@@ -34,7 +34,7 @@ export const ModePreview: React.FC<{ mode: GameMode; map: MapId; info: ModeInfo;
             <div className="ap-preview-frame ap-panel">
                 <div className="ap-preview-title"><MenuModeIcon emblem="camera" className="ap-heading-icon" />{t('hb.previewTitle')}</div>
                 {map === MapId.LAST_STOP
-                    ? <Stage label={t('hb.mapLastStop')} schematic={false}><img className="h-full w-full object-contain" src={lastStopArtUrl} alt="" /></Stage>
+                    ? <Stage label={t('hb.mapLastStop')} schematic={false}><LastStopPreview /></Stage>
                     : live ? <LiveStage key={`${mode}-${map}`} mode={mode} map={map} live={live} label={label} t={t} Schematic={Scene} />
                     : <Stage key={mode} label={label}><Scene t={t} /></Stage>}
             </div>

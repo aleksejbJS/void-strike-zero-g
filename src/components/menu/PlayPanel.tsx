@@ -36,7 +36,7 @@ export const PlayPanel: React.FC<Props> = ({ t, maps, selectedMap, playSubtitle,
         <div className="ap-play-panel ap-panel flex flex-col gap-4 rounded bg-bay-panel p-[22px] phone:gap-2 phone:self-start phone:p-2.5">
             <div className="flex flex-col gap-2">
                 <span className="ap-map-title text-sm text-bay-dust phone:hidden"><MenuModeIcon emblem="pin" className="ap-heading-icon" />{t('hb.map')}</span>
-                <div data-ap-map="" role="group" aria-label={t('hb.map')} className="flex gap-1 rounded bg-bay-steel p-1">
+                <div data-ap-map="" data-map-count={maps.length} role="group" aria-label={t('hb.map')} className="flex gap-1 rounded bg-bay-steel p-1">
                     {maps.map(m => (
                         <button key={m.id} type="button" aria-pressed={m.id === selectedMap} onClick={() => onSelectMap(m.id)}
                             className={`h-10 flex-1 rounded-sm text-[15px] font-semibold phone:h-7 phone:text-[13px] ${focusRing} ${m.id === selectedMap ? 'bg-bay-chalk text-bay-ink' : 'text-bay-dust hover:text-bay-chalk'}`}>

@@ -4,7 +4,15 @@ Date: 2026-11-20. Status: playable prototype approved by the owner.
 
 Reference: [Last Stop side-view concept](2026-11-20-last-stop-concept.png).
 
-The gameplay plate is `public/assets/maps/last-stop.webp`. Built-in ImageGen removed the eight concept fighters and armor pickup while retaining the approved scenery. The prototype uses the separate collision slabs and real match entities over that plate.
+## Visual revision
+
+The concept guides the art direction and layout. The match and map preview draw the scene from individual surfaces and props measured in world units. The original all-in-one plate stretched the room art and made the scenery dwarf the 72-unit fighter.
+
+- Use 92-unit fuel pumps, roughly 108-unit doors, and roughly 76-unit cabinets. Keep close cover readable and align every solid prop with its collision footprint.
+- Draw walkable terrain and structural cover from the same rectangles used by simulation. Apply small repeating textures and weathered bands at native world scale. Build storefronts, windows, beams and utility details as separate background elements with quiet lighting.
+- Keep the four combat areas, three basement connections, outer bounds, pickups and spawns. Scale down the two pumps and underground cabinet. Hand-painted detail textures and individual props supply the rural atompunk styling.
+- The material and prop atlases and distant dusk panorama were made with built-in ImageGen and are stored in `public/assets/maps/last-stop/`. The renderer fits each prop uniformly and uses the panorama only behind the architecture.
+- Check the scene at match camera scale on desktop and touch-sized viewports. Confirm the revised prop sizes and preserve basement and street navigation.
 
 ## Goals
 
@@ -25,7 +33,7 @@ Use the selectable map for a solo playtest with seven bots and for an eight-huma
 
 - Start with **4,800 × 1,800 world units** of clear playable bounds, approximately three normal camera widths. Use the extra room for wider approaches and vertical separation. Size doors, turns, and cover against the 30 × 72 standing hitbox.
 - Keep the recognizable gas station and timber garage at opposite ends, with the pump house made from two offset solid structures. Separate sightlines at standing height with a permanent masonry or machinery break on each approach. Use three staggered roof sections for an exposed shortcut.
-- Align the three basement connections with the concept plate near x = 450, 2,400, and 4,350, measured from the left playable boundary. Use roughly 300–340 units of clear shaft width and accessible intermediate ledges. Offset and shield the central shaft mouth inside the pump house. At the foot of the shaft, the passage opens to both sides.
+- Keep the three basement connections near x = 450, 2,400, and 4,350, measured from the left playable boundary. Use roughly 300–340 units of clear shaft width and accessible intermediate ledges. Offset and shield the central shaft mouth inside the pump house. At the foot of the shaft, the passage opens to both sides.
 - Split the basement into two stepped compartments with permanent cover on either side of the junction. Give the roof and street approaches short connectors so a player can change elevation locally. Keep full standing clearance on the main passages. Check ascent with touch jetpack and with the existing bot movement.
 - Use own-project art references for red enamel signage, cream lettering, chipped yellow paint, and quiet warm background lighting. Draw solid edges clearly. Attach cover silhouette and artwork to the actual collision positions.
 

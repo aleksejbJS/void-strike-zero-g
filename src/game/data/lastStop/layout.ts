@@ -2,15 +2,15 @@ import { GameMode, MapId, Platform, Vector2 } from '../../../types';
 
 export const LAST_STOP_WIDTH = 4800;
 export const LAST_STOP_HEIGHT = 1800;
+export const LAST_STOP_ART_HEIGHT = 2048;
 export const LAST_STOP_PLAYER_COUNT = 8;
 
 export const isLastStop = (mode: GameMode | undefined, map: MapId | undefined) =>
     mode === GameMode.DEATHMATCH && map === MapId.LAST_STOP;
 
-// The plate is 1774 × 887. The deepest walkable floor is at artwork y = 780.
+// Preserve the original prototype grid for established pickup and spawn positions.
 const SCALE_X = LAST_STOP_WIDTH / 1774;
 const SCALE_Y = LAST_STOP_HEIGHT / 780;
-export const LAST_STOP_PLATE_HEIGHT = 887 * SCALE_Y;
 
 export const mapPoint = (x: number, y: number): Vector2 => ({
     x: Math.round(x * SCALE_X),
@@ -23,6 +23,8 @@ export const LAST_STOP_MATERIALS = {
     steel: '#62522d',
     roof: '#794430',
     boundary: '#281f1c',
+    pump: '#a6503d',
+    cabinet: '#b08340',
 };
 
 type Material = keyof typeof LAST_STOP_MATERIALS;
@@ -49,7 +51,6 @@ const slabs: Slab[] = [
     [1234, 736, 1258, 825, 'masonry'],
     [1258, 738, 1391, 825, 'earth'],
     [1391, 755, 1669, 825, 'earth'],
-    [390, 691, 489, 765, 'steel'],
     [530, 690, 560, 780, 'masonry'],
     [1088, 629, 1253, 679, 'steel'],
     [1405, 697, 1475, 755, 'masonry'],
@@ -64,8 +65,6 @@ const slabs: Slab[] = [
 
     // Ground-level walls, plinths and intermediate approaches.
     [223, 421, 256, 491, 'masonry'],
-    [312, 394, 353, 491, 'steel'],
-    [374, 392, 413, 491, 'steel'],
     [402, 486, 442, 521, 'masonry'],
     [442, 464, 484, 521, 'masonry'],
     [484, 450, 544, 521, 'masonry'],
@@ -95,6 +94,9 @@ export const LAST_STOP_PLATFORMS: Omit<Platform, 'id'>[] = [
     { x: -100, y: -100, w: LAST_STOP_WIDTH + 200, h: 100, color: LAST_STOP_MATERIALS.boundary },
     { x: -100, y: 0, w: 100, h: LAST_STOP_HEIGHT + 120, color: LAST_STOP_MATERIALS.boundary },
     { x: LAST_STOP_WIDTH, y: 0, w: 100, h: LAST_STOP_HEIGHT + 120, color: LAST_STOP_MATERIALS.boundary },
+    { x: 878, y: 1041, w: 48, h: 92, color: LAST_STOP_MATERIALS.pump },
+    { x: 1009, y: 1041, w: 48, h: 92, color: LAST_STOP_MATERIALS.pump },
+    { x: 1154, y: 1689, w: 90, h: 76, color: LAST_STOP_MATERIALS.cabinet },
     ...slabs.map(([left, top, right, bottom, material]) => {
         const start = mapPoint(left, top);
         const end = mapPoint(right, bottom);

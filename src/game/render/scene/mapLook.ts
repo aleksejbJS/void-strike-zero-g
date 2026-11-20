@@ -64,7 +64,7 @@ export const createMapLook = (
             legacy.backgroundLayer.clear();
             try {
                 const theme = themeFor(state.mode, state.currentMap);
-                scene = theme === 'last-stop' ? createLastStopScene(world, world.getChildIndex(legacy.backgroundLayer) + 1, platformHost, state.platforms)
+                scene = theme === 'last-stop' ? createLastStopScene(world, world.getChildIndex(legacy.backgroundLayer) + 1, state.platforms)
                     : createThemedScene({ ...hosts, platformHost }, state.platforms, THEMES[theme](), sceneOptions);
                 scene.update(state.camera, Date.now(), w, h);
             } catch (err) {
