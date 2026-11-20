@@ -27,7 +27,9 @@ import type { Translate } from './types';
 const mapsFor = (mode: GameMode, t: Translate): MapOption[] => {
     if (mode === GameMode.HUNGER_GAMES) return [{ id: MapId.HUNGER, label: t('hb.mapHunger') }];
     const standard = { id: MapId.DEFAULT, label: t('hb.mapDefault') };
-    if (mode === GameMode.DEATHMATCH || mode === GameMode.GUN_GAME) return [standard, { id: MapId.TUNNELS, label: t('hb.mapTunnels') }];
+    const tunnels = { id: MapId.TUNNELS, label: t('hb.mapTunnels') };
+    if (mode === GameMode.DEATHMATCH) return [standard, tunnels, { id: MapId.LAST_STOP, label: t('hb.mapLastStop') }];
+    if (mode === GameMode.GUN_GAME) return [standard, tunnels];
     return [standard]; // objective modes are built for the default map
 };
 

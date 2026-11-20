@@ -2,6 +2,8 @@
 // Transport-agnostic — the Node server drives it over socket.io today,
 // a browser host can drive it over WebRTC later.
 
+import { isLastStop, LAST_STOP_PLAYER_COUNT } from '../data/lastStop/layout';
+import { lastStopSpawn } from '../data/lastStop/spawns';
 import { GameMode, GameState, MapId, PlayerInput } from '../../types';
 import { MatterPhysicsEngine } from '../physics/MatterEngine';
 import { updatePhysics } from '../systems/physics';
@@ -46,7 +48,12 @@ export class GameRoom {
     constructor(readonly config: RoomConfig) {
         this.spawnPoint = spawnPointFor(config.mode);
         this.state = createRoomState(config.mode, config.map);
-        this.state.players.push(...createBots(config.mode, config.bots));
+        const lastStop = isLastStop(config.mode, config.map);
+        const botCount = config.bots ?? (lastStop ? Math.min(config.maxPlayers, LAST_STOP_PLAYER_COUNT) : undefined);
+        for (const bot of createBots(config.mode, botCount)) {
+            if (lastStop) bot.pos = lastStopSpawn(this.state);
+            this.state.players.push(bot);
+        }
         this.state.players.forEach(p => liftOutOfCover(this.state, p));
         this.state.platforms.forEach(p => this.physics.addPlatform(p));
         this.state.players.forEach(p => this.physics.addPlayer(p));
@@ -66,7 +73,6 @@ export class GameRoom {
         const hunger = this.state.mode === GameMode.HUNGER_GAMES;
         const duel = this.state.mode === GameMode.DUEL;
         if (duel) player.pos = duelSpawnPoint(this.state, id); // opposite side from the opponent
-        liftOutOfCover(this.state, player);
         if (duel && this.departed?.name === player.name) {
             player.score = this.departed.score; // back after a dropped link: the duel goes on where it was
             this.departed = null;
@@ -81,6 +87,10 @@ export class GameRoom {
         // Hunger Games keeps its fighters; bots make room at the next round instead.
         // A duel's bot is the opponent, so it stays.
         const botIndex = hunger || duel ? -1 : this.state.players.findIndex(p => p.type === 'bot' && p.team === team);
+        if (isLastStop(this.state.mode, this.state.currentMap)) {
+            player.pos = lastStopSpawn(this.state, this.state.players.filter((_, i) => i !== botIndex));
+        }
+        liftOutOfCover(this.state, player);
         if (botIndex !== -1) {
             this.physics.removeBody(this.state.players[botIndex].id);
             this.state.players[botIndex] = player;

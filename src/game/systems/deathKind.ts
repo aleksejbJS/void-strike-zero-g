@@ -1,3 +1,4 @@
+import type { ExplosiveCoverKind } from '../cover/coverTypes';
 // How a fighter dies, decided from what killed them (pure logic, no rendering).
 // The kind picks which ragdoll launch the corpse gets: see launchCorpse.
 
@@ -25,6 +26,7 @@ export interface DamageSource {
     burn?: boolean;
     /** An explosive barrel's blast: hurts everyone, thrown or gibbed like a rocket splash. */
     barrel?: boolean;
+    explosiveCover?: ExplosiveCoverKind;
     /** A fuel tank's blast (the flamethrower carrier's tank going off). */
     tank?: boolean;
 }

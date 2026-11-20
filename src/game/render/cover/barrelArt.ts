@@ -139,10 +139,10 @@ const jet = (g: Graphics, top: Line, bottom: Line, stops: readonly Stop[]) => {
  * The live part of a venting barrel at (cx, fy): a flickering heat glow and a fire jet out of the seam,
  * `t` in seconds. Draws onto `g` (the caller clears it and sets its blend mode to 'add').
  */
-export const barrelVent = (g: Graphics, cx: number, fy: number, t: number): void => {
-    const x = cx - 16 + 32, y = fy - 46; // the right edge of the drum, top of the drum
+export const barrelVent = (g: Graphics, cx: number, fy: number, t: number, size = COVER_SPECS.barrel): void => {
+    const x = cx + size.w / 2, y = fy - size.h;
     const glowR = 46 + Math.sin(t * 18) * 4;
-    for (let i = 0; i < 5; i++) g.circle(cx, fy - 22, glowR * (1 - i * 0.2)).fill({ color: HEAT, alpha: 0.05 });
+    for (let i = 0; i < 5; i++) g.circle(cx, fy - size.h / 2 + 1, glowR * (1 - i * 0.2)).fill({ color: HEAT, alpha: 0.05 });
     const L = 22 + Math.sin(t * 31) * 4, wob = Math.sin(t * 22) * 2;
     jet(g, [[x - 2, y + 19.5], [x + L, y + 15.5 + wob]], [[x - 2, y + 22.8], [x + L, y + 27 + wob]], OUTER);
     jet(g, [[x - 1, y + 20.4], [x + L * 0.5, y + 19.6 + wob * 0.5]], [[x - 1, y + 22], [x + L * 0.5, y + 22.8 + wob * 0.5]], CORE);

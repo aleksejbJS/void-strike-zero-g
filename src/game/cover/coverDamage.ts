@@ -1,9 +1,9 @@
-// Damage to cover: lowers hp, breaks a piece at zero, lights a broken barrel's fuse
+// Damage to cover: lowers hp, breaks a piece at zero, lights explosive cover's fuse
 
 import type { GameState } from '../../types';
 import { gameEvents } from '../systems/events';
 import type { CoverAction } from '../systems/events';
-import { BARREL_CHAIN_MS, COVER_RETURN_MS, COVER_SPECS, Cover } from './coverTypes';
+import { BARREL_CHAIN_MS, COVER_RETURN_MS, COVER_SPECS, Cover, isExplosiveCover } from './coverTypes';
 import { isIntact } from './coverGeometry';
 
 /** Tell every client what happened to a piece, for its effect (COVER) and its sound. */
@@ -15,8 +15,8 @@ export const emitCoverEvent = (cover: Cover, action: CoverAction): void => {
 
 /**
  * Hurt a piece (the caller has already applied the ×3 explosive multiplier). Broken or gone pieces ignore it.
- * A piece reaching 0 hp is due back after COVER_RETURN_MS; a barrel also gets lit: a shot sets it off at once,
- * a blast from a neighbouring barrel after BARREL_CHAIN_MS. `creditId` is who gets the blame for that blast;
+ * A piece reaching 0 hp is due back after COVER_RETURN_MS; explosive cover also gets lit: a shot sets it off at once,
+ * a blast from another explosion after BARREL_CHAIN_MS. `creditId` is who gets the blame for that blast;
  * the first breaker keeps it because damage on a broken piece does nothing.
  */
 export const damageCover = (
@@ -29,7 +29,7 @@ export const damageCover = (
         return;
     }
     cover.returnsAt = now + COVER_RETURN_MS;
-    if (cover.kind === 'barrel') {
+    if (isExplosiveCover(cover.kind)) {
         cover.fuseAt = now + (viaBlast ? BARREL_CHAIN_MS : 0);
         cover.creditId = creditId;
     }

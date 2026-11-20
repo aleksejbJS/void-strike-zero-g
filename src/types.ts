@@ -270,6 +270,7 @@ export interface GameState {
 export enum MapId {
   DEFAULT = 'default',
   TUNNELS = 'tunnels',
+  LAST_STOP = 'last-stop',
   HUNGER = 'hunger',
   PIT = 'pit',
 }

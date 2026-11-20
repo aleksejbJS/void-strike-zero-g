@@ -57,6 +57,12 @@ const burst = (bus: Bus, at: number, dur: number, vol: number, filterType: Biqua
     src.start(t0, Math.random() * 0.5); src.stop(t0 + dur);
 };
 
+const fuelCoverSound: Record<CoverSoundAction, Recipe> = {
+    // The leak hisses on every hit; a badly damaged barrel is hit often, so it hisses most
+    hit: bus => { tone(bus, 0, 0.22, 0.13, 'triangle', 260, 200); tone(bus, 0, 0.15, 0.07, 'sine', 520); burst(bus, 0.02, 0.35, 0.09, 'highpass', 3500); },
+    break: bus => { tone(bus, 0, 0.25, 0.2, 'sawtooth', 180, 60); burst(bus, 0, 0.3, 0.22, 'bandpass', 900); },
+};
+
 const RECIPES: Record<CoverKind, Record<CoverSoundAction, Recipe>> = {
     wood: {
         hit: bus => { burst(bus, 0, 0.08, 0.22, 'bandpass', 900); tone(bus, 0, 0.1, 0.12, 'triangle', 190, 90); },
@@ -82,11 +88,8 @@ const RECIPES: Record<CoverKind, Record<CoverSoundAction, Recipe>> = {
             for (let i = 0; i < 9; i++) tone(bus, 0.03 + Math.random() * 0.45, 0.08, 0.04 + Math.random() * 0.05, 'sine', 2500 + Math.random() * 3500);
         },
     },
-    barrel: {
-        // The leak hisses on every hit; a badly damaged barrel is hit often, so it hisses most
-        hit: bus => { tone(bus, 0, 0.22, 0.13, 'triangle', 260, 200); tone(bus, 0, 0.15, 0.07, 'sine', 520); burst(bus, 0.02, 0.35, 0.09, 'highpass', 3500); },
-        break: bus => { tone(bus, 0, 0.25, 0.2, 'sawtooth', 180, 60); burst(bus, 0, 0.3, 0.22, 'bandpass', 900); },
-    },
+    barrel: fuelCoverSound,
+    'fuel-pump': fuelCoverSound,
 };
 
 /** Play the sound of a piece of cover being hit or broken. Nothing while muted or before audio is started. */

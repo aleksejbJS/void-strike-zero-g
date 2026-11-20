@@ -8,6 +8,8 @@
 import { Texture } from 'pixi.js';
 import { makeCanvas, overlayNoise } from '../scene/canvasKit';
 import { COVER_SPECS, CoverKind, CoverStage } from '../../cover/coverTypes';
+import { lastStopPumpArt } from '../scene/lastStop/artAssets';
+import { drawFuelPump } from './fuelPumpArt';
 import { drawBarrel } from './barrelArt';
 import { Ctx } from './coverArtKit';
 import { drawGlass } from './glassArt';
@@ -18,10 +20,10 @@ import { drawWood } from './woodArt';
 export interface CoverTexture { texture: Texture; anchorX: number; anchorY: number }
 
 const DRAW: Record<CoverKind, (c: Ctx, cx: number, fy: number, stage: CoverStage, seed: number) => void> = {
-    wood: drawWood, metal: drawMetal, glass: drawGlass, barrel: drawBarrel,
+    wood: drawWood, metal: drawMetal, glass: drawGlass, barrel: drawBarrel, 'fuel-pump': drawFuelPump,
 };
 /** One look per kind: every crate of a kind shows the same picture at the same stage. */
-const SEED: Record<CoverKind, number> = { wood: 3, metal: 5, glass: 7, barrel: 9 };
+const SEED: Record<CoverKind, number> = { wood: 3, metal: 5, glass: 7, barrel: 9, 'fuel-pump': 11 };
 
 // Room around the piece (world units) for its cast shadow, dust and smoke
 const PAD_X = 66;
@@ -41,6 +43,10 @@ export const coverResolution = (zoom: number): number => {
     const wanted = Math.ceil(zoom * ratio * 2) / 2; // half steps: a window being resized does not rebake every frame
     return Math.min(MAX_RES, Math.max(MIN_RES, Number.isFinite(wanted) ? wanted : MIN_RES));
 };
+
+// The map art is loaded asynchronously. A pump can use the fallback texture until the atlas resolves.
+export const coverTextureKey = (kind: CoverKind, stage: CoverStage, res: number) =>
+    `${kind}:${stage}:${res}${kind === 'fuel-pump' && lastStopPumpArt() ? ':atlas' : ''}`;
 
 const bake = (kind: CoverKind, stage: CoverStage, res: number): CoverTexture => {
     const { w, h } = COVER_SPECS[kind], seed = SEED[kind];
@@ -70,7 +76,7 @@ const bake = (kind: CoverKind, stage: CoverStage, res: number): CoverTexture => 
  * 1/res of its pixel size it measures (w + 132) × (h + 68) world units; anchor it on the piece's feet.
  */
 export const coverTexture = (kind: CoverKind, stage: CoverStage, res: number): CoverTexture => {
-    const key = `${kind}:${stage}:${res}`;
+    const key = coverTextureKey(kind, stage, res);
     let baked = cache.get(key);
     if (!baked) {
         baked = bake(kind, stage, res);

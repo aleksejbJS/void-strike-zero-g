@@ -2,7 +2,11 @@
 
 import type { Vector2 } from '../../types';
 
-export type CoverKind = 'wood' | 'metal' | 'glass' | 'barrel';
+export type ExplosiveCoverKind = 'barrel' | 'fuel-pump';
+export type CoverKind = 'wood' | 'metal' | 'glass' | ExplosiveCoverKind;
+
+export const isExplosiveCover = (kind: CoverKind): kind is ExplosiveCoverKind =>
+    kind === 'barrel' || kind === 'fuel-pump';
 
 export interface CoverSpec {
     w: number;
@@ -19,6 +23,7 @@ export const COVER_SPECS: Record<CoverKind, CoverSpec> = {
     metal: { w: 50, h: 46, hp: 500, blocksSight: true, stopsRail: true },
     glass: { w: 16, h: 90, hp: 60, blocksSight: false, stopsRail: false },
     barrel: { w: 32, h: 46, hp: 80, blocksSight: true, stopsRail: true },
+    'fuel-pump': { w: 48, h: 92, hp: 72, blocksSight: true, stopsRail: true },
 };
 
 /** True for a kind this build knows (a newer host may send kinds an older client has no spec or look for). */
@@ -32,7 +37,7 @@ export interface Cover {
     hp: number;
     /** When a destroyed piece comes back (ms timestamp); set only while it is gone. */
     returnsAt?: number;
-    /** When a lit barrel detonates (ms timestamp). */
+    /** When lit explosive cover detonates (ms timestamp). */
     fuseAt?: number;
     /** Who gets credit for what this piece's destruction does (a barrel blast). */
     creditId?: string;
@@ -63,3 +68,4 @@ export const BARREL_DAMAGE = 90;
 export const BARREL_CHAIN_MS = 150;
 /** What the kill feed shows as the weapon of a barrel kill (a barrel is no WeaponType). */
 export const BARREL_KILL_NAME = 'Barrel';
+export const FUEL_PUMP_KILL_NAME = 'Fuel Pump';

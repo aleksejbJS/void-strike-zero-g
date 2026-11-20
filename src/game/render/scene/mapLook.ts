@@ -10,15 +10,17 @@ import { stationTheme } from './themes/stationTheme';
 import { mineTheme } from './themes/mineTheme';
 import { arenaTheme } from './themes/arenaTheme';
 import { pitTheme } from './themes/pitTheme';
+import { createLastStopScene } from './lastStopScene';
+import { isLastStop } from '../../data/lastStop/layout';
 import { rangeTheme } from './themes/rangeTheme';
 
-export type MapTheme = 'station' | 'mine' | 'arena' | 'pit' | 'range';
+export type MapTheme = 'station' | 'mine' | 'arena' | 'pit' | 'range' | 'last-stop';
 
 export const themeFor = (mode: GameMode, map: MapId): MapTheme =>
     mode === GameMode.RANGE ? 'range' : mode === GameMode.DUEL ? 'pit' : mode === GameMode.HUNGER_GAMES ? 'arena'
-        : map === MapId.TUNNELS ? 'mine' : 'station';
+        : isLastStop(mode, map) ? 'last-stop' : map === MapId.TUNNELS ? 'mine' : 'station';
 
-const THEMES: Record<MapTheme, () => SceneTheme> = {
+const THEMES: Record<Exclude<MapTheme, 'last-stop'>, () => SceneTheme> = {
     station: stationTheme, mine: mineTheme, arena: arenaTheme, pit: pitTheme, range: rangeTheme,
 };
 
@@ -61,7 +63,9 @@ export const createMapLook = (
             legacy.platformLayer.clear();
             legacy.backgroundLayer.clear();
             try {
-                scene = createThemedScene({ ...hosts, platformHost }, state.platforms, THEMES[themeFor(state.mode, state.currentMap)](), sceneOptions);
+                const theme = themeFor(state.mode, state.currentMap);
+                scene = theme === 'last-stop' ? createLastStopScene(world, world.getChildIndex(legacy.backgroundLayer) + 1, state.platforms)
+                    : createThemedScene({ ...hosts, platformHost }, state.platforms, THEMES[theme](), sceneOptions);
                 scene.update(state.camera, Date.now(), w, h);
             } catch (err) {
                 // Never leave the player without a map: fall back to the plain look

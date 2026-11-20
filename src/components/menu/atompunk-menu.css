@@ -27,7 +27,9 @@
 .atompunk-menu .ap-play-panel { padding: 23px; gap: 18px; color: var(--ap-cream); }
 .atompunk-menu .ap-play-panel > div:first-child > span { font-family: var(--ap-font-display); font-size: 28px; font-weight: 600; text-transform: uppercase; color: var(--ap-cream); }
 .atompunk-menu [data-ap-map] { background: none; padding: 0; gap: 10px; }
-.atompunk-menu [data-ap-map] button { height: auto; min-height: 45px; padding: 8px 12px; font-size: 18px; font-family: var(--ap-font-display); font-weight: 600; text-transform: uppercase; color: var(--ap-cream); }
+.atompunk-menu [data-ap-map] button { min-width: 0; overflow-wrap: anywhere; height: auto; min-height: 45px; padding: 8px 12px; font-size: 18px; font-family: var(--ap-font-display); font-weight: 600; text-transform: uppercase; color: var(--ap-cream); }
+.atompunk-menu [data-ap-map][data-map-count="3"] { display: grid; grid-template-columns: 1.14fr .9fr .96fr; gap: 5px; }
+.atompunk-menu [data-ap-map][data-map-count="3"] button { padding-inline: 4px; font-size: clamp(11px, 1.3vw, 19px); white-space: nowrap; }
 .atompunk-menu .ap-play-panel .ap-play-button { min-height: 105px; padding: 18px 12px; }
 .atompunk-menu .ap-play-button > span:first-child { font-family: var(--ap-font-display); font-size: clamp(28px, 2.8vw, 45px); text-transform: uppercase; line-height: 1.1; }
 .atompunk-menu .ap-play-button > span:last-child { font-size: 13px; line-height: 1.4; }

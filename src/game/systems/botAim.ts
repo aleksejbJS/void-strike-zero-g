@@ -11,7 +11,7 @@ import { BotMemory, reactionDelay } from './botMemory';
 import { aimPointOf, canSee, centerOf, muzzleOf, platformsClear } from './botSenses';
 import { smokeHides } from './smoke';
 import { barrelToShoot, coverAimPoint, coverToShoot } from './botCover';
-import { Cover, COVER_SPECS } from '../cover/coverTypes';
+import { Cover, COVER_SPECS, isExplosiveCover } from '../cover/coverTypes';
 import { firstCoverOnSegment } from '../cover/coverGeometry';
 import { hungerShieldLeft } from './hungerRound';
 import { spawnShieldLeft } from './spawnShield';
@@ -26,7 +26,7 @@ const MIN_SPREAD_PX = 8;
 
 /** Nothing but `piece` (or, for a railgun, nothing a beam goes through) stands between the bot and `target`. */
 const shotIsClear = (state: GameState, bot: Entity, target: Entity, piece: Cover | null, now: number) => {
-    if (piece?.kind === 'barrel') return true; // barrelToShoot already checked the view
+    if (piece && isExplosiveCover(piece.kind)) return true; // barrelToShoot already checked the view
     const muzzle = muzzleOf(bot), center = centerOf(target);
     if (!piece && bot.weapon.type !== WeaponType.RAILGUN) return canSee(state, bot, target, now);
     const beamStopped = !piece && firstCoverOnSegment(state, muzzle, center, c => COVER_SPECS[c.kind].stopsRail) !== null;

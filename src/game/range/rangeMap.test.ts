@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { GameMode, MapId, Team } from '../../types';
 import { getInitialPickups, getPlatforms } from '../data/level';
 import { BODY_PRESETS } from '../build/characterBases';
-import { COVER_SPECS, CoverKind } from '../cover/coverTypes';
+import { COVER_SPECS } from '../cover/coverTypes';
 import { getCoverLayout, layoutKeyFor } from '../cover/coverLayout';
 import { spawnPointFor } from '../net/roomSetup';
 import { viewportOf } from '../render/viewport';
@@ -71,10 +71,9 @@ describe('range room', () => {
 });
 
 describe('range cover row', () => {
-    it('has exactly one cover of each kind', () => {
+    it('has the four training props', () => {
         const kinds = RANGE_COVER.map(([kind]) => kind).sort();
-        expect(kinds).toEqual((Object.keys(COVER_SPECS) as CoverKind[]).sort());
-        expect(RANGE_COVER).toHaveLength(4);
+        expect(kinds).toEqual(['barrel', 'glass', 'metal', 'wood']);
     });
 
     it('stands on the floor inside the room, clear of the spawn and of each other', () => {

@@ -1,6 +1,8 @@
+import { Container, Graphics } from 'pixi.js';
+import { createRoomState } from '../../net/roomSetup';
 import { describe, it, expect } from 'vitest';
 import { GameMode, MapId } from '../../../types';
-import { themeFor } from './mapLook';
+import { createMapLook, themeFor } from './mapLook';
 import { rangeTheme } from './themes/rangeTheme';
 
 describe('themeFor', () => {
@@ -24,4 +26,22 @@ describe('rangeTheme', () => {
         expect(theme.adPlaces).toEqual([]);
         expect(theme.decor).toEqual([]);
     });
+});
+
+it('keeps the Last Stop scenery behind blood and soot decals', () => {
+    const world = new Container();
+    const backgroundLayer = new Graphics();
+    const decals = new Container();
+    const platformLayer = new Graphics();
+    world.addChild(backgroundLayer, decals, platformLayer);
+    const look = createMapLook({ stage: new Container(), world }, world, { backgroundLayer, platformLayer, cache: {} });
+    try {
+        look.redraw(createRoomState(GameMode.DEATHMATCH, MapId.LAST_STOP), 1600, 900);
+        const backdrop = world.getChildByLabel('last-stop-backdrop');
+        expect(backdrop).not.toBeNull();
+        expect(world.getChildIndex(backdrop!)).toBeLessThan(world.getChildIndex(decals));
+    } finally {
+        look.destroy();
+        world.destroy({ children: true });
+    }
 });

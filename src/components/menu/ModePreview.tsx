@@ -10,6 +10,7 @@ import { ModeInfo } from './modeInfo';
 import type { Translate } from './types';
 import { LIVE_SCENES } from './preview/liveScenes';
 import { LiveStage } from './preview/LiveStage';
+import { LastStopPreview } from './preview/LastStopPreview';
 import { MenuModeIcon } from './MenuModeIcon';
 
 const SCENES: Record<GameMode, React.FC<{ t: Translate }>> = {
@@ -32,8 +33,9 @@ export const ModePreview: React.FC<{ mode: GameMode; map: MapId; info: ModeInfo;
             {/* key: restart the animations when the mode or map changes */}
             <div className="ap-preview-frame ap-panel">
                 <div className="ap-preview-title"><MenuModeIcon emblem="camera" className="ap-heading-icon" />{t('hb.previewTitle')}</div>
-                {live
-                    ? <LiveStage key={`${mode}-${map}`} mode={mode} map={map} live={live} label={label} t={t} Schematic={Scene} />
+                {map === MapId.LAST_STOP
+                    ? <Stage label={t('hb.mapLastStop')} schematic={false}><LastStopPreview /></Stage>
+                    : live ? <LiveStage key={`${mode}-${map}`} mode={mode} map={map} live={live} label={label} t={t} Schematic={Scene} />
                     : <Stage key={mode} label={label}><Scene t={t} /></Stage>}
             </div>
             <div className="ap-description ap-panel flex flex-col gap-2">

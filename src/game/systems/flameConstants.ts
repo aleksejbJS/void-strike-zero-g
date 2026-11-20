@@ -53,5 +53,6 @@ export const FLAME_COVER_MULT: Record<CoverKind, number> = {
     wood: 2,
     glass: 1,
     barrel: 1,
+    'fuel-pump': 1,
     metal: 0.25,
 };

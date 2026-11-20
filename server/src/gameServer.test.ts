@@ -122,3 +122,33 @@ describe('game server (socket.io integration)', () => {
         await waitFor(() => !room.state.players.some(p => p.id === id));
     });
 });
+
+it('hosts eight Last Stop clients through the dedicated server', async () => {
+    const http = createServer();
+    const io = new Server(http);
+    const room = new GameRoom({ mode: GameMode.DEATHMATCH, map: MapId.LAST_STOP, maxPlayers: 8 });
+    const stop = startGameServer(io, room);
+    const clients: ClientSocket[] = [];
+    try {
+        await new Promise<void>((resolve, reject) => {
+            http.once('error', reject);
+            http.listen(0, '127.0.0.1', resolve);
+        });
+        const url = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
+        const accepted = await Promise.all(Array.from({ length: 8 }, async (_, i) => {
+            const c = connect(url, { transports: ['websocket'], forceNew: true });
+            clients.push(c);
+            const ready = once<JoinAccepted>(c, MSG.JOINED);
+            c.emit(MSG.JOIN, { ...join, name: `Player ${i + 1}` });
+            return ready;
+        }));
+        expect(accepted.every(a => a.map === MapId.LAST_STOP)).toBe(true);
+        const snapshot = await once<Snapshot>(clients[0], MSG.SNAPSHOT);
+        expect(snapshot.players.map(p => p.id).sort()).toEqual(accepted.map(a => a.id).sort());
+    } finally {
+        clients.forEach(client => client.disconnect());
+        stop();
+        room.dispose();
+        await new Promise<void>(resolve => io.close(() => resolve()));
+    }
+});
