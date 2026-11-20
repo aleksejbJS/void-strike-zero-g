@@ -12,6 +12,7 @@ import { COVER_SPECS, Cover } from './coverTypes';
 export const layoutKeyFor = (mode: GameMode, map: MapId): CoverLayoutKey | null => {
     if (mode === GameMode.RANGE) return 'range';
     if (mode === GameMode.DUEL) return null;
+    if (mode === GameMode.DEATHMATCH && map === MapId.LAST_STOP) return 'last-stop';
     if (mode === GameMode.DEATHMATCH) return map === MapId.TUNNELS ? 'tunnels' : 'dm';
     if (mode === GameMode.HUNGER_GAMES) return 'hunger';
     if (mode === GameMode.HOLD_THE_FLAG) return 'htf';

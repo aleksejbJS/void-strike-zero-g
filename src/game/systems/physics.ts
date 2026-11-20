@@ -1,4 +1,6 @@
 import { GameState, WeaponType, ItemType, GameMode, Team, PlayerInput, Projectile, Entity } from '../../types';
+import { isLastStop } from '../data/lastStop/layout';
+import { lastStopSpawn } from '../data/lastStop/spawns';
 import { WEAPONS_DATA, ITEM_RESPAWN_TIME, HTF_SCORE_INTERVAL, INFILTRATION_TIMER, PROJECTILE_MAX_LIFE, DEFAULT_MAX_FUEL, ROCKET_MOTOR_TICKS } from '../../constants';
 import { gameEvents } from './events';
 import { nextId } from '../utils/id';
@@ -68,7 +70,8 @@ export const updatePhysics = (state: GameState, keys: any, mouse: any, hookPress
             if (now > p.respawnTimer) {
                 p.dead = false; p.health = 100; p.armor = 0;
                 p.maxFuel = DEFAULT_MAX_FUEL; p.jetpackFuel = DEFAULT_MAX_FUEL;
-                p.pos = state.mode === GameMode.DUEL ? duelSpawnPoint(state, p.id) : getSpawnPoint(p.team);
+                p.pos = state.mode === GameMode.DUEL ? duelSpawnPoint(state, p.id)
+                    : isLastStop(state.mode, state.currentMap) ? lastStopSpawn(state, state.players.filter(other => other !== p)) : getSpawnPoint(p.team);
                 p.vel = { x: 0, y: 0 };
                 liftOutOfCover(state, p);
                 if (state.mode === GameMode.GUN_GAME) {

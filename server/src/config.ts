@@ -43,7 +43,11 @@ const parsePositiveInt = (value: string | undefined, fallback: number, name: str
 
 // Hunger Games zone and spawns are laid out for its own arena
 const mapFor = (mode: GameMode, requested: MapId): MapId => {
-  if (mode !== GameMode.HUNGER_GAMES || requested === MapId.HUNGER) return requested;
+  if (mode !== GameMode.HUNGER_GAMES || requested === MapId.HUNGER) {
+    if (requested !== MapId.LAST_STOP || mode === GameMode.DEATHMATCH) return requested;
+    console.warn('Last Stop is available in Deathmatch. Using the standard map.');
+    return MapId.DEFAULT;
+  }
   if (process.env.SERVER_MAP) console.warn(`⚠️ HUNGER_GAMES always uses the "${MapId.HUNGER}" map (SERVER_MAP="${requested}" ignored)`);
   return MapId.HUNGER;
 };

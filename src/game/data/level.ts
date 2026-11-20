@@ -1,3 +1,5 @@
+import { isLastStop, LAST_STOP_PLATFORMS } from './lastStop/layout';
+import { lastStopPickups } from './lastStop/pickups';
 import { GameMode, ItemType, Platform, Pickup, Team, WeaponType, MapId } from '../../types';
 import { PIT_PICKUPS, PIT_PLATFORMS, PIT_WAYPOINTS } from './pitMap';
 import { RANGE_PLATFORMS } from '../range/rangeMap';
@@ -205,7 +207,8 @@ export const getPlatforms = (mode?: GameMode, mapId?: MapId): Platform[] => {
   } else if (mode === GameMode.RANGE) {
     plats = RANGE_PLATFORMS;
   } else if (mode === GameMode.DEATHMATCH) {
-    if (mapId === MapId.TUNNELS) plats = getTunnelMapPlatforms();
+    if (mapId === MapId.LAST_STOP) plats = LAST_STOP_PLATFORMS;
+    else if (mapId === MapId.TUNNELS) plats = getTunnelMapPlatforms();
     else plats = getDeathmatchPlatforms();
   } else if (mode === GameMode.HUNGER_GAMES) {
     plats = getHungerPlatforms();
@@ -317,7 +320,8 @@ export const getWaypoints = (mode?: GameMode): { x: number; y: number }[] => {
   ];
 };
 
-export const getInitialPickups = (mode: GameMode, mapId?: string): Pickup[] => {
+export const getInitialPickups = (mode: GameMode, mapId?: MapId): Pickup[] => {
+  if (isLastStop(mode, mapId)) return lastStopPickups();
   // The test range has nothing to collect: the dummy loadout is full and the player's is set by the range
   if (mode === GameMode.RANGE) return [];
 

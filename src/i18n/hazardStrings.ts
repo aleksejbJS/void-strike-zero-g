@@ -9,6 +9,7 @@ export interface HazardKeys {
     'hb.map': string;
     'hb.mapDefault': string;
     'hb.mapTunnels': string;
+    'hb.mapLastStop': string;
     'hb.mapHunger': string;
     'hb.playBots': string;
     'hb.playSub': string;
@@ -61,6 +62,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.map': 'Map',
         'hb.mapDefault': 'Default',
         'hb.mapTunnels': 'Tunnels',
+        'hb.mapLastStop': 'Last Stop',
         'hb.mapHunger': 'Hunger arena',
         'hb.playBots': 'Play vs bots',
         'hb.playSub': '{0} on the {1} map',
@@ -111,6 +113,7 @@ export const hazardStrings: Record<Language, HazardKeys> = {
         'hb.map': 'Карта',
         'hb.mapDefault': 'Стандартная',
         'hb.mapTunnels': 'Тоннели',
+        'hb.mapLastStop': 'Заправка',
         'hb.mapHunger': 'Арена Голодных игр',
         'hb.playBots': 'Играть с ботами',
         'hb.playSub': '{0}, карта «{1}»',

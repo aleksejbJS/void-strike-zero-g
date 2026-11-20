@@ -61,7 +61,7 @@ const SetupScreen: React.FC<Props & { carry: StartCarry }> = ({ onContinue, onBa
     };
 
     const mode = MODE_INFO[language][state.selectedMode].name;
-    const mapLabel = t(state.selectedMap === MapId.TUNNELS ? 'hb.mapTunnels' : state.selectedMap === MapId.HUNGER ? 'hb.mapHunger' : 'hb.mapDefault').toLowerCase();
+    const mapLabel = t(state.selectedMap === MapId.LAST_STOP ? 'hb.mapLastStop' : state.selectedMap === MapId.TUNNELS ? 'hb.mapTunnels' : state.selectedMap === MapId.HUNGER ? 'hb.mapHunger' : 'hb.mapDefault').toLowerCase();
     const next = forTournament ? t('tournament.setup.next') : state.networkMode === NetworkMode.CLIENT ? t('cs.nextJoin')
         : t(state.networkMode === NetworkMode.HOST ? 'cs.nextHost' : 'cs.nextOffline', mode, mapLabel);
     const startLabel = forTournament ? t('tournament.setup.continue') : t(state.networkMode === NetworkMode.CLIENT ? 'cs.startJoin' : state.networkMode === NetworkMode.HOST ? 'cs.startHost' : 'cs.startOffline');

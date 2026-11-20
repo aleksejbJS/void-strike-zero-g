@@ -1,5 +1,7 @@
 // Factories for the authoritative room: initial state, bots and joined players
 
+import { isLastStop } from '../data/lastStop/layout';
+import { lastStopSpawn } from '../data/lastStop/spawns';
 import { Entity, GameMode, GameState, MapId, Team, WeaponType } from '../../types';
 import { WEAPONS_DATA, GUN_GAME_LADDER, DEFAULT_MAX_FUEL } from '../../constants';
 import { getPlatforms, getInitialPickups } from '../data/level';
@@ -154,10 +156,12 @@ export const resetHungerRound = (state: GameState, now: number) => {
 /** Fresh start for every player (keeping identity, team and input tracking), cover, pickups and shots. */
 const respawnEveryone = (state: GameState) => {
     restoreAllCover(state); // first: liftOutOfCover below must see the cover that is coming back
+    const lastStop = isLastStop(state.mode, state.currentMap);
     state.players.forEach((p, i) => {
         const { lastProcessedInput, aim } = p;
         Object.assign(p, baseEntity(state.mode, p.team), { lastProcessedInput, aim });
         if (state.mode === GameMode.DUEL) p.pos = duelSpawnByIndex(i); // the fighters start on opposite sides
+        if (lastStop) p.pos = lastStopSpawn(state, state.players.slice(0, i));
         liftOutOfCover(state, p);
     });
     state.projectiles = [];

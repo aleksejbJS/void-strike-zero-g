@@ -67,6 +67,9 @@ import { useTournamentMatch } from './hud/useTournamentMatch';
 import { openTournamentNet } from './hud/tournamentNet';
 import { withTournamentSignals } from './hud/tournamentSessionCallbacks';
 import { createHungerZone, isHungerRoundOver, hungerTimeLeft, hungerShieldLeft } from '../game/systems/hungerRound';
+import { isLastStop } from '../game/data/lastStop/layout';
+import { clampLastStopCamera } from '../game/render/scene/lastStopScene';
+import { lastStopSpawn } from '../game/data/lastStop/spawns';
 import { offlineBotCount } from '../game/data/offlineBots';
 import { RangeLoop } from '../game/range/rangeLoop';
 import type { RangeState } from '../game/range/rangeState';
@@ -242,7 +245,8 @@ export default function GameCanvas() {
     };
 
     // Same spawn rules as the server room
-    const getSpawnPoint = (team: Team) => spawnPointFor(gameMode)(team);
+    const getSpawnPoint = (team: Team) => isLastStop(gameMode, gameState.current.currentMap)
+        ? lastStopSpawn(gameState.current) : spawnPointFor(gameMode)(team);
 
     const makeInitialState = (): GameState => ({
         mode: state.selectedMode,
@@ -316,7 +320,7 @@ export default function GameCanvas() {
             if (gameMode === GameMode.RANGE) setRangeLegend(rangeLoop.setup(gameState.current, 'player')); // dummies, no bots
 
             // Create Bots
-            const botCount = offlineBotCount(gameMode);
+            const botCount = offlineBotCount(gameMode, effectiveMap);
             // All bots use illustrated bases; team equipment carries the team's colour.
             const botLooks = ffaBotLooks(botCount);
             for (let i = 0; i < botCount; i++) {
@@ -352,7 +356,7 @@ export default function GameCanvas() {
         }
 
         // Pickups
-        gameState.current.pickups = getInitialPickups(state.selectedMode);
+        gameState.current.pickups = getInitialPickups(gameMode, effectiveMap);
         if (state.selectedMode === GameMode.INFILTRATION) {
             gameState.current.infiltrationEndTime = Date.now() + INFILTRATION_TIMER;
         }
@@ -732,6 +736,7 @@ export default function GameCanvas() {
                     const tap = jumpLatchRef.current;
                     if (tap) { tap.ticked(); keys.current.Space = tap.held(); }
                 });
+                if (isLastStop(liveMode, gameState.current.currentMap)) clampLastStopCamera(gameState.current.camera, view);
                 updateDebugStats(now, ticksRun);
 
                 if (liveMode === GameMode.HUNGER_GAMES) updateHungerHud(now);

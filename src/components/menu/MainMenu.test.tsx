@@ -39,6 +39,11 @@ describe('MainMenu', () => {
         renderMenu();
         const mapGroup = () => within(screen.getByRole('group', { name: 'Map' }));
         fireEvent.click(screen.getByRole('button', { name: /^Deathmatch/ }));
+        expect(mapGroup().getAllByRole('button').map(b => b.textContent)).toEqual(['Default', 'Tunnels', 'Last Stop']);
+
+        fireEvent.click(mapGroup().getByRole('button', { name: 'Last Stop' }));
+        expect(store.state.selectedMap).toBe(MapId.LAST_STOP);
+        fireEvent.click(screen.getByRole('button', { name: /Gun Game/ }));
         expect(mapGroup().getAllByRole('button').map(b => b.textContent)).toEqual(['Default', 'Tunnels']);
 
         fireEvent.click(screen.getByRole('button', { name: /Hunger Games/ }));
