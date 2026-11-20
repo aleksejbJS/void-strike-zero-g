@@ -9,6 +9,7 @@ import { validateJoin } from '../net/validation';
 import { offlineBotCount } from './offlineBots';
 import { buildNavGraph, solidAt, surfaceBelow } from '../systems/botNavGraph';
 import { reachableFrom } from '../systems/botPathfinder';
+import { segmentRectEntry } from '../utils/math';
 
 const map = MapId.LAST_STOP;
 const setup = () => createRoomState(GameMode.DEATHMATCH, map);
@@ -80,6 +81,18 @@ describe('Last Stop Deathmatch', () => {
         for (let x = 730; x < 1050; x += 4) {
             const pos = mapPoint(x, 744);
             expect(solidAt(state.platforms, pos.x, pos.y), `${x},744`).toBe(false);
+        }
+    });
+
+    it('shields the workshop approach at standing height while leaving the eastern shaft open', () => {
+        const { platforms } = setup();
+        const blocked = (from: [number, number], to: [number, number]) =>
+            platforms.some(p => segmentRectEntry(mapPoint(...from), mapPoint(...to), p) !== null);
+
+        expect(blocked([1455, 480], [1604, 480])).toBe(true);
+        expect(blocked([1455, 423], [1604, 423])).toBe(false);
+        for (const x of [1582, 1604, 1645]) {
+            expect(blocked([x, 423], [x, 535])).toBe(false);
         }
     });
 

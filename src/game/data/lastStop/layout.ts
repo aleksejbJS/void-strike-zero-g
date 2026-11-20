@@ -74,6 +74,8 @@ const slabs: Slab[] = [
     [1093, 453, 1135, 525, 'masonry'],
     [1126, 329, 1320, 525, 'steel'],
     [1378, 415, 1423, 501, 'masonry'],
+    // Workshop shield offsets the firing lane without closing the shaft.
+    [1536, 441, 1563, 501, 'steel'],
     [1690, 432, 1748, 491, 'steel'],
 
     // Short roofs and vents provide ways around the taller structures.
